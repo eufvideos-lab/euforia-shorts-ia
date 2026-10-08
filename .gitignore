@@ -1,0 +1,9 @@
+node_modules/
+remotion/public/
+pedidos/
+saida/
+__pycache__/
+.token
+*.mp4
+*.mov
+*.mp3
