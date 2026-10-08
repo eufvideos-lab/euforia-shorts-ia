@@ -1,5 +1,6 @@
 """Conversa com o n8n da Euforia (ponte segura para Drive, Pixabay e transcrição).
-A senha vem da variável de ambiente SHORTS_IA_TOKEN."""
+A senha vem da variável SHORTS_IA_TOKEN ou, nas rotinas na nuvem, é colocada
+pelo proxy do ambiente (credencial de API no host do n8n) sem a sessão ver."""
 import base64, json, os, subprocess
 
 BASE = os.environ.get('SHORTS_IA_N8N', 'https://n8n.grupoeuforia.tech/webhook')
@@ -8,7 +9,7 @@ DRIVE_EUFORIA = '0AGhEQwuC5NyjUk9PVA'  # drive compartilhado EUFORIA MEDIA
 
 
 def _curl(args, saida=None, timeout=900):
-    cmd = ['curl', '-sS', '--fail-with-body', '--max-time', str(timeout), '-H', f'x-token: {TOKEN}'] + args
+    cmd = ['curl', '-sS', '--fail-with-body', '--max-time', str(timeout)] + (['-H', f'x-token: {TOKEN}'] if TOKEN else []) + args
     if saida:
         cmd += ['-o', saida]
     r = subprocess.run(cmd, capture_output=True, text=saida is None)

@@ -18,8 +18,9 @@ Atenda no máximo 2 pedidos por rodada (o resto fica para a próxima). Mais anti
 ## 2. Preparar a máquina (só se houver pedido)
 O código está no repositório público da Euforia: `git clone --depth 1 https://github.com/eufvideos-lab/euforia-shorts-ia.git`.
 ```
-export SHORTS_IA_TOKEN=<senha do prompt>
 bash instalar.sh   # instala Remotion e OpenCV (~15 s)
+# A senha da ponte é colocada sozinha pelo ambiente "Shorts IA" (credencial no host n8n.grupoeuforia.tech).
+# Teste: python3 -c "import sys; sys.path.insert(0,'pipeline'); import ponte; print(ponte.broll_buscar('ocean', 1))"
 ```
 
 ## 3. Para cada pedido
