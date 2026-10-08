@@ -29,7 +29,10 @@ bash instalar.sh   # instala Remotion e OpenCV (~15 s)
    Se o link for de pasta, liste a pasta com o Google Drive e use o vídeo editado mais recente (.mp4/.mov).
    Se não achar vídeo: Status "Erro", explique no log, avise no Discord e siga para o próximo.
 3. Rode `python3 pipeline/preparar.py pedidos/<id-curto> <file_id>`.
-4. Leia `palavras.txt` e veja a imagem `brolls_fonte.png` (B-rolls que a equipe já colocou no vídeo, numerados #0, #1...).
+4. Legenda queimada: tire 3 quadros do fonte.mp4 (início, meio, fim) e olhe a faixa de baixo. Se o vídeo já tiver
+   legenda embutida, NÃO produza: Status "Erro" e no log "O vídeo veio com legenda embutida. Mande a versão só com os
+   cortes (sem legenda) e volte para Editar." Avise no Discord e siga para o próximo pedido.
+   Depois leia `palavras.txt` e veja a imagem `brolls_fonte.png` (B-rolls que a equipe já colocou no vídeo, numerados #0, #1...).
 5. Escreva `pedidos/<id-curto>/plano.json` seguindo `prompts/escolher_trechos.md`, com a quantidade pedida (1 ou 3)
    e o estilo pedido. Leia também as "Observações para a máquina" do pedido e os campos "Padrões de edição" e
    "Direção criativa" do cliente.

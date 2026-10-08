@@ -13,6 +13,6 @@ if [ ! -f "$DIR/pipeline/produzir.py" ]; then
   mv "$DIR.tmp/shorts-ia" "$DIR"; rm -rf "$DIR.tmp"
 fi
 cd "$DIR/remotion" && [ -d node_modules/remotion ] || npm ci --no-audit --no-fund --loglevel=error
-python3 -c "import cv2, numpy, PIL" 2>/dev/null || pip install --break-system-packages -q "opencv-python-headless<5" numpy pillow
+python3 -c "import cv2, numpy, PIL" 2>/dev/null || python3 -m pip install --break-system-packages -q "opencv-python-headless<5" numpy pillow
 which ffmpeg >/dev/null || { echo "ffmpeg ausente"; exit 1; }
 echo "máquina pronta em $DIR"
