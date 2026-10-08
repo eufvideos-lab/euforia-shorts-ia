@@ -12,11 +12,11 @@ no quadro 🎬 Pedidos de Shorts IA do Notion. Responda e registre tudo em portu
 - Discord: canal de aviso definido no prompt da tarefa (bot Érica, ferramenta enviar_discord)
 
 ## 1. Ver se há trabalho (rápido, gasta pouco)
-Consulte o quadro: Status = "Editar". Se não houver nenhum, encerre sem fazer mais nada.
+Consulte o quadro: Status = "Editar" ou "Ajustar". Se não houver nenhum, encerre sem fazer mais nada.
 Atenda no máximo 2 pedidos por rodada (o resto fica para a próxima). Mais antigo primeiro.
 
 ## 2. Preparar a máquina (só se houver pedido)
-O código está no repositório privado eufvideos-lab/euforia-shorts-ia (anexe com add_repo e clone).
+O código está no repositório público da Euforia: `git clone --depth 1 https://github.com/eufvideos-lab/euforia-shorts-ia.git`.
 ```
 export SHORTS_IA_TOKEN=<senha do prompt>
 bash instalar.sh   # instala Remotion e OpenCV (~15 s)
