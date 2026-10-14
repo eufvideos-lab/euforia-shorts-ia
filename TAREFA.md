@@ -52,6 +52,9 @@ bash instalar.sh   # instala Remotion e OpenCV (~15 s)
 8. Rode:
    `python3 pipeline/produzir.py pedidos/<id-curto> --modelo <institucional|viral> --cliente "<nome>" --pasta-drive <id da pasta> [--cor ... --cor-fundo ... --cor-texto ...]`
    (demora ~5 min por short). Se algum short sair com "plano rejeitado", corrija o plano e rode de novo só ele.
+   IMPORTANTE: nunca encerre a sua vez esperando um comando em segundo plano (a rotina não acorda de novo e o
+   pedido fica preso em "Em edição"). Rode em primeiro plano com timeout longo, ou, se for em segundo plano,
+   fique conferindo com `sleep 120` em loop até o processo terminar. Só termine depois do aviso no Discord.
 9. Confira cada short: tire 6 quadros (ffmpeg) de cada arquivo em `saida/` e olhe. Corte no meio de frase, legenda
    errada, B-roll sem relação ou tela preta = refaça aquele short antes de entregar.
 10. Atualize o pedido: "Shorts prontos" (um link por linha com o título), "Pasta dos shorts", "Entregue em" (agora),
