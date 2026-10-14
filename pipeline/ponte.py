@@ -22,9 +22,49 @@ def _json(acao, **campos):
     return ['-X', 'POST', '-H', 'Content-Type: application/json', '-d', json.dumps({'acao': acao, **campos}), f'{BASE}/shorts-ia-ponte']
 
 
+PARTE = 80 * 1024 * 1024  # vídeos grandes vêm em pedaços de 80 MB
+
+
+def info(file_id):
+    """Nome, tamanho (bytes) e tipo do arquivo no Drive."""
+    return json.loads(_curl(_json('info', file_id=file_id), timeout=120))
+
+
 def baixar(file_id, destino):
-    """Baixa um arquivo do Drive (qualquer tamanho que o n8n aguente)."""
-    _curl(_json('baixar', file_id=file_id), saida=destino, timeout=1800)
+    """Baixa um arquivo do Drive. Até 150 MB vem inteiro; acima disso, em pedaços (com nova tentativa)."""
+    try:
+        tam = int(info(file_id).get('tamanho') or 0)
+    except Exception:
+        tam = 0
+    if 0 < tam <= 150 * 1024 * 1024 or tam == 0:
+        try:
+            _curl(_json('baixar', file_id=file_id), saida=destino, timeout=1800)
+            if os.path.getsize(destino) > 0 and (tam == 0 or os.path.getsize(destino) == tam):
+                return destino
+        except Exception:
+            if tam == 0:
+                raise
+    parte = destino + '.parte'
+    with open(destino, 'wb') as f:
+        ini = 0
+        while ini < tam:
+            fim = min(ini + PARTE, tam) - 1
+            for tentativa in range(3):
+                try:
+                    _curl(_json('baixar_parte', file_id=file_id, inicio=ini, fim=fim), saida=parte, timeout=900)
+                    if os.path.getsize(parte) == fim - ini + 1:
+                        break
+                except Exception:
+                    if tentativa == 2:
+                        raise
+            else:
+                raise RuntimeError(f'parte {ini}-{fim} veio incompleta')
+            with open(parte, 'rb') as p:
+                f.write(p.read())
+            ini = fim + 1
+    os.remove(parte)
+    if os.path.getsize(destino) != tam:
+        raise RuntimeError(f'download incompleto: {os.path.getsize(destino)} de {tam} bytes')
     return destino
 
 
