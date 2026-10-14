@@ -40,6 +40,7 @@ Devolva em `correcoes`: `{ "i": índice, "de": "...", "para": "..." }`. Não mud
 
 ## De onde vêm os B-rolls
 - `"busca": "#k"` usa o B-roll número k que a equipe já colocou no vídeo editado (lista em palavras.txt e imagem brolls_fonte.png). Use quando combinar com a fala, mesmo que esteja em outro ponto do vídeo.
+- PRIORIDADE: B-roll do próprio vídeo (#k) sempre vem antes do banco. Banco só quando nenhum #k serve, e no máximo 2 por short. Na dúvida se a imagem do banco vai combinar, NÃO use: cartão de texto ou o rosto da pessoa é melhor que B-roll estranho (ex.: um gato num vídeo sobre carreira, exame médico num vídeo sobre ansiedade).
 - Qualquer outro texto em `busca` é procurado no banco Pixabay: escreva em inglês, 2 a 4 palavras, descrevendo uma cena real e concreta ("mother hugging child", "doctor talking patient"). Evite termos abstratos ("success", "health") e nada de desenho/animação.
 - O B-roll tem que mostrar literalmente o que está sendo dito naquele instante ("criança estudando" quando ela fala de escola). Frase abstrata ("transformar conhecimento técnico") não pede B-roll: use cartão de texto ou deixe o rosto.
 - Os B-rolls que já estão DENTRO do trecho escolhido entram sozinhos (não precisa listar).

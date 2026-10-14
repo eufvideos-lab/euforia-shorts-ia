@@ -22,6 +22,7 @@ ap.add_argument('--cor', default=None); ap.add_argument('--cor-fundo', default='
 ap.add_argument('--logo', default=None); ap.add_argument('--musica', default='auto')
 ap.add_argument('--so-render', action='store_true', help='não sobe no Drive (teste)')
 ap.add_argument('--shorts', default=None, help='refazer só estes shorts, ex.: 2 ou 1,3')
+ap.add_argument('--so-brolls', action='store_true', help='só baixa os B-rolls do banco e monta brolls_banco.png para conferir (não renderiza)')
 a = ap.parse_args()
 
 pasta = os.path.abspath(a.pasta)
@@ -79,7 +80,7 @@ for n_sh, sh in enumerate(plano['shorts']):
         def nota(h):
             tags = (h.get('tags') or '').lower()
             return sum(1 for w in palavras if re.search(r'\b' + w.rstrip('s'), tags))
-        minimo = max(1, (len(palavras) + 1) // 2)
+        minimo = max(1, len(palavras) - 1) if len(palavras) >= 3 else max(1, len(palavras))
         bons = [h for h in hits if h.get('url') and not any(t in (h.get('tags') or '').lower() for t in EVITAR) and nota(h) >= minimo]
         bons.sort(key=lambda h: (-nota(h), h.get('duracao', 0) < br.get('duracao', 2) + 0.5, -(h.get('altura') or 0)))
         if not bons:
@@ -92,6 +93,25 @@ for n_sh, sh in enumerate(plano['shorts']):
         mapa[chave] = f'{pid}/px_{h["id"]}.mp4'
         passo(f'  usando pixabay {h["id"]} ({h.get("tags")})')
 json.dump(mapa, open(os.path.join(pasta, 'brolls_map.json'), 'w'))
+
+# folha de conferência: 1 quadro de cada B-roll do banco, com a busca escrita embaixo
+banco = [(k, v) for k, v in mapa.items() if not k.startswith('#')]
+if banco:
+    folha = os.path.join(pasta, 'brolls_banco.png'); quadros = []
+    for i, (k, v) in enumerate(banco):
+        q = os.path.join(pasta, f'_q{i}.png')
+        rot = re.sub(r"[^A-Za-z0-9 ]", ' ', k)[:40]
+        subprocess.run(['ffmpeg', '-v', 'error', '-y', '-ss', '0.8', '-i', os.path.join(pub, os.path.basename(v)), '-frames:v', '1',
+                        '-vf', f"scale=270:480,drawbox=y=430:h=50:color=black@0.7:t=fill,drawtext=text='{rot}':fontcolor=white:fontsize=16:x=6:y=446", q])
+        if os.path.exists(q): quadros.append(q)
+    if quadros:
+        ent = sum([['-i', q] for q in quadros], [])
+        subprocess.run(['ffmpeg', '-v', 'error', '-y', *ent, '-filter_complex', f'hstack=inputs={len(quadros)}' if len(quadros) > 1 else 'null', folha])
+        for q in quadros: os.remove(q)
+        passo(f'conferência dos B-rolls do banco: {folha}')
+if a.so_brolls:
+    passo('parei antes do render (--so-brolls). Confira brolls_banco.png, tire do plano o que não combina e rode de novo sem --so-brolls.')
+    sys.exit(0)
 
 # 3) música, se o vídeo de origem não tiver trilha
 musica = None

@@ -49,7 +49,11 @@ bash instalar.sh   # instala Remotion e OpenCV (~15 s)
    Sem nada para tirar: fundo #FDFBF7, texto #1F2937, destaque #D45C78.
 7. Pasta de entrega: se "Pasta de entrega (opcional)" estiver preenchida, use ela. Senão, crie com o Google Drive
    uma pasta "SHORTS IA - <AAAA-MM-DD>" dentro da pasta onde está o vídeo editado.
-8. Rode:
+8. Antes do render, confira os B-rolls do banco: rode o comando abaixo com `--so-brolls` no fim e olhe a imagem
+   `pedidos/<id-curto>/brolls_banco.png` (um quadro de cada B-roll do banco, com a busca escrita). O que não mostrar
+   literalmente o que a pessoa fala naquele trecho sai do plano (troque por #k, cartão ou nada). Só então rode sem
+   `--so-brolls`. Isso evita refazer short depois (cada render refeito custa ~5 min).
+   Rode:
    `python3 pipeline/produzir.py pedidos/<id-curto> --modelo <institucional|viral> --cliente "<nome>" --pasta-drive <id da pasta> [--cor ... --cor-fundo ... --cor-texto ...]`
    (demora ~5 min por short). Se algum short sair com "plano rejeitado", corrija o plano e rode de novo só ele.
    IMPORTANTE: nunca encerre a sua vez esperando um comando em segundo plano (a rotina não acorda de novo e o
