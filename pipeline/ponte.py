@@ -83,12 +83,63 @@ def subir(caminho, folder_id, nome, drive_id=DRIVE_EUFORIA):
     return json.loads(out)
 
 
-def transcrever(audio_mp3, idioma='pt'):
+def _transcrever_um(audio_mp3, idioma):
     corpo = json.dumps({'audio_base64': base64.b64encode(open(audio_mp3, 'rb').read()).decode(),
                         'filename': os.path.basename(audio_mp3), 'language': idioma})
     tmp = audio_mp3 + '.req.json'
     open(tmp, 'w').write(corpo)
-    out = _curl(['-X', 'POST', '-H', 'Content-Type: application/json', '--data', f'@{tmp}',
-                 f'{BASE}/shorts-ia-transcrever'], timeout=900)
-    os.remove(tmp)
-    return json.loads(out)
+    try:
+        ultimo = None
+        for tentativa in range(3):
+            try:
+                return json.loads(_curl(['-X', 'POST', '-H', 'Content-Type: application/json', '--data', f'@{tmp}',
+                                         f'{BASE}/shorts-ia-transcrever'], timeout=900))
+            except Exception as e:
+                ultimo = e
+                import time; time.sleep(15)
+        raise ultimo
+    finally:
+        os.remove(tmp)
+
+
+def _duracao(arq):
+    r = subprocess.run(['ffprobe', '-v', 'error', '-show_entries', 'format=duration', '-of', 'csv=p=0', arq],
+                       capture_output=True, text=True)
+    return float(r.stdout.strip() or 0)
+
+
+def _cortes(audio_mp3, total, alvo=270.0):
+    """Pontos de corte a cada ~4,5 min, sempre num silêncio (para não cortar palavra no meio)."""
+    r = subprocess.run(['ffmpeg', '-v', 'info', '-i', audio_mp3, '-af', 'silencedetect=noise=-35dB:d=0.3', '-f', 'null', '-'],
+                       capture_output=True, text=True)
+    import re
+    ini = [float(x) for x in re.findall(r'silence_start: ([\d.]+)', r.stderr)]
+    fim = [float(x) for x in re.findall(r'silence_end: ([\d.]+)', r.stderr)]
+    meios = [(a + b) / 2 for a, b in zip(ini, fim)]
+    cortes, t = [], alvo
+    while t < total - 60:
+        perto = [m for m in meios if abs(m - t) <= 40]
+        c = min(perto, key=lambda m: abs(m - t)) if perto else t
+        cortes.append(c)
+        t = c + alvo
+    return cortes
+
+
+def transcrever(audio_mp3, idioma='pt'):
+    """Transcrição palavra a palavra. Áudio longo vai em pedaços de ~4,5 min (a resposta de uma vez só cai no caminho)."""
+    total = _duracao(audio_mp3)
+    if total <= 360:
+        return _transcrever_um(audio_mp3, idioma)
+    pontos = [0.0] + _cortes(audio_mp3, total) + [total]
+    textos, palavras = [], []
+    for i in range(len(pontos) - 1):
+        a, b = pontos[i], pontos[i + 1]
+        parte = f'{audio_mp3}.p{i}.mp3'
+        subprocess.run(['ffmpeg', '-v', 'error', '-y', '-ss', f'{a:.3f}', '-i', audio_mp3, '-t', f'{b - a:.3f}',
+                        '-c:a', 'libmp3lame', '-b:a', '32k', parte], check=True)
+        r = _transcrever_um(parte, idioma)
+        os.remove(parte)
+        textos.append((r.get('text') or '').strip())
+        for w in r.get('words') or []:
+            palavras.append({**w, 'start': round(w['start'] + a, 3), 'end': round(w['end'] + a, 3)})
+    return {'text': ' '.join(t for t in textos if t), 'duration': total, 'words': palavras}
