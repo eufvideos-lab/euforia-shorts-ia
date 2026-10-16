@@ -78,8 +78,18 @@ def broll_baixar(url, destino):
 
 
 def subir(caminho, folder_id, nome, drive_id=DRIVE_EUFORIA):
-    out = _curl(['-X', 'POST', '-F', f'arquivo=@{caminho}', '-F', f'folder_id={folder_id}',
-                 '-F', f'drive_id={drive_id}', '-F', f'nome={nome}', f'{BASE}/shorts-ia-subir'], timeout=1800)
+    # o curl trata vírgula, ponto e vírgula e aspas no caminho do -F como separadores: sobe uma cópia com nome simples
+    # e manda o título de verdade como texto puro (--form-string), aceitando qualquer caractere
+    import shutil, tempfile
+    tmpdir = tempfile.mkdtemp()
+    seguro = os.path.join(tmpdir, 'short' + os.path.splitext(caminho)[1])
+    shutil.copyfile(caminho, seguro)
+    try:
+        out = _curl(['-X', 'POST', '-F', f'arquivo=@{seguro}', '--form-string', f'folder_id={folder_id}',
+                     '--form-string', f'drive_id={drive_id}', '--form-string', f'nome={nome}',
+                     f'{BASE}/shorts-ia-subir'], timeout=1800)
+    finally:
+        shutil.rmtree(tmpdir, ignore_errors=True)
     return json.loads(out)
 
 
