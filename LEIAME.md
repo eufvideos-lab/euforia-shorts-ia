@@ -35,3 +35,19 @@ Ficha dos modelos no Notion: Central do Flau › Projeto: Edição e Postagem co
 
 ## Tempo medido (07/10/2026, servidor de 2 núcleos)
 - Short de 24 s: ~4 min de render. Num PC com 8 núcleos deve cair para ~1 min.
+
+---
+
+# Máquina de Vídeos Longos (formato Padrão)
+
+Do bruto gravado ao vídeo longo pronto para o YouTube, na identidade do cliente. Fica em `longos/`.
+Passo a passo da rotina: `longos/TAREFA.md`. Regras de edição do Flau: `longos/prompts/plano_longo.md`.
+
+1. `python3 longos/preparar.py pedidos/X <file_id>`: baixa o bruto pela ponte, transcreve e gera `palavras.txt`.
+2. O Claude escreve `pedidos/X/plano.json` (trechos, textos-chave, cartões, mapa, B-rolls, lowers, paleta).
+3. `python3 longos/cortar.py pedidos/X`: cortes nos silêncios, zoom alternado, HDR→SDR, 1080p 30 fps.
+4. `python3 longos/brolls.py pedidos/X`: B-roll do Pixabay e fotos do Google (salvas no Drive pelo n8n).
+5. `python3 longos/montar.py pedidos/X [--previa]`: grafismos na paleta do cliente, trilha baixa com ducking,
+   -14 LUFS, tela final.
+
+Tempo medido (17/10/2026, bruto de 14 min → vídeo de 8,7 min): cortes ~16 min, montagem ~15 min (máquina de 4 núcleos).
