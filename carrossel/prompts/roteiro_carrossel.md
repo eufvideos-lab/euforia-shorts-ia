@@ -23,7 +23,7 @@ Tudo em português do Brasil, na voz do cliente (1ª pessoa quando o cliente é 
 ## Estrutura de cada carrossel
 - 6 a 8 slides (mínimo 5, máximo 10). Slide 1 = `capa`, último = `cta`.
 - Capa: gancho curto (até 12 palavras) com 1 a 3 palavras em `*destaque*`. Subtítulo opcional (até 12 palavras).
-  Use foto do cliente na capa quando houver foto profissional (`"foto": "assets/fotos/x.jpg"`).
+  Padrão: capa com foto do Google que ilustre o tema (`"foto": "assets/fotos/x.jpg"`); sem foto boa, capa só texto.
 - Slides internos: título até 9 palavras; texto até 35 palavras por slide (2 parágrafos curtos no máximo).
   Um slide escuro no meio (`"tema": "escuro"`) dá ritmo.
 - CTA: frase de fechamento do roteiro + botão com a chamada que o roteiro usa (diagnóstico, link na bio,
@@ -60,6 +60,13 @@ Qualquer slide aceita `"tema": "claro" | "escuro" | "destaque"` e `"rotulo"`. Fo
 400 a 900 caracteres: gancho na 1ª linha, 2 a 3 linhas de valor, pedido de salvar ou comentar, menção ao vídeo
 completo no YouTube, 3 a 5 hashtags no fim. Sem emoji em excesso. Nunca cite a Euforia.
 
-## Fotos
-Só fotos profissionais do cliente (pasta de fotos, ensaio, manual da marca). Nunca quadro tirado de vídeo, nunca
-foto de banco de imagem com rosto de outra pessoa, nunca as cores da Euforia. Sem foto boa: carrossel só tipográfico.
+## Fotos (padrão desde 19/10/2026: sem foto do cliente)
+- **Não use foto do cliente.** O carrossel é texto + fotos do Google que ilustram o tema (fica mais fácil aprovar).
+  Exceção: as "Observações para a máquina" pedirem foto do cliente; aí só foto profissional (ensaio, manual),
+  nunca quadro tirado de vídeo.
+- Por carrossel: 1 foto na capa e, se ajudar, mais 1 num slide interno (`"foto_estilo": "lado"`). Nunca mais de 2.
+- O que buscar: a cena ou o objeto do assunto (reunião de equipe, carteira de trabalho, obra, consultório, documento,
+  lugar citado). Busca em português, específica. Evite foto com marca d'água, texto escrito, logo de outra empresa,
+  montagem, desenho ou rosto de pessoa famosa.
+- Olhe cada foto baixada antes de usar (folha com `analisar.py folha`). Foto ruim ou fora do tema: troque ou tire.
+- Nunca as cores da Euforia.

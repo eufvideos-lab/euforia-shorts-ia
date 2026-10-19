@@ -48,6 +48,7 @@ def marcar(t):
     t = re.sub(r'\*\*(.+?)\*\*', r'<b>\1</b>', t)
     t = re.sub(r'==(.+?)==', r'<mark>\1</mark>', t)
     t = re.sub(r'\*(.+?)\*', r'<em>\1</em>', t)
+    t = re.sub(r'\b(\w{1,6}-\w{1,6})\b', r'<span style="white-space:nowrap">\1</span>', t)  # NR-1, CLT-2 não quebram
     return t.replace('\n', '<br>')
 
 
@@ -72,7 +73,7 @@ def foco_rosto(caminho):
             return round(cx, 3), round(cy, 3)
     except Exception:
         pass
-    return 0.5, 0.3
+    return 0.5, 0.42  # sem rosto (foto de lugar, objeto): enquadra pelo meio
 
 
 # ---------- fontes ----------

@@ -1,52 +1,240 @@
 {
-  "carrosseis": [
+ "carrosseis": [
+  {
+   "titulo": "Novo líder: 5 erros",
+   "roteiro": "https://app.notion.com/p/3f098c0cdde0819b9654cb214afee6e0",
+   "formato": "Erros comuns",
+   "rotulo": "Liderança",
+   "slides": [
     {
-      "titulo": "Novo líder: 5 erros",
-      "roteiro": "https://app.notion.com/p/3f098c0cdde0819b9654cb214afee6e0",
-      "formato": "Erros comuns",
-      "rotulo": "Liderança",
-      "slides": [
-        {"tipo": "capa", "titulo": "Você foi promovido. E a equipe *parou de confiar* em você.", "subtitulo": "Quase sempre começa em um destes 5 erros."},
-        {"tipo": "passo", "numero": "1", "titulo": "Continuar fazendo tudo sozinho", "texto": "Você sabe fazer mais rápido, então faz. E a equipe entende que você ==não confia nela==."},
-        {"tipo": "passo", "numero": "2", "titulo": "Delegar errado (o famoso *delargar*)", "texto": "Passar a tarefa e sumir. Sem explicar o que espera, sem prazo, sem acompanhar. Quando dá errado, o erro começou na entrega."},
-        {"tipo": "comparacao", "modo": "par", "titulo": "Os dois extremos de todo novo líder", "errado": {"rotulo": "Erro 3 · Amigo demais", "texto": "Evita cobrar e deixa passar. A equipe gosta de você, mas não te respeita como líder."}, "certo": {"rotulo": "Erro 4 · Chefe demais", "texto": "Cobra no grito e decide sozinho. A equipe obedece, mas para de falar a verdade."}},
-        {"tipo": "passo", "numero": "5", "tema": "escuro", "titulo": "Resolver tudo na hora", "texto": "Parece eficiência. Mas ensina a equipe a ==não pensar==. E você vira o gargalo da empresa."},
-        {"tipo": "lista", "titulo": "O que fazer *amanhã*", "itens": [["Antes de responder, pergunte", "\"E o que você faria?\" Escute a resposta."], ["Delegue com 3 combinados", "O que entregar, até quando e quando vão conversar sobre o andamento."]]},
-        {"tipo": "cta", "titulo": "Ninguém nasce líder. *Liderança se aprende.*", "botao": {"texto": "Faça o diagnóstico rápido", "detalhe": "link na bio"}, "texto": "Qual desses 5 erros você já cometeu? Conta nos comentários. E assista ao vídeo completo no canal."}
-      ],
-      "legenda": "Você foi promovido porque era o melhor no que fazia. E agora a equipe parece não confiar em você.\n\nQuase sempre o motivo está em um destes 5 erros: fazer tudo sozinho, delegar sem combinar nada, virar amigo demais, virar chefe demais e resolver tudo na hora.\n\nSalve para revisar antes da próxima conversa com a sua equipe.\n\nQual desses você já cometeu? Conta aqui nos comentários. O vídeo completo está no nosso canal do YouTube.\n\n#liderança #gestaodepessoas #novolider #rh"
+     "tipo": "capa",
+     "titulo": "Você foi promovido. E a equipe *parou de confiar* em você.",
+     "subtitulo": "Quase sempre começa em um destes 5 erros.",
+     "foto": "assets/fotos/lider.jpg"
     },
     {
-      "titulo": "Plano de cargos e salários: 3 mitos",
-      "roteiro": "https://app.notion.com/p/3f098c0cdde081258087e8f6722deda4",
-      "formato": "Mito x verdade",
-      "rotulo": "Cargos e salários",
-      "slides": [
-        {"tipo": "capa", "foto": "assets/adriana.jpg", "rotulo": "Cargos e salários", "titulo": "Sua empresa é *pequena demais* para ter plano de cargos?", "subtitulo": "Sem critério, quem decide o salário é o humor do dia."},
-        {"tipo": "comparacao", "titulo": "Mito 1", "errado": {"rotulo": "Mito", "texto": "Plano de cargos é coisa de empresa grande."}, "certo": {"rotulo": "Verdade", "texto": "Não tem a ver com tamanho. Tem a ver com ==justiça e clareza==."}},
-        {"tipo": "texto", "titulo": "As 3 perguntas que todo plano responde", "texto": ["Quais são as funções da empresa? Quanto paga cada uma? O que a pessoa precisa fazer para crescer?", "Na empresa pequena essas perguntas existem do mesmo jeito. Só que *ninguém escreveu as respostas*."]},
-        {"tipo": "comparacao", "titulo": "Mito 2", "errado": {"rotulo": "Mito", "texto": "O plano vai engessar a empresa."}, "certo": {"rotulo": "Verdade", "texto": "Ele ==protege a sua decisão==. Sem plano, cada aumento vira negociação no corredor."}},
-        {"tipo": "frase", "titulo": "Mesma função, salário diferente, *sem critério*.", "texto": "Isso desmotiva quem ganha menos e pode virar pedido de equiparação salarial na Justiça do Trabalho."},
-        {"tipo": "lista", "rotulo": "Mito 3: é complicado demais", "titulo": "Um bom começo cabe numa *folha de papel*", "itens": [["Coluna 1", "Cada função da empresa."], ["Coluna 2", "A faixa de salário de cada uma."], ["Coluna 3", "O que a pessoa precisa mostrar para subir de nível."]]},
-        {"tipo": "cta", "foto": "assets/adriana.jpg", "titulo": "Salário sem critério vira conflito. *Com critério, vira motivação.*", "botao": {"texto": "Diagnóstico rápido", "detalhe": "link na bio"}, "texto": "Vídeo completo no canal."}
-      ],
-      "legenda": "\"Aqui são oito funcionários, não precisa disso.\"\n\nSão justamente esses oito que vêm pedir aumento, cada um com um argumento. E sem critério, quem decide é o humor do dia.\n\nNeste carrossel, os 3 mitos que impedem o dono de começar um plano de cargos e salários. Spoiler: o primeiro passo cabe numa folha de papel.\n\nComo é decidido hoje quem ganha aumento na sua empresa? Conta nos comentários.\n\n#cargosesalarios #rh #gestaodepessoas #pequenasempresas"
+     "tipo": "passo",
+     "numero": "1",
+     "titulo": "Continuar fazendo tudo sozinho",
+     "texto": "Você sabe fazer mais rápido, então faz. E a equipe entende que você ==não confia nela==."
     },
     {
-      "titulo": "NR-1 e riscos psicossociais",
-      "roteiro": "https://app.notion.com/p/3f098c0cdde08184b736d7bb513cf762",
-      "formato": "Explicativo",
-      "rotulo": "NR-1",
-      "slides": [
-        {"tipo": "capa", "tema": "escuro", "titulo": "Sua empresa tem carteira assinada? Então a *NR-1* também é com você.", "subtitulo": "E ela agora cobra os riscos psicossociais."},
-        {"tipo": "texto", "titulo": "O que mudou", "texto": ["A NR-1 pede que a empresa faça o ==gerenciamento de riscos== (GRO), registrado num programa, o PGR.", "A atualização colocou nesse gerenciamento o risco que não dá para ver: o que afeta a *saúde mental* de quem trabalha. Desde maio de 2026, isso é fiscalizado."]},
-        {"tipo": "lista", "titulo": "Risco psicossocial *na prática*", "itens": [["Sobrecarga", "Uma pessoa fazendo o trabalho de três."], ["Pressão sem limite", "Meta que muda toda semana, cobrança no grito."], ["Assédio", "Humilhação na frente dos outros, a \"piadinha\"."], ["Falta de clareza", "Ninguém sabe o que fazer nem a quem responde."]]},
-        {"tipo": "frase", "titulo": "Não é doença. É o *ambiente* que leva até ela."},
-        {"tipo": "comparacao", "titulo": "O primeiro passo que quase ninguém dá", "errado": {"rotulo": "O impulso", "texto": "Correr atrás de um documento pronto para guardar na gaveta."}, "certo": {"rotulo": "O que funciona", "texto": "==Ouvir a equipe==, de um jeito seguro, sobre o que pesa no dia a dia."}},
-        {"tipo": "lista", "titulo": "Para fazer *esta semana*", "itens": [["Liste 3 situações de tensão", "Sobrecarga, conflito, cobrança: o que mais pesa hoje."], ["Confira o seu PGR", "Os riscos psicossociais estão nele? Se não, comece por aí."]]},
-        {"tipo": "cta", "titulo": "Adequação à NR-1 não começa no formulário. *Começa na conversa.*", "botao": {"texto": "Faça o diagnóstico rápido", "detalhe": "link na bio"}, "texto": "Qual desses riscos você reconheceu primeiro? Vídeo completo no canal."}
+     "tipo": "passo",
+     "numero": "2",
+     "titulo": "Delegar errado (o famoso *delargar*)",
+     "texto": "Passar a tarefa e sumir. Sem explicar o que espera, sem prazo, sem acompanhar. Quando dá errado, o erro começou na entrega."
+    },
+    {
+     "tipo": "comparacao",
+     "modo": "par",
+     "titulo": "Os dois extremos de todo novo líder",
+     "errado": {
+      "rotulo": "Erro 3 · Amigo demais",
+      "texto": "Evita cobrar e deixa passar. A equipe gosta de você, mas não te respeita como líder."
+     },
+     "certo": {
+      "rotulo": "Erro 4 · Chefe demais",
+      "texto": "Cobra no grito e decide sozinho. A equipe obedece, mas para de falar a verdade."
+     }
+    },
+    {
+     "tipo": "passo",
+     "numero": "5",
+     "tema": "escuro",
+     "titulo": "Resolver tudo na hora",
+     "texto": "Parece eficiência. Mas ensina a equipe a ==não pensar==. E você vira o gargalo da empresa."
+    },
+    {
+     "tipo": "lista",
+     "titulo": "O que fazer *amanhã*",
+     "itens": [
+      [
+       "Antes de responder, pergunte",
+       "\"E o que você faria?\" Escute a resposta."
       ],
-      "legenda": "Empresa pequena também precisa cuidar dos riscos psicossociais. O tamanho muda o jeito de documentar, não a responsabilidade de cuidar.\n\nSobrecarga, pressão sem limite, assédio e falta de clareza: reconhece algum na sua empresa?\n\nSalve este carrossel e mande para quem cuida das pessoas aí.\n\nO vídeo completo está no nosso canal do YouTube.\n\n#nr1 #saudemental #riscospsicossociais #rh #gestaodepessoas"
+      [
+       "Delegue com 3 combinados",
+       "O que entregar, até quando e quando vão conversar sobre o andamento."
+      ]
+     ]
+    },
+    {
+     "tipo": "cta",
+     "titulo": "Ninguém nasce líder. *Liderança se aprende.*",
+     "botao": {
+      "texto": "Faça o diagnóstico rápido",
+      "detalhe": "link na bio"
+     },
+     "texto": "Qual desses 5 erros você já cometeu? Conta nos comentários. E assista ao vídeo completo no canal."
     }
-  ]
+   ],
+   "legenda": "Você foi promovido porque era o melhor no que fazia. E agora a equipe parece não confiar em você.\n\nQuase sempre o motivo está em um destes 5 erros: fazer tudo sozinho, delegar sem combinar nada, virar amigo demais, virar chefe demais e resolver tudo na hora.\n\nSalve para revisar antes da próxima conversa com a sua equipe.\n\nQual desses você já cometeu? Conta aqui nos comentários. O vídeo completo está no nosso canal do YouTube.\n\n#liderança #gestaodepessoas #novolider #rh"
+  },
+  {
+   "titulo": "Plano de cargos e salários: 3 mitos",
+   "roteiro": "https://app.notion.com/p/3f098c0cdde081258087e8f6722deda4",
+   "formato": "Mito x verdade",
+   "rotulo": "Cargos e salários",
+   "slides": [
+    {
+     "tipo": "capa",
+     "rotulo": "Cargos e salários",
+     "titulo": "Sua empresa é *pequena demais* para ter plano de cargos?",
+     "subtitulo": "Sem critério, quem decide o salário é o humor do dia.",
+     "foto": "assets/fotos/cargos1.jpg"
+    },
+    {
+     "tipo": "comparacao",
+     "titulo": "Mito 1",
+     "errado": {
+      "rotulo": "Mito",
+      "texto": "Plano de cargos é coisa de empresa grande."
+     },
+     "certo": {
+      "rotulo": "Verdade",
+      "texto": "Não tem a ver com tamanho. Tem a ver com ==justiça e clareza==."
+     }
+    },
+    {
+     "tipo": "texto",
+     "titulo": "As 3 perguntas que todo plano responde",
+     "texto": [
+      "Quais são as funções da empresa? Quanto paga cada uma? O que a pessoa precisa fazer para crescer?",
+      "Na empresa pequena essas perguntas existem do mesmo jeito. Só que *ninguém escreveu as respostas*."
+     ]
+    },
+    {
+     "tipo": "comparacao",
+     "titulo": "Mito 2",
+     "errado": {
+      "rotulo": "Mito",
+      "texto": "O plano vai engessar a empresa."
+     },
+     "certo": {
+      "rotulo": "Verdade",
+      "texto": "Ele ==protege a sua decisão==. Sem plano, cada aumento vira negociação no corredor."
+     }
+    },
+    {
+     "tipo": "frase",
+     "titulo": "Mesma função, salário diferente, *sem critério*.",
+     "texto": "Isso desmotiva quem ganha menos e pode virar pedido de equiparação salarial na Justiça do Trabalho."
+    },
+    {
+     "tipo": "lista",
+     "rotulo": "Mito 3: é complicado demais",
+     "titulo": "Um bom começo cabe numa *folha de papel*",
+     "itens": [
+      [
+       "Coluna 1",
+       "Cada função da empresa."
+      ],
+      [
+       "Coluna 2",
+       "A faixa de salário de cada uma."
+      ],
+      [
+       "Coluna 3",
+       "O que a pessoa precisa mostrar para subir de nível."
+      ]
+     ]
+    },
+    {
+     "tipo": "cta",
+     "titulo": "Salário sem critério vira conflito. *Com critério, vira motivação.*",
+     "botao": {
+      "texto": "Diagnóstico rápido",
+      "detalhe": "link na bio"
+     },
+     "texto": "Vídeo completo no canal."
+    }
+   ],
+   "legenda": "\"Aqui são oito funcionários, não precisa disso.\"\n\nSão justamente esses oito que vêm pedir aumento, cada um com um argumento. E sem critério, quem decide é o humor do dia.\n\nNeste carrossel, os 3 mitos que impedem o dono de começar um plano de cargos e salários. Spoiler: o primeiro passo cabe numa folha de papel.\n\nComo é decidido hoje quem ganha aumento na sua empresa? Conta nos comentários.\n\n#cargosesalarios #rh #gestaodepessoas #pequenasempresas"
+  },
+  {
+   "titulo": "NR-1 e riscos psicossociais",
+   "roteiro": "https://app.notion.com/p/3f098c0cdde08184b736d7bb513cf762",
+   "formato": "Explicativo",
+   "rotulo": "NR-1",
+   "slides": [
+    {
+     "tipo": "capa",
+     "tema": "escuro",
+     "titulo": "Sua empresa tem carteira assinada? Então a *NR-1* também é com você.",
+     "subtitulo": "E ela agora cobra os riscos psicossociais.",
+     "foto": "assets/fotos/nr1b.jpg"
+    },
+    {
+     "tipo": "texto",
+     "titulo": "O que mudou",
+     "texto": [
+      "A NR-1 pede que a empresa faça o ==gerenciamento de riscos== (GRO), registrado num programa, o PGR.",
+      "A atualização colocou nesse gerenciamento o risco que não dá para ver: o que afeta a *saúde mental* de quem trabalha. Desde maio de 2026, isso é fiscalizado."
+     ]
+    },
+    {
+     "tipo": "lista",
+     "titulo": "Risco psicossocial *na prática*",
+     "itens": [
+      [
+       "Sobrecarga",
+       "Uma pessoa fazendo o trabalho de três."
+      ],
+      [
+       "Pressão sem limite",
+       "Meta que muda toda semana, cobrança no grito."
+      ],
+      [
+       "Assédio",
+       "Humilhação na frente dos outros, a \"piadinha\"."
+      ],
+      [
+       "Falta de clareza",
+       "Ninguém sabe o que fazer nem a quem responde."
+      ]
+     ]
+    },
+    {
+     "tipo": "frase",
+     "titulo": "Não é doença. É o *ambiente* que leva até ela."
+    },
+    {
+     "tipo": "comparacao",
+     "titulo": "O primeiro passo que quase ninguém dá",
+     "errado": {
+      "rotulo": "O impulso",
+      "texto": "Correr atrás de um documento pronto para guardar na gaveta."
+     },
+     "certo": {
+      "rotulo": "O que funciona",
+      "texto": "==Ouvir a equipe==, de um jeito seguro, sobre o que pesa no dia a dia."
+     }
+    },
+    {
+     "tipo": "lista",
+     "titulo": "Para fazer *esta semana*",
+     "itens": [
+      [
+       "Liste 3 situações de tensão",
+       "Sobrecarga, conflito, cobrança: o que mais pesa hoje."
+      ],
+      [
+       "Confira o seu PGR",
+       "Os riscos psicossociais estão nele? Se não, comece por aí."
+      ]
+     ]
+    },
+    {
+     "tipo": "cta",
+     "titulo": "Adequação à NR-1 não começa no formulário. *Começa na conversa.*",
+     "botao": {
+      "texto": "Faça o diagnóstico rápido",
+      "detalhe": "link na bio"
+     },
+     "texto": "Qual desses riscos você reconheceu primeiro? Vídeo completo no canal."
+    }
+   ],
+   "legenda": "Empresa pequena também precisa cuidar dos riscos psicossociais. O tamanho muda o jeito de documentar, não a responsabilidade de cuidar.\n\nSobrecarga, pressão sem limite, assédio e falta de clareza: reconhece algum na sua empresa?\n\nSalve este carrossel e mande para quem cuida das pessoas aí.\n\nO vídeo completo está no nosso canal do YouTube.\n\n#nr1 #saudemental #riscospsicossociais #rh #gestaodepessoas"
+  }
+ ]
 }

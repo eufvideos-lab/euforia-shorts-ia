@@ -13,6 +13,12 @@ carrosséis de Instagram e entrega no Drive. Tudo em português do Brasil.
   (modo view: view://1039e4cd-79ac-47d2-9048-bdffe88baa2d)
 - Regras do conteúdo: `carrossel/prompts/roteiro_carrossel.md` (leia antes de escrever)
 - Pasta da máquina no Drive: 1rF9yJwVPCp4IvTHfb6Gm3YbdLhWdX3eI (drive compartilhado EUFORIA MEDIA 0AGhEQwuC5NyjUk9PVA)
+- Fotos do Google: fluxo n8n "Vídeos Longos IA | Fotos (Google, Pixabay, Wikimedia) → Drive" (yv8mabaGQStcWu2R),
+  rodado pelo conector do n8n em modo manual (webhook, POST) com o corpo
+  `{"buscas":[{"nome":"c1_capa","q":"reunião de equipe escritório","fonte":"google","qtd":3,"min_w":1000}]}`.
+  Descarte foto de banco pago com marca d'água (istockphoto, shutterstock, gettyimages, alamy, depositphotos,
+  123rf, dreamstime) e de lookaside.instagram.com: o nó "Juntar fotos" mostra a `url` de cada uma.
+  Espere terminar (get_execution) e pegue no nó "Salvar no Drive" os IDs das partes de cada foto (`.part01`, `.part02`...).
 - Discord (bot Érica, ferramenta enviar_discord):
   - #carrosel-automático (1561833147799175240): equipe. Carrossel pronto, ou em caso de erro só
     "⚠️ Deu um erro no pedido de carrossel <nome>. A diretoria já está resolvendo." Nunca a causa técnica.
@@ -32,7 +38,7 @@ O Chrome já vem no ambiente (/opt/pw-browsers). Se não achar, use `CHROME=<cam
 1. Status "Em produção"; no "Log da máquina": "iniciado <data hora>".
 2. Pasta de trabalho: `pedidos/<id-curto>/` com `assets/fotos/`.
 3. **Identidade da cliente.**
-   a. Se "Identidade carrossel (IA)" do cliente estiver preenchida (JSON), baixe o logo e as fotos pelos IDs
+   a. Se "Identidade carrossel (IA)" do cliente estiver preenchida (JSON), baixe o logo pelos IDs
       (`ponte.baixar`) para `assets/` e monte `identidade.json` (formato abaixo).
    b. Se estiver vazia, analise: abra a pasta "Fotos e identidade" do pedido ou, sem ela, o Drive do cliente (campo
       "Drive"; procure MATERIAIS VISUAIS, manual da marca, logo, fotos, thumbs e carrosséis já postados).
@@ -43,15 +49,19 @@ O Chrome já vem no ambiente (/opt/pw-browsers). Se não achar, use `CHROME=<cam
       - fontes: as do manual; se a fonte não for do Google Fonts, a mais parecida que for (título e texto);
       - logo: versão para fundo escuro (`logo_escuro`) e para fundo claro (`logo`). Logo de uma cor só que some num
         dos fundos: `python3 carrossel/analisar.py logo <logo.png> <cor> assets/logo-<cor>.png`;
-      - fotos: só profissionais (ensaio, manual). Nunca frame de vídeo nem as cores da Euforia.
+      - fotos do cliente: não precisa (padrão sem foto do cliente). Nunca as cores da Euforia.
       Sem nada no Drive: cores neutras (claro #FAF7F2, escuro #1F2937, destaque #C2410C, Playfair Display +
       Inter), sem logo (sai o nome do cliente no rodapé) e avise no log que falta identidade.
       Grave no cliente o campo "Identidade carrossel (IA)" em JSON curto, com IDs do Drive no lugar dos caminhos:
-      `{"cores":{...},"fontes":{...},"logo":"<id>","logo_escuro":"<id>","logo_cor_no_claro":"#hex","fotos":["<id>",...],"arroba":"@..."}`
+      `{"cores":{...},"fontes":{...},"logo":"<id>","logo_escuro":"<id>","logo_cor_no_claro":"#hex","arroba":"@..."}`
 4. **Conteúdo.** Leia os roteiros (ligados ao pedido ou, sem eles, os mais recentes do cliente que ainda não viraram
    carrossel), as "Observações para a máquina" e a "Direção criativa" do cliente. Escreva
    `pedidos/<id-curto>/carrosseis.json` seguindo `carrossel/prompts/roteiro_carrossel.md`, com a quantidade do
    "Pacote" (1, 3, 6 ou 12).
+   **Fotos do Google** (padrão: nada de foto do cliente). Para cada carrossel, decida 1 ou 2 buscas (capa e, se
+   ajudar, um slide interno), rode o fluxo de fotos com todas as buscas do pedido de uma vez e junte cada foto com
+   `python3 carrossel/juntar_foto.py pedidos/<id-curto>/assets/fotos/<nome>.jpg <id_part01> [<id_part02>...]`.
+   Faça a folha (`analisar.py folha`) e escolha a melhor de cada busca; sem nenhuma boa, slide sem foto.
 5. **Gerar.** `python3 carrossel/gerar.py pedidos/<id-curto>` (~10 s por carrossel).
    Corrija tudo que sair em "ALERTAS" (texto que não coube: encurte) e rode de novo só ele com `--so <n>`.
 6. **Conferir.** Olhe cada `saida/visao-geral-NN.jpg` e pelo menos a capa e o CTA em tamanho real. Refaça o que
@@ -74,7 +84,7 @@ O Chrome já vem no ambiente (/opt/pw-browsers). Se não achar, use `CHROME=<cam
  "cores":{"claro":"#F7F4EC","escuro":"#24393C","destaque":"#F3D191","destaque_no_claro":"#B88A3E",
           "texto_claro":"#1F2B2D","texto_escuro":"#F7F4EC"},
  "fontes":{"titulo":"Playfair Display","texto":"DM Sans","peso_titulo":700},
- "logo":"assets/logo-verde.png","logo_escuro":"assets/logo.png","fotos":["assets/fotos/1.jpg"]}
+ "logo":"assets/logo-verde.png","logo_escuro":"assets/logo.png"}
 ```
 Sem logo: apague `logo`/`logo_escuro` e o nome em `assinatura` vai no rodapé.
 
