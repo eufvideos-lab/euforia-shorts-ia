@@ -1,0 +1,21 @@
+{
+ "nome": "Maître Consultoria",
+ "assinatura": "Maître Consultoria",
+ "arroba": "",
+ "cores": {
+  "claro": "#F7F4EC",
+  "escuro": "#24393C",
+  "destaque": "#F3D191",
+  "destaque_no_claro": "#B88A3E",
+  "texto_claro": "#1F2B2D",
+  "texto_escuro": "#F7F4EC"
+ },
+ "fontes": {
+  "titulo": "Playfair Display",
+  "texto": "DM Sans",
+  "peso_titulo": 700
+ },
+ "logo": "assets/logo-verde.png",
+ "logo_escuro": "assets/logo.png",
+ "fonte_da_identidade": "manual da marca usado na página NR-1 (verde, creme e dourado; Playfair Display + DM Sans)"
+}

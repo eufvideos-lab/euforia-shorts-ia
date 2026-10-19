@@ -51,3 +51,21 @@ Passo a passo da rotina: `longos/TAREFA.md`. Regras de edição do Flau: `longos
    -14 LUFS, tela final.
 
 Tempo medido (17/10/2026, bruto de 14 min → vídeo de 8,7 min): cortes ~16 min, montagem ~15 min (máquina de 4 núcleos).
+
+---
+
+# Máquina de Carrosséis
+
+Dos roteiros do cliente aos carrosséis de Instagram (1080x1350) na identidade visual dele. Fica em `carrossel/`.
+Passo a passo da rotina: `carrossel/TAREFA.md`. Regras do conteúdo: `carrossel/prompts/roteiro_carrossel.md`.
+
+1. Identidade: cores, fontes (Google Fonts, baixadas pelo npm/@fontsource), logo em `pedidos/X/identidade.json`.
+   Fotos: padrão sem foto do cliente; fotos do Google pelo fluxo de fotos do n8n, juntadas com `carrossel/juntar_foto.py`.
+   `carrossel/analisar.py` ajuda a ler a identidade (cores dominantes, folha de referências, logo de uma cor).
+2. O Claude escreve `pedidos/X/carrosseis.json` a partir dos roteiros (pacotes de 1, 3, 6 ou 12).
+3. `python3 carrossel/gerar.py pedidos/X`: monta cada slide em HTML, reduz o texto que não cabe, tira PNG e JPG
+   no Chrome sem tela (playwright-core) e gera a visão geral, a legenda e um zip.
+   Rosto das fotos enquadrado sozinho (OpenCV). `--so N` refaz só o carrossel N.
+
+Instalar: `cd carrossel && npm ci` (Chrome: o do ambiente em /opt/pw-browsers, o do Remotion ou `CHROME=`).
+Tempo medido (19/10/2026): 3 carrosséis de 7 slides em ~30 s.
