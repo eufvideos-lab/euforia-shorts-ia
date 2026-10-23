@@ -13,7 +13,7 @@ Status "Editar" ou "Ajustar" no quadro 🎞️ Pedidos de Vídeos Longos IA. Tud
   `{"buscas":[{"nome":"f_raiam","q":"Raiam Santos","fonte":"google","qtd":3,"min_w":900}]}`.
   Os arquivos saem no nó "Salvar no Drive" (partes `.part01`, `.part02`...). Os IDs vão em `file_ids` do B-roll.
 - Discord (bot Érica, ferramenta enviar_discord):
-  - #shorts-ia (1557832369778729052): equipe. Vídeo pronto, ou em caso de erro só
+  - #longos-automáticos (1563172717060948018): equipe, marcando o Ismael (<@1410287139169763471>). Vídeo pronto, ou em caso de erro só
     "⚠️ Deu um erro na edição do pedido <nome>. A diretoria já está resolvendo." Nunca a causa técnica.
   - #ia-status (1559987978774777998): diretoria. Todo detalhe técnico de erro vai aqui.
 
@@ -51,13 +51,13 @@ python3 -m pip install --break-system-packages -q numpy pillow
     `plano-longo-<id-curto>.json` (é o que permite um "Ajustar" depois).
 11. Atualize o pedido: "Vídeo pronto" (link), "Entregue em" (agora), Status "Pronto para revisão" e um resumo
     curto no log (duração, quantos cortes, B-rolls, dúvidas).
-12. Avise no #shorts-ia, assinando como Érica:
+12. Avise no #longos-automáticos, marcando o Ismael, assinando como Érica:
     "🎞️ Vídeo longo pronto: <Cliente> (<duração>). Para revisão do Ismael: <link>. — Érica, time de suporte, Grupo Euforia"
 
 ## Regras
 - Nunca mande nada para cliente. A entrega é interna (Drive + Notion + Discord).
 - Erro: Status "Erro"; no log só "Erro na edição. A diretoria está resolvendo."; detalhe técnico no #ia-status com o
-  link do pedido; aviso curto no #shorts-ia.
+  link do pedido; aviso curto no #longos-automáticos.
 - Não apague arquivos do Drive. Não crie páginas soltas no Notion. Não faça commit nem push.
 - "Ajustar": baixe o `plano-longo-<id-curto>.json` da pasta da máquina (busque pelo nome no Google Drive e use
   `ponte.baixar`), rode de novo o preparar, aplique só o que as observações pedem e siga do passo 6.
