@@ -7,6 +7,9 @@ Você recebe `palavras.txt` (cada palavra como `índice:palavra[tempo]`, uma fra
 - **Cortes:** tire conversa paralela, comandos de gravação ("vou gravar o gancho", "corta"), repetições, takes ruins
   e respiros longos. Do bruto de 30 a 40 min sai um vídeo de 8 a 10 min (ou o que a fala render, sem encher).
   Abra com o **gancho** (a frase mais forte da história), depois a apresentação. Corte nunca no meio de palavra.
+- **Gancho simples (Flau, 23/10/2026):** o gancho é UM trecho contínuo do bruto (uma ou duas frases seguidas),
+  nunca vários pedaços colados. A máquina deixa a pessoa respirar no gancho (`"gancho": 1` = quantos trechos do
+  início contam como gancho). Depois do gancho, os cortes seguem normais.
 - **Zoom alternado** entre os segmentos: a máquina faz sozinha (`zoom` 1.22, `centro_zoom` [x, y] do rosto, 0 a 1).
 - **Pessoa fora do centro** (gravou mais para o canto, ou as observações pedem para centralizar): ponha `"centralizar": true`.
   O plano aberto também corta em volta do rosto e a pessoa fica no meio. Confira num quadro do segmento 000 que ela
@@ -25,8 +28,13 @@ Você recebe `palavras.txt` (cada palavra como `índice:palavra[tempo]`, uma fra
 - **Lowers** (`lowers`): "inscreva" 2 vezes e "like" 1 vez (de preferência quando a pessoa pede para se inscrever
   ou comentar). Lower de nome (`"tipo": "nome"` + campo `nome`) só se o cliente mandar o nome/cargo.
 - **Trilha** royalty free bem baixa (-31 dB com ducking); a máquina cuida.
-- **Paleta do cliente sempre** (campo "Identidade shorts (IA)" do cliente no Notion). Sem paleta cadastrada:
-  procure no Drive do cliente (tela final, carrosséis) e grave no cliente. Paleta padrão = Grupo Euforia.
+- **Paleta do cliente sempre, em TODOS os elementos** (textos-chave, cartões, lowers, inscreva-se, tela final): campo
+  "Identidade shorts (IA)" do cliente no Notion, copiado como está para `paleta`. Chaves: `fundo` (cartões e tela
+  final), `texto`, `destaque` (palavra destacada, barras, contornos), `destaque2` (meio do degradê), `caixa` (fundo dos
+  lowers; padrão = destaque), `brilho` (luz no fundo dos cartões; padrão = destaque) e `degrade` (`nao` = destaque em
+  cor sólida; o degradê branco→destaque2→destaque é do Grupo Euforia). Nunca deixe laranja da Euforia em cliente
+  com outra paleta. Sem paleta cadastrada: procure no Drive do cliente (manual de marca, tela final, carrosséis) e
+  grave no cliente. Paleta padrão = Grupo Euforia.
 - Nada pode se sobrepor: dois elementos de tela cheia (B-roll, cartão, título, mapa) não podem se cruzar,
   nem dois textos de baixo (texto-chave e lower). `montar.py` avisa e para; ajuste a palavra.
 

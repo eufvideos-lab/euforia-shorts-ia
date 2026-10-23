@@ -38,19 +38,25 @@ if plano.get('centralizar') and 'zoom_aberto' not in plano:
 if ABERTO > 1:
     ZOOM = min(max(ZOOM, ABERTO * 1.15), max(ABERTO, 1.8))
     print(f'centralizando: plano aberto {ABERTO:.2f}x, fechado {ZOOM:.2f}x', flush=True)
+# Gancho (os primeiros "gancho" trechos do plano, padrão 1): deixa a pessoa respirar, sem corte seco.
+GANCHO = int(plano.get('gancho', 1))
 trechos = []  # trechos seguidos no bruto viram um só (sem emenda)
-for i0, i1 in plano['trechos']:
+for k, (i0, i1) in enumerate(plano['trechos']):
     if trechos and trechos[-1][1] + 1 == i0:
         trechos[-1][1] = i1
     else:
-        trechos.append([i0, i1])
+        trechos.append([i0, i1, k < GANCHO])
 segs = []
-for i0, i1 in trechos:
+for i0, i1, gancho in trechos:
     s, e = W[i0]['start'], W[i1]['end']
     ant = W[i0 - 1]['end'] if i0 > 0 else 0.0
     prox = W[i1 + 1]['start'] if i1 + 1 < len(W) else info['duracao']
-    s2 = silencio(max(ant, s - 0.25), s - 0.02)
-    e2 = silencio(e + 0.03, min(prox, e + 0.30))
+    if gancho:  # respiro natural: até ~0,35 s antes e ~0,5 s depois, sem invadir a palavra vizinha
+        s2 = max(0.0, s - 0.35, (ant + s) / 2 if i0 > 0 else 0.0)
+        e2 = min(info['duracao'], e + 0.5, (e + prox) / 2)
+    else:
+        s2 = silencio(max(ant, s - 0.25), s - 0.02)
+        e2 = silencio(e + 0.03, min(prox, e + 0.30))
     ws = W[i0:i1 + 1]
     cortes, ult = [s2], s2
     for j in range(len(ws) - 1):
