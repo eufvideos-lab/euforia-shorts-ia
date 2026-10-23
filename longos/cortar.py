@@ -36,7 +36,7 @@ ABERTO = float(plano.get('zoom_aberto', 1.0))
 if plano.get('centralizar') and 'zoom_aberto' not in plano:
     ABERTO = min(1.6, max(1.0, 1 / (2 * max(0.05, min(CX, 1 - CX)))))
 if ABERTO > 1:
-    ZOOM = max(ZOOM, ABERTO * 1.22)
+    ZOOM = min(max(ZOOM, ABERTO * 1.15), max(ABERTO, 1.8))
     print(f'centralizando: plano aberto {ABERTO:.2f}x, fechado {ZOOM:.2f}x', flush=True)
 trechos = []  # trechos seguidos no bruto viram um só (sem emenda)
 for i0, i1 in plano['trechos']:
