@@ -18,7 +18,9 @@ Status "Editar" ou "Ajustar" no quadro 🎞️ Pedidos de Vídeos Longos IA. Tud
   - #ia-status (1559987978774777998): diretoria. Todo detalhe técnico de erro vai aqui.
 
 ## 1. Ver se há trabalho
-Consulte o quadro: Status "Editar" ou "Ajustar". Se não houver, encerre. Atenda 1 pedido por rodada, o mais antigo.
+Consulte o quadro com notion-query-data-sources em modo view, SEM filtro (view://1f712af7-3e70-44b6-9dbc-d3a5f34134d3),
+e escolha você as linhas com Status "Editar" ou "Ajustar". Atenção: Status é um campo de seleção (select), não do tipo
+"status"; um filtro "status_is" volta vazio. Se não houver pedido, encerre. Atenda 1 pedido por rodada, o mais antigo.
 
 ## 2. Preparar a máquina
 ```
