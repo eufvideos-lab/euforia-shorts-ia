@@ -8,6 +8,10 @@ Você recebe `palavras.txt` (cada palavra como `índice:palavra[tempo]`, uma fra
   e respiros longos. Do bruto de 30 a 40 min sai um vídeo de 8 a 10 min (ou o que a fala render, sem encher).
   Abra com o **gancho** (a frase mais forte da história), depois a apresentação. Corte nunca no meio de palavra.
 - **Zoom alternado** entre os segmentos: a máquina faz sozinha (`zoom` 1.22, `centro_zoom` [x, y] do rosto, 0 a 1).
+- **Pessoa fora do centro** (gravou mais para o canto, ou as observações pedem para centralizar): ponha `"centralizar": true`.
+  O plano aberto também corta em volta do rosto e a pessoa fica no meio. Confira num quadro do segmento 000 que ela
+  ficou centralizada e sem cortar a cabeça; se precisar, ajuste com `"zoom_aberto"` (1.0 a 1.6). Em bruto 1080p,
+  zoom acima de ~1.4 perde nitidez: prefira centralizar só até onde a imagem continua boa (bruto 4K aguenta tudo).
 - **Textos-chave** (`keywords`): só termos importantes, 8 a 14 num vídeo de 8 min. GRANDES, CAPS, brancos com sombra,
   sem tarja; `*palavra*` sai no degradê do cliente. Máximo ~30 letras; use `|` para quebrar em duas linhas.
 - **Cartões de tópico** (`cartoes`): frases de impacto em tela cheia na cor do cliente, ~5 s, 4 a 6 por vídeo.

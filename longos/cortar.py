@@ -31,6 +31,13 @@ def silencio(a, b):
 
 ZOOM = float(plano.get('zoom', 1.22))
 CX, CY = plano.get('centro_zoom', [0.5, 0.4])
+# Pessoa gravada fora do centro: "centralizar": true faz o plano aberto também cortar em volta dela.
+ABERTO = float(plano.get('zoom_aberto', 1.0))
+if plano.get('centralizar') and 'zoom_aberto' not in plano:
+    ABERTO = min(1.6, max(1.0, 1 / (2 * max(0.05, min(CX, 1 - CX)))))
+if ABERTO > 1:
+    ZOOM = min(max(ZOOM, ABERTO * 1.15), max(ABERTO, 1.8))
+    print(f'centralizando: plano aberto {ABERTO:.2f}x, fechado {ZOOM:.2f}x', flush=True)
 trechos = []  # trechos seguidos no bruto viram um só (sem emenda)
 for i0, i1 in plano['trechos']:
     if trechos and trechos[-1][1] + 1 == i0:
@@ -54,7 +61,7 @@ for i0, i1 in trechos:
     for n, (a, b) in enumerate(zip(cortes[:-1], cortes[1:])):
         segs.append({'s': round(a, 3), 'e': round(b, 3), 'join': n > 0})
 for n, x in enumerate(segs):
-    x['zoom'] = ZOOM if n % 2 else 1.0
+    x['zoom'] = ZOOM if n % 2 else ABERTO
 
 TM = ("zscale=t=linear:npl=100,format=gbrpf32le,zscale=p=bt709,tonemap=hable:desat=0,"
       "zscale=t=bt709:m=bt709:r=tv,format=yuv420p,") if info['hdr'] else ''
