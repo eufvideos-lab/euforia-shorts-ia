@@ -7,18 +7,25 @@ FPS=30; W,H=1920,1080
 F=os.path.join(os.path.dirname(os.path.abspath(__file__)),'fontes')+'/'
 def font(w,s): return ImageFont.truetype(F+{'b':'InterDisplay-Bold.otf','eb':'InterDisplay-ExtraBold.otf','blk':'InterDisplay-Black.otf','sb':'InterDisplay-SemiBold.otf'}[w],s)
 # paleta do cliente (padrão = Grupo Euforia: preto, branco, laranja e degradê branco→pêssego→laranja)
-P={'bg':(5,5,5),'acc':(255,101,24),'acc2':(254,176,137),'txt':(255,255,255)}
+# caixa = fundo dos lowers; brilho = luz do fundo dos cartões e da tela final; degrade = destaque em degradê (Euforia)
+# ou em cor sólida (cliente sem degradê na marca).
+P={'bg':(5,5,5),'acc':(255,101,24),'acc2':(254,176,137),'txt':(255,255,255),'caixa':None,'brilho':None,'degrade':True}
 def hexrgb(h): h=h.lstrip('#'); return tuple(int(h[i:i+2],16) for i in (0,2,4))
 def configurar(out,paleta=None):
-    """paleta: {'fundo':'#050505','destaque':'#FF6518','destaque2':'#FEB089','texto':'#FFFFFF'}"""
+    """paleta: {'fundo':'#050505','destaque':'#FF6518','destaque2':'#FEB089','texto':'#FFFFFF',
+    'caixa':'#FF6518','brilho':'#FF6518','degrade':True}"""
     global OUT
     OUT=out; os.makedirs(OUT,exist_ok=True)
-    for k,c in (('fundo','bg'),('destaque','acc'),('destaque2','acc2'),('texto','txt')):
-        if paleta and paleta.get(k): P[c]=hexrgb(paleta[k])
+    paleta=paleta or {}
+    for k,c in (('fundo','bg'),('destaque','acc'),('destaque2','acc2'),('texto','txt'),('caixa','caixa'),('brilho','brilho')):
+        if paleta.get(k): P[c]=hexrgb(paleta[k])
+    if 'degrade' in paleta: P['degrade']=paleta['degrade'] not in (False,'nao','não','0',0)
+    P['caixa']=P['caixa'] or P['acc']; P['brilho']=P['brilho'] or P['acc']
 def ease_out(x): x=min(max(x,0),1); return 1-(1-x)**3
 def ease_back(x): x=min(max(x,0),1); c1=1.7; c3=c1+1; return 1+c3*(x-1)**3+c1*(x-1)**2
 def ease_in(x): x=min(max(x,0),1); return x**3
 def grad(w,h,warm=False):
+    if not P['degrade']: return Image.new('RGB',(max(w,1),h),P['acc'])
     x=np.linspace(0.5 if warm else 0,1,max(w,1))[None,:,None]
     a=np.array(P['txt'])[None,None,:]; b=np.array(P['acc2'])[None,None,:]; c=np.array(P['acc'])[None,None,:]
     g=np.where(x<0.5,a+(b-a)*(x/0.5),b+(c-b)*((x-0.5)/0.5)); return Image.fromarray(np.repeat(g,h,0).astype(np.uint8))
@@ -27,7 +34,7 @@ rng=np.random.default_rng(1); GRAIN=[(rng.standard_normal((H//2,W//2))*5).astype
 def bg(t):
     cx=W*(0.5+0.18*math.sin(t*0.5)); cy=H*(0.55+0.1*math.cos(t*0.4))
     d=np.sqrt((xx-cx)**2+(yy-cy)**2)/(W*0.85); glow=np.clip(1-d,0,1)**2.2*0.38
-    base=np.zeros((H,W,3),np.float32)+np.array(P['bg'],np.float32)+glow[...,None]*np.array(P['acc'],np.float32)
+    base=np.zeros((H,W,3),np.float32)+np.array(P['bg'],np.float32)+glow[...,None]*np.array(P['brilho'],np.float32)
     g=np.repeat(np.repeat(GRAIN[int(t*FPS)%4],2,0),2,1)[...,None]
     return np.clip(base+g,0,255).astype(np.uint8)
 class Writer:
@@ -104,7 +111,7 @@ def card(name,lines,dur,sub=None,big=False):
         wr.put(fr)
     wr.close()
 def route(name,cities,times,dur,title):
-    # imagem única com todas as cidades; um anel laranja vai circulando a cidade falada
+    # imagem única com todas as cidades; um anel na cor de destaque vai circulando a cidade falada
     f=font('blk',64); ft=font('blk',58); n=int(round(dur*FPS)); wr=Writer(f'{OUT}/{name}.mp4',W,H,False)
     xs=[250+i*(1420/(len(cities)-1)) for i in range(len(cities))]; ys=[660 if i%2==0 else 540 for i in range(len(cities))]
     pts=list(zip(xs,ys))
@@ -117,7 +124,7 @@ def route(name,cities,times,dur,title):
         t=k/FPS; fr=Image.fromarray(bg(t)).convert('RGBA'); a=ease_out(t/0.3)
         lay=base.copy(); dd=ImageDraw.Draw(lay)
         cur=max([i for i,tc in enumerate(times) if tc<=t+0.001] or [-1])
-        # trilha laranja até a cidade atual
+        # trilha na cor de destaque até a cidade atual
         for i in range(max(cur,0)):
             (x1,y1),(x2,y2)=pts[i],pts[i+1]; pr=1.0 if i<cur-1 else ease_out((t-times[cur])/0.35)
             dd.line((x1,y1,x1+(x2-x1)*pr,y1+(y2-y1)*pr),fill=P['acc'],width=7)
@@ -148,17 +155,17 @@ def endscreen(name,dur):
         lay.putalpha(lay.getchannel('A').point(lambda v:int(v*a))); fr.alpha_composite(lay); wr.put(fr)
     wr.close()
 def lower(name,text,dur,icon=None):
-    # lower minimalista centralizado: retângulo em degradê da marca abre do centro, texto branco sobe; sai ao contrário
+    # lower minimalista centralizado: retângulo na cor (ou degradê) da marca abre do centro, texto branco sobe; sai ao contrário
     f=font('blk',40); n=int(round(dur*FPS)); BW,BH=W,240
     tw=int(f.getlength(text)); pad=34; ic=56 if icon else 0
     bw=tw+2*pad+ic; bh=74; x0=(W-bw)//2; y0=BH-60-bh
     g=np.linspace(0,1,bw)[None,:,None]
-    a=np.array(P['acc'],np.float32); b2=np.array(P['acc2'],np.float32)*0.55+a*0.45
+    a=np.array(P['caixa'],np.float32); b2=np.array(P['acc2'],np.float32)*0.55+a*0.45 if P['degrade'] else a
     box=Image.fromarray(np.repeat(a+(b2-a)*g,bh,0).astype(np.uint8)).convert('RGBA')
     m=Image.new('L',(bw,bh),0); ImageDraw.Draw(m).rounded_rectangle((0,0,bw-1,bh-1),radius=16,fill=255); box.putalpha(m)
     txt=Image.new('RGBA',(bw,bh),(0,0,0,0)); d=ImageDraw.Draw(txt)
     if icon=='play':
-        cx,cy=pad+16,bh/2; d.rounded_rectangle((cx-18,cy-13,cx+18,cy+13),radius=6,fill=P['txt']); d.polygon([(cx-5,cy-7),(cx-5,cy+7),(cx+8,cy)],fill=P['acc'])
+        cx,cy=pad+16,bh/2; d.rounded_rectangle((cx-18,cy-13,cx+18,cy+13),radius=6,fill=P['txt']); d.polygon([(cx-5,cy-7),(cx-5,cy+7),(cx+8,cy)],fill=P['caixa'])
     if icon=='heart':
         cx,cy=pad+16,bh/2+1; d.ellipse((cx-15,cy-12,cx+1,cy+3),fill=P['txt']); d.ellipse((cx-1,cy-12,cx+15,cy+3),fill=P['txt']); d.polygon([(cx-15,cy-3),(cx+15,cy-3),(cx,cy+14)],fill=P['txt'])
     d.text((pad+ic,bh/2),text,font=f,fill=P['txt'],anchor='lm')
