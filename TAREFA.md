@@ -48,8 +48,8 @@ bash instalar.sh   # instala Remotion e OpenCV (~15 s)
    B-roll só real (ver a seção Nova Acrópole de `prompts/escolher_trechos.md`). Para as fotos, rode pelo n8n o fluxo
    "Vídeos Longos IA | Fotos (Google, Pixabay, Wikimedia) → Drive" (yv8mabaGQStcWu2R, modo manual, corpo
    `{"buscas": [{"nome": "na_x", "q": "...", "fonte": "commons"|"google", "qtd": 3, "min_w": 1200}]}`).
-   Estátuas, obras e natureza: `commons` (Wikimedia, foto real com autor). Capa de livro: `google` com o título
-   em português. As partes caem na pasta "_teste videos longos" (1mc8OF2KOiki3h2cV_fdffaZo8OSdAm5c): pegue os ids
+   Estátuas, obras, natureza e foto dos autores citados: `commons` (Wikimedia). Capa de livro: `google` com o título
+   em português (autor sem foto no Wikimedia: `google` com o nome, e só use se a página for oficial ou confiável). As partes caem na pasta "_teste videos longos" (1mc8OF2KOiki3h2cV_fdffaZo8OSdAm5c): pegue os ids
    com o Google Drive e ponha em `"file_ids"`. Confira cada foto em `brolls_banco.png` (desenho, ilustração,
    produto de loja ou paisagem que não pareça Brasil sai do plano).
    Vídeo antigo com legenda/site gravados embaixo: em vez de marcar Erro, use `--cortar-baixo 0.22`.

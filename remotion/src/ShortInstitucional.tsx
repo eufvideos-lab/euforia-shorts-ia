@@ -52,6 +52,17 @@ const CartaoTexto: React.FC<{ c: Cartao; p: ShortProps }> = ({ c, p }) => {
         padding: '0 110px',
       }}
     >
+      {c.foto && (
+        <Img
+          src={staticFile(c.foto)}
+          style={{
+            width: 300, height: 300, borderRadius: '50%', objectFit: 'cover', marginBottom: 10,
+            border: `6px solid ${e.corDestaque}`, boxShadow: '0 10px 30px rgba(0,0,0,0.18)',
+            opacity: interpolate(frame, [4, 14], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' }),
+            transform: `scale(${interpolate(frame, [4, 16], [0.92, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' })})`,
+          }}
+        />
+      )}
       {c.autor && (
         <div style={{ fontFamily: 'Georgia, serif', fontSize: 220, lineHeight: 1, color: e.corDestaque, marginBottom: -40, opacity: interpolate(frame, [4, 14], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' }) }}>
           “

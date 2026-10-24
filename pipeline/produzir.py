@@ -83,6 +83,32 @@ def foto_vertical(br, out):
     bg.save(out, quality=92)
 
 
+def foto_autor(ref, out):
+    """Foto do autor da citação: recorte quadrado em volta do rosto (OpenCV), 600x600."""
+    import cv2
+    from PIL import Image
+    if ref.get('arquivo'):
+        im = Image.open(os.path.join(pasta, ref['arquivo'])).convert('RGB')
+    else:
+        tmp = out + '.baixada'
+        with open(tmp, 'wb') as f:
+            for fid in ref['file_ids']:
+                ponte.baixar(fid, tmp + '.p'); f.write(open(tmp + '.p', 'rb').read()); os.remove(tmp + '.p')
+        im = Image.open(tmp).convert('RGB'); os.remove(tmp)
+    import numpy as np
+    cinza = cv2.cvtColor(np.array(im), cv2.COLOR_RGB2GRAY)
+    casc = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+    rostos = casc.detectMultiScale(cinza, 1.1, 5, minSize=(max(40, im.width // 20),) * 2)
+    if len(rostos):
+        x, y, w, h = max(rostos, key=lambda r: r[2] * r[3])
+        cx, cy, lado = x + w / 2, y + h / 2 + h * 0.1, w * 2.4
+    else:
+        cx, cy, lado = im.width / 2, im.height * 0.4, min(im.width, im.height)
+    lado = min(lado, im.width, im.height)
+    x0 = min(max(0, cx - lado / 2), im.width - lado); y0 = min(max(0, cy - lado / 2), im.height - lado)
+    im.crop((round(x0), round(y0), round(x0 + lado), round(y0 + lado))).resize((600, 600), Image.LANCZOS).save(out, quality=92)
+
+
 # 1) trilha vertical com o rosto no centro
 vertical = os.path.join(pub, 'vertical.mp4')
 if not os.path.exists(vertical):
@@ -178,6 +204,19 @@ if a.so_brolls:
     passo('parei antes do render (--so-brolls). Confira brolls_banco.png, tire do plano o que não combina e rode de novo sem --so-brolls.')
     sys.exit(0)
 
+# 2b) fotos dos autores das citações (cartão com "foto"): plano_montagem.json leva o arquivo pronto
+for n_sh, sh in enumerate(plano['shorts']):
+    for k, ct in enumerate(sh.get('cartoes', [])):
+        if isinstance(ct.get('foto'), dict):
+            out = os.path.join(pub, f'autor_{n_sh}_{k}.jpg')
+            try:
+                foto_autor(ct['foto'], out)
+                ct['foto'] = f'{pid}/autor_{n_sh}_{k}.jpg'
+                passo(f'foto do autor: {ct.get("autor")}')
+            except Exception as e:
+                passo(f'  foto do autor {ct.get("autor")} falhou: {e}'); ct['foto'] = None
+json.dump(plano, open(os.path.join(pasta, 'plano_montagem.json'), 'w'), ensure_ascii=False)
+
 # 3) música, se o vídeo de origem não tiver trilha
 musica = None
 if a.musica == 'auto' and not info.get('tem_trilha'):
@@ -209,7 +248,7 @@ for n, sh in enumerate(plano['shorts']):
         continue
     props = os.path.join(pasta, f'props_{n}.json')
     cmd = [sys.executable, os.path.join(AQUI, 'montar_short.py'), os.path.join(pasta, 'transcricao.json'),
-           os.path.join(pasta, 'plano.json'), str(n), props, '--modelo', a.modelo, '--video', f'{pid}/{os.path.basename(vertical)}',
+           os.path.join(pasta, 'plano_montagem.json'), str(n), props, '--modelo', a.modelo, '--video', f'{pid}/{os.path.basename(vertical)}',
            '--video-arquivo', fonte, '--brolls', os.path.join(pasta, 'brolls_map.json'), '--cor', cor]
     if a.modelo != 'viral':
         cmd += ['--cor-fundo', a.cor_fundo, '--cor-texto', a.cor_texto]

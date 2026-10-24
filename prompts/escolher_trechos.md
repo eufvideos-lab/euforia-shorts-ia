@@ -47,6 +47,10 @@ Devolva em `correcoes`: `{ "i": índice, "de": "...", "para": "..." }`. Não mud
 - **Citações na tela com o nome do autor**: quando a fala cita alguém (filósofo, livro, sábio), vira cartão com
   `"autor": "Nome"` (aspas grandes e o nome embaixo). Só atribua quando a fala disser quem é ou for uma citação
   conhecida e certa; na dúvida, cartão sem autor.
+- **Foto do autor na citação** (a cliente gosta, pedido do Flau em 24/10): sempre que der, o cartão de citação leva
+  `"foto": {"file_ids": [...]}` (ou `{"arquivo": "..."}`) com uma foto real da pessoa citada (Wikimedia ou site oficial).
+  A máquina recorta no rosto e põe redonda acima das aspas. Pessoa errada é pior que nenhuma: na dúvida, sem foto.
+- Livro em que a fala se baseia (ela diz "ele fala", "o autor diz"): capa real do livro no começo, com o crédito.
 - **Legenda amarela** (a máquina aplica sozinha).
 - B-rolls de foto: `"busca": "foto:<nome>"`, com `"file_ids"` (partes salvas no Drive pelo fluxo de fotos do n8n)
   ou `"arquivo"` (caminho local), `"legenda"` com o crédito curto ("Marco Aurélio · Museus Capitolinos, Roma";
@@ -75,7 +79,7 @@ Devolva em `correcoes`: `{ "i": índice, "de": "...", "para": "..." }`. Não mud
       "remover": [[20, 31]],
       "destaques": [12, 40],
       "cartoes": [
-        { "inicio_i": 30, "fim_i": 36, "texto": "Aprendemos muito com os nossos inimigos.", "circular": null, "autor": "Dalai Lama" }
+        { "inicio_i": 30, "fim_i": 36, "texto": "Aprendemos muito com os nossos inimigos.", "circular": null, "autor": "Dalai Lama", "foto": { "file_ids": ["..."] } }
       ],
       "brolls": [
         { "i": 15, "duracao": 2.5, "modo": "dividido", "busca": "wheat harvest field", "descricao": "colheita, campo de trigo" }

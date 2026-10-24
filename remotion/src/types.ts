@@ -9,6 +9,7 @@ export type Cartao = {
   circular?: string | null;
   referencia?: string | null;
   autor?: string | null; // citação: nome do autor embaixo, com aspas grandes (modelo Nova Acrópole)
+  foto?: string | null; // citação: foto do autor (redonda, acima das aspas), arquivo em public/
 };
 // src .jpg/.png = foto real (entra com movimento lento); legenda = crédito discreto (obra, autor, museu)
 export type Broll = { start: number; end: number; src: string; mode: 'dividido' | 'cheio'; legenda?: string | null };

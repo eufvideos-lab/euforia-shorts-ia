@@ -276,7 +276,8 @@ def main():
         if falados[-1] == ordem[-1]:
             en = duracao   # cartão que fecha o short fica até o fim
         cartoes.append({'start': round(st, 3), 'end': round(en, 3), 'palavras': pal_c,
-                        'circular': ct.get('circular'), 'referencia': ct.get('referencia'), 'autor': ct.get('autor')})
+                        'circular': ct.get('circular'), 'referencia': ct.get('referencia'), 'autor': ct.get('autor'),
+                        'foto': ct.get('foto') if isinstance(ct.get('foto'), str) else None})
 
     estilo = {'corDestaque': a.cor, 'fonte': 'Montserrat' if a.modelo == 'viral' else 'Poppins'}
     if a.modelo != 'viral':
