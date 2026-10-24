@@ -52,10 +52,16 @@ const CartaoTexto: React.FC<{ c: Cartao; p: ShortProps }> = ({ c, p }) => {
         padding: '0 110px',
       }}
     >
+      {c.autor && (
+        <div style={{ fontFamily: 'Georgia, serif', fontSize: 220, lineHeight: 1, color: e.corDestaque, marginBottom: -40, opacity: interpolate(frame, [4, 14], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' }) }}>
+          “
+        </div>
+      )}
       <div
         style={{
           fontFamily: e.fonte,
-          fontWeight: 600,
+          fontWeight: c.autor ? 500 : 600,
+          fontStyle: c.autor ? 'italic' : 'normal',
           fontSize: c.palavras.length > 18 ? 46 : c.palavras.length > 8 ? 58 : 84,
           lineHeight: 1.22,
           color: e.corTextoCartao ?? '#102838',
@@ -95,6 +101,11 @@ const CartaoTexto: React.FC<{ c: Cartao; p: ShortProps }> = ({ c, p }) => {
         {c.referencia && (
           <div style={{ fontSize: 30, fontWeight: 500, marginTop: 40, opacity: t >= c.palavras[c.palavras.length - 1].start ? 1 : 0 }}>
             {c.referencia}
+          </div>
+        )}
+        {c.autor && (
+          <div style={{ fontStyle: 'normal', fontSize: 34, fontWeight: 700, letterSpacing: 2, textTransform: 'uppercase', marginTop: 48, color: e.corDestaque, opacity: t >= c.palavras[c.palavras.length - 1].start ? 1 : 0 }}>
+            — {c.autor}
           </div>
         )}
       </div>
@@ -149,7 +160,7 @@ export const ShortInstitucional: React.FC<ShortProps> = (p) => {
         const durF = Math.max(1, Math.round((b.end - b.start) * fps));
         return (
           <Sequence key={`b${i}`} from={Math.round(b.start * fps)} durationInFrames={durF}>
-            <BrollCheio src={b.src} durF={durF} />
+            <BrollCheio src={b.src} durF={durF} legenda={b.legenda} fonte={e.fonte} />
           </Sequence>
         );
       })}
@@ -172,8 +183,11 @@ export const ShortInstitucional: React.FC<ShortProps> = (p) => {
             fontWeight: 700,
             fontSize: 58,
             lineHeight: 1.18,
-            color: '#FFFFFF',
-            textShadow: '0 2px 10px rgba(0,0,0,0.45)',
+            color: e.corLegenda ?? '#FFFFFF',
+            textShadow: e.corLegenda ? '0 2px 4px rgba(0,0,0,0.85), 0 0 14px rgba(0,0,0,0.55)' : '0 2px 10px rgba(0,0,0,0.45)',
+            // legenda colorida (amarela) ganha contorno escuro para ler sobre foto clara ou amarela
+            WebkitTextStroke: e.corLegenda ? '7px rgba(0,0,0,0.9)' : undefined,
+            paintOrder: e.corLegenda ? 'stroke fill' : undefined,
             textWrap: 'balance',
           }}
         >
@@ -188,16 +202,26 @@ export const ShortInstitucional: React.FC<ShortProps> = (p) => {
   );
 };
 
-const BrollCheio: React.FC<{ src: string; durF: number }> = ({ src, durF }) => {
+const BrollCheio: React.FC<{ src: string; durF: number; legenda?: string | null; fonte?: string }> = ({ src, durF, legenda, fonte }) => {
   const frame = useCurrentFrame();
   const op = interpolate(frame, [0, 6, durF - 6, durF], [0, 1, 1, 0], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
+  const zoom = { width: '100%', height: '100%', objectFit: 'cover' as const, transform: `scale(${interpolate(frame, [0, durF], [1.0, 1.06])})` };
+  const foto = /\.(jpe?g|png|webp)$/i.test(src);
   return (
     <AbsoluteFill style={{ opacity: op }}>
-      <OffthreadVideo
-        src={staticFile(src)}
-        muted
-        style={{ width: '100%', height: '100%', objectFit: 'cover', transform: `scale(${interpolate(frame, [0, durF], [1.0, 1.06])})` }}
-      />
+      {foto ? <Img src={staticFile(src)} style={zoom} /> : <OffthreadVideo src={staticFile(src)} muted style={zoom} />}
+      {legenda && (
+        <div
+          style={{
+            position: 'absolute', left: 90, right: 90, top: 150, textAlign: 'center',
+            fontFamily: fonte, fontWeight: 500, fontSize: 30, letterSpacing: 1, color: 'rgba(255,255,255,0.92)',
+            textShadow: '0 1px 6px rgba(0,0,0,0.8)',
+            opacity: interpolate(frame, [8, 18], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' }),
+          }}
+        >
+          {legenda}
+        </div>
+      )}
     </AbsoluteFill>
   );
 };
