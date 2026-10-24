@@ -43,6 +43,16 @@ bash instalar.sh   # instala Remotion e OpenCV (~15 s)
    "Direção criativa" do cliente.
    - B-roll do próprio vídeo: `"busca": "#k"`. B-roll do banco: `"busca"` em inglês, 2 a 4 palavras, cenas reais
      (nada de desenho). Os B-rolls que já estão dentro do trecho escolhido entram sozinhos.
+5b. **Modelo Nova Acrópole** (Estilo "Nova Acrópole", ou cliente Nova Acrópole): rode com `--modelo nova-acropole`
+   (cores do manual já embutidas: fundo #FFFFFF, texto #1F2937, verde #076358; legenda amarela).
+   B-roll só real (ver a seção Nova Acrópole de `prompts/escolher_trechos.md`). Para as fotos, rode pelo n8n o fluxo
+   "Vídeos Longos IA | Fotos (Google, Pixabay, Wikimedia) → Drive" (yv8mabaGQStcWu2R, modo manual, corpo
+   `{"buscas": [{"nome": "na_x", "q": "...", "fonte": "commons"|"google", "qtd": 3, "min_w": 1200}]}`).
+   Estátuas, obras, natureza e foto dos autores citados: `commons` (Wikimedia). Capa de livro: `google` com o título
+   em português (autor sem foto no Wikimedia: `google` com o nome, e só use se a página for oficial ou confiável). As partes caem na pasta "_teste videos longos" (1mc8OF2KOiki3h2cV_fdffaZo8OSdAm5c): pegue os ids
+   com o Google Drive e ponha em `"file_ids"`. Confira cada foto em `brolls_banco.png` (desenho, ilustração,
+   produto de loja ou paisagem que não pareça Brasil sai do plano).
+   Vídeo antigo com legenda/site gravados embaixo: em vez de marcar Erro, use `--cortar-baixo 0.22`.
 6. Identidade (só Institucional): leia "Identidade shorts (IA)" do cliente. Se estiver vazio, procure no Drive do
    cliente (pasta MATERIAIS VISUAIS, tela final, carrosséis), tire as cores (fundo claro, texto escuro, destaque) e
    grave no campo, no formato `fundo=#...; texto=#...; destaque=#...; fonte=...; logo=...`.
@@ -54,7 +64,7 @@ bash instalar.sh   # instala Remotion e OpenCV (~15 s)
    literalmente o que a pessoa fala naquele trecho sai do plano (troque por #k, cartão ou nada). Só então rode sem
    `--so-brolls`. Isso evita refazer short depois (cada render refeito custa ~5 min).
    Rode:
-   `python3 pipeline/produzir.py pedidos/<id-curto> --modelo <institucional|viral> --cliente "<nome>" --pasta-drive <id da pasta> [--cor ... --cor-fundo ... --cor-texto ...]`
+   `python3 pipeline/produzir.py pedidos/<id-curto> --modelo <institucional|viral|nova-acropole> --cliente "<nome>" --pasta-drive <id da pasta> [--cor ... --cor-fundo ... --cor-texto ...]`
    (demora ~5 min por short). Se algum short sair com "plano rejeitado", corrija o plano e rode de novo só ele.
    IMPORTANTE: nunca encerre a sua vez esperando um comando em segundo plano (a rotina não acorda de novo e o
    pedido fica preso em "Em edição"). Rode em primeiro plano com timeout longo, ou, se for em segundo plano,

@@ -42,6 +42,9 @@ CONFIG = {
         'dur_min': 25, 'dur_max': 65,
     },
 }
+# Nova Acrópole: o Institucional com legenda amarela, B-roll só real (fotos de obras, estátuas, livros) e citações com autor
+CONFIG['nova-acropole'] = dict(CONFIG['institucional'])
+AMARELO_NA = '#FFD21F'
 
 
 def norm(s):
@@ -188,7 +191,7 @@ def main():
             mapa[i] = t_out + (pal[i]['s'] - s0)
         t_out += s1 - s0
     fala_fim = round(t_out, 3)
-    final = a.final if a.final is not None else (0.8 if a.modelo == 'institucional' else 0.4)
+    final = a.final if a.final is not None else (0.4 if a.modelo == 'viral' else 0.8)
     duracao = round(fala_fim + final, 3)
     if not cfg['dur_min'] <= duracao <= cfg['dur_max']:
         print(f'AVISO: duração {duracao}s fora da faixa {cfg["dur_min"]}-{cfg["dur_max"]}s', file=sys.stderr)
@@ -254,7 +257,7 @@ def main():
             continue
         st = mapa[br['i']]
         brolls.append({'start': round(st, 3), 'end': round(min(duracao, st + br['duracao']), 3),
-                       'src': arquivos[br['busca']], 'mode': br['modo']})
+                       'src': arquivos[br['busca']], 'mode': br['modo'], 'legenda': br.get('legenda')})
 
     # 5) Cartões de texto (institucional): o texto aparece acompanhando a fala
     cartoes = []
@@ -273,12 +276,15 @@ def main():
         if falados[-1] == ordem[-1]:
             en = duracao   # cartão que fecha o short fica até o fim
         cartoes.append({'start': round(st, 3), 'end': round(en, 3), 'palavras': pal_c,
-                        'circular': ct.get('circular'), 'referencia': ct.get('referencia')})
+                        'circular': ct.get('circular'), 'referencia': ct.get('referencia'), 'autor': ct.get('autor'),
+                        'foto': ct.get('foto') if isinstance(ct.get('foto'), str) else None})
 
     estilo = {'corDestaque': a.cor, 'fonte': 'Montserrat' if a.modelo == 'viral' else 'Poppins'}
-    if a.modelo == 'institucional':
+    if a.modelo != 'viral':
         estilo['corFundoCartao'] = a.cor_fundo
         estilo['corTextoCartao'] = a.cor_texto
+    if a.modelo == 'nova-acropole':
+        estilo['corLegenda'] = AMARELO_NA
     props = {
         'fps': a.fps, 'duration': duracao, 'video': a.video, 'segments': segments,
         'framing': framing, 'captions': captions, 'brolls': brolls, 'cartoes': cartoes,

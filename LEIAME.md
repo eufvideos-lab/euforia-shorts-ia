@@ -1,6 +1,7 @@
 # Máquina de Shorts — Grupo Euforia
 
-Do vídeo longo ao short pronto, nos 2 modelos oficiais (Viral e Institucional).
+Do vídeo longo ao short pronto, nos 2 modelos oficiais (Viral e Institucional) e no modelo próprio da Nova Acrópole
+(Institucional com legenda amarela, B-roll só real e citações com autor; `--modelo nova-acropole`).
 Ficha dos modelos no Notion: Central do Flau › Projeto: Edição e Postagem com IA › Modelos de Shorts.
 
 ## Como funciona (passo a passo)

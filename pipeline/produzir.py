@@ -3,6 +3,8 @@
 Uso:
   python3 produzir.py PASTA_DO_PEDIDO --modelo institucional|viral --cliente "Ana Mangia" \
       --pasta-drive FOLDER_ID [--cor #D45C78 --cor-fundo #FDFBF7 --cor-texto #186C64] [--logo logo.png] [--musica auto|nao]
+  Modelo nova-acropole: igual ao Institucional, com legenda amarela, citações com autor e B-roll só real
+  (#k do próprio vídeo ou "busca": "foto:<nome>" com file_ids do fluxo de fotos do n8n; banco genérico não entra).
 Lê PASTA/plano.json (feito pelo Claude com prompts/escolher_trechos.md) e os arquivos da etapa 1.
 Escreve PASTA/resultado.json com os links do Drive."""
 import argparse, json, os, re, shutil, subprocess, sys, time
@@ -16,11 +18,12 @@ MUSICA_PADRAO = '1gwHG_OijcK-BbghdCOWYgjzLZFyqduhf'  # corporate-soft-background
 EVITAR = ('cartoon', 'animation', 'animated', 'illustration', 'drawing', '3d', 'render', 'logo', 'text', 'ai generated', 'ai-generated', 'generated')
 
 ap = argparse.ArgumentParser()
-ap.add_argument('pasta'); ap.add_argument('--modelo', required=True, choices=['institucional', 'viral'])
+ap.add_argument('pasta'); ap.add_argument('--modelo', required=True, choices=['institucional', 'viral', 'nova-acropole'])
 ap.add_argument('--cliente', required=True); ap.add_argument('--pasta-drive', required=True)
 ap.add_argument('--cor', default=None); ap.add_argument('--cor-fundo', default='#FDFBF7'); ap.add_argument('--cor-texto', default='#186C64')
 ap.add_argument('--logo', default=None); ap.add_argument('--musica', default='auto')
 ap.add_argument('--so-render', action='store_true', help='não sobe no Drive (teste)')
+ap.add_argument('--cortar-baixo', type=float, default=0, help='vídeo com legenda/marca embutida embaixo: tira esta fração de baixo (ex.: 0.22) com zoom, rosto continua no centro')
 ap.add_argument('--shorts', default=None, help='refazer só estes shorts, ex.: 2 ou 1,3')
 ap.add_argument('--so-brolls', action='store_true', help='só baixa os B-rolls do banco e monta brolls_banco.png para conferir (não renderiza)')
 a = ap.parse_args()
@@ -32,12 +35,79 @@ os.makedirs(pub, exist_ok=True)
 fonte = os.path.join(pasta, 'fonte.mp4')
 info = json.load(open(os.path.join(pasta, 'planos.json')))
 plano = json.load(open(os.path.join(pasta, 'plano.json')))
-cor = a.cor or ('#FAC800' if a.modelo == 'viral' else '#D45C78')
+if a.modelo == 'nova-acropole':  # manual da Nova Acrópole: branco, texto grafite, verde
+    a.cor_fundo = a.cor_fundo if a.cor_fundo != '#FDFBF7' else '#FFFFFF'
+    a.cor_texto = a.cor_texto if a.cor_texto != '#186C64' else '#1F2937'
+cor = a.cor or {'viral': '#FAC800', 'nova-acropole': '#076358'}.get(a.modelo, '#D45C78')
 t0 = time.time()
 log = []
 
 def passo(msg):
     log.append(f'[{time.time() - t0:5.0f}s] {msg}'); print(log[-1], flush=True)
+
+def foto_vertical(br, out):
+    """Foto real (obra, estátua, livro, natureza) em 1080x1920. Foto com 1600 px de altura ou mais cobre a tela;
+    o resto (ou com "moldura": true) entra inteiro, com cantos arredondados, sobre a própria foto desfocada (nada esticado).
+    br['arquivo']: caminho local (relativo à pasta do pedido) ou br['file_ids']: partes no Drive (fluxo de fotos do n8n)."""
+    from PIL import Image, ImageDraw, ImageEnhance, ImageFilter
+    if br.get('arquivo'):
+        src = os.path.join(pasta, br['arquivo'])
+    else:
+        src = out + '.baixada'
+        with open(src, 'wb') as f:
+            for fid in br['file_ids']:
+                ponte.baixar(fid, src + '.p'); f.write(open(src + '.p', 'rb').read()); os.remove(src + '.p')
+    im = Image.open(src).convert('RGB')
+    if not br.get('arquivo'):
+        os.remove(src)
+    W, H = 1080, 1920
+    s = max(W / im.width, H / im.height)
+    if im.height >= 1600 and not br.get('moldura'):
+        # foto grande cobre a tela; foco_x (0 a 1) diz onde está o assunto na horizontal (padrão: centro)
+        g = im.resize((round(im.width * s) + 1, round(im.height * s) + 1), Image.LANCZOS)
+        x0 = min(max(0, round(g.width * br.get('foco_x', 0.5) - W / 2)), g.width - W)
+        g.crop((x0, (g.height - H) // 2, x0 + W, (g.height - H) // 2 + H)).save(out, quality=92)
+        return
+    bg = im.resize((round(im.width * s) + 1, round(im.height * s) + 1))
+    x0 = (bg.width - W) // 2; y0 = (bg.height - H) // 2
+    bg = bg.crop((x0, y0, x0 + W, y0 + H)).filter(ImageFilter.GaussianBlur(45))
+    bg = ImageEnhance.Brightness(bg).enhance(0.4)
+    escala = min(960 / im.width, 1040 / im.height)
+    fg = im.resize((round(im.width * escala), round(im.height * escala)), Image.LANCZOS)
+    x = (W - fg.width) // 2; y = 250 + (1040 - fg.height) // 2  # acima da legenda (y ~1300)
+    sombra = Image.new('L', (W, H), 0)
+    ImageDraw.Draw(sombra).rounded_rectangle((x + 8, y + 20, x + fg.width + 8, y + fg.height + 20), radius=24, fill=190)
+    bg.paste((0, 0, 0), (0, 0), sombra.filter(ImageFilter.GaussianBlur(28)))
+    m = Image.new('L', fg.size, 0); ImageDraw.Draw(m).rounded_rectangle((0, 0, fg.width - 1, fg.height - 1), radius=24, fill=255)
+    bg.paste(fg, (x, y), m)
+    bg.save(out, quality=92)
+
+
+def foto_autor(ref, out):
+    """Foto do autor da citação: recorte quadrado em volta do rosto (OpenCV), 600x600."""
+    import cv2
+    from PIL import Image
+    if ref.get('arquivo'):
+        im = Image.open(os.path.join(pasta, ref['arquivo'])).convert('RGB')
+    else:
+        tmp = out + '.baixada'
+        with open(tmp, 'wb') as f:
+            for fid in ref['file_ids']:
+                ponte.baixar(fid, tmp + '.p'); f.write(open(tmp + '.p', 'rb').read()); os.remove(tmp + '.p')
+        im = Image.open(tmp).convert('RGB'); os.remove(tmp)
+    import numpy as np
+    cinza = cv2.cvtColor(np.array(im), cv2.COLOR_RGB2GRAY)
+    casc = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+    rostos = casc.detectMultiScale(cinza, 1.1, 5, minSize=(max(40, im.width // 20),) * 2)
+    if len(rostos):
+        x, y, w, h = max(rostos, key=lambda r: r[2] * r[3])
+        cx, cy, lado = x + w / 2, y + h / 2 + h * 0.1, w * 2.4
+    else:
+        cx, cy, lado = im.width / 2, im.height * 0.4, min(im.width, im.height)
+    lado = min(lado, im.width, im.height)
+    x0 = min(max(0, cx - lado / 2), im.width - lado); y0 = min(max(0, cy - lado / 2), im.height - lado)
+    im.crop((round(x0), round(y0), round(x0 + lado), round(y0 + lado))).resize((600, 600), Image.LANCZOS).save(out, quality=92)
+
 
 # 1) trilha vertical com o rosto no centro
 vertical = os.path.join(pub, 'vertical.mp4')
@@ -50,6 +120,15 @@ if not os.path.exists(vertical):
     _pal = alinhar_pontuacao(_tr['text'], _tr['words'])
     _fim = max(_pal[min(len(_pal) - 1, sh['fim_i'] + 1)]['e'] for sh in plano['shorts']) + 3
     analise.recortar_vertical(fonte, vertical, info, t1=min(info.get('duracao', _fim), _fim))
+if a.cortar_baixo > 0:
+    cortado = os.path.join(pub, f'vertical_cb{int(a.cortar_baixo * 100)}.mp4')
+    if not os.path.exists(cortado):
+        passo(f'tirando a faixa de baixo ({a.cortar_baixo:.0%}) com legenda/marca embutida')
+        f = a.cortar_baixo
+        subprocess.run(['ffmpeg', '-v', 'error', '-y', '-i', vertical, '-vf',
+                        f'crop=trunc(iw*{1 - f}/2)*2:trunc(ih*{1 - f}/2)*2:(iw-iw*{1 - f})/2:0,scale=1080:1920',
+                        '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '17', '-c:a', 'copy', cortado], check=True)
+    vertical = cortado
 
 # 2) B-rolls: os que já existem no vídeo (#k) e os do banco (Pixabay)
 brolls_fonte = [p for p in info['planos'] if p['tipo'] == 'broll' and p['fim'] - p['ini'] >= 0.8]
@@ -70,6 +149,18 @@ for n_sh, sh in enumerate(plano['shorts']):
             analise.clipe_broll_fonte(fonte, p, p['ini'], p['fim'], out, info)
             mapa[chave] = f'{pid}/fonte_{k}.mp4'
             continue
+        if chave.startswith('foto:'):
+            nome = re.sub(r'[^a-z0-9_-]+', '_', chave[5:].lower())
+            out = os.path.join(pub, f'foto_{nome}.jpg')
+            try:
+                foto_vertical(br, out)
+                mapa[chave] = f'{pid}/foto_{nome}.jpg'
+                passo(f'foto real: {chave}')
+            except Exception as e:
+                passo(f'  foto {chave} falhou: {e}'); mapa.pop(chave, None)
+            continue
+        if a.modelo == 'nova-acropole':
+            passo(f'  "{chave}" ignorado: o modelo Nova Acrópole não usa B-roll de banco genérico'); mapa.pop(chave, None); continue
         passo(f'buscando B-roll: {chave}')
         try:
             hits = ponte.broll_buscar(chave, 10)
@@ -101,7 +192,7 @@ if banco:
     for i, (k, v) in enumerate(banco):
         q = os.path.join(pasta, f'_q{i}.png')
         rot = re.sub(r"[^A-Za-z0-9 ]", ' ', k)[:40]
-        subprocess.run(['ffmpeg', '-v', 'error', '-y', '-ss', '0.8', '-i', os.path.join(pub, os.path.basename(v)), '-frames:v', '1',
+        subprocess.run(['ffmpeg', '-v', 'error', '-y'] + ([] if v.endswith('.jpg') else ['-ss', '0.8']) + ['-i', os.path.join(pub, os.path.basename(v)), '-frames:v', '1',
                         '-vf', f"scale=270:480,drawbox=y=430:h=50:color=black@0.7:t=fill,drawtext=text='{rot}':fontcolor=white:fontsize=16:x=6:y=446", q])
         if os.path.exists(q): quadros.append(q)
     if quadros:
@@ -112,6 +203,19 @@ if banco:
 if a.so_brolls:
     passo('parei antes do render (--so-brolls). Confira brolls_banco.png, tire do plano o que não combina e rode de novo sem --so-brolls.')
     sys.exit(0)
+
+# 2b) fotos dos autores das citações (cartão com "foto"): plano_montagem.json leva o arquivo pronto
+for n_sh, sh in enumerate(plano['shorts']):
+    for k, ct in enumerate(sh.get('cartoes', [])):
+        if isinstance(ct.get('foto'), dict):
+            out = os.path.join(pub, f'autor_{n_sh}_{k}.jpg')
+            try:
+                foto_autor(ct['foto'], out)
+                ct['foto'] = f'{pid}/autor_{n_sh}_{k}.jpg'
+                passo(f'foto do autor: {ct.get("autor")}')
+            except Exception as e:
+                passo(f'  foto do autor {ct.get("autor")} falhou: {e}'); ct['foto'] = None
+json.dump(plano, open(os.path.join(pasta, 'plano_montagem.json'), 'w'), ensure_ascii=False)
 
 # 3) música, se o vídeo de origem não tiver trilha
 musica = None
@@ -130,11 +234,12 @@ if a.logo:
 # 4) cada short: montar, cobrir os B-rolls que já existem no trecho, renderizar, subir
 saida_dir = os.path.join(pasta, 'saida'); os.makedirs(saida_dir, exist_ok=True)
 resultado = {'shorts': [], 'log': log}
-comp = 'ShortInstitucional' if a.modelo == 'institucional' else 'ShortViral'
+comp = 'ShortViral' if a.modelo == 'viral' else 'ShortInstitucional'
 env = dict(os.environ)
 if not env.get('CHROME'):
     import glob
-    c = glob.glob('/opt/pw-browsers/chromium_headless_shell-*/chrome-linux/headless_shell')
+    c = glob.glob('/opt/pw-browsers/chromium_headless_shell-*/chrome-linux/headless_shell') + \
+        glob.glob('/opt/pw-browsers/chromium_headless_shell-*/chrome-headless-shell-linux64/chrome-headless-shell')
     if c:
         env['CHROME'] = c[0]
 so = {int(x) - 1 for x in a.shorts.split(',')} if a.shorts else None
@@ -143,9 +248,9 @@ for n, sh in enumerate(plano['shorts']):
         continue
     props = os.path.join(pasta, f'props_{n}.json')
     cmd = [sys.executable, os.path.join(AQUI, 'montar_short.py'), os.path.join(pasta, 'transcricao.json'),
-           os.path.join(pasta, 'plano.json'), str(n), props, '--modelo', a.modelo, '--video', f'{pid}/vertical.mp4',
+           os.path.join(pasta, 'plano_montagem.json'), str(n), props, '--modelo', a.modelo, '--video', f'{pid}/{os.path.basename(vertical)}',
            '--video-arquivo', fonte, '--brolls', os.path.join(pasta, 'brolls_map.json'), '--cor', cor]
-    if a.modelo == 'institucional':
+    if a.modelo != 'viral':
         cmd += ['--cor-fundo', a.cor_fundo, '--cor-texto', a.cor_texto]
     r = subprocess.run(cmd, capture_output=True, text=True)
     if r.returncode != 0:

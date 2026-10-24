@@ -5,7 +5,7 @@ com o tempo de cada palavra, e devolve um plano de cortes em JSON. Você não v�
 
 ## Entrada
 - `cliente`: nome, nicho e público
-- `modelo`: "viral" ou "institucional"
+- `modelo`: "viral", "institucional" ou "nova-acropole"
 - `quantidade`: quantos shorts (padrão 3)
 - `palavras`: lista `[i, palavra, inicio, fim]`, já com pontuação
 - `nomes_proprios`: grafia correta de nomes, marcas e termos do cliente
@@ -38,6 +38,26 @@ Devolva em `correcoes`: `{ "i": índice, "de": "...", "para": "..." }`. Não mud
 - `brolls`: 2 a 3, sempre `modo: "cheio"`, imagens que ilustram a frase (de preferência do banco do próprio cliente ou do vídeo longo já editado; senão banco gratuito).
 - Música de fundo baixa em todo short (se a fonte não tiver trilha).
 
+**Nova Acrópole** (modelo próprio, definido pelo Flau em 24/10/2026): é o Institucional (mesmas regras de ritmo e cartões) com estas diferenças:
+- **Nada de B-roll genérico nem representação.** Só coisa real e verdadeira: foto de estátua real de filósofo
+  (não desenho, não ator, não ilustração), foto de obra de arte real (pintura, escultura, com nome e onde está),
+  capa real do livro citado, foto real da cultura citada. Banco Pixabay não entra (a máquina ignora).
+- **Natureza pode** (sol, estrelas, floresta, mar, rio, flores, pássaros, animais), desde que pareça Brasil:
+  pôr do sol no Brasil, Mata Atlântica, ipê, cerrado, fauna brasileira. Nada de neve, pinheiro europeu ou bicho exótico.
+- **Citações na tela com o nome do autor**: quando a fala cita alguém (filósofo, livro, sábio), vira cartão com
+  `"autor": "Nome"` (aspas grandes e o nome embaixo). Só atribua quando a fala disser quem é ou for uma citação
+  conhecida e certa; na dúvida, cartão sem autor.
+- **Foto do autor na citação** (a cliente gosta, pedido do Flau em 24/10): sempre que der, o cartão de citação leva
+  `"foto": {"file_ids": [...]}` (ou `{"arquivo": "..."}`) com uma foto real da pessoa citada (Wikimedia ou site oficial).
+  A máquina recorta no rosto e põe redonda acima das aspas. Pessoa errada é pior que nenhuma: na dúvida, sem foto.
+- Livro em que a fala se baseia (ela diz "ele fala", "o autor diz"): capa real do livro no começo, com o crédito.
+- **Legenda amarela** (a máquina aplica sozinha).
+- B-rolls de foto: `"busca": "foto:<nome>"`, com `"file_ids"` (partes salvas no Drive pelo fluxo de fotos do n8n)
+  ou `"arquivo"` (caminho local), `"legenda"` com o crédito curto ("Marco Aurélio · Museus Capitolinos, Roma";
+  `null` para natureza) e, se a foto for horizontal, `"foco_x"` (0 a 1, onde está o assunto).
+  Foto com 1600 px de altura ou mais cobre a tela; menor (ex.: capa de livro) entra inteira com moldura.
+- Evite dois cartões colados (menos de 1 s de rosto entre eles pisca): junte ou tire um.
+
 ## De onde vêm os B-rolls
 - `"busca": "#k"` usa o B-roll número k que a equipe já colocou no vídeo editado (lista em palavras.txt e imagem brolls_fonte.png). Use quando combinar com a fala, mesmo que esteja em outro ponto do vídeo.
 - PRIORIDADE: B-roll do próprio vídeo (#k) sempre vem antes do banco. Banco só quando nenhum #k serve, e no máximo 2 por short. Na dúvida se a imagem do banco vai combinar, NÃO use: cartão de texto ou o rosto da pessoa é melhor que B-roll estranho (ex.: um gato num vídeo sobre carreira, exame médico num vídeo sobre ansiedade).
@@ -58,7 +78,9 @@ Devolva em `correcoes`: `{ "i": índice, "de": "...", "para": "..." }`. Não mud
       "gancho_movido": null,
       "remover": [[20, 31]],
       "destaques": [12, 40],
-      "cartoes": [],
+      "cartoes": [
+        { "inicio_i": 30, "fim_i": 36, "texto": "Aprendemos muito com os nossos inimigos.", "circular": null, "autor": "Dalai Lama", "foto": { "file_ids": ["..."] } }
+      ],
       "brolls": [
         { "i": 15, "duracao": 2.5, "modo": "dividido", "busca": "wheat harvest field", "descricao": "colheita, campo de trigo" }
       ],
