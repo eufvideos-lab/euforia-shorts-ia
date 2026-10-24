@@ -2,8 +2,10 @@
 """Vídeo longo, etapa 4: gera os grafismos na paleta do cliente e monta o vídeo final.
 Uso: python3 longos/montar.py PASTA_DO_PEDIDO [--sem-gfx] [--previa]
 Lê plano.json, segmentos.json (de cortar.py) e broll/ (de brolls.py). Gera final.mp4.
+"modelo": "nova-acropole" (cortes de palestra): legenda amarela o vídeo todo, marca d'água da NA (Instagram + logo)
+e o encerramento da Acrópole Play no fim; sem textos-chave, cartões, lowers nem tela final.
 --sem-gfx reaproveita os grafismos já gerados; --previa renderiza só os primeiros 90 s, rápido, para conferir."""
-import json, os, subprocess, sys
+import json, os, re, subprocess, sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'pipeline'))
 import gfx as G
@@ -16,6 +18,9 @@ O = os.path.join(pasta, 'gfx'); G.configurar(O, plano.get('paleta'))
 B = os.path.join(pasta, 'broll')
 TOTAL = segs[-1]['saida'] + segs[-1]['dur']
 KWD, END = 2.8, 8.0
+NA = plano.get('modelo') == 'nova-acropole'
+MODELOS = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'modelos')
+ENCERRAMENTO_NA = '1aGYR5P_zELGIDjghjC1JGL4be6h2F15S'  # ACROPOLEPLAY.mov: anúncio da Acrópole Play + cartão final da NA
 
 
 def t_saida(idx):
@@ -33,7 +38,7 @@ def dur(f):
 
 
 tit = plano.get('titulo'); mapa = plano.get('mapa')
-if '--sem-gfx' not in sys.argv:
+if '--sem-gfx' not in sys.argv and not NA:
     for k, kw in enumerate(plano.get('keywords', [])):
         G.keyword(f'kw{k}', kw['texto'], KWD)
     if tit:
@@ -82,6 +87,43 @@ for m in avisos:
 if avisos and '--forcar' not in sys.argv:
     raise SystemExit('corrija o plano (mude a palavra ou a duração) e rode de novo, ou use --forcar')
 
+
+
+def legendas_na(arq):
+    """Legenda amarela da NA (como a da equipe): minúsculas, sem pontuação, uma linha curta por vez."""
+    def ts(t):
+        return f'{int(t // 3600)}:{int(t % 3600 // 60):02d}:{t % 60:05.2f}'
+    blocos, atual = [], []
+    for w in W:
+        x = next((x for x in segs if x['s'] - 0.05 <= w['start'] < x['e'] + 0.05), None)
+        if not x:
+            continue
+        a = x['saida'] + max(0.0, w['start'] - x['s']); b = x['saida'] + min(x['dur'], max(0.05, w['end'] - x['s']))
+        txt = re.sub(r'[.,!?;:"“”…]', '', w['word']).lower().strip()
+        if not txt:
+            continue
+        if atual and (len(' '.join(p[2] for p in atual)) + len(txt) > 38 or a - atual[-1][1] > 0.6
+                      or atual[-1][3].endswith(('.', '?', '!'))):
+            blocos.append(atual); atual = []
+        atual.append((a, b, txt, w['word']))
+    if atual:
+        blocos.append(atual)
+    linhas = []
+    for k, bl in enumerate(blocos):
+        fim = bl[-1][1] + 0.15
+        if k + 1 < len(blocos):
+            fim = min(fim, blocos[k + 1][0][0])
+        linhas.append(f"Dialogue: 0,{ts(bl[0][0])},{ts(fim)},NA,,0,0,0,,{' '.join(p[2] for p in bl)}")
+    open(arq, 'w').write('\n'.join([
+        '[Script Info]', 'ScriptType: v4.00+', 'PlayResX: 1920', 'PlayResY: 1080', '', '[V4+ Styles]',
+        'Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, '
+        'Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, '
+        'MarginR, MarginV, Encoding',
+        'Style: NA,Inter Display,46,&H0027D0EA,&H0027D0EA,&H00000000,&H96000000,-1,0,0,0,100,100,0,0,1,2.5,1.5,2,60,60,150,1',
+        '', '[Events]', 'Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text'] + linhas) + '\n')
+    return len(linhas)
+
+
 order = {'broll': 0, 'full': 1, 'kw': 2, 'lw': 3}; EV.sort(key=lambda e: (order[e[0]], e[2]))
 previa = '--previa' in sys.argv
 LIM = 90.0 if previa else TOTAL
@@ -93,7 +135,16 @@ cmd = ['ffmpeg', '-v', 'error', '-y', '-f', 'concat', '-safe', '0', '-i', lista]
 for kind, f, t0, d in EV:
     img = f.endswith('.jpg')
     cmd += (['-loop', '1', '-framerate', '30'] if img else ['-stream_loop', '-1'] if kind == 'broll' else []) + ['-t', f'{d:.3f}', '-i', f]
-cmd += ['-i', f'{O}/fim.mp4']
+if NA:
+    fim_arq = os.path.join(pasta, 'encerramento.mov')
+    if not os.path.exists(fim_arq):
+        import ponte; ponte.baixar(plano.get('encerramento_file_id', ENCERRAMENTO_NA), fim_arq)
+    END = dur(fim_arq)
+    cmd += ['-i', fim_arq, '-loop', '1', '-framerate', '30', '-i', os.path.join(MODELOS, 'nova-acropole', 'marca.png')]
+    ass = os.path.abspath(os.path.join(pasta, 'legendas.ass'))
+    print(f'{legendas_na(ass)} legendas', flush=True)
+else:
+    cmd += ['-i', f'{O}/fim.mp4']
 mus = os.path.join(pasta, 'musica.aac')
 if not os.path.exists(mus) and plano.get('musica_file_id'):
     try:
@@ -118,8 +169,16 @@ for k, (kind, f, t0, d) in enumerate(EV, 1):
     fc.append(f"{last}[g{k}]overlay=x=0:y={y}:enable='between(t,{t0:.3f},{t0 + d:.3f})':eof_action=pass[v{k}]")
     last = f'[v{k}]'
 n = len(EV) + 1
-fc.append(f"[{n}:v]fps=30,format=yuv420p,setsar=1,fade=t=in:st=0:d=0.4[endv]")
-fc.append(f"anullsrc=r=48000:cl=stereo,atrim=0:{END}[enda]")
+if NA:  # marca d'água por cima de tudo (B-roll também), legenda amarela, depois o encerramento da Acrópole Play
+    fc.append(f"{last}[{n + 1}:v]overlay=0:0:shortest=1,subtitles=filename='{ass}':fontsdir='{G.F}'[vna]")
+    last = '[vna]'
+    fc.append(f"[{n}:v]scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2,"
+              f"fps=30,format=yuv420p,setsar=1[endv]")
+    fc.append(f"[{n}:a]aresample=48000,aformat=channel_layouts=stereo[enda]")
+    n += 1  # a trilha (se houver) vem depois da marca
+else:
+    fc.append(f"[{n}:v]fps=30,format=yuv420p,setsar=1,fade=t=in:st=0:d=0.4[endv]")
+    fc.append(f"anullsrc=r=48000:cl=stereo,atrim=0:{END}[enda]")
 fc.append("[0:a]highpass=f=70,acompressor=threshold=-20dB:ratio=3:attack=10:release=150:makeup=2,"
           "aformat=channel_layouts=stereo:sample_rates=48000[aa]")
 fc.append(f"{last}fps=30,format=yuv420p,setsar=1[vm]")

@@ -59,3 +59,43 @@ Você recebe `palavras.txt` (cada palavra como `índice:palavra[tempo]`, uma fra
 ```
 - `trechos`: lista na ordem do vídeo final; cada um é [primeira palavra, última palavra], inclusive.
 - `palavra` de qualquer elemento precisa estar dentro de um trecho mantido.
+
+## Modelo "Nova Acrópole" (cortes de palestra, Flau 24/10/2026)
+Vale quando o pedido tem Modelo "Nova Acrópole" (ou o cliente é a Nova Acrópole). O bruto é uma palestra ou aula
+inteira (em geral da Dra. Lúcia Helena Galvão) e o vídeo final é **um corte**: um tema fechado, do jeito que a equipe
+fazia (ex.: Corte 16, "Como transformar a sua procrastinação no seu maior guia de crescimento", 20/10/2026).
+- Ponha `"modelo": "nova-acropole"` no plano. Sem `paleta`, `titulo`, `keywords`, `cartoes`, `lowers`, `mapa`,
+  `nome` nem `musica_file_id`: o modelo não usa esses elementos nem trilha.
+- **Escolha do trecho:** se as observações dão o tema ou os minutos, siga. Senão, escolha o melhor tema da palestra:
+  um bloco de **3 a 6 min** que se sustenta sozinho (quem chega sem ter visto o resto entende), com começo forte e
+  um fim que fecha a ideia. Comece direto numa frase de impacto do próprio tema (no Corte 16: "A resistência joga
+  para ganhar..."), sem apresentação, sem "como eu dizia", sem "bom dia". Termine numa frase conclusiva, nunca em
+  pergunta para a plateia, aviso de intervalo ou "na próxima aula".
+- **Cortes:** pouquíssimos. Normalmente 1 a 3 trechos seguidos do bruto. Tire só respiros longos, tosse, pergunta
+  da plateia que não se ouve, interrupções e desvios que fogem do tema. Nunca corte no meio de frase. `"gancho": 0`.
+- **Zoom alternado:** a máquina faz (mais leve, 1.15, porque a imagem das palestras é antiga). Ajuste `centro_zoom`
+  no rosto dela num quadro do bruto.
+- **B-roll:** 2 a 4 no corte inteiro, 3 a 4 s cada, só nas imagens que ela conta (história, mito, metáfora, exemplo):
+  Ulisses e o saco de ventos, um guerreiro, uma linha de chegada, uma escada, um átomo. Imagem real e bonita:
+  `"fonte": "foto"` para obra de arte, estátua, mito, pessoa citada (no fluxo de fotos use `"fonte": "commons"` para
+  obra/estátua e `"google"` para pessoa ou capa de livro); `"fonte": "pixabay"` para cena genérica real. Nada de
+  desenho. Nunca cubra o momento em que ela olha para a câmera e fecha a ideia.
+- **Legenda amarela** o vídeo inteiro, marca d'água (Instagram @novaacropolebrasilnorte + logo da NA) e o encerramento
+  da Acrópole Play no fim: a máquina põe sozinha.
+- No log do pedido escreva também uma **sugestão de título** no estilo do canal: CAPS, promessa clara, até ~80
+  caracteres (ex.: "A METÁFORA DA ÁRVORE: COMO SUAS CONVICÇÕES DETERMINAM A FORMA COMO VOCÊ DISCUTE"), e os minutos da
+  palestra que viraram o corte.
+
+Exemplo:
+```json
+{
+  "modelo": "nova-acropole",
+  "trechos": [[1200, 1530], [1534, 1810]],
+  "gancho": 0,
+  "centro_zoom": [0.52, 0.38],
+  "brolls": [
+    {"id": "b1", "fonte": "foto", "busca": "Ulisses saco de ventos Eolo pintura", "palavra": 1660, "dur": 3.5, "file_ids": ["1Ab..."]},
+    {"id": "b2", "fonte": "pixabay", "busca": "marathon finish line", "palavra": 1755, "dur": 3}
+  ]
+}
+```
