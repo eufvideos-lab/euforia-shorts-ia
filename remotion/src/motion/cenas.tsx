@@ -176,6 +176,16 @@ export const Parede: React.FC<P<'parede'>> = ({ c, m }) => {
 
 const QUADRO = { x: 820, y: 110, w: 980, h: 860 };
 
+/* Vídeo posicionado pelo foco (rosto): o ponto `foco` do arquivo fica no centro da caixa, com zoom k */
+const VideoFoco: React.FC<{ c: { video: string; videoInicio: number; inicio: number; videoTamanho: [number, number]; foco: [number, number] }; w: number; h: number; k: number; fps: number }> = ({ c, w, h, k, fps }) => {
+  const [vw, vh] = c.videoTamanho;
+  // zoom mínimo para cobrir a caixa sem sobrar borda
+  const kk = Math.max(k, w / vw, h / vh);
+  const left = Math.min(0, Math.max(w - vw * kk, w / 2 - c.foco[0] * kk));
+  const top = Math.min(0, Math.max(h - vh * kk, h / 2 - c.foco[1] * kk));
+  return <OffthreadVideo src={staticFile(c.video)} startFrom={Math.round((c.inicio - c.videoInicio) * fps)} muted style={{ position: 'absolute', left, top, width: vw * kk, height: vh * kk, maxWidth: 'none' }} />;
+};
+
 /* Apresentadora num quadro com moldura deslocada; frase à esquerda */
 export const Apresentador: React.FC<P<'apresentador'>> = ({ c, m }) => {
   const { frame, fps, t } = useTempo();
@@ -186,7 +196,7 @@ export const Apresentador: React.FC<P<'apresentador'>> = ({ c, m }) => {
       <Fundo m={m} />
       <div style={{ position: 'absolute', left: QUADRO.x + 30, top: QUADRO.y + 30, width: QUADRO.w, height: QUADRO.h, borderRadius: 40, border: `4px solid ${m.secundaria}`, opacity: s2, transform: `translate(${(1 - s2) * -30}px, ${(1 - s2) * -30}px)` }} />
       <div style={{ position: 'absolute', left: QUADRO.x, top: QUADRO.y, width: QUADRO.w, height: QUADRO.h, borderRadius: 40, overflow: 'hidden', clipPath: `inset(${(1 - s) * 100}% 0 0 0 round 40px)`, boxShadow: `0 50px 100px -30px ${m.primaria}99` }}>
-        <OffthreadVideo src={staticFile(c.video)} startFrom={Math.round((c.inicio - c.videoInicio) * fps)} muted style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: '50% 30%', transform: `scale(${1.12 - 0.06 * s + t * 0.01})` }} />
+        <VideoFoco c={c} w={QUADRO.w} h={QUADRO.h} k={1.08 - 0.06 * s + t * 0.012} fps={fps} />
         <div style={{ position: 'absolute', inset: 0, background: `linear-gradient(0deg, ${m.escura}55 0%, transparent 35%)` }} />
       </div>
       <div style={{ position: 'absolute', left: 130, top: 300, width: 640 }}>
@@ -224,7 +234,7 @@ export const Preco: React.FC<P<'preco'>> = ({ c, m }) => {
         <circle cx="50" cy="50" r="48" fill="none" stroke={m.secundaria} strokeWidth="0.9" strokeDasharray="3 4" />
       </svg>
       <div style={{ position: 'absolute', left: x, top: y, width: w, height: h, borderRadius: r, overflow: 'hidden', boxShadow: `0 40px 90px -30px ${m.primaria}aa`, border: `${mv * 10}px solid #fff` }}>
-        <OffthreadVideo src={staticFile(c.video)} startFrom={Math.round((c.inicio - c.videoInicio) * fps)} muted style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: '50% 25%', transform: `scale(${interpolate(mv, [0, 1], [1.06, 1.5])})`, transformOrigin: '50% 25%' }} />
+        <VideoFoco c={c} w={w} h={h} k={interpolate(mv, [0, 1], [1.06, 0.78])} fps={fps} />
       </div>
       <div style={{ position: 'absolute', left: 830, top: 260, width: 1040 }}>
         <div style={{ fontFamily: m.fonteCorpo, fontWeight: 600, fontSize: 52, color: m.texto, opacity: suave(t, 0.15, 0.5), transform: `translateY(${(1 - suave(t, 0.15, 0.5)) * 20}px)`, letterSpacing: 1 }}>{c.rotulo}</div>
@@ -256,7 +266,7 @@ export const Logo: React.FC<P<'logo'>> = ({ c, m }) => {
         <div style={{ padding: '60px 110px', borderRadius: 56, background: '#fff', boxShadow: '0 60px 120px -30px rgba(0,0,0,0.5)', transform: `scale(${0.82 + 0.18 * s + t * 0.015}) rotate(${(1 - s) * -3}deg)`, opacity: Math.min(1, s * 1.6) }}>
           <div style={{ position: 'relative', width: 820, clipPath: `inset(0 ${(1 - rev) * 100}% 0 0)` }}>
             <Img src={staticFile(c.logo)} style={{ width: '100%', display: 'block' }} />
-            <div style={{ position: 'absolute', inset: 0, WebkitMaskImage: url, maskImage: url, WebkitMaskSize: '100% 100%', maskSize: '100% 100%', background: `linear-gradient(105deg, transparent ${brilho - 10}%, rgba(255,255,255,0.9) ${brilho}%, transparent ${brilho + 10}%)` }} />
+            <div style={{ position: 'absolute', inset: 0, WebkitMaskImage: url, maskImage: url, WebkitMaskSize: '100% 100%', maskSize: '100% 100%', background: `linear-gradient(105deg, transparent ${brilho - 10}%, rgba(255,255,255,0.55) ${brilho}%, transparent ${brilho + 10}%)` }} />
           </div>
         </div>
         <div style={{ position: 'relative', transform: `scale(${sb})` }}>

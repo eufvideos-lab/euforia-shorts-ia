@@ -81,6 +81,34 @@ export const Palavras: React.FC<{
       {palavras.map((p, i) => {
         const s = mola(frame, fps, p.em, { damping: 16 });
         const sub = suave(frame / fps, p.em + 0.2, p.em + 0.65);
+        if (p.imagem) {
+          const tl = frame / fps - p.em;
+          const rev = suave(frame / fps, p.em, p.em + 0.45);
+          const brilho = Math.max(0, 1 - Math.max(0, tl) / 1.2);
+          const el = (
+            <span key={i} style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', height: tamanho * 1.08, padding: `0 ${tamanho * 0.08}px`, marginBottom: -tamanho * 0.12 }}>
+              {/* faixas de luz que atravessam o logo na entrada */}
+              {tl > 0 && tl < 0.9 &&
+                ['#ff1f2d', '#b20710', '#ff6a74', '#e50914', '#7a0408', '#ff3b47', '#c1121f'].map((cor, k) => {
+                  const x = interpolate(tl, [0.04 * k, 0.04 * k + 0.6], [-4, 104], CL);
+                  return <div key={k} style={{ position: 'absolute', top: -tamanho * 0.25, bottom: -tamanho * 0.25, left: `${x}%`, width: tamanho * (0.06 + 0.03 * (k % 3)), background: cor, opacity: 0.85 * (1 - tl / 0.9), filter: `blur(${2 + (k % 3) * 3}px)`, transform: 'skewX(-8deg)' }} />;
+                })}
+              <Img
+                src={staticFile(p.imagem)}
+                style={{
+                  height: tamanho * 1.05, position: 'relative', clipPath: `inset(0 ${(1 - rev) * 100}% 0 0)`,
+                  transform: `scale(${1.25 - 0.25 * s})`, filter: `drop-shadow(0 0 ${brilho * 40}px rgba(229,9,20,${0.9 * brilho})) drop-shadow(0 10px 18px rgba(0,0,0,0.18))`,
+                }}
+              />
+            </span>
+          );
+          return p.quebra ? (
+            <React.Fragment key={i}>
+              <div style={{ flexBasis: '100%', height: 0 }} />
+              {el}
+            </React.Fragment>
+          ) : el;
+        }
         const el = (
           <span key={i} style={{ display: 'inline-block', overflow: 'hidden', padding: `0 ${tamanho * 0.04}px ${tamanho * 0.16}px`, marginBottom: -tamanho * 0.12, position: 'relative' }}>
             <span

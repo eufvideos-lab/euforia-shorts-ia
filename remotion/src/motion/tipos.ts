@@ -12,7 +12,11 @@ export type Marca = {
   fonteDestaque: string; // palavra em destaque (serifa itálica)
 };
 
-export type Palavra = { t: string; em: number; destaque?: boolean; quebra?: boolean };
+// imagem: a palavra vira um logo (ex.: Netflix) que entra com brilho e faixas de luz
+export type Palavra = { t: string; em: number; destaque?: boolean; quebra?: boolean; imagem?: string };
+
+// Vídeo da pessoa: tamanho do arquivo e ponto do rosto (px no arquivo) que fica no centro do quadro
+export type Enquadre = { videoTamanho: [number, number]; foco: [number, number] };
 
 // transicao: faixa diagonal nas cores da marca cobrindo o corte (padrão) ou nenhuma (cena continua a anterior)
 type Base = { inicio: number; fim: number; transicao?: 'faixa' | 'nenhuma' };
@@ -23,8 +27,8 @@ export type Cena = Base &
     | { tipo: 'telas'; telas: string[]; titulo: Palavra[]; pilulas: { t: string; em: number }[] }
     | { tipo: 'ritmo'; linha1: Palavra[]; linha2: Palavra[]; tela: string; troca: number; episodios: number }
     | { tipo: 'parede'; cards: string[]; texto: Palavra[]; logo: string; logoEm: number }
-    | { tipo: 'apresentador'; video: string; videoInicio: number; texto: Palavra[] }
-    | { tipo: 'preco'; video: string; videoInicio: number; rotulo: string; moeda: string; valor: string; sufixo: string }
+    | ({ tipo: 'apresentador'; video: string; videoInicio: number; texto: Palavra[] } & Enquadre)
+    | ({ tipo: 'preco'; video: string; videoInicio: number; rotulo: string; moeda: string; valor: string; sufixo: string } & Enquadre)
     | { tipo: 'logo'; logo: string; botao: string; botaoEm: number }
     | { tipo: 'institucional'; logo: string; titulo: string; linhas: string[]; pilares: { t: string; icone: 'coluna' | 'livro' | 'coracao' }[] }
   );

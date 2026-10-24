@@ -2,7 +2,7 @@
   "fps": 30,
   "largura": 1920,
   "altura": 1080,
-  "duracao": 34.6,
+  "duracao": 34.7,
   "audio": "cta-na/audio.m4a",
   "marca": {
     "primaria": "#076358",
@@ -15,29 +15,280 @@
     "fonteDestaque": "Cormorant Garamond"
   },
   "cenas": [
-    { "tipo": "pergunta", "inicio": 0, "fim": 4.0, "palavras": [
-      { "t": "E", "em": 0.2 }, { "t": "se", "em": 0.35 }, { "t": "existisse", "em": 0.5 }, { "t": "uma", "em": 1.0 }, { "t": "Netflix", "em": 1.25 },
-      { "t": "só", "em": 2.3, "quebra": true }, { "t": "que", "em": 2.45 }, { "t": "de", "em": 2.6 }, { "t": "filosofia?", "em": 2.8, "destaque": true } ] },
-    { "tipo": "telas", "inicio": 4.0, "fim": 8.2,
-      "telas": ["cta-na/tela-ansiedade.jpg", "cta-na/tela-catalogo.jpg", "cta-na/tela-tutoriais.jpg"],
-      "titulo": [ { "t": "Um", "em": 0.1 }, { "t": "lugar", "em": 0.3 }, { "t": "com", "em": 0.7 }, { "t": "conteúdo", "em": 0.9 }, { "t": "sobre", "em": 1.5 } ],
-      "pilulas": [ { "t": "VIDA", "em": 2.25 }, { "t": "MENTE", "em": 2.7 }, { "t": "PROPÓSITO", "em": 3.1 } ] },
-    { "tipo": "ritmo", "inicio": 8.2, "fim": 10.5, "tela": "cta-na/tela-player.jpg", "troca": 1.3, "episodios": 6,
-      "linha1": [ { "t": "Sem", "em": 0.05 }, { "t": "aulas", "em": 0.25 }, { "t": "longas", "em": 0.5 } ],
-      "linha2": [ { "t": "e", "em": 1.3 }, { "t": "no", "em": 1.42 }, { "t": "seu", "em": 1.55 }, { "t": "ritmo", "em": 1.7, "destaque": true } ] },
-    { "tipo": "parede", "inicio": 10.5, "fim": 12.4, "logo": "cta-na/acropoleplay-claro.png", "logoEm": 0.9,
-      "cards": ["cta-na/card-justica.jpg", "cta-na/card-plateia1.jpg", "cta-na/card-ansiedade.jpg", "cta-na/card-canal1.jpg", "cta-na/card-musica.jpg", "cta-na/card-humildade.jpg",
-                "cta-na/card-app.jpg", "cta-na/card-plateia2.jpg", "cta-na/card-canal2.jpg", "cta-na/card-tv.jpg", "cta-na/card-canal3.jpg", "cta-na/card-ia.jpg"],
-      "texto": [ { "t": "Essa", "em": 0.2 }, { "t": "é", "em": 0.35 }, { "t": "a", "em": 0.45 } ] },
-    { "tipo": "apresentador", "inicio": 12.4, "fim": 15.8, "video": "cta-na/apresentadora.mp4", "videoInicio": 12.3,
-      "texto": [ { "t": "E", "em": 0.05 }, { "t": "você", "em": 0.2 }, { "t": "pode", "em": 0.4 }, { "t": "acessar", "em": 0.6 },
-                 { "t": "tudo", "em": 1.2, "destaque": true, "quebra": true }, { "t": "isso", "em": 1.4, "destaque": true },
-                 { "t": "por", "em": 1.95, "quebra": true }, { "t": "apenas", "em": 2.2 } ] },
-    { "tipo": "preco", "inicio": 15.8, "fim": 19.0, "transicao": "nenhuma", "video": "cta-na/apresentadora.mp4", "videoInicio": 12.3,
-      "rotulo": "por apenas", "moeda": "R$", "valor": "29,90", "sufixo": "por mês" },
-    { "tipo": "logo", "inicio": 19.0, "fim": 21.3, "logo": "cta-na/acropoleplay-claro.png", "botao": "ASSINE AGORA", "botaoEm": 0.45 },
-    { "tipo": "institucional", "inicio": 21.3, "fim": 34.6, "logo": "cta-na/logo-na-verde.png", "titulo": "NOVA ACRÓPOLE",
-      "linhas": ["é um movimento filosófico internacional,", "independente e sem fins lucrativos,", "baseado na"],
-      "pilares": [ { "t": "Filosofia", "icone": "coluna" }, { "t": "Cultura", "icone": "livro" }, { "t": "Voluntariado", "icone": "coracao" } ] }
+    {
+      "tipo": "pergunta",
+      "inicio": 0,
+      "fim": 4.0,
+      "palavras": [
+        {
+          "t": "E",
+          "em": 0.2
+        },
+        {
+          "t": "se",
+          "em": 0.35
+        },
+        {
+          "t": "existisse",
+          "em": 0.5
+        },
+        {
+          "t": "uma",
+          "em": 1.0
+        },
+        {
+          "t": "Netflix",
+          "em": 1.25,
+          "imagem": "cta-na/netflix.png"
+        },
+        {
+          "t": "só",
+          "em": 2.3,
+          "quebra": true
+        },
+        {
+          "t": "que",
+          "em": 2.45
+        },
+        {
+          "t": "de",
+          "em": 2.6
+        },
+        {
+          "t": "filosofia?",
+          "em": 2.8,
+          "destaque": true
+        }
+      ]
+    },
+    {
+      "tipo": "telas",
+      "inicio": 4.0,
+      "fim": 8.2,
+      "telas": [
+        "cta-na/tela-ansiedade.jpg",
+        "cta-na/tela-catalogo.jpg",
+        "cta-na/tela-tutoriais.jpg"
+      ],
+      "titulo": [
+        {
+          "t": "Um",
+          "em": 0.1
+        },
+        {
+          "t": "lugar",
+          "em": 0.3
+        },
+        {
+          "t": "com",
+          "em": 0.7
+        },
+        {
+          "t": "conteúdo",
+          "em": 0.9
+        },
+        {
+          "t": "sobre",
+          "em": 1.5
+        }
+      ],
+      "pilulas": [
+        {
+          "t": "VIDA",
+          "em": 2.25
+        },
+        {
+          "t": "MENTE",
+          "em": 2.7
+        },
+        {
+          "t": "PROPÓSITO",
+          "em": 3.1
+        }
+      ]
+    },
+    {
+      "tipo": "ritmo",
+      "inicio": 8.2,
+      "fim": 10.5,
+      "tela": "cta-na/tela-player.jpg",
+      "troca": 1.3,
+      "episodios": 6,
+      "linha1": [
+        {
+          "t": "Sem",
+          "em": 0.05
+        },
+        {
+          "t": "aulas",
+          "em": 0.25
+        },
+        {
+          "t": "longas",
+          "em": 0.5
+        }
+      ],
+      "linha2": [
+        {
+          "t": "e",
+          "em": 1.3
+        },
+        {
+          "t": "no",
+          "em": 1.42
+        },
+        {
+          "t": "seu",
+          "em": 1.55
+        },
+        {
+          "t": "ritmo",
+          "em": 1.7,
+          "destaque": true
+        }
+      ]
+    },
+    {
+      "tipo": "parede",
+      "inicio": 10.5,
+      "fim": 12.4,
+      "logo": "cta-na/acropoleplay-hd.png",
+      "logoEm": 0.9,
+      "cards": [
+        "cta-na/card-justica.jpg",
+        "cta-na/card-plateia1.jpg",
+        "cta-na/card-ansiedade.jpg",
+        "cta-na/card-canal1.jpg",
+        "cta-na/card-musica.jpg",
+        "cta-na/card-humildade.jpg",
+        "cta-na/card-app.jpg",
+        "cta-na/card-plateia2.jpg",
+        "cta-na/card-canal2.jpg",
+        "cta-na/card-tv.jpg",
+        "cta-na/card-canal3.jpg",
+        "cta-na/card-ia.jpg"
+      ],
+      "texto": [
+        {
+          "t": "Essa",
+          "em": 0.2
+        },
+        {
+          "t": "é",
+          "em": 0.35
+        },
+        {
+          "t": "a",
+          "em": 0.45
+        }
+      ]
+    },
+    {
+      "tipo": "apresentador",
+      "inicio": 12.4,
+      "fim": 15.8,
+      "video": "cta-na/apresentadora.mp4",
+      "videoInicio": 12.3,
+      "texto": [
+        {
+          "t": "E",
+          "em": 0.05
+        },
+        {
+          "t": "você",
+          "em": 0.2
+        },
+        {
+          "t": "pode",
+          "em": 0.4
+        },
+        {
+          "t": "acessar",
+          "em": 0.6
+        },
+        {
+          "t": "tudo",
+          "em": 1.2,
+          "destaque": true,
+          "quebra": true
+        },
+        {
+          "t": "isso",
+          "em": 1.4,
+          "destaque": true
+        },
+        {
+          "t": "por",
+          "em": 1.95,
+          "quebra": true
+        },
+        {
+          "t": "apenas",
+          "em": 2.2
+        }
+      ],
+      "videoTamanho": [
+        1920,
+        900
+      ],
+      "foco": [
+        1040,
+        420
+      ]
+    },
+    {
+      "tipo": "preco",
+      "inicio": 15.8,
+      "fim": 19.0,
+      "transicao": "nenhuma",
+      "video": "cta-na/apresentadora.mp4",
+      "videoInicio": 12.3,
+      "rotulo": "por apenas",
+      "moeda": "R$",
+      "valor": "29,90",
+      "sufixo": "por mês",
+      "videoTamanho": [
+        1920,
+        900
+      ],
+      "foco": [
+        1040,
+        420
+      ]
+    },
+    {
+      "tipo": "logo",
+      "inicio": 19.0,
+      "fim": 21.3,
+      "logo": "cta-na/acropoleplay-hd.png",
+      "botao": "ASSINE AGORA",
+      "botaoEm": 0.45
+    },
+    {
+      "tipo": "institucional",
+      "inicio": 21.3,
+      "fim": 34.7,
+      "logo": "cta-na/logo-na-verde.png",
+      "titulo": "NOVA ACRÓPOLE",
+      "linhas": [
+        "é um movimento filosófico internacional,",
+        "independente e sem fins lucrativos,",
+        "baseado na"
+      ],
+      "pilares": [
+        {
+          "t": "Filosofia",
+          "icone": "coluna"
+        },
+        {
+          "t": "Cultura",
+          "icone": "livro"
+        },
+        {
+          "t": "Voluntariado",
+          "icone": "coracao"
+        }
+      ]
+    }
   ]
 }
