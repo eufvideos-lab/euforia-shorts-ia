@@ -235,6 +235,7 @@ export const Preco: React.FC<P<'preco'>> = ({ c, m }) => {
       </svg>
       <div style={{ position: 'absolute', left: x, top: y, width: w, height: h, borderRadius: r, overflow: 'hidden', boxShadow: `0 40px 90px -30px ${m.primaria}aa`, border: `${mv * 10}px solid #fff` }}>
         <VideoFoco c={c} w={w} h={h} k={interpolate(mv, [0, 1], [1.06, 0.78])} fps={fps} />
+        {c.cobrirEm !== undefined && <Cobertura m={m} t={t} em={c.cobrirEm} frame={frame} fps={fps} d={d} />}
       </div>
       <div style={{ position: 'absolute', left: 830, top: 260, width: 1040 }}>
         <div style={{ fontFamily: m.fonteCorpo, fontWeight: 600, fontSize: 52, color: m.texto, opacity: suave(t, 0.15, 0.5), transform: `translateY(${(1 - suave(t, 0.15, 0.5)) * 20}px)`, letterSpacing: 1 }}>{c.rotulo}</div>
@@ -246,6 +247,26 @@ export const Preco: React.FC<P<'preco'>> = ({ c, m }) => {
           {c.sufixo}
         </div>
       </div>
+    </AbsoluteFill>
+  );
+};
+
+/* Tampa o rosto antes do vídeo acabar (evita o quadro congelado): disco na cor da marca abre do centro e um play surge */
+const Cobertura = ({ m, t, em, frame, fps, d }: { m: Marca; t: number; em: number; frame: number; fps: number; d: number }) => {
+  if (t < em) return null;
+  const a = suave(t, em, em + 0.35);
+  const sp = mola(frame, fps, em + 0.2, { damping: 11 });
+  const giro = (t - em) * 40;
+  return (
+    <AbsoluteFill style={{ justifyContent: 'center', alignItems: 'center' }}>
+      <div style={{ position: 'absolute', width: d * 1.5, height: d * 1.5, borderRadius: '50%', transform: `scale(${a})`, background: `radial-gradient(circle at 35% 30%, ${m.secundaria}, ${m.primaria} 60%, ${m.escura})` }} />
+      <svg style={{ position: 'absolute', width: d * 0.62, height: d * 0.62, opacity: a, transform: `rotate(${giro}deg)` }} viewBox="0 0 100 100">
+        <circle cx="50" cy="50" r="46" fill="none" stroke="#ffffff88" strokeWidth="1.2" strokeDasharray="4 5" />
+      </svg>
+      <svg style={{ position: 'absolute', width: d * 0.34, height: d * 0.34, transform: `scale(${sp})`, filter: 'drop-shadow(0 12px 24px rgba(0,0,0,0.3))' }} viewBox="0 0 100 100">
+        <circle cx="50" cy="50" r="48" fill="#fff" />
+        <path d="M40 30 L72 50 L40 70 Z" fill={m.primaria} />
+      </svg>
     </AbsoluteFill>
   );
 };

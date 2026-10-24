@@ -28,7 +28,7 @@ export type Cena = Base &
     | { tipo: 'ritmo'; linha1: Palavra[]; linha2: Palavra[]; tela: string; troca: number; episodios: number }
     | { tipo: 'parede'; cards: string[]; texto: Palavra[]; logo: string; logoEm: number }
     | ({ tipo: 'apresentador'; video: string; videoInicio: number; texto: Palavra[] } & Enquadre)
-    | ({ tipo: 'preco'; video: string; videoInicio: number; rotulo: string; moeda: string; valor: string; sufixo: string } & Enquadre)
+    | ({ tipo: 'preco'; video: string; videoInicio: number; rotulo: string; moeda: string; valor: string; sufixo: string; cobrirEm?: number } & Enquadre)
     | { tipo: 'logo'; logo: string; botao: string; botaoEm: number }
     | { tipo: 'institucional'; logo: string; titulo: string; linhas: string[]; pilares: { t: string; icone: 'coluna' | 'livro' | 'coracao' }[] }
   );
