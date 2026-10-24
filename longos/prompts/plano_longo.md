@@ -68,7 +68,7 @@ reais, igual ao modelo de Shorts da NA.
 - Ponha `"modelo": "nova-acropole"` no plano. Sem `paleta`, `titulo`, `keywords`, `lowers`, `mapa`, `nome` nem
   `musica_file_id`: o modelo não usa esses elementos nem trilha.
 - **Escolha do trecho:** se as observações dão o tema ou os minutos, siga. Senão, escolha o melhor tema da palestra:
-  um bloco de **4 a 8 min** que se sustenta sozinho, com começo forte e um fim que fecha a ideia. Comece direto numa
+  um bloco de **5 a 10 min** (o canal aceita corte de 5 min para cima) que se sustenta sozinho, com começo forte e um fim que fecha a ideia. Comece direto numa
   frase de impacto do próprio tema, sem apresentação, sem "como eu dizia", sem "bom dia". Termine numa frase
   conclusiva, nunca em pergunta para a plateia, aviso de intervalo ou "na próxima aula". Se a palestra cita um autor
   (filósofo, livro, sábio) perto do tema, prefira um trecho que inclua a citação.
@@ -84,14 +84,16 @@ reais, igual ao modelo de Shorts da NA.
     sublinhada).
   - `inicio`/`fim` = índices das palavras faladas; `texto` fiel à fala (pode limpar repetição e "né"), com
     pontuação. Não ponha dois cartões a menos de 20 s um do outro.
-- **B-roll (`brolls`), 3 a 6 no corte, 3 a 4 s cada, só imagem real e verdadeira** (`"fonte": "foto"`): obra de arte
+- **B-roll (`brolls`): muitos, uma foto a cada ~25 a 40 s (10 a 16 num corte de 7 min), 3 a 4 s cada; foto basta, não
+  precisa ser vídeo. Só imagem real e verdadeira** (`"fonte": "foto"`): obra de arte
   real (pintura, escultura) com nome e autor, estátua real de filósofo, foto real da pessoa ou do lugar citado, capa
   real do livro. Natureza pode, com cara de Brasil (Dedo de Deus, Mata Atlântica, ipê, pôr do sol no litoral). Nada de
   banco genérico (Pixabay é ignorado neste modelo), desenho ou ilustração. Cada um com `"legenda"`: crédito curto que
   aparece no canto ("Gustave Courbet · Os Quebradores de Pedras (1849)", "Dedo de Deus · Serra dos Órgãos (RJ)");
   `null` para natureza sem lugar certo. Pense primeiro em obras famosas que contam a mesma coisa que ela (no Quebrador
   de Pedras: o quadro de Courbet). Nunca cubra o momento em que ela olha para a câmera e fecha a ideia.
-- **Legenda** (amarela, com maiúsculas e pontuação da fala, palavra falada em branco), marca d'água (Instagram
+- **Legenda** (amarela e fixa, sem efeito palavra a palavra, com maiúsculas e a pontuação da fala: vírgula, ponto,
+  reticências, ? e !), marca d'água (Instagram
   @novaacropolebrasilnorte + logo da NA) e o encerramento da Acrópole Play no fim: a máquina põe sozinha.
 - No log do pedido escreva também uma **sugestão de título** no estilo do canal: CAPS, promessa clara, até ~80
   caracteres, e os minutos da palestra que viraram o corte.

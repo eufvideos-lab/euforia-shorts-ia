@@ -129,11 +129,26 @@ if avisos and '--forcar' not in sys.argv:
 
 
 def legendas_na(arq):
-    """Legenda da NA: amarela, com maiúsculas e pontuação da fala, quebrada em frases curtas (uma linha), entra com um
-    pop leve e a palavra falada fica branca (karaokê). Some durante os cartões de tela cheia."""
-    from montar_short import alinhar_pontuacao
+    """Legenda da NA: amarela e fixa (sem efeito palavra a palavra, pedido do Flau 24/10), com maiúsculas e a
+    pontuação da fala (vírgula, ponto, reticências, ? e !), quebrada em frases curtas de uma linha. Some durante os
+    cartões de tela cheia."""
+    from montar_short import norm
     texto = json.load(open(os.path.join(pasta, 'transcricao.json'))).get('text', '')
-    P = alinhar_pontuacao(texto, W) if texto else [{'t': w['word']} for w in W]
+    # casa as palavras do Whisper (sem pontuação) com o texto corrido; "colocá-las" vem como "colocá" + "las"
+    tokens, j, P = texto.split(), 0, []
+    k = 0
+    while k < len(W):
+        alvo, txt, usa = norm(W[k]['word']), W[k]['word'], 1
+        for m in range(j, min(j + 4, len(tokens))):
+            nt = norm(tokens[m])
+            if nt == alvo:
+                txt, j = tokens[m], m + 1; break
+            if k + 1 < len(W) and nt == alvo + norm(W[k + 1]['word']):
+                txt, j, usa = tokens[m], m + 1, 2; break
+        P.append({'t': txt})
+        if usa == 2:
+            P.append({'t': ''}); k += 1
+        k += 1
     cheio = [(t0, t0 + d) for k, f, t0, d in EV if k == 'full']
     def ts(t):
         t = max(0.0, t); return f'{int(t // 3600)}:{int(t % 3600 // 60):02d}:{t % 60:05.2f}'
@@ -158,12 +173,7 @@ def legendas_na(arq):
             fim = min(fim, blocos[k + 1][0][0])
         if any(c0 - 0.1 < fim and bl[0][0] < c1 + 0.1 for c0, c1 in cheio):
             continue
-        for i, (a, b, _) in enumerate(bl):
-            ini = bl[0][0] if i == 0 else a
-            ate = bl[i + 1][0] if i + 1 < len(bl) else fim
-            pop = r'{\fscx90\fscy90\t(0,110,\fscx100\fscy100)}' if i == 0 else ''
-            txt = ' '.join(r'{\c&HFFFFFF&}' + p + r'{\c&H001FD2FF&}' if j == i else p for j, (_, _, p) in enumerate(bl))
-            linhas.append(f"Dialogue: 0,{ts(ini)},{ts(ate)},NA,,0,0,0,,{pop}{txt}")
+        linhas.append(f"Dialogue: 0,{ts(bl[0][0])},{ts(fim)},NA,,0,0,0,,{' '.join(p for _, _, p in bl)}")
     open(arq, 'w').write('\n'.join([
         '[Script Info]', 'ScriptType: v4.00+', 'PlayResX: 1920', 'PlayResY: 1080', 'WrapStyle: 2', '', '[V4+ Styles]',
         'Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, '
