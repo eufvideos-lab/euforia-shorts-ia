@@ -5,6 +5,6 @@ Abas: Início, Entregas (aprovar / pedir ajuste), Gravações (roteiros + envio 
 `?demo=1` mostra dados de exemplo.
 
 - `portal.html`: a página publicada (sobe pelo fluxo "Sites | Publicar LP", slug `portal`).
-- `fluxos/`: código dos fluxos n8n "Portal | ... (V1)": os 5 que a página chama e o `liberar-longo.js` (a cada 10 min, vídeo longo aprovado pela equipe vai para "Aguardando cliente" no Entregas e aparece no portal).
+- `fluxos/`: código dos fluxos n8n "Portal | ... (V1)": os 5 que a página chama e o `liberar-longo.js` (a cada 10 min, vídeo longo aprovado pela equipe vai para "Aguardando cliente" no Entregas e aparece no portal), o `derivados.js` (longo do portal aprovado abre 3 shorts e 1 carrossel nas máquinas) e o `liberar-derivados.js` (shorts e carrossel aprovados vão para "Aguardando cliente" no Entregas).
 
 Regras: o cliente vê só percentuais de canal; mensagem do portal vai para o grupo pelo número do suporte (nunca pela Isabela).
