@@ -43,7 +43,7 @@ const doEntregas = sem((card.parent || {}).database_id) === '74b3076a325749e3bac
 const teste = r.papel === 'teste';
 const resp = ((cp['Responsável'] || {}).relation || []).map(x => sem(x.id));
 const meu = teste ? /TESTE PAINEL/.test(titulo) : resp.includes(r.ficha);
-const revisor = teste ? /TESTE PAINEL/.test(titulo) : r.papel === 'revisor';
+const revisor = teste ? /TESTE PAINEL/.test(titulo) : ['revisor', 'diretor'].includes(r.papel);
 const posta = revisor || (!teste && r.papel === 'calls');
 const REGRA = {
   comecar: { pode: meu, de: ['A fazer'], para: 'Fazendo', verbo: 'começou' },

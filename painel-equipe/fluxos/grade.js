@@ -46,7 +46,7 @@ const sem = v => String(v || '').replace(/-/g, '');
 const txt = v => { if (!v) return ''; const a = v.title || v.rich_text; if (a) return a.map(t => t.plain_text).join('').trim(); if (v.select) return v.select.name; return ''; };
 const acessoOk = !!r.token && r.token === p.u && r.ativo === true && String(r.pin) === p.pin;
 const teste = r.papel === 'teste';
-const muda = ['revisor', 'calls', 'teste'].includes(r.papel);
+const muda = ['revisor', 'calls', 'teste', 'diretor'].includes(r.papel);
 const TESTE = '40598c0cdde081c78b98f3984e7009e8';
 const ap = atual.properties || {};
 const daGrade = sem((atual.parent || {}).database_id) === '2d21b7a7166240f5afaa4d697c3d1ae8';

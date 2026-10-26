@@ -24,10 +24,10 @@ const acesso = node({ type: 'n8n-nodes-base.dataTable', version: 1.1, config: { 
 // Só quem atende cliente vê esta fila: Ismael (revisor), Rômulo (calls) e o teste.
 const validar = node({ type: 'n8n-nodes-base.code', version: 2, config: { name: 'Validar acesso', parameters: { jsCode: `const p = $('Ler pedido').first().json;
 const r = $input.first().json || {};
-const ok = !!r.token && r.token === p.u && r.ativo === true && String(r.pin) === p.pin && ['revisor', 'calls', 'teste'].includes(r.papel);
+const ok = !!r.token && r.token === p.u && r.ativo === true && String(r.pin) === p.pin && ['revisor', 'calls', 'teste', 'diretor'].includes(r.papel);
 let motivo = ok ? '' : 'acesso';
 if (ok && p.acao === 'dispensar' && (!p.msg || !p.chat)) motivo = 'mensagem';
-return [{ json: { ok: !motivo, acao: p.acao, msg: p.msg, chat: p.chat, nome: r.nome || '', resposta: { ok: false, motivo } } }];
+return [{ json: { ok: !motivo, acao: p.acao, msg: p.msg, chat: p.chat, nome: r.nome || '', diretor: r.papel === 'diretor', resposta: { ok: false, motivo } } }];
 ` } } });
 
 const podeSeguir = ifElse({ version: 2.2, config: { name: 'Acesso válido?', parameters: { conditions: {
@@ -125,7 +125,7 @@ for (const it of $('Clientes esperando resposta').all()) {
   if (c.precisa_resposta === false) continue;
   const k = cli[r.chat_id] || {};
   const desde = DateTime.fromJSDate(new Date(r.esperando_desde || r.enviado_em)).setZone(Z);
-  const direcao = c.sensivel === true && DIRECAO.includes(String(c.tema || '').toLowerCase());
+  const direcao = c.sensivel === true && DIRECAO.includes(String(c.tema || '').toLowerCase()) && !$('Validar acesso').first().json.diretor;
   itens.push({ chat: r.chat_id, msg: r.msg_id, grupo: r.grupo, cliente: k.nome || '', faixa: k.faixa || '', atencao: !!k.atencao,
     sensivel: c.sensivel === true, direcao, tema: c.tema || '', resumo: direcao ? '' : (c.resumo || ''),
     autor: r.autor, texto: direcao ? '' : String(r.texto || '').slice(0, 400), contexto: direcao ? '' : String(r.contexto || '').slice(0, 1800),

@@ -26,7 +26,7 @@ const naoFechado = ['Postado', 'Cancelado', 'Aprovado', 'Agendado'].map(s => ({ 
 let filtro = null;
 if (ok) {
   if (r.papel === 'teste') filtro = { and: [{ property: 'Entrega', title: { contains: 'TESTE PAINEL' } }, { property: 'Status', select: { does_not_equal: 'Postado' } }, { property: 'Status', select: { does_not_equal: 'Cancelado' } }] };
-  else if (r.papel === 'revisor') filtro = { or: [
+  else if (r.papel === 'revisor' || r.papel === 'diretor') filtro = { or: [
     { and: [{ property: 'Responsável', relation: { contains: r.ficha } }, ...naoFechado] },
     { property: 'Status', select: { equals: 'Em revisão' } },
     { property: 'Status', select: { equals: 'Aguardando cliente' } },
