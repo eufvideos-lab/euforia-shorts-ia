@@ -6,6 +6,7 @@ Tela da equipe por cima do Notion. O Notion continua sendo o banco (Entregas, Cl
 - `fluxos/`: os 4 fluxos do n8n (código do Workflow SDK).
   - `fila.js` → "Painel | Fila da equipe (V1)": devolve os cards da pessoa conforme o papel (editor, revisor, calls, teste).
   - Pedir ao escritório: só revisor, calls, diretor e teste. Editor não vê a aba e o `pedido.js` recusa (decisão do Henrique em 26/10/2026).
+  - Passar para: Ismael, Rômulo e diretoria trocam o Responsável do card para Victor, Lorena, Daniel ou Escritório (botão na gaveta do card, `acao: 'passar'` no `acao.js`). Aviso no #dia-a-dia marcando a pessoa.
   - `acao.js` → "Painel | Botões da equipe (V1)": Comecei, Mandar para revisão, Aprovar, Pedir ajuste, Agendei, Postei. Cada botão só vale para quem pode e na etapa certa.
   - `arquivo.js` → "Painel | Envio de arquivo da equipe (V1)": abre o envio direto ao Drive (pasta do cliente › ENTREGAS DO PAINEL) e confere no fim.
   - `diretor.js` → "Painel | Diretor (V1)": só o papel diretor. Visão de todos os cards e da equipe, editar qualquer campo, criar card e ver as mensagens que a equipe mandou nos grupos de cliente.
