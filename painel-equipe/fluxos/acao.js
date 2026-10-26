@@ -12,7 +12,7 @@ const pedir = trigger({ type: 'n8n-nodes-base.webhook', version: 2.1, config: { 
 const ler = node({ type: 'n8n-nodes-base.code', version: 2, config: { name: 'Ler pedido', parameters: { jsCode: `const b = ($input.first().json.body) || {};
 const u = String(b.u || '').toLowerCase();
 const card = String(b.card || '').replace(/-/g, '').toLowerCase();
-const ACOES = ['comecar', 'revisao', 'aprovar', 'ajuste', 'agendei', 'postei', 'passar', 'naoemeu', 'jafeito'];
+const ACOES = ['comecar', 'revisao', 'aprovar', 'ajuste', 'agendei', 'postei', 'passar', 'naoemeu', 'jafeito', 'pegar'];
 const PARA = ['victor', 'lorena', 'daniel', 'escritorio'];
 const link = String(b.link || '').trim().slice(0, 500);
 return [{ json: { u: /^[0-9a-f]{24}$/.test(u) ? u : 'x', pin: String(b.pin || '').replace(/[^0-9]/g, '').slice(0, 6),
@@ -28,6 +28,13 @@ const acesso = node({ type: 'n8n-nodes-base.dataTable', version: 1.1, config: { 
 const cardNode = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, config: { name: 'Card da entrega', credentials: NOTION, onError: 'continueRegularOutput', alwaysOutputData: true, parameters: {
   method: 'GET', url: '=https://api.notion.com/v1/pages/{{ $("Ler pedido").first().json.card }}', authentication: 'genericCredentialType', genericAuthType: 'httpHeaderAuth',
   sendHeaders: true, headerParameters: NOTION_HDR, options: {} } } });
+
+// Limite da Fila de demandas: conta os cards em produção (A fazer, Fazendo, Ajustes) que já estão no nome da pessoa.
+const abertosNode = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, config: { name: 'Cards abertos da pessoa', credentials: NOTION, onError: 'continueRegularOutput', alwaysOutputData: true, parameters: {
+  method: 'POST', url: 'https://api.notion.com/v1/databases/74b3076a325749e3bac4ba6659215e48/query', authentication: 'genericCredentialType', genericAuthType: 'httpHeaderAuth',
+  sendHeaders: true, headerParameters: NOTION_HDR, sendBody: true, specifyBody: 'json',
+  jsonBody: '={{ JSON.stringify({ filter: { and: [{ property: "Responsável", relation: { contains: $("Achar pessoa").first().json.ficha || "00000000000000000000000000000000" } }, { or: [{ property: "Status", select: { equals: "A fazer" } }, { property: "Status", select: { equals: "Fazendo" } }, { property: "Status", select: { equals: "Ajustes" } }] }] }, page_size: 100 }) }}',
+  options: {} } } });
 
 // Cada botão só vale para quem pode apertar e só na etapa certa. Fora disso, nada muda no Notion.
 const validar = node({ type: 'n8n-nodes-base.code', version: 2, config: { name: 'Validar botão', parameters: { jsCode: `const Z = 'America/Recife';
@@ -50,6 +57,9 @@ const posta = revisor || (!teste && r.papel === 'calls');
 const QUEM = { victor: ['3ea98c0cdde08182a952f3d9a5b73575', 'Victor', '1142062975071551528'], lorena: ['3ea98c0cdde08163bd16f0213b098cb5', 'Lorena', '827882215185973279'],
   daniel: ['3ea98c0cdde0817e87aee637a96d4fd1', 'Daniel', '1470387767337816128'], escritorio: ['3ea98c0cdde0812bba06cba7e4261426', 'Escritório (máquinas)', ''] };
 const alvo = QUEM[p.para];
+const LIMITE = 8;
+const TIPOS_LIVRE = ['Vídeo longo', 'Shorts', 'Podcast', 'Carrossel', 'Thumbnail'];
+const abertos = (($('Cards abertos da pessoa').first().json || {}).results || []).length;
 const REGRA = {
   comecar: { pode: meu, de: ['A fazer'], para: 'Fazendo', verbo: 'começou' },
   revisao: { pode: meu, de: ['A fazer', 'Fazendo', 'Ajustes'], para: 'Em revisão', verbo: 'mandou para revisão', precisaLink: true },
@@ -59,6 +69,7 @@ const REGRA = {
   postei: { pode: posta, de: ['Aprovado', 'Agendado'], para: 'Postado', verbo: 'postou', precisaLink: true },
   naoemeu: { pode: meu, de: ['A fazer', 'Fazendo', 'Ajustes', 'Em revisão', 'Aguardando cliente', 'Aprovado', 'Agendado'], para: '', verbo: 'disse que não é com ele(a)', precisaTexto: true },
   jafeito: { pode: meu, de: ['A fazer', 'Fazendo', 'Ajustes', 'Em revisão', 'Aguardando cliente', 'Aprovado', 'Agendado'], para: p.fim, verbo: 'marcou como já feito (' + (p.fim === 'Cancelado' ? 'cancelado' : 'postado') + ')', precisaTexto: true },
+  pegar: { pode: teste ? /TESTE PAINEL/.test(titulo) : !!r.ficha && r.papel !== 'teste', de: ['A fazer', 'Fazendo', 'Ajustes'], para: '', verbo: 'pegou na fila de demandas' },
   passar: { pode: posta, de: ['A fazer', 'Fazendo', 'Em revisão', 'Ajustes', 'Aguardando cliente', 'Aprovado', 'Agendado'], para: '', verbo: 'passou para ' + (alvo ? alvo[1] : '') } };
 const g = REGRA[p.acao];
 let erro = '';
@@ -70,6 +81,8 @@ else if (!g.de.includes(status)) erro = 'etapa';
 else if (g.precisaLink && !p.link) erro = 'link';
 else if (g.precisaTexto && p.texto.length < 3) erro = 'texto';
 else if (p.acao === 'jafeito' && !p.fim) erro = 'fim';
+else if (p.acao === 'pegar' && !teste && (resp.length || !TIPOS_LIVRE.includes(txt(cp['Tipo'])))) erro = 'pego';
+else if (p.acao === 'pegar' && !teste && abertos >= LIMITE) erro = 'limite';
 else if (p.acao === 'passar' && (!alvo || (!teste && resp.length === 1 && resp[0] === alvo[0]))) erro = 'pessoa';
 const agora = DateTime.now().setZone(Z);
 const linha = '[Painel ' + agora.toFormat('dd/MM HH:mm') + '] ' + (r.nome || '') + ' ' + (g ? g.verbo : '') + (p.texto ? ': ' + p.texto : '') + (p.link && p.acao === 'revisao' ? ' (' + p.link + ')' : '');
@@ -81,6 +94,7 @@ if (p.acao === 'postei' || (p.acao === 'jafeito' && p.fim === 'Postado')) props[
 if (p.acao === 'jafeito' && p.link) props['Link da postagem'] = { url: p.link };
 // Não é comigo: tira só o nome de quem apertou; o card fica com os outros ou cai em "Sem responsável".
 if (p.acao === 'naoemeu' && !teste) props['Responsável'] = { relation: resp.filter(x => x !== r.ficha).map(id => ({ id })) };
+if (p.acao === 'pegar' && !teste) props['Responsável'] = { relation: [{ id: r.ficha }] };
 // Teste só ganha a linha no histórico: trocar o Responsável jogaria o card TESTE na fila real de alguém.
 if (p.acao === 'passar' && alvo && !teste) {
   props['Responsável'] = { relation: [{ id: alvo[0] }] };
@@ -91,10 +105,11 @@ if (p.acao === 'revisao') aviso = '🎬 **' + titulo + '** foi para revisão (' 
 if (p.acao === 'passar' && alvo) aviso = '📌 **' + titulo + '** passou para ' + (alvo[2] ? '<@' + alvo[2] + '>' : 'o Escritório (máquinas)') + ' (por ' + r.nome + ').' + (p.texto ? '\\n> ' + p.texto : '');
 if (p.acao === 'naoemeu') aviso = '↩️ **' + titulo + '** voltou: ' + r.nome + ' disse que não é com ele(a). <@1410287139169763471> <@1490768736876237082>, passem para alguém pelo painel.\\n> ' + p.texto;
 if (p.acao === 'jafeito') aviso = '✅ **' + titulo + '** marcado como ' + (p.fim === 'Cancelado' ? 'cancelado' : 'já postado') + ' por ' + r.nome + '.\\n> ' + p.texto;
+if (p.acao === 'pegar') aviso = '🙋 **' + titulo + '** foi pego por ' + r.nome + ' na Fila de demandas.';
 if (p.acao === 'ajuste') aviso = '🔁 **' + titulo + '** voltou para ajuste. O pedido está no card e no topo da fila de quem fez.';
 return [{ json: { ok: !erro, cardId: card.id || '', avisar: !!aviso && !teste,
   body: JSON.stringify({ properties: props }),
-  discord: JSON.stringify({ content: (aviso + '\\n— Érica, time de suporte, Grupo Euforia').slice(0, 1990), allowed_mentions: { users: p.acao === 'naoemeu' ? ['1410287139169763471', '1490768736876237082'] : p.acao === 'jafeito' ? [] : [p.acao === 'passar' ? (alvo && alvo[2]) || '' : '1410287139169763471'].filter(Boolean) } }),
+  discord: JSON.stringify({ content: (aviso + '\\n— Érica, time de suporte, Grupo Euforia').slice(0, 1990), allowed_mentions: { users: p.acao === 'naoemeu' ? ['1410287139169763471', '1490768736876237082'] : ['jafeito', 'pegar'].includes(p.acao) ? [] : [p.acao === 'passar' ? (alvo && alvo[2]) || '' : '1410287139169763471'].filter(Boolean) } }),
   resposta: erro ? { ok: false, motivo: erro, status } : { ok: true, status: g.para } } }];
 ` } } });
 
@@ -125,10 +140,10 @@ const confirmarSemAviso = node({ type: 'n8n-nodes-base.respondToWebhook', versio
 const recusar = node({ type: 'n8n-nodes-base.respondToWebhook', version: 1.5, config: { name: 'Recusar', parameters: {
   respondWith: 'json', responseBody: '={{ JSON.stringify($json.resposta) }}', options: {} } } });
 
-const nota = sticky('## Painel da equipe · botões (V1)\nComecei (A fazer → Fazendo), Mandar para revisão (link obrigatório → Em revisão + Link do arquivo + aviso ao Ismael), Aprovar (Em revisão → Aguardando cliente), Pedir ajuste (texto obrigatório → Ajustes), Agendei / Postei (link obrigatório → Agendado / Postado + Link da postagem), Passar para (Ismael, Rômulo e diretoria trocam o Responsável para Victor, Lorena, Daniel ou Escritório; aviso no #dia-a-dia marcando a pessoa), Não é comigo (quem é Responsável sai do card, motivo obrigatório, aviso ao Ismael e Rômulo), Já foi feito (Responsável marca Postado ou Cancelado, motivo obrigatório).\nSó o Responsável mexe no próprio card; revisão é do Ismael; postagem do Ismael e do Rômulo. Toda ação vira uma linha [Painel dd/mm] no topo da Obs. Teste só mexe em cards "TESTE PAINEL" e não avisa no Discord.', [], { color: 4 });
+const nota = sticky('## Painel da equipe · botões (V1)\nComecei (A fazer → Fazendo), Mandar para revisão (link obrigatório → Em revisão + Link do arquivo + aviso ao Ismael), Aprovar (Em revisão → Aguardando cliente), Pedir ajuste (texto obrigatório → Ajustes), Agendei / Postei (link obrigatório → Agendado / Postado + Link da postagem), Passar para (Ismael, Rômulo e diretoria trocam o Responsável para Victor, Lorena, Daniel ou Escritório; aviso no #dia-a-dia marcando a pessoa), Não é comigo (quem é Responsável sai do card, motivo obrigatório, aviso ao Ismael e Rômulo), Já foi feito (Responsável marca Postado ou Cancelado, motivo obrigatório), Pegar (Fila de demandas: card sem Responsável de edição vira da pessoa; limite de 8 em produção).\nSó o Responsável mexe no próprio card; revisão é do Ismael; postagem do Ismael e do Rômulo. Toda ação vira uma linha [Painel dd/mm] no topo da Obs. Teste só mexe em cards "TESTE PAINEL" e não avisa no Discord.', [], { color: 4 });
 
 export default workflow('painel-acao', 'Painel | Botões da equipe (V1)')
-  .add(pedir).to(ler).to(acesso).to(cardNode).to(validar)
+  .add(pedir).to(ler).to(acesso).to(cardNode).to(abertosNode).to(validar)
   .to(podeSeguir
     .onTrue(atualizar.to(precisaAviso.onTrue(avisar.to(confirmar)).onFalse(confirmarSemAviso)))
     .onFalse(recusar))

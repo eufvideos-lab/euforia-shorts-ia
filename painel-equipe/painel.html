@@ -317,8 +317,9 @@ const TIPOS = [
 // Erros que a pessoa consegue resolver sozinha; o resto vira o aviso padrão.
 const MOTIVO = {acesso:'Seu acesso mudou. Entre de novo com o PIN.', permissao:'Esse card não está no seu nome.', etapa:'Esse card mudou de etapa. A fila foi atualizada.',
   link:'Cole o link antes de mandar.', texto:'Escreva o que precisa antes de mandar.', prazo:'Escolha um prazo de hoje em diante.', cliente:'Escolha um cliente ativo.',
-  pessoa:'Esse card já está com essa pessoa. Escolha outra.', fim:'Escolha o que aconteceu.', direcao:'Esse assunto é da diretoria. Não responda por aqui.', grupo:'Esse grupo não é de cliente do suporte.', whatsapp:'O WhatsApp não mandou. Tente de novo ou responda direto no grupo.', tamanho:'Arquivo vazio ou maior que 20 GB.', 'sem-pasta':'A pasta do cliente no Drive não foi achada. Cole o link do arquivo no lugar.'};
+  pessoa:'Esse card já está com essa pessoa. Escolha outra.', fim:'Escolha o que aconteceu.', pego:'Alguém pegou esse card antes. A fila foi atualizada.', limite:'Você já está com 8 cards em produção. Termine um para pegar outro.', direcao:'Esse assunto é da diretoria. Não responda por aqui.', grupo:'Esse grupo não é de cliente do suporte.', whatsapp:'O WhatsApp não mandou. Tente de novo ou responda direto no grupo.', tamanho:'Arquivo vazio ou maior que 20 GB.', 'sem-pasta':'A pasta do cliente no Drive não foi achada. Cole o link do arquivo no lugar.'};
 const ERRO = 'Deu erro, a diretoria está resolvendo.';
+const LIMITE = 8;
 const PASSAR = [['victor', 'Victor'], ['lorena', 'Lorena'], ['daniel', 'Daniel'], ['escritorio', 'Escritório (máquinas)']];
 
 const $ = s => document.querySelector(s);
@@ -503,6 +504,19 @@ const VIEWS = {
       ${grupo('Resto da fila', sem, 'Nada mais na fila.')}
       ${grupo('Já saiu da sua mão', comigo, '')}`;
     } },
+  demandas: { nome: 'Fila de demandas', pode: () => papel() !== 'teste' || D.cards.some(c => c.livre), badge: () => D.cards.filter(c => c.livre).length,
+    html(){
+      const l = D.cards.filter(c => c.livre).sort((x, y) => (y.prioridade === 'Urgente') - (x.prioridade === 'Urgente') || diff(x.prazo) - diff(y.prazo) || diff(x.postar) - diff(y.postar));
+      const meus = D.cards.filter(c => c.meu && ['A fazer', 'Fazendo', 'Ajustes'].includes(c.status)).length;
+      const cheio = meus >= LIMITE;
+      const lin = c => `<li class="item ${classe(c)}"><span class="stripe"></span>
+        <button class="main" data-open="${c.id}"><span class="t">${esc(c.clienteNome)} · ${esc(c.nome)}</span><span class="meta">${chips(c)}</span></button>
+        <span class="act"><button class="btn primary" data-pegar="${c.id}" ${cheio ? 'disabled' : ''}>Pegar</button></span></li>`;
+      return `<div class="head"><div><p class="eyebrow">Demandas sem dono</p><h1>Fila de demandas</h1></div><p class="sub">Escolha o que vai fazer. Quem aperta "Pegar" primeiro leva: o card vai para a sua fila e some daqui para todo mundo. Os atrasados e urgentes estão no topo.</p></div>
+      <div class="stats"><div class="stat ${cheio ? 'hot' : ''}"><span class="v">${meus} de ${LIMITE}</span><span>cards em produção com você</span></div><div class="stat"><span class="v">${l.length}</span><span>esperando alguém</span></div></div>
+      ${cheio ? `<p class="note">Você já está com ${LIMITE} cards em produção. Termine um para pegar outro.</p>` : ''}
+      ${l.length ? `<section class="group"><ul class="rows">${l.map(lin).join('')}</ul></section>` : '<p class="empty">Nenhuma demanda sem dono agora.</p>'}`;
+    } },
   revisao: { nome: 'Revisão', pode: revisor, badge: () => D.cards.filter(c => c.status === 'Em revisão').length,
     html(){
       const l = ordenar(D.cards.filter(c => c.status === 'Em revisão'));
@@ -631,6 +645,7 @@ function abrir(id){
   const passa = posta() && !['Postado', 'Cancelado'].includes(c.status);
   const devolve = c.meu && !['Postado', 'Cancelado'].includes(c.status);
   let acoes = '';
+  if (c.livre) acoes = `<p class="note">Esse card está na Fila de demandas, sem dono.</p><div class="actions"><button class="btn primary" data-act="pegar">Pegar para mim</button></div>`;
   if (c.meu && c.status === 'A fazer') acoes = `<div class="actions"><button class="btn primary" data-act="comecar">Comecei</button></div>`;
   if (c.meu && ['Fazendo', 'Ajustes'].includes(c.status)) acoes = `
     <div class="drop" id="drop"><b>Solte o arquivo aqui</b><span>ou</span><label class="btn" for="file" style="flex-direction:row">Escolher arquivo<input type="file" id="file" hidden></label><span class="mono">vai para a pasta do cliente no Drive</span></div>
@@ -701,7 +716,7 @@ function abrir(id){
       const r = await api('euforia-painel-acao', { card: c.id, acao, texto, link, fim, para: act === 'passar' ? $('#pp').value : '' });
       if (!r || !r.ok) throw new Error((r && r.motivo) || 'erro');
       ocupado = false; fechar();
-      toast({ comecar: 'Bom trabalho! Card em Fazendo.', revisao: 'Mandado para revisão. O Ismael foi avisado.', aprovar: 'Aprovado. Agora é com o cliente.', ajuste: 'Voltou para ajuste com o seu recado.', agendei: 'Marcado como agendado.', postei: 'Marcado como postado.', passar: 'Card passado. A pessoa foi avisada.', fim: 'Pronto, ficou registrado e a equipe foi avisada.' }[act]);
+      toast({ comecar: 'Bom trabalho! Card em Fazendo.', revisao: 'Mandado para revisão. O Ismael foi avisado.', aprovar: 'Aprovado. Agora é com o cliente.', ajuste: 'Voltou para ajuste com o seu recado.', agendei: 'Marcado como agendado.', postei: 'Marcado como postado.', passar: 'Card passado. A pessoa foi avisada.', fim: 'Pronto, ficou registrado e a equipe foi avisada.', pegar: 'É seu! O card já está na sua fila.' }[act]);
       await carregar(true);
     } catch (err) {
       ocupado = false;
@@ -1005,6 +1020,13 @@ document.addEventListener('click', async e => {
   const sl = e.target.closest('#main [data-slot]'); if (sl) { abrirSlot(sl.dataset.slot); return; }
   const df = e.target.closest('#main [data-definir]'); if (df) { abrirSlot('', df.dataset.definir); return; }
   if (e.target.id === 'g-novo') { abrirSlot(''); return; }
+  const pg = e.target.closest('#main [data-pegar]');
+  if (pg) {
+    pg.disabled = true; ocupado = true;
+    try { const r = await api('euforia-painel-acao', { card: pg.dataset.pegar, acao: 'pegar' }); if (!r || !r.ok) throw new Error((r && r.motivo) || 'erro'); ocupado = false; toast('É seu! O card já está na sua fila.'); await carregar(true); }
+    catch (err) { ocupado = false; pg.disabled = false; toast(MOTIVO[err.message] || ERRO); if (err.message === 'pego') carregar(true); }
+    return;
+  }
   const rs = e.target.closest('#main [data-responder]');
   if (rs) {
     const m = rs.dataset.responder, t = (RASC[m] || '').trim();
@@ -1099,6 +1121,7 @@ function demoApi(path, b){
   if (path === 'euforia-painel-pedido') return wait({ ok: true, quem: b.modo === 'mao' ? 'Escritório, à mão' : (TIPOS.find(t => t.id === b.tipo) || {}).maq });
   if (path === 'euforia-painel-acao') {
     const c = DEMO_D.cards.find(x => x.id === b.card);
+    if (b.acao === 'pegar') { c.livre = false; c.meu = true; c.resp = [DEMO_D.nome]; return wait({ ok: true, status: c.status }); }
     if (b.acao === 'naoemeu' || b.acao === 'jafeito') { DEMO_D.cards = DEMO_D.cards.filter(x => x !== c); return wait({ ok: true, status: b.fim || c.status }); }
     if (b.acao === 'passar') { const n = PASSAR.find(x => x[0] === b.para)[1]; c.resp = [n]; c.meu = false; c.obs = '[Painel 26/10 ' + new Date().toTimeString().slice(0, 5) + '] ' + DEMO_D.nome + ' passou para ' + n + (b.texto ? ': ' + b.texto : '') + (c.obs ? '\n' + c.obs : ''); return wait({ ok: true, status: c.status }); }
     const para = { comecar: 'Fazendo', revisao: 'Em revisão', aprovar: 'Aguardando cliente', ajuste: 'Ajustes', agendei: 'Agendado', postei: 'Postado' }[b.acao];
@@ -1115,6 +1138,8 @@ const DEMO_D = {"ok":true,"nome":"Ismael (exemplo)","papel":"revisor","hoje":"20
   {"id":"c3","nome":"Marcos Lima (exemplo)","faixa":"B","atencao":false,"padroes":"Cortes secos, sem música por baixo da fala.","gosta":""},
   {"id":"c4","nome":"Paula Reis (exemplo)","faixa":"B","atencao":true,"padroes":"Thumb com rosto à esquerda, máximo 4 palavras.","gosta":""}],
  "cards":[
+  {"id":"l1","cod":431,"titulo":"Paula Reis | SHORTS 19-21","nome":"SHORTS 19-21","cliente":"c4","clienteNome":"Paula Reis (exemplo)","tipo":"Shorts","qtd":3,"status":"A fazer","prazo":"2026-10-25","postar":"2026-10-28","prioridade":"Urgente","link":"","linkPost":"","obs":"[Painel 26/10 15:40] Victor disse que não é com ele(a): é do pacote da Lorena","resp":[],"meu":false,"livre":true,"voltas":0},
+  {"id":"l2","cod":432,"titulo":"Marcos Lima | THUMB 08","nome":"THUMB 08","cliente":"c3","clienteNome":"Marcos Lima (exemplo)","tipo":"Thumbnail","qtd":1,"status":"A fazer","prazo":"2026-10-28","postar":"2026-10-30","prioridade":"","link":"","linkPost":"","obs":"","resp":[],"meu":false,"livre":true,"voltas":0},
   {"id":"k1","cod":412,"titulo":"","nome":"VÍDEO 09","cliente":"c1","clienteNome":"Dra. Helena (exemplo)","tipo":"Vídeo longo","qtd":1,"status":"Ajustes","prazo":"2026-10-23","postar":"2026-10-28","link":"","linkPost":"","obs":"[Painel 24/10 09:15] Ismael pediu ajuste: trocar o B-roll do minuto 3\n[Painel 23/10 16:40] Ismael mandou para revisão","resp":["Ismael"],"meu":true,"voltas":1},
   {"id":"k2","cod":418,"titulo":"","nome":"SHORTS 10-12","cliente":"c3","clienteNome":"Marcos Lima (exemplo)","tipo":"Shorts","qtd":3,"status":"A fazer","prazo":"2026-10-26","postar":"2026-10-29","link":"","linkPost":"","obs":"","resp":["Ismael"],"meu":true,"voltas":0},
   {"id":"k3","cod":420,"titulo":"","nome":"VÍDEO 05","cliente":"c2","clienteNome":"Instituto Aurora (exemplo)","tipo":"Vídeo longo","qtd":1,"status":"Fazendo","prazo":"2026-10-27","postar":"2026-10-29","link":"","linkPost":"","obs":"[Painel 26/10 08:31] Ismael começou","resp":["Ismael"],"meu":true,"voltas":0},

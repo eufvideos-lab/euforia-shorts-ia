@@ -23,6 +23,8 @@ const ok = !!r.token && r.token === p.u && r.ativo === true && String(r.pin) ===
 const hoje = DateTime.now().setZone('America/Recife');
 const amanha = hoje.plus({ days: hoje.weekday === 5 ? 3 : 1 }).toISODate();
 const naoFechado = ['Postado', 'Cancelado', 'Aprovado', 'Agendado'].map(s => ({ property: 'Status', select: { does_not_equal: s } }));
+// Fila de demandas: cards abertos sem Responsável. Quem é de edição escolhe e aperta "Pegar".
+const livre = { and: [{ property: 'Responsável', relation: { is_empty: true } }, ...['Postado', 'Cancelado', 'Aprovado', 'Agendado', 'Em revisão', 'Aguardando cliente'].map(s => ({ property: 'Status', select: { does_not_equal: s } }))] };
 let filtro = null;
 if (ok) {
   if (r.papel === 'teste') filtro = { and: [{ property: 'Entrega', title: { contains: 'TESTE PAINEL' } }, { property: 'Status', select: { does_not_equal: 'Postado' } }, { property: 'Status', select: { does_not_equal: 'Cancelado' } }] };
@@ -31,13 +33,13 @@ if (ok) {
     { property: 'Status', select: { equals: 'Em revisão' } },
     { property: 'Status', select: { equals: 'Aguardando cliente' } },
     { and: [{ property: 'Status', select: { equals: 'Aprovado' } }, { property: 'Postar em', date: { on_or_before: amanha } }] },
-    { and: [{ property: 'Status', select: { equals: 'Agendado' } }, { property: 'Postar em', date: { on_or_before: amanha } }] }] };
+    { and: [{ property: 'Status', select: { equals: 'Agendado' } }, { property: 'Postar em', date: { on_or_before: amanha } }] }, livre] };
   else if (r.papel === 'calls') filtro = { or: [
     { and: [{ property: 'Responsável', relation: { contains: r.ficha } }, ...naoFechado] },
     { property: 'Status', select: { equals: 'Aguardando cliente' } },
     { and: [{ property: 'Status', select: { equals: 'Aprovado' } }, { property: 'Postar em', date: { on_or_before: amanha } }] },
-    { and: [{ property: 'Status', select: { equals: 'Agendado' } }, { property: 'Postar em', date: { on_or_before: amanha } }] }] };
-  else filtro = { and: [{ property: 'Responsável', relation: { contains: r.ficha } }, ...naoFechado] };
+    { and: [{ property: 'Status', select: { equals: 'Agendado' } }, { property: 'Postar em', date: { on_or_before: amanha } }] }, livre] };
+  else filtro = { or: [{ and: [{ property: 'Responsável', relation: { contains: r.ficha } }, ...naoFechado] }, livre] };
 }
 return [{ json: { ok, nome: r.nome || '', ficha: r.ficha || '', papel: r.papel || '',
   consulta: JSON.stringify({ filter: filtro || { property: 'Entrega', title: { equals: '-' } }, sorts: [{ property: 'Postar em', direction: 'ascending' }], page_size: 100 }),
@@ -76,17 +78,21 @@ for (const it of $('Clientes ativos').all()) for (const p of (it.json.results ||
   cli[sem(p.id)] = { id: sem(p.id), nome: txt(pr['Cliente']), faixa: txt(pr['Faixa']) || txt(pr['Faixa base']), atencao: !!(pr['🔴 Atenção redobrada'] || {}).checkbox,
     padroes: txt(pr['Padrões de edição']).slice(0, 1200), gosta: txt(pr['Direção criativa (gosta / não gosta)']).slice(0, 1200) };
 }
+const TIPOS_LIVRE = ['Vídeo longo', 'Shorts', 'Podcast', 'Carrossel', 'Thumbnail'];
 const cards = [];
 for (const it of $('Cards da pessoa').all()) for (const p of (it.json.results || [])) {
   const pr = p.properties || {};
   const titulo = txt(pr['Entrega']);
   const cid = sem(((pr['Cliente'] || {}).relation || [])[0] && pr['Cliente'].relation[0].id);
   const resp = ((pr['Responsável'] || {}).relation || []).map(r => sem(r.id));
+  const status = txt(pr['Status']), tipo = txt(pr['Tipo']);
+  const livre = quem.papel !== 'teste' && !resp.length && TIPOS_LIVRE.includes(tipo) && ['A fazer', 'Fazendo', 'Ajustes'].includes(status);
+  if (quem.papel !== 'teste' && !resp.length && !livre && !['Em revisão', 'Aguardando cliente', 'Aprovado', 'Agendado'].includes(status)) continue;
   const partes = titulo.split('|').map(s => s.trim()).filter(Boolean);
   cards.push({ id: sem(p.id), cod: ((pr['Código'] || {}).unique_id || {}).number || null,
     titulo, nome: partes.length > 1 ? partes.slice(1).join(' · ') : titulo,
     cliente: cid, clienteNome: (cli[cid] || {}).nome || partes[0] || '',
-    tipo: txt(pr['Tipo']), qtd: (pr['Quantidade'] || {}).number || 1, status: txt(pr['Status']),
+    tipo, qtd: (pr['Quantidade'] || {}).number || 1, status, livre,
     prazo: txt(pr['Prazo']), postar: txt(pr['Postar em']), prioridade: txt(pr['Prioridade']),
     link: txt(pr['Link do arquivo']), linkPost: txt(pr['Link da postagem']),
     obs: txt(pr['Obs']).split('\\n').slice(0, 4).join('\\n').slice(0, 600),
@@ -106,7 +112,7 @@ const devolver = node({ type: 'n8n-nodes-base.respondToWebhook', version: 1.5, c
 const recusar = node({ type: 'n8n-nodes-base.respondToWebhook', version: 1.5, config: { name: 'Recusar acesso', parameters: {
   respondWith: 'json', responseBody: '={{ JSON.stringify($json.resposta) }}', options: {} } } });
 
-const nota = sticky('## Painel da equipe · fila (V1)\nA página grupoeuforia.com.br/equipe?u=<token> pede aqui a fila da pessoa (token + PIN da tabela "Painel equipe · acesso").\nEditor: cards abertos em que ela é Responsável. Revisor (Ismael): os dele + tudo Em revisão, Aguardando cliente e o que vai ao ar até amanhã. Calls (Rômulo): os dele + Aguardando cliente e o que vai ao ar até amanhã. Teste: só cards com "TESTE PAINEL" no título.\nSó leitura. Cliente sai só com faixa, atenção, padrões de edição e gosta/não gosta. Cards e clientes vêm página por página (sem limite de 100).', [], { color: 4 });
+const nota = sticky('## Painel da equipe · fila (V1)\nA página grupoeuforia.com.br/equipe?u=<token> pede aqui a fila da pessoa (token + PIN da tabela "Painel equipe · acesso").\nEditor: cards abertos em que ela é Responsável. Revisor (Ismael): os dele + tudo Em revisão, Aguardando cliente e o que vai ao ar até amanhã. Calls (Rômulo): os dele + Aguardando cliente e o que vai ao ar até amanhã. Teste: só cards com "TESTE PAINEL" no título.\nTodos (menos teste) recebem também a Fila de demandas: cards abertos sem Responsável de vídeo longo, shorts, podcast, carrossel e thumb (livre: true).\nSó leitura. Cliente sai só com faixa, atenção, padrões de edição e gosta/não gosta. Cards e clientes vêm página por página (sem limite de 100).', [], { color: 4 });
 
 export default workflow('painel-fila', 'Painel | Fila da equipe (V1)')
   .add(pedir).to(ler).to(acesso).to(validar)
