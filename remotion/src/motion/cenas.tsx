@@ -14,7 +14,7 @@ export const Pergunta: React.FC<P<'pergunta'>> = ({ c, m }) => {
     <AbsoluteFill>
       <Fundo m={m} />
       <AbsoluteFill style={{ justifyContent: 'center', alignItems: 'center' }}>
-        <div style={{ position: 'absolute', fontFamily: m.fonteDestaque, fontStyle: 'italic', fontSize: 1100, color: m.primaria, opacity: 0.06 * suave(t, 0, 0.8), transform: `rotate(${-8 + t * 2}deg) scale(${1 + t * 0.02})`, lineHeight: 1 }}>?</div>
+        <div style={{ position: 'absolute', fontFamily: m.fonteDestaque, fontStyle: 'italic', fontSize: 1100, color: m.primaria, opacity: 0.06 * suave(t, 0, 0.8), transform: `rotate(${-8 + t * 2}deg) scale(${1 + t * 0.02})`, lineHeight: 1 }}>{c.simbolo ?? '?'}</div>
         <div style={{ transform: `scale(${interpolate(t, [0, dur], [1, 1.06])})` }}>
           <Palavras m={m} palavras={c.palavras} tamanho={118} alinhar="center" largura={1560} />
         </div>
@@ -356,6 +356,169 @@ export const Institucional: React.FC<P<'institucional'>> = ({ c, m }) => {
                   <Icone nome={p.icone} cor={m.primaria} progresso={desenho} tam={124} />
                 </div>
                 <div style={{ fontFamily: m.fonteTitulo, fontWeight: 700, fontSize: 48, color: m.escura, letterSpacing: 1 }}>{p.t}</div>
+              </div>
+            );
+          })}
+        </div>
+      </AbsoluteFill>
+    </AbsoluteFill>
+  );
+};
+
+/* Câmera em cadeia: cada ponto parte de onde a anterior parou e chega em 0,9 s */
+const cadeia = <T extends { em: number }>(t: number, pts: T[], base: Omit<T, 'em'>, dur: number, campos: (keyof T)[]) => {
+  const cur: Record<string, number> = { ...(base as Record<string, number>) };
+  for (const p of pts) {
+    const k = suave(t, p.em - (dur === 0.6 ? dur : 0), p.em + (dur === 0.6 ? 0 : dur));
+    for (const c of campos) cur[c as string] = cur[c as string] + ((p[c] as unknown as number) - cur[c as string]) * k;
+  }
+  return cur as unknown as T;
+};
+
+/* Tela real do produto num navegador (ou celular): a câmera dá zoom nas áreas, o cursor anda e clica, destaques acendem */
+export const NavegadorCena: React.FC<P<'navegador'>> = ({ c, m }) => {
+  const { frame, fps, t } = useTempo();
+  const cel = c.dispositivo === 'celular';
+  const comTexto = !!c.texto?.length;
+  // área da tela (conteúdo) e moldura
+  const prop = c.proporcao ?? (cel ? 844 / 390 : 900 / 1440); // altura / largura da captura
+  const cw = cel ? 440 : comTexto ? 1160 : c.rotulo ? 1380 : 1480;
+  const ch = Math.round(cw * prop);
+  const barra = cel ? 0 : 40;
+  const borda = cel ? 14 : 0;
+  const W = cw + borda * 2;
+  const H = ch + barra + borda * 2;
+  const x0 = comTexto ? 1920 - 110 - W : (1920 - W) / 2;
+  const y0 = (1080 - H) / 2 + (c.rotulo && !comTexto ? 44 : 0);
+
+  const s = mola(frame, fps, 0.05, { damping: 18, stiffness: 90 });
+  const cam = cadeia(t, c.camera ?? [], { x: 0.5, y: 0.5, zoom: 1 }, 0.9, ['x', 'y', 'zoom']);
+  const z = cam.zoom;
+  const tx = Math.min(0, Math.max(cw - cw * z, cw / 2 - cam.x * cw * z));
+  const ty = Math.min(0, Math.max(ch - ch * z, ch / 2 - cam.y * ch * z));
+  const mapa = (x: number, y: number) => ({ x: tx + x * cw * z, y: ty + y * ch * z });
+
+  const cur = c.cursor ?? [];
+  const pc = cadeia(t, cur, { x: cur[0]?.x ?? 0.5, y: (cur[0]?.y ?? 0.5) + 0.25 }, 0.6, ['x', 'y']);
+  const curVis = cur.length ? suave(t, cur[0].em - 0.9, cur[0].em - 0.5) : 0;
+  const ultimoClique = [...cur].reverse().find((p) => p.clique && t >= p.em);
+  const tc = ultimoClique ? t - ultimoClique.em : 9;
+  const aperto = tc < 0.25 ? 1 - Math.sin((tc / 0.25) * Math.PI) * 0.18 : 1;
+  const pcur = mapa(pc.x, pc.y);
+
+  return (
+    <AbsoluteFill>
+      <Fundo m={m} />
+      {comTexto && (
+        <div style={{ position: 'absolute', left: 120, top: 0, bottom: 0, width: 1920 - W - 300, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+          {c.rotulo && <Rotulo m={m} t={c.rotulo} s={mola(frame, fps, 0.15, { damping: 12 })} />}
+          <div style={{ width: interpolate(suave(t, 0.2, 0.8), [0, 1], [0, 120]), height: 8, borderRadius: 4, background: m.primaria, margin: '28px 0 34px' }} />
+          <Palavras m={m} palavras={c.texto!} tamanho={76} largura={1920 - W - 300} />
+        </div>
+      )}
+      {!comTexto && c.rotulo && (
+        <div style={{ position: 'absolute', left: x0, top: y0 - 84 }}>
+          <Rotulo m={m} t={c.rotulo} s={mola(frame, fps, 0.2, { damping: 12 })} />
+        </div>
+      )}
+      <AbsoluteFill style={{ perspective: 2400 }}>
+        <div
+          style={{
+            position: 'absolute', left: x0, top: y0 + Math.sin(t * 0.9) * 5, width: W, height: H,
+            borderRadius: cel ? 58 : 20, overflow: 'hidden', background: cel ? '#141414' : '#fff',
+            boxShadow: `0 60px 110px -30px ${m.primaria}66, 0 22px 50px rgba(0,0,0,0.22)`,
+            border: cel ? 'none' : '1px solid rgba(0,0,0,0.08)',
+            transform: `translateY(${(1 - s) * 260}px) rotateX(${(1 - s) * 22}deg) rotateY(${comTexto ? -4 * s + (1 - s) * -14 : 0}deg) scale(${0.9 + 0.1 * s + t * 0.0015})`,
+            opacity: Math.min(1, s * 1.6), transformOrigin: 'center center',
+          }}
+        >
+          {!cel && (
+            <div style={{ height: barra, background: '#F1EFEB', display: 'flex', alignItems: 'center', gap: 9, paddingLeft: 18, borderBottom: '1px solid #E6E3DE' }}>
+              {['#ff5f57', '#febc2e', '#28c840'].map((cor) => <div key={cor} style={{ width: 13, height: 13, borderRadius: '50%', background: cor }} />)}
+              <div style={{ marginLeft: 22, height: 24, width: Math.min(460, cw * 0.42), borderRadius: 12, background: '#fff', border: '1px solid #E6E3DE', display: 'flex', alignItems: 'center', paddingLeft: 14, gap: 8, fontFamily: m.fonteCorpo, fontSize: 14, color: '#8a857e' }}>
+                <span style={{ width: 9, height: 11, border: '2px solid #8a857e', borderRadius: 2 }} />
+                portal do cliente
+              </div>
+            </div>
+          )}
+          <div style={{ position: 'absolute', left: borda, top: barra + borda, width: cw, height: ch, overflow: 'hidden', borderRadius: cel ? 44 : 0, background: '#fff' }}>
+            <div style={{ position: 'absolute', left: 0, top: 0, width: cw, height: ch, transform: `translate(${tx}px, ${ty}px) scale(${z})`, transformOrigin: '0 0' }}>
+              {c.telas.map((tl, i) => (
+                <Img key={i} src={staticFile(tl.src)} style={{ position: 'absolute', inset: 0, width: cw, height: ch, objectFit: 'cover', objectPosition: 'top', opacity: i === 0 ? 1 : suave(t, tl.em, tl.em + 0.35) }} />
+              ))}
+            </div>
+            {(c.destaques ?? []).map((d, i) => {
+              const a = suave(t, d.em, d.em + 0.5) * (1 - suave(t, d.ate, d.ate + 0.3));
+              if (a <= 0) return null;
+              const p1 = mapa(d.x, d.y);
+              const p2 = mapa(d.x + d.w, d.y + d.h);
+              const pulso = 1 + Math.sin((t - d.em) * 5) * 0.012;
+              return (
+                <svg key={i} style={{ position: 'absolute', left: p1.x - 10, top: p1.y - 10, width: p2.x - p1.x + 20, height: p2.y - p1.y + 20, overflow: 'visible', transform: `scale(${pulso})`, filter: `drop-shadow(0 0 14px ${m.primaria}aa)` }}>
+                  <rect x={5} y={5} width={p2.x - p1.x + 10} height={p2.y - p1.y + 10} rx={16} fill={`${m.primaria}10`} stroke={m.primaria} strokeWidth={5} pathLength={1} strokeDasharray={1} strokeDashoffset={1 - a} opacity={Math.min(1, a * 1.5)} />
+                </svg>
+              );
+            })}
+            {curVis > 0 && (
+              <>
+                {tc < 0.7 && (
+                  <div style={{ position: 'absolute', left: pcur.x - 40 * (tc / 0.7) - 6, top: pcur.y - 40 * (tc / 0.7) - 6, width: 80 * (tc / 0.7) + 12, height: 80 * (tc / 0.7) + 12, borderRadius: '50%', border: `4px solid ${m.primaria}`, opacity: 1 - tc / 0.7 }} />
+                )}
+                <svg viewBox="0 0 24 24" style={{ position: 'absolute', left: pcur.x - 4, top: pcur.y - 2, width: cel ? 46 : 40, height: cel ? 46 : 40, opacity: curVis, transform: `scale(${aperto})`, transformOrigin: '4px 2px', filter: 'drop-shadow(0 6px 10px rgba(0,0,0,0.35))' }}>
+                  {cel ? <circle cx={8} cy={8} r={7} fill="rgba(20,20,20,0.35)" stroke="#fff" strokeWidth={2} /> : <path d="M4 2 L4 20 L9 15.5 L12.5 22.5 L15.5 21 L12 14 L19 14 Z" fill="#141414" stroke="#fff" strokeWidth={1.6} strokeLinejoin="round" />}
+                </svg>
+              </>
+            )}
+          </div>
+          {cel && <div style={{ position: 'absolute', left: W / 2 - 14, top: borda + 10, width: 28, height: 28, borderRadius: 14, background: '#141414' }} />}
+        </div>
+      </AbsoluteFill>
+    </AbsoluteFill>
+  );
+};
+
+/* Pílula com o nome da área (ex.: ENTREGAS) */
+const Rotulo: React.FC<{ m: Marca; t: string; s: number }> = ({ m, t, s }) => (
+  <div style={{ display: 'inline-flex', alignItems: 'center', gap: 14, padding: '12px 30px 12px 18px', borderRadius: 999, background: `linear-gradient(90deg, ${m.secundaria}, ${m.primaria})`, color: '#fff', fontFamily: m.fonteTitulo, fontWeight: 800, fontSize: 40, letterSpacing: 4, textTransform: 'uppercase', transform: `scale(${0.6 + 0.4 * s})`, transformOrigin: 'left center', opacity: Math.min(1, s * 1.5), boxShadow: `0 18px 36px -12px ${m.primaria}aa`, alignSelf: 'flex-start' }}>
+    <div style={{ width: 16, height: 16, borderRadius: '50%', background: '#fff' }} />
+    {t}
+  </div>
+);
+
+/* Abas/cartões que entram um a um; o último que entrou fica aceso na cor da marca */
+export const Abas: React.FC<P<'abas'>> = ({ c, m }) => {
+  const { frame, fps, t } = useTempo();
+  const n = c.abas.length;
+  const gap = 36;
+  const larg = Math.min(420, (1680 - gap * (n - 1)) / n);
+  const ativo = c.abas.reduce((acc, a, i) => (t >= a.em ? i : acc), -1);
+  return (
+    <AbsoluteFill>
+      <Fundo m={m} />
+      <AbsoluteFill style={{ alignItems: 'center', paddingTop: 150 }}>
+        <Palavras m={m} palavras={c.titulo} tamanho={92} alinhar="center" largura={1600} />
+        <div style={{ display: 'flex', gap, marginTop: 90 }}>
+          {c.abas.map((a, i) => {
+            const s = mola(frame, fps, a.em, { damping: 13 });
+            const aceso = suave(t, a.em, a.em + 0.3) * (ativo === i ? 1 : 1 - suave(t, c.abas[i + 1]?.em ?? 999, (c.abas[i + 1]?.em ?? 999) + 0.3));
+            const desenho = suave(t, a.em + 0.1, a.em + 1.1);
+            return (
+              <div
+                key={i}
+                style={{
+                  position: 'relative', width: larg, padding: '46px 38px 50px', borderRadius: 34, overflow: 'hidden',
+                  background: '#fff', border: `2px solid ${aceso > 0.5 ? 'transparent' : '#E6E3DE'}`,
+                  boxShadow: `0 ${30 + aceso * 30}px ${60 + aceso * 40}px -30px ${m.primaria}${aceso > 0.5 ? 'bb' : '44'}`,
+                  transform: `translateY(${(1 - s) * 160 - aceso * 18 + Math.sin(t * 1.3 + i) * 4}px) scale(${0.85 + 0.15 * s})`, opacity: Math.min(1, s * 1.5),
+                  display: 'flex', flexDirection: 'column', gap: 22,
+                }}
+              >
+                <div style={{ position: 'absolute', inset: 0, background: `linear-gradient(150deg, ${m.secundaria}, ${m.primaria})`, opacity: aceso }} />
+                <div style={{ position: 'relative', width: 120, height: 120, borderRadius: 30, background: aceso > 0.5 ? 'rgba(255,255,255,0.18)' : `${m.primaria}14`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Icone nome={a.icone} cor={aceso > 0.5 ? '#fff' : m.primaria} progresso={desenho} tam={84} />
+                </div>
+                <div style={{ position: 'relative', fontFamily: m.fonteTitulo, fontWeight: 800, fontSize: 60, lineHeight: 1, color: aceso > 0.5 ? '#fff' : m.escura, textTransform: 'uppercase', letterSpacing: 1 }}>{a.t}</div>
+                <div style={{ position: 'relative', fontFamily: m.fonteCorpo, fontWeight: 500, fontSize: 28, lineHeight: 1.35, color: aceso > 0.5 ? '#fff' : m.texto }}>{a.desc}</div>
               </div>
             );
           })}

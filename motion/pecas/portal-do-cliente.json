@@ -1,0 +1,617 @@
+{
+ "fps": 30,
+ "largura": 1920,
+ "altura": 1080,
+ "duracao": 95.6,
+ "audio": "portal/narracao.mp3",
+ "marca": {
+  "primaria": "#FF5A00",
+  "secundaria": "#FF8A3D",
+  "escura": "#141414",
+  "fundo": "#FFFFFF",
+  "texto": "#5E5A54",
+  "fonteTitulo": "Barlow Condensed",
+  "fonteCorpo": "Inter",
+  "fonteDestaque": "Barlow Condensed"
+ },
+ "cenas": [
+  {
+   "tipo": "pergunta",
+   "inicio": 0,
+   "fim": 4.2,
+   "palavras": [
+    {
+     "t": "Já",
+     "em": 0
+    },
+    {
+     "t": "imaginou",
+     "em": 0.22
+    },
+    {
+     "t": "acompanhar",
+     "em": 0.77
+    },
+    {
+     "t": "tudo",
+     "em": 1.43
+    },
+    {
+     "t": "do",
+     "em": 1.92
+    },
+    {
+     "t": "seu",
+     "em": 2.06
+    },
+    {
+     "t": "canal",
+     "em": 2.26
+    },
+    {
+     "t": "num",
+     "em": 2.96,
+     "quebra": true
+    },
+    {
+     "t": "lugar",
+     "em": 3.18,
+     "destaque": true
+    },
+    {
+     "t": "só?",
+     "em": 3.68,
+     "destaque": true
+    }
+   ]
+  },
+  {
+   "tipo": "navegador",
+   "inicio": 4.2,
+   "fim": 8.3,
+   "rotulo": "Portal do Cliente",
+   "telas": [
+    {
+     "src": "portal/inicio.png",
+     "em": 0
+    }
+   ],
+   "camera": [
+    {
+     "em": 1.2,
+     "x": 0.5,
+     "y": 0.4,
+     "zoom": 1.08
+    }
+   ]
+  },
+  {
+   "tipo": "abas",
+   "inicio": 8.3,
+   "fim": 13.9,
+   "titulo": [
+    {
+     "t": "São",
+     "em": 0.14
+    },
+    {
+     "t": "quatro",
+     "em": 0.49,
+     "destaque": true
+    },
+    {
+     "t": "abas:",
+     "em": 0.93
+    }
+   ],
+   "abas": [
+    {
+     "t": "Início",
+     "desc": "O que está esperando por você",
+     "em": 1.56,
+     "icone": "casa"
+    },
+    {
+     "t": "Entregas",
+     "desc": "Cada peça, do a fazer ao publicado",
+     "em": 2.33,
+     "icone": "quadro"
+    },
+    {
+     "t": "Gravações",
+     "desc": "Roteiros e envio do vídeo",
+     "em": 3.4,
+     "icone": "camera"
+    },
+    {
+     "t": "Mensagens",
+     "desc": "Conversa direta com a equipe",
+     "em": 4.72,
+     "icone": "balao"
+    }
+   ]
+  },
+  {
+   "tipo": "navegador",
+   "inicio": 13.9,
+   "fim": 21.6,
+   "rotulo": "Início",
+   "telas": [
+    {
+     "src": "portal/inicio.png",
+     "em": 0
+    }
+   ],
+   "camera": [
+    {
+     "em": 0.5,
+     "x": 0.58,
+     "y": 0.26,
+     "zoom": 1.55
+    }
+   ],
+   "cursor": [
+    {
+     "em": 0.4,
+     "x": 0.07,
+     "y": 0.13,
+     "clique": true
+    }
+   ],
+   "destaques": [
+    {
+     "em": 2.09,
+     "ate": 3.5,
+     "x": 0.189,
+     "y": 0.124,
+     "w": 0.254,
+     "h": 0.235
+    },
+    {
+     "em": 3.74,
+     "ate": 5.8,
+     "x": 0.454,
+     "y": 0.124,
+     "w": 0.254,
+     "h": 0.235
+    },
+    {
+     "em": 6.08,
+     "ate": 30,
+     "x": 0.719,
+     "y": 0.124,
+     "w": 0.254,
+     "h": 0.235
+    }
+   ]
+  },
+  {
+   "tipo": "navegador",
+   "inicio": 21.6,
+   "fim": 34.9,
+   "rotulo": "Entregas",
+   "telas": [
+    {
+     "src": "portal/entregas.png",
+     "em": 0
+    },
+    {
+     "src": "portal/aprovar.png",
+     "em": 10.850000000000001
+    },
+    {
+     "src": "portal/aprovado.png",
+     "em": 12.649999999999999
+    }
+   ],
+   "camera": [
+    {
+     "em": 0.3,
+     "x": 0.58,
+     "y": 0.33,
+     "zoom": 1.2
+    },
+    {
+     "em": 6.3,
+     "x": 0.59,
+     "y": 0.3,
+     "zoom": 1.75
+    },
+    {
+     "em": 10.9,
+     "x": 0.8,
+     "y": 0.33,
+     "zoom": 1.55
+    },
+    {
+     "em": 12.7,
+     "x": 0.6,
+     "y": 0.3,
+     "zoom": 1.25
+    }
+   ],
+   "cursor": [
+    {
+     "em": 0.5,
+     "x": 0.07,
+     "y": 0.18,
+     "clique": true
+    },
+    {
+     "em": 10.76,
+     "x": 0.58,
+     "y": 0.26,
+     "clique": true
+    },
+    {
+     "em": 12.52,
+     "x": 0.686,
+     "y": 0.348,
+     "clique": true
+    }
+   ],
+   "destaques": [
+    {
+     "em": 8.78,
+     "ate": 10.6,
+     "x": 0.511,
+     "y": 0.175,
+     "w": 0.153,
+     "h": 0.356
+    }
+   ]
+  },
+  {
+   "tipo": "navegador",
+   "inicio": 34.9,
+   "fim": 44.7,
+   "rotulo": "Pedir ajuste",
+   "telas": [
+    {
+     "src": "portal/aprovar.png",
+     "em": 0
+    },
+    {
+     "src": "portal/ajuste.png",
+     "em": 2.3000000000000043
+    },
+    {
+     "src": "portal/ajuste-escrito.png",
+     "em": 4.0
+    }
+   ],
+   "camera": [
+    {
+     "em": 0,
+     "x": 0.8,
+     "y": 0.33,
+     "zoom": 1.55
+    },
+    {
+     "em": 2.7,
+     "x": 0.8,
+     "y": 0.5,
+     "zoom": 1.55
+    }
+   ],
+   "cursor": [
+    {
+     "em": 2.23,
+     "x": 0.764,
+     "y": 0.348,
+     "clique": true
+    },
+    {
+     "em": 3.6,
+     "x": 0.8,
+     "y": 0.47,
+     "clique": true
+    },
+    {
+     "em": 6.73,
+     "x": 0.82,
+     "y": 0.592,
+     "clique": true
+    },
+    {
+     "em": 8.1,
+     "x": 0.72,
+     "y": 0.652,
+     "clique": true
+    }
+   ],
+   "destaques": [
+    {
+     "em": 4.0,
+     "ate": 6.3,
+     "x": 0.656,
+     "y": 0.423,
+     "w": 0.328,
+     "h": 0.107
+    }
+   ]
+  },
+  {
+   "tipo": "pergunta",
+   "inicio": 44.7,
+   "fim": 47.95,
+   "simbolo": "",
+   "palavras": [
+    {
+     "t": "Nada",
+     "em": 0.07
+    },
+    {
+     "t": "vai",
+     "em": 0.66
+    },
+    {
+     "t": "ao",
+     "em": 0.94
+    },
+    {
+     "t": "ar",
+     "em": 1.2
+    },
+    {
+     "t": "sem",
+     "em": 1.8,
+     "quebra": true
+    },
+    {
+     "t": "o",
+     "em": 2.17
+    },
+    {
+     "t": "seu",
+     "em": 2.28
+    },
+    {
+     "t": "OK.",
+     "em": 2.56,
+     "destaque": true
+    }
+   ]
+  },
+  {
+   "tipo": "navegador",
+   "inicio": 47.95,
+   "fim": 61.1,
+   "rotulo": "Gravações",
+   "telas": [
+    {
+     "src": "portal/gravacoes.png",
+     "em": 0
+    }
+   ],
+   "camera": [
+    {
+     "em": 1.35,
+     "x": 0.41,
+     "y": 0.27,
+     "zoom": 1.6
+    },
+    {
+     "em": 3.25,
+     "x": 0.81,
+     "y": 0.33,
+     "zoom": 1.6
+    }
+   ],
+   "cursor": [
+    {
+     "em": 0.5,
+     "x": 0.07,
+     "y": 0.23,
+     "clique": true
+    },
+    {
+     "em": 2.35,
+     "x": 0.6,
+     "y": 0.235,
+     "clique": true
+    },
+    {
+     "em": 4.45,
+     "x": 0.81,
+     "y": 0.26,
+     "clique": true
+    },
+    {
+     "em": 12.25,
+     "x": 0.81,
+     "y": 0.463,
+     "clique": true
+    }
+   ],
+   "destaques": [
+    {
+     "em": 1.52,
+     "ate": 3.05,
+     "x": 0.203,
+     "y": 0.186,
+     "w": 0.421,
+     "h": 0.149
+    },
+    {
+     "em": 7.63,
+     "ate": 11.55,
+     "x": 0.665,
+     "y": 0.186,
+     "w": 0.293,
+     "h": 0.148
+    }
+   ]
+  },
+  {
+   "tipo": "navegador",
+   "inicio": 61.1,
+   "fim": 71.5,
+   "rotulo": "Mensagens",
+   "telas": [
+    {
+     "src": "portal/mensagens.png",
+     "em": 0
+    },
+    {
+     "src": "portal/msg-escrita.png",
+     "em": 6.499999999999993
+    }
+   ],
+   "camera": [
+    {
+     "em": 0.5,
+     "x": 0.55,
+     "y": 0.26,
+     "zoom": 1.4
+    }
+   ],
+   "cursor": [
+    {
+     "em": 0.5,
+     "x": 0.07,
+     "y": 0.28,
+     "clique": true
+    },
+    {
+     "em": 6.02,
+     "x": 0.45,
+     "y": 0.343,
+     "clique": true
+    },
+    {
+     "em": 7.3,
+     "x": 0.93,
+     "y": 0.343,
+     "clique": true
+    }
+   ],
+   "destaques": [
+    {
+     "em": 2.6,
+     "ate": 5.5,
+     "x": 0.203,
+     "y": 0.147,
+     "w": 0.754,
+     "h": 0.157
+    },
+    {
+     "em": 8.15,
+     "ate": 30,
+     "x": 0.21,
+     "y": 0.155,
+     "w": 0.43,
+     "h": 0.06
+    }
+   ]
+  },
+  {
+   "tipo": "abas",
+   "inicio": 71.5,
+   "fim": 81.95,
+   "titulo": [
+    {
+     "t": "Cada",
+     "em": 0.08
+    },
+    {
+     "t": "pessoa",
+     "em": 0.48
+    },
+    {
+     "t": "tem",
+     "em": 1.1
+    },
+    {
+     "t": "o",
+     "em": 1.35
+    },
+    {
+     "t": "próprio",
+     "em": 1.48
+    },
+    {
+     "t": "link.",
+     "em": 1.97,
+     "destaque": true
+    }
+   ],
+   "abas": [
+    {
+     "t": "Você e seu sócio",
+     "desc": "Aprovam e pedem ajuste",
+     "em": 2.69,
+     "icone": "coroa"
+    },
+    {
+     "t": "Sua equipe",
+     "desc": "Acompanha, manda mensagem e envia gravações",
+     "em": 5.83,
+     "icone": "grupo"
+    }
+   ]
+  },
+  {
+   "tipo": "navegador",
+   "inicio": 81.95,
+   "fim": 88.95,
+   "dispositivo": "celular",
+   "rotulo": "De onde estiver",
+   "texto": [
+    {
+     "t": "Funciona",
+     "em": 0.11
+    },
+    {
+     "t": "no",
+     "em": 0.71
+    },
+    {
+     "t": "celular",
+     "em": 0.84,
+     "destaque": true
+    },
+    {
+     "t": "e",
+     "em": 1.46,
+     "quebra": true
+    },
+    {
+     "t": "no",
+     "em": 1.77
+    },
+    {
+     "t": "computador.",
+     "em": 1.91,
+     "destaque": true
+    }
+   ],
+   "telas": [
+    {
+     "src": "portal/cel-inicio.png",
+     "em": 0
+    },
+    {
+     "src": "portal/cel-entregas.png",
+     "em": 3.799999999999997
+    }
+   ],
+   "cursor": [
+    {
+     "em": 3.65,
+     "x": 0.36,
+     "y": 0.107,
+     "clique": true
+    }
+   ]
+  },
+  {
+   "tipo": "logo",
+   "inicio": 88.95,
+   "fim": 95.6,
+   "logo": "portal/logo-euforia-hd.png",
+   "botao": "BOAS-VINDAS!",
+   "botaoEm": 3.51
+  }
+ ]
+}

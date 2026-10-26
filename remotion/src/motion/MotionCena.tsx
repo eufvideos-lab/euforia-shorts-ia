@@ -3,7 +3,7 @@ import React from 'react';
 import { AbsoluteFill, Audio, Sequence, staticFile, useVideoConfig } from 'remotion';
 import type { Cena, MotionProps } from './tipos';
 import { Faixa } from './primitivas';
-import { Apresentador, Institucional, Logo, Parede, Pergunta, Preco, Ritmo, Telas } from './cenas';
+import { Abas, Apresentador, Institucional, Logo, NavegadorCena, Parede, Pergunta, Preco, Ritmo, Telas } from './cenas';
 
 const SOBRA = 0.4; // a cena fica um pouco além do fim, por baixo da faixa da próxima
 
@@ -17,6 +17,8 @@ const render = (c: Cena, m: MotionProps['marca']) => {
     case 'preco': return <Preco c={c} m={m} />;
     case 'logo': return <Logo c={c} m={m} />;
     case 'institucional': return <Institucional c={c} m={m} />;
+    case 'navegador': return <NavegadorCena c={c} m={m} />;
+    case 'abas': return <Abas c={c} m={m} />;
   }
 };
 
