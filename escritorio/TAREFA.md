@@ -43,6 +43,7 @@ Ordem: Prioridade Urgente primeiro, depois cliente com 🔴 atenção redobrada,
 | Depende de algo que o cliente não mandou (fotos, acesso, dados, aprovação) e não dá para fazer versão com "a confirmar" | **Falta do cliente.** Obs: o que falta, desde quando, onde foi pedido. |
 | Pedido vago (só título) | Leia ficha, grupo e calls. Se ainda não der para saber o que entregar: **Precisa da Direção** com a dúvida em 1 linha. |
 | Já foi feito em outro lugar (link no grupo, no 🎬, na ficha, numa apresentação) | Ponha o link, Status Em revisão (ou Aprovado se já foi usado com o cliente), "Feito pela IA". |
+| Identidade do setup: ID DO CANAL, ANTES E DEPOIS DO CANAL, MODELO DE CARROSSEL, CALL DE CONSULTORIA AUDIOVISUAL / CALL DE APROVAÇÃO | **Produzir** seguindo `escritorio/identidade/IDENTIDADE.md` (kit em PNG, antes e depois, apresentação da call). |
 | O resto (relatório, apresentação de call, página de vendas, copy, funil, roteiros, pautas, SEO, bio, guia, estratégia, posicionamento, conferências) | **Produzir** (passo 3). |
 
 ## 3. Produzir
