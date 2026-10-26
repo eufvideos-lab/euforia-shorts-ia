@@ -122,9 +122,7 @@ const montarAviso = node({ type: 'n8n-nodes-base.code', version: 2, config: { na
 const f = $input.first().json;
 const novo = f.createdTime && (Date.now() - new Date(f.createdTime)) < 2 * 24 * 3600 * 1000;
 const ok = (f.parents || []).includes(v.pasta) && novo;
-const mb = f.size ? (Number(f.size) / 1024 ** 2 >= 1024 ? (Number(f.size) / 1024 ** 3).toFixed(1) + ' GB' : Math.round(Number(f.size) / 1024 ** 2) + ' MB') : '';
-const msg = '📥 **' + v.nome + '** enviou uma gravação pelo portal' + (v.roteiro ? ' (roteiro: **' + v.roteiro + '**)' : '') + ':\\n' + f.name + (mb ? ' · ' + mb : '') + '\\nJá está em ARQUIVOS BRUTOS: ' + (f.webViewLink || '') + '\\n' + v.quem + ', pode seguir com a edição.\\n— Érica, time de suporte, Grupo Euforia';
-return [{ json: { ok, discord: JSON.stringify({ content: msg.slice(0, 1990) }), resposta: ok ? { ok: true } : { ok: false, motivo: 'arquivo' } } }];
+return [{ json: { ok, pasta: v.pasta, resposta: ok ? { ok: true } : { ok: false, motivo: 'arquivo' } } }];
 ` } } });
 
 const avisoOk = ifElse({ version: 2.2, config: { name: 'Arquivo confere?', parameters: { conditions: {
@@ -132,9 +130,74 @@ const avisoOk = ifElse({ version: 2.2, config: { name: 'Arquivo confere?', param
   conditions: [{ leftValue: '={{ $json.ok }}', rightValue: '', operator: { type: 'boolean', operation: 'true', singleValue: true } }],
   combinator: 'and' } } } });
 
+// Edição automática: o vídeo vai para uma pasta "VÍDEO NN" nova e abre um pedido "Editar" no quadro de Vídeos Longos IA.
+const listarVideos = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, config: { name: 'Pastas VÍDEO NN', credentials: DRIVE, onError: 'continueRegularOutput', alwaysOutputData: true, parameters: {
+  method: 'GET', url: 'https://www.googleapis.com/drive/v3/files', authentication: 'predefinedCredentialType', nodeCredentialType: 'googleDriveOAuth2Api',
+  sendQuery: true, queryParameters: { parameters: [
+    { name: 'q', value: "={{ \"'\" + $json.pasta + \"' in parents and mimeType = 'application/vnd.google-apps.folder' and trashed = false\" }}" },
+    { name: 'fields', value: 'files(id,name)' },
+    { name: 'pageSize', value: '200' },
+    { name: 'supportsAllDrives', value: 'true' },
+    { name: 'includeItemsFromAllDrives', value: 'true' }] }, options: {} } } });
+
+const numerar = node({ type: 'n8n-nodes-base.code', version: 2, config: { name: 'Próximo número', parameters: { jsCode: `const nums = ($input.first().json.files || []).map(f => (String(f.name).trim().match(/^V[IÍ]DEO\\s*0*(\\d+)/i) || [])[1]).filter(Boolean).map(Number);
+const n = (nums.length ? Math.max(...nums) : 0) + 1;
+const nome = 'VÍDEO ' + String(n).padStart(2, '0');
+return [{ json: { n, nome, meta: JSON.stringify({ name: nome, mimeType: 'application/vnd.google-apps.folder', parents: [$('Montar aviso').first().json.pasta] }) } }];
+` } } });
+
+const criarPasta = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, config: { name: 'Criar pasta VÍDEO NN', credentials: DRIVE, onError: 'continueRegularOutput', alwaysOutputData: true, parameters: {
+  method: 'POST', url: 'https://www.googleapis.com/drive/v3/files', authentication: 'predefinedCredentialType', nodeCredentialType: 'googleDriveOAuth2Api',
+  sendQuery: true, queryParameters: { parameters: [{ name: 'supportsAllDrives', value: 'true' }, { name: 'fields', value: 'id,name' }] },
+  sendBody: true, specifyBody: 'json', jsonBody: '={{ $json.meta }}', options: {} } } });
+
+const mover = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, config: { name: 'Mover vídeo para a pasta', credentials: DRIVE, onError: 'continueRegularOutput', alwaysOutputData: true, parameters: {
+  method: 'PATCH', url: '={{ "https://www.googleapis.com/drive/v3/files/" + $("Validar pedido").first().json.fileId }}', authentication: 'predefinedCredentialType', nodeCredentialType: 'googleDriveOAuth2Api',
+  sendQuery: true, queryParameters: { parameters: [
+    { name: 'addParents', value: '={{ $json.id || "" }}' },
+    { name: 'removeParents', value: '={{ $json.id ? $("Montar aviso").first().json.pasta : "" }}' },
+    { name: 'supportsAllDrives', value: 'true' },
+    { name: 'fields', value: 'id,name,parents,size,webViewLink' }] },
+  sendBody: true, specifyBody: 'json', jsonBody: '{}', options: {} } } });
+
+const montarPedido = node({ type: 'n8n-nodes-base.code', version: 2, config: { name: 'Montar pedido de edição', parameters: { jsCode: `const Z = 'America/Recife';
+const v = $('Validar pedido').first().json;
+const p = $('Ler pedido').first().json;
+const f = $('Conferir arquivo no Drive').first().json;
+const pasta = $('Criar pasta VÍDEO NN').first().json;
+const nn = pasta.id ? $('Próximo número').first().json.nome : '';
+const link = f.webViewLink || ('https://drive.google.com/file/d/' + v.fileId + '/view');
+const agora = DateTime.now().setZone(Z).toFormat('dd/MM HH:mm');
+const titulo = v.nome.toUpperCase() + ' | ' + (nn || 'VÍDEO') + ' (portal)';
+const obs = 'Enviado pelo cliente pelo portal em ' + agora + '.' + (v.roteiro ? ' Roteiro: ' + v.roteiro + '.' : '');
+const t = s => [{ type: 'text', text: { content: String(s).slice(0, 1900) } }];
+const body = { parent: { database_id: '3fea57fbb3ca4a7d9d16921d2f0b00cf' }, properties: {
+  'Pedido': { title: t(titulo) },
+  'Cliente': { relation: [{ id: p.id }] },
+  'Vídeo bruto (link do Drive)': { url: link },
+  'Status': { select: { name: 'Editar' } },
+  'Modelo': { select: { name: /acr[oó]pole/i.test(v.nome) ? 'Nova Acrópole' : 'Padrão' } },
+  'Observações para a máquina': { rich_text: t(obs) } } };
+const mb = f.size ? (Number(f.size) / 1024 ** 2 >= 1024 ? (Number(f.size) / 1024 ** 3).toFixed(1) + ' GB' : Math.round(Number(f.size) / 1024 ** 2) + ' MB') : '';
+return [{ json: { body: JSON.stringify(body), nn, link, mb, nomeArq: f.name } }];
+` } } });
+
+const criarPedido = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, config: { name: 'Abrir pedido de edição', credentials: NOTION, onError: 'continueRegularOutput', alwaysOutputData: true, parameters: {
+  method: 'POST', url: 'https://api.notion.com/v1/pages', authentication: 'genericCredentialType', genericAuthType: 'httpHeaderAuth',
+  sendHeaders: true, headerParameters: NOTION_HDR, sendBody: true, specifyBody: 'json', jsonBody: '={{ $json.body }}', options: {} } } });
+
+const montarDiscord = node({ type: 'n8n-nodes-base.code', version: 2, config: { name: 'Montar aviso da equipe', parameters: { jsCode: `const v = $('Validar pedido').first().json;
+const m = $('Montar pedido de edição').first().json;
+const pedido = $input.first().json;
+const onde = 'ARQUIVOS BRUTOS' + (m.nn ? ' › ' + m.nn : '');
+const edicao = pedido.id ? 'Pedido de edição aberto no quadro de Vídeos Longos IA (Editar): ' + (pedido.url || '') : '⚠️ Não consegui abrir o pedido de edição; abram no quadro de Vídeos Longos IA.';
+const msg = '📥 **' + v.nome + '** enviou uma gravação pelo portal' + (v.roteiro ? ' (roteiro: **' + v.roteiro + '**)' : '') + ':\\n' + m.nomeArq + (m.mb ? ' · ' + m.mb : '') + '\\nJá está em ' + onde + ': ' + m.link + '\\n' + edicao + '\\n' + v.quem + ', acompanhem a edição.\\n— Érica, time de suporte, Grupo Euforia';
+return [{ json: { discord: JSON.stringify({ content: msg.slice(0, 1990) }) } }];
+` } } });
+
 const avisar = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, config: { name: 'Avisar no #dia-a-dia', credentials: DISCORD, onError: 'continueRegularOutput', parameters: {
   method: 'POST', url: 'https://discord.com/api/v10/channels/1556642691410956339/messages', authentication: 'genericCredentialType', genericAuthType: 'httpHeaderAuth',
-  sendBody: true, specifyBody: 'json', jsonBody: '={{ $("Montar aviso").first().json.discord }}', options: {} } } });
+  sendBody: true, specifyBody: 'json', jsonBody: '={{ $json.discord }}', options: {} } } });
 
 const confirmar = node({ type: 'n8n-nodes-base.respondToWebhook', version: 1.5, config: { name: 'Confirmar ao cliente', parameters: {
   respondWith: 'json', responseBody: '={{ JSON.stringify($("Montar aviso").first().json.resposta) }}', options: {} } } });
@@ -145,13 +208,13 @@ const recusarArq = node({ type: 'n8n-nodes-base.respondToWebhook', version: 1.5,
 const recusar = node({ type: 'n8n-nodes-base.respondToWebhook', version: 1.5, config: { name: 'Recusar pedido', parameters: {
   respondWith: 'json', responseBody: '={{ JSON.stringify($json.resposta) }}', options: {} } } });
 
-const nota = sticky('## Portal do cliente · envio de gravação (V1)\n1) "iniciar": acha a pasta ARQUIVOS BRUTOS do cliente (link Drive da ficha ou "NN - NOME" em CLIENTES) e abre um envio no Drive. O navegador manda o vídeo direto ao Google, em partes.\n2) "pronto": confere que o arquivo caiu na pasta certa e avisa no #dia-a-dia marcando o responsável.\nNome do arquivo: "dd-MM HHhmm Portal - roteiro - nome original".', [], { color: 4 });
+const nota = sticky('## Portal do cliente · envio de gravação (V1)\n1) "iniciar": acha a pasta ARQUIVOS BRUTOS do cliente (link Drive da ficha ou "NN - NOME" em CLIENTES) e abre um envio no Drive. O navegador manda o vídeo direto ao Google, em partes.\n2) "pronto": confere o arquivo, cria a pasta "VÍDEO NN" seguinte em ARQUIVOS BRUTOS, move o vídeo para ela, abre o pedido "Editar" no quadro 🎞️ Pedidos de Vídeos Longos IA e avisa no #dia-a-dia marcando o responsável.\nNome do arquivo: "dd-MM HHhmm Portal - roteiro - nome original".', [], { color: 4 });
 
 export default workflow('portal-gravacao', 'Portal | Envio de gravação (V1)')
   .add(pedir).to(lerPedido).to(fichaNode).to(pastaCliente).to(escolher).to(subpastas).to(brutos).to(brutosNeta).to(validar)
   .to(podeSeguir
     .onTrue(qualEtapa
       .onTrue(abrir.to(endereco).to(entregarEndereco))
-      .onFalse(conferir.to(montarAviso).to(avisoOk.onTrue(avisar.to(confirmar)).onFalse(recusarArq))))
+      .onFalse(conferir.to(montarAviso).to(avisoOk.onTrue(listarVideos.to(numerar).to(criarPasta).to(mover).to(montarPedido).to(criarPedido).to(montarDiscord).to(avisar).to(confirmar)).onFalse(recusarArq))))
     .onFalse(recusar))
   .add(nota);
