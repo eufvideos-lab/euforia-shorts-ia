@@ -317,7 +317,7 @@ const TIPOS = [
 // Erros que a pessoa consegue resolver sozinha; o resto vira o aviso padrão.
 const MOTIVO = {acesso:'Seu acesso mudou. Entre de novo com o PIN.', permissao:'Esse card não está no seu nome.', etapa:'Esse card mudou de etapa. A fila foi atualizada.',
   link:'Cole o link antes de mandar.', texto:'Escreva o que precisa antes de mandar.', prazo:'Escolha um prazo de hoje em diante.', cliente:'Escolha um cliente ativo.',
-  pessoa:'Esse card já está com essa pessoa. Escolha outra.', direcao:'Esse assunto é da diretoria. Não responda por aqui.', grupo:'Esse grupo não é de cliente do suporte.', whatsapp:'O WhatsApp não mandou. Tente de novo ou responda direto no grupo.', tamanho:'Arquivo vazio ou maior que 20 GB.', 'sem-pasta':'A pasta do cliente no Drive não foi achada. Cole o link do arquivo no lugar.'};
+  pessoa:'Esse card já está com essa pessoa. Escolha outra.', fim:'Escolha o que aconteceu.', direcao:'Esse assunto é da diretoria. Não responda por aqui.', grupo:'Esse grupo não é de cliente do suporte.', whatsapp:'O WhatsApp não mandou. Tente de novo ou responda direto no grupo.', tamanho:'Arquivo vazio ou maior que 20 GB.', 'sem-pasta':'A pasta do cliente no Drive não foi achada. Cole o link do arquivo no lugar.'};
 const ERRO = 'Deu erro, a diretoria está resolvendo.';
 const PASSAR = [['victor', 'Victor'], ['lorena', 'Lorena'], ['daniel', 'Daniel'], ['escritorio', 'Escritório (máquinas)']];
 
@@ -629,6 +629,7 @@ function abrir(id){
   const c = D.cards.find(x => x.id === id); if (!c) return;
   const cl = cli(c), i = ETAPAS.indexOf(c.status);
   const passa = posta() && !['Postado', 'Cancelado'].includes(c.status);
+  const devolve = c.meu && !['Postado', 'Cancelado'].includes(c.status);
   let acoes = '';
   if (c.meu && c.status === 'A fazer') acoes = `<div class="actions"><button class="btn primary" data-act="comecar">Comecei</button></div>`;
   if (c.meu && ['Fazendo', 'Ajustes'].includes(c.status)) acoes = `
@@ -659,6 +660,14 @@ function abrir(id){
       <label for="pp">Para quem<select id="pp"><option value="">Escolha</option>${PASSAR.map(([v, n]) => `<option value="${v}">${n}</option>`).join('')}</select></label>
       <label for="pnota">Recado (opcional)<input type="text" id="pnota" maxlength="300" placeholder="Ex.: o Victor está com menos cards hoje"></label>
       <div class="actions"><button class="btn" data-act="passar">Passar o card</button></div><p class="note">Sai da fila de quem está e entra na fila de quem você escolher. A pessoa é avisada no #dia-a-dia.</p></div></details>` : ''}
+    ${devolve ? `<details class="passar"><summary>Não é comigo ou já foi feito</summary><div style="display:flex;flex-direction:column;gap:12px;margin-top:12px">
+      <fieldset class="modo" style="grid-template-columns:1fr"><legend>O que aconteceu</legend>
+        <label class="opt" for="f-nao"><input type="radio" name="fim" id="f-nao" value="naoemeu" checked><span><b>Não é comigo</b><small>Seu nome sai do card e o Ismael e o Rômulo passam para outra pessoa.</small></span></label>
+        <label class="opt" for="f-post"><input type="radio" name="fim" id="f-post" value="Postado"><span><b>Já foi postado</b><small>O card vai para Postado.</small></span></label>
+        <label class="opt" for="f-canc"><input type="radio" name="fim" id="f-canc" value="Cancelado"><span><b>Foi cancelado</b><small>O cliente ou a diretoria cancelou essa entrega.</small></span></label></fieldset>
+      <label for="fmot">Explique (obrigatório)<textarea id="fmot" maxlength="1000" placeholder="Ex.: esse vídeo é do Daniel / postei na sexta / o cliente desistiu desse corte"></textarea></label>
+      <label for="flk">Link da postagem (se tiver)<input type="url" id="flk" placeholder="https://"></label>
+      <div class="actions"><button class="btn" data-act="fim">Confirmar</button></div><p class="note">Fica registrado no card com seu nome e a hora, e o aviso vai para o #dia-a-dia.</p></div></details>` : ''}
     <div><h3 style="font-size:16px;margin-bottom:8px">Observações e histórico</h3>${c.obs ? `<p class="obs">${esc(c.obs)}</p>` : '<p class="sub">Sem observações.</p>'}</div>
   </div></aside>`;
   let arquivo = null;
@@ -677,6 +686,7 @@ function abrir(id){
     if (act === 'mostrar-ajuste') { $('#lmotivo').hidden = false; $('#motivo').focus(); return; }
     if (act === 'ajuste' && $('#motivo').value.trim().length < 3) { $('#motivo').focus(); toast('Escreva o ajuste antes de mandar.'); return; }
     if ((act === 'agendei' || act === 'postei') && !/^https:\/\//.test($('#lpost').value.trim())) { $('#lpost').focus(); toast('Cole o link da postagem (começa com https://).'); return; }
+    if (act === 'fim' && $('#fmot').value.trim().length < 3) { $('#fmot').focus(); toast('Explique o que aconteceu antes de confirmar.'); return; }
     if (act === 'passar' && !$('#pp').value) { $('#pp').focus(); toast('Escolha para quem passar.'); return; }
     if (act === 'revisao' && !arquivo && !/^https:\/\//.test($('#lk').value.trim())) { toast('Escolha o arquivo ou cole o link.'); return; }
     ocupado = true; document.querySelectorAll('#layer .btn').forEach(b => b.disabled = true);
@@ -686,10 +696,12 @@ function abrir(id){
       if (act === 'ajuste') texto = $('#motivo').value.trim();
       if (act === 'agendei' || act === 'postei') link = $('#lpost').value.trim();
       if (act === 'passar') texto = $('#pnota').value.trim();
-      const r = await api('euforia-painel-acao', { card: c.id, acao: act, texto, link, para: act === 'passar' ? $('#pp').value : '' });
+      let acao = act, fim = '';
+      if (act === 'fim') { const v = document.querySelector('input[name=fim]:checked').value; acao = v === 'naoemeu' ? 'naoemeu' : 'jafeito'; fim = acao === 'jafeito' ? v : ''; texto = $('#fmot').value.trim(); link = /^https:\/\//.test($('#flk').value.trim()) ? $('#flk').value.trim() : ''; }
+      const r = await api('euforia-painel-acao', { card: c.id, acao, texto, link, fim, para: act === 'passar' ? $('#pp').value : '' });
       if (!r || !r.ok) throw new Error((r && r.motivo) || 'erro');
       ocupado = false; fechar();
-      toast({ comecar: 'Bom trabalho! Card em Fazendo.', revisao: 'Mandado para revisão. O Ismael foi avisado.', aprovar: 'Aprovado. Agora é com o cliente.', ajuste: 'Voltou para ajuste com o seu recado.', agendei: 'Marcado como agendado.', postei: 'Marcado como postado.', passar: 'Card passado. A pessoa foi avisada.' }[act]);
+      toast({ comecar: 'Bom trabalho! Card em Fazendo.', revisao: 'Mandado para revisão. O Ismael foi avisado.', aprovar: 'Aprovado. Agora é com o cliente.', ajuste: 'Voltou para ajuste com o seu recado.', agendei: 'Marcado como agendado.', postei: 'Marcado como postado.', passar: 'Card passado. A pessoa foi avisada.', fim: 'Pronto, ficou registrado e a equipe foi avisada.' }[act]);
       await carregar(true);
     } catch (err) {
       ocupado = false;
@@ -1087,6 +1099,7 @@ function demoApi(path, b){
   if (path === 'euforia-painel-pedido') return wait({ ok: true, quem: b.modo === 'mao' ? 'Escritório, à mão' : (TIPOS.find(t => t.id === b.tipo) || {}).maq });
   if (path === 'euforia-painel-acao') {
     const c = DEMO_D.cards.find(x => x.id === b.card);
+    if (b.acao === 'naoemeu' || b.acao === 'jafeito') { DEMO_D.cards = DEMO_D.cards.filter(x => x !== c); return wait({ ok: true, status: b.fim || c.status }); }
     if (b.acao === 'passar') { const n = PASSAR.find(x => x[0] === b.para)[1]; c.resp = [n]; c.meu = false; c.obs = '[Painel 26/10 ' + new Date().toTimeString().slice(0, 5) + '] ' + DEMO_D.nome + ' passou para ' + n + (b.texto ? ': ' + b.texto : '') + (c.obs ? '\n' + c.obs : ''); return wait({ ok: true, status: c.status }); }
     const para = { comecar: 'Fazendo', revisao: 'Em revisão', aprovar: 'Aguardando cliente', ajuste: 'Ajustes', agendei: 'Agendado', postei: 'Postado' }[b.acao];
     const verbo = { comecar: 'começou', revisao: 'mandou para revisão', aprovar: 'aprovou na revisão', ajuste: 'pediu ajuste', agendei: 'agendou', postei: 'postou' }[b.acao];

@@ -12,12 +12,12 @@ const pedir = trigger({ type: 'n8n-nodes-base.webhook', version: 2.1, config: { 
 const ler = node({ type: 'n8n-nodes-base.code', version: 2, config: { name: 'Ler pedido', parameters: { jsCode: `const b = ($input.first().json.body) || {};
 const u = String(b.u || '').toLowerCase();
 const card = String(b.card || '').replace(/-/g, '').toLowerCase();
-const ACOES = ['comecar', 'revisao', 'aprovar', 'ajuste', 'agendei', 'postei', 'passar'];
+const ACOES = ['comecar', 'revisao', 'aprovar', 'ajuste', 'agendei', 'postei', 'passar', 'naoemeu', 'jafeito'];
 const PARA = ['victor', 'lorena', 'daniel', 'escritorio'];
 const link = String(b.link || '').trim().slice(0, 500);
 return [{ json: { u: /^[0-9a-f]{24}$/.test(u) ? u : 'x', pin: String(b.pin || '').replace(/[^0-9]/g, '').slice(0, 6),
   card: /^[0-9a-f]{32}$/.test(card) ? card : '00000000000000000000000000000000',
-  acao: ACOES.includes(b.acao) ? b.acao : '', para: PARA.includes(b.para) ? b.para : '', texto: String(b.texto || '').trim().slice(0, 1200),
+  acao: ACOES.includes(b.acao) ? b.acao : '', para: PARA.includes(b.para) ? b.para : '', fim: ['Postado', 'Cancelado'].includes(b.fim) ? b.fim : '', texto: String(b.texto || '').trim().slice(0, 1200),
   link: /^https:\\/\\/[^\\s]+$/.test(link) ? link : '' } }];
 ` } } });
 
@@ -57,6 +57,8 @@ const REGRA = {
   ajuste: { pode: revisor, de: ['Em revisão'], para: 'Ajustes', verbo: 'pediu ajuste', precisaTexto: true },
   agendei: { pode: posta, de: ['Aprovado'], para: 'Agendado', verbo: 'agendou', precisaLink: true },
   postei: { pode: posta, de: ['Aprovado', 'Agendado'], para: 'Postado', verbo: 'postou', precisaLink: true },
+  naoemeu: { pode: meu, de: ['A fazer', 'Fazendo', 'Ajustes', 'Em revisão', 'Aguardando cliente', 'Aprovado', 'Agendado'], para: '', verbo: 'disse que não é com ele(a)', precisaTexto: true },
+  jafeito: { pode: meu, de: ['A fazer', 'Fazendo', 'Ajustes', 'Em revisão', 'Aguardando cliente', 'Aprovado', 'Agendado'], para: p.fim, verbo: 'marcou como já feito (' + (p.fim === 'Cancelado' ? 'cancelado' : 'postado') + ')', precisaTexto: true },
   passar: { pode: posta, de: ['A fazer', 'Fazendo', 'Em revisão', 'Ajustes', 'Aguardando cliente', 'Aprovado', 'Agendado'], para: '', verbo: 'passou para ' + (alvo ? alvo[1] : '') } };
 const g = REGRA[p.acao];
 let erro = '';
@@ -67,6 +69,7 @@ else if (!g.pode) erro = 'permissao';
 else if (!g.de.includes(status)) erro = 'etapa';
 else if (g.precisaLink && !p.link) erro = 'link';
 else if (g.precisaTexto && p.texto.length < 3) erro = 'texto';
+else if (p.acao === 'jafeito' && !p.fim) erro = 'fim';
 else if (p.acao === 'passar' && (!alvo || (!teste && resp.length === 1 && resp[0] === alvo[0]))) erro = 'pessoa';
 const agora = DateTime.now().setZone(Z);
 const linha = '[Painel ' + agora.toFormat('dd/MM HH:mm') + '] ' + (r.nome || '') + ' ' + (g ? g.verbo : '') + (p.texto ? ': ' + p.texto : '') + (p.link && p.acao === 'revisao' ? ' (' + p.link + ')' : '');
@@ -74,7 +77,10 @@ const obsAntiga = txt(cp['Obs']);
 const props = g ? { 'Status': { select: { name: g.para || status } }, 'Obs': { rich_text: [{ type: 'text', text: { content: (linha + (obsAntiga ? '\\n' + obsAntiga : '')).slice(0, 1990) } }] } } : {};
 if (p.acao === 'revisao') props['Link do arquivo'] = { url: p.link };
 if (p.acao === 'agendei' || p.acao === 'postei') props['Link da postagem'] = { url: p.link };
-if (p.acao === 'postei') props['Postado em'] = { date: { start: agora.toISODate() } };
+if (p.acao === 'postei' || (p.acao === 'jafeito' && p.fim === 'Postado')) props['Postado em'] = { date: { start: agora.toISODate() } };
+if (p.acao === 'jafeito' && p.link) props['Link da postagem'] = { url: p.link };
+// Não é comigo: tira só o nome de quem apertou; o card fica com os outros ou cai em "Sem responsável".
+if (p.acao === 'naoemeu' && !teste) props['Responsável'] = { relation: resp.filter(x => x !== r.ficha).map(id => ({ id })) };
 // Teste só ganha a linha no histórico: trocar o Responsável jogaria o card TESTE na fila real de alguém.
 if (p.acao === 'passar' && alvo && !teste) {
   props['Responsável'] = { relation: [{ id: alvo[0] }] };
@@ -83,10 +89,12 @@ if (p.acao === 'passar' && alvo && !teste) {
 let aviso = '';
 if (p.acao === 'revisao') aviso = '🎬 **' + titulo + '** foi para revisão (' + r.nome + '). <@1410287139169763471>, está na sua fila do painel.' + (p.texto ? '\\n> ' + p.texto : '');
 if (p.acao === 'passar' && alvo) aviso = '📌 **' + titulo + '** passou para ' + (alvo[2] ? '<@' + alvo[2] + '>' : 'o Escritório (máquinas)') + ' (por ' + r.nome + ').' + (p.texto ? '\\n> ' + p.texto : '');
+if (p.acao === 'naoemeu') aviso = '↩️ **' + titulo + '** voltou: ' + r.nome + ' disse que não é com ele(a). <@1410287139169763471> <@1490768736876237082>, passem para alguém pelo painel.\\n> ' + p.texto;
+if (p.acao === 'jafeito') aviso = '✅ **' + titulo + '** marcado como ' + (p.fim === 'Cancelado' ? 'cancelado' : 'já postado') + ' por ' + r.nome + '.\\n> ' + p.texto;
 if (p.acao === 'ajuste') aviso = '🔁 **' + titulo + '** voltou para ajuste. O pedido está no card e no topo da fila de quem fez.';
 return [{ json: { ok: !erro, cardId: card.id || '', avisar: !!aviso && !teste,
   body: JSON.stringify({ properties: props }),
-  discord: JSON.stringify({ content: (aviso + '\\n— Érica, time de suporte, Grupo Euforia').slice(0, 1990), allowed_mentions: { users: [p.acao === 'passar' ? (alvo && alvo[2]) || '' : '1410287139169763471'].filter(Boolean) } }),
+  discord: JSON.stringify({ content: (aviso + '\\n— Érica, time de suporte, Grupo Euforia').slice(0, 1990), allowed_mentions: { users: p.acao === 'naoemeu' ? ['1410287139169763471', '1490768736876237082'] : p.acao === 'jafeito' ? [] : [p.acao === 'passar' ? (alvo && alvo[2]) || '' : '1410287139169763471'].filter(Boolean) } }),
   resposta: erro ? { ok: false, motivo: erro, status } : { ok: true, status: g.para } } }];
 ` } } });
 
@@ -117,7 +125,7 @@ const confirmarSemAviso = node({ type: 'n8n-nodes-base.respondToWebhook', versio
 const recusar = node({ type: 'n8n-nodes-base.respondToWebhook', version: 1.5, config: { name: 'Recusar', parameters: {
   respondWith: 'json', responseBody: '={{ JSON.stringify($json.resposta) }}', options: {} } } });
 
-const nota = sticky('## Painel da equipe · botões (V1)\nComecei (A fazer → Fazendo), Mandar para revisão (link obrigatório → Em revisão + Link do arquivo + aviso ao Ismael), Aprovar (Em revisão → Aguardando cliente), Pedir ajuste (texto obrigatório → Ajustes), Agendei / Postei (link obrigatório → Agendado / Postado + Link da postagem), Passar para (Ismael, Rômulo e diretoria trocam o Responsável para Victor, Lorena, Daniel ou Escritório; aviso no #dia-a-dia marcando a pessoa).\nSó o Responsável mexe no próprio card; revisão é do Ismael; postagem do Ismael e do Rômulo. Toda ação vira uma linha [Painel dd/mm] no topo da Obs. Teste só mexe em cards "TESTE PAINEL" e não avisa no Discord.', [], { color: 4 });
+const nota = sticky('## Painel da equipe · botões (V1)\nComecei (A fazer → Fazendo), Mandar para revisão (link obrigatório → Em revisão + Link do arquivo + aviso ao Ismael), Aprovar (Em revisão → Aguardando cliente), Pedir ajuste (texto obrigatório → Ajustes), Agendei / Postei (link obrigatório → Agendado / Postado + Link da postagem), Passar para (Ismael, Rômulo e diretoria trocam o Responsável para Victor, Lorena, Daniel ou Escritório; aviso no #dia-a-dia marcando a pessoa), Não é comigo (quem é Responsável sai do card, motivo obrigatório, aviso ao Ismael e Rômulo), Já foi feito (Responsável marca Postado ou Cancelado, motivo obrigatório).\nSó o Responsável mexe no próprio card; revisão é do Ismael; postagem do Ismael e do Rômulo. Toda ação vira uma linha [Painel dd/mm] no topo da Obs. Teste só mexe em cards "TESTE PAINEL" e não avisa no Discord.', [], { color: 4 });
 
 export default workflow('painel-acao', 'Painel | Botões da equipe (V1)')
   .add(pedir).to(ler).to(acesso).to(cardNode).to(validar)
