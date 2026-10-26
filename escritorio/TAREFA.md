@@ -10,7 +10,8 @@ entrega, guarda no Notion/Drive, põe o card em revisão e avisa a equipe. Tudo 
   no banco Entregas `collection://932e6b5a-0cef-49f2-a7f5-57052239f8d0`. A visão já filtra Responsável = Escritório
   e Status A fazer / Fazendo / Ajustes, ordenado por Prazo.
   - Campo da máquina: **"🏢 Escritório IA"** = Na fila · Fazendo (IA) · Feito pela IA · Precisa da Direção ·
-    Falta do cliente · Foi para outra máquina.
+    Falta do cliente · Foi para outra máquina · À mão (Flau).
+  - **À mão (Flau)** = o Henrique está fazendo esse card pelo chat. A máquina nunca mexe nele.
   - Status do card: A fazer → Fazendo → **Em revisão** (quando a máquina entrega). Nunca "Aprovado" nem "Cancelado"
     por conta própria (só se a entrega comprovadamente já foi usada com o cliente, ex.: apresentação de call que já
     aconteceu → Aprovado com "Concluído em").
@@ -29,10 +30,14 @@ entrega, guarda no Notion/Drive, põe o card em revisão e avisa a equipe. Tudo 
   sobe arquivo na pasta do cliente (campo "Drive" da ficha; sem ele, procure a pasta "NN - NOME" em CLIENTES).
 
 ## 1. Ver a fila
-Leia a visão da fila (modo view, paginando). Ignore cards com "🏢 Escritório IA" = Feito pela IA,
-Precisa da Direção, Falta do cliente ou Foi para outra máquina, **a não ser** que o card tenha sido editado
-depois da última anotação da máquina (a equipe respondeu algo no Obs/corpo): aí trate de novo.
-Ordem: Prioridade Urgente primeiro, depois cliente com 🔴 atenção redobrada, depois Prazo mais antigo.
+Leia a visão da fila (modo view, paginando). Ignore **sempre** cards com "🏢 Escritório IA" = À mão (Flau).
+Ignore também Feito pela IA, Precisa da Direção, Falta do cliente ou Foi para outra máquina, **a não ser** que o
+card tenha sido editado depois da última anotação da máquina (a equipe respondeu algo no Obs/corpo): aí trate de novo.
+Ordem:
+1. Pedidos do painel (Obs começa com "[Painel", título termina em "(painel)"), do mais antigo para o mais novo.
+2. Prioridade Urgente.
+3. Cliente com 🔴 atenção redobrada.
+4. Prazo mais antigo.
 **Atenda até 3 cards por rodada.** Sem nada a fazer, encerre sem avisar ninguém.
 
 ## 2. Classificar cada card (antes de produzir)
