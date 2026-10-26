@@ -10,7 +10,7 @@ entrega, guarda no Notion/Drive, põe o card em revisão e avisa a equipe. Tudo 
   no banco Entregas `collection://932e6b5a-0cef-49f2-a7f5-57052239f8d0`. A visão já filtra Responsável = Escritório
   e Status A fazer / Fazendo / Ajustes, ordenado por Prazo.
   - Campo da máquina: **"🏢 Escritório IA"** = Na fila · Fazendo (IA) · Feito pela IA · Precisa da Direção ·
-    Falta do cliente · Foi para outra máquina · À mão (Flau).
+    Falta do cliente · Falta info do pedido · Foi para outra máquina · À mão (Flau).
   - **À mão (Flau)** = o Henrique está fazendo esse card pelo chat. A máquina nunca mexe nele.
   - Status do card: A fazer → Fazendo → **Em revisão** (quando a máquina entrega). Nunca "Aprovado" nem "Cancelado"
     por conta própria (só se a entrega comprovadamente já foi usada com o cliente, ex.: apresentação de call que já
@@ -31,7 +31,7 @@ entrega, guarda no Notion/Drive, põe o card em revisão e avisa a equipe. Tudo 
 
 ## 1. Ver a fila
 Leia a visão da fila (modo view, paginando). Ignore **sempre** cards com "🏢 Escritório IA" = À mão (Flau).
-Ignore também Feito pela IA, Precisa da Direção, Falta do cliente ou Foi para outra máquina, **a não ser** que o
+Ignore também Feito pela IA, Precisa da Direção, Falta do cliente, Falta info do pedido ou Foi para outra máquina, **a não ser** que o
 card tenha sido editado depois da última anotação da máquina (a equipe respondeu algo no Obs/corpo): aí trate de novo.
 Ordem:
 1. Pedidos do painel (Obs começa com "[Painel", título termina em "(painel)"), do mais antigo para o mais novo.
@@ -45,11 +45,33 @@ Ordem:
 |---|---|
 | Vídeo longo, shorts ou carrossel padrão | **Outra máquina.** Crie o pedido no quadro dela (Pedidos de Vídeos Longos IA `collection://22cfb89c-4bc6-4532-9cd7-8877a59d0125`, Pedidos de Shorts IA `collection://ee1fefc1-6ee5-4751-92e3-22dab57f7356`, Pedidos de Carrosséis IA `collection://f2c8d9eb-781a-4726-bce4-a9121fcef406`) com o link do card no pedido, e marque "Foi para outra máquina". |
 | Contrato, valores, preço, financeiro, jurídico, rescisão, cobrança | **Precisa da Direção.** Escreva no Obs a pergunta exata. Não produza. Jurídico (advogado, Procon, processo, Reclame Aqui): só "Precisa da Direção" + aviso no #ia-status. |
-| Depende de algo que o cliente não mandou (fotos, acesso, dados, aprovação) e não dá para fazer versão com "a confirmar" | **Falta do cliente.** Obs: o que falta, desde quando, onde foi pedido. |
-| Pedido vago (só título) | Leia ficha, grupo e calls. Se ainda não der para saber o que entregar: **Precisa da Direção** com a dúvida em 1 linha. |
+| Pedido com pouca informação (só um link, sem foto, sem texto, sem referência) | **Busque sozinho** (passo 2a). Só se ainda faltar o essencial: **Falta info do pedido** + aviso a quem pediu. |
+| Depende de algo que o cliente não mandou (fotos, acesso, dados, aprovação), não está no Drive (passo 2a) e não dá para fazer versão com "a confirmar" | **Falta do cliente.** Obs: o que falta, desde quando, onde foi pedido. |
+| Pedido vago (só título) | Leia ficha, grupo e calls e faça o passo 2a. Se ainda não der para saber o que entregar: **Falta info do pedido** com a dúvida em 1 linha. |
 | Já foi feito em outro lugar (link no grupo, no 🎬, na ficha, numa apresentação) | Ponha o link, Status Em revisão (ou Aprovado se já foi usado com o cliente), "Feito pela IA". |
 | Identidade do setup: ID DO CANAL, ANTES E DEPOIS DO CANAL, MODELO DE CARROSSEL, CALL DE CONSULTORIA AUDIOVISUAL / CALL DE APROVAÇÃO | **Produzir** seguindo `escritorio/identidade/IDENTIDADE.md` (kit em PNG, antes e depois, apresentação da call). |
 | O resto (relatório, apresentação de call, página de vendas, copy, funil, roteiros, pautas, SEO, bio, guia, estratégia, posicionamento, conferências) | **Produzir** (passo 3). |
+
+## 2a. Pedido com pouca informação: buscar antes de travar
+A equipe às vezes manda só o link de um vídeo. Antes de travar, junte sozinho o que falta:
+- **Drive do cliente** (campo "Drive" da ficha; sem ele, a pasta "NN - NOME" em CLIENTES):
+  - Fotos do cliente: pastas FOTOS, MATERIAIS VISUAIS, ARQUIVOS BRUTOS e thumbs anteriores.
+  - Identidade: pasta MARCA / manual de marca, campo "Identidade shorts (IA)" da ficha.
+  - Tema e roteiro: o nome do arquivo e da pasta do vídeo (ex.: VÍDEO 07), o roteiro ligado no 🎬 Pautas e Roteiros.
+- **Vídeo linkado**: use nome, pasta e roteiro para tirar o tema. Se não houver foto boa no Drive e o vídeo puder
+  ser baixado, tire um quadro do vídeo (ffmpeg) com o rosto do cliente olhando para a câmera.
+- **Texto da peça** (ex.: texto da thumb) que não veio: proponha 2–3 opções a partir do tema/roteiro e diga no Obs
+  que o texto é sugestão para a equipe escolher.
+- **Padrão**: siga as entregas anteriores do mesmo tipo do cliente (ex.: as últimas thumbs dele).
+Se der para fazer, faça (passo 3) e escreva no Obs o que você buscou e de onde.
+
+Se ainda faltar o essencial (nenhuma foto do cliente em lugar nenhum, tema impossível de saber):
+1. Card: "🏢 Escritório IA" = **Falta info do pedido**; Obs começando com
+   `[Máquina dd/mm] Falta: <o que falta>. Procurei em: <onde>. Respondam aqui no Obs que eu refaço.`
+2. Avise quem pediu (o nome está no Obs do pedido do painel, ex.: "Pedido de Ismael") no #dia-a-dia, marcando a
+   pessoa, numa linha por card:
+   `⚠️ <Pessoa>, não consegui fazer <o que é> de <Cliente>: falta <o que falta>. Responda no card: <link>`
+3. Quando a pessoa responder no Obs (card editado depois da sua anotação), a próxima rodada tenta de novo.
 
 ## 3. Produzir
 1. Card: "🏢 Escritório IA" = Fazendo (IA); Status = Fazendo.
@@ -74,7 +96,7 @@ Ordem:
 5. Card: Link do arquivo (pasta/arquivo no Drive ou página no Notion), Obs com 1–2 linhas do que foi feito e o que
    a equipe deve conferir, Status = **Em revisão**, "🏢 Escritório IA" = Feito pela IA.
 
-## 4. Avisar a equipe (uma mensagem por rodada, só se algo ficou pronto)
+## 4. Avisar a equipe (uma mensagem por rodada, só se algo ficou pronto ou travou por falta de informação)
 No #dia-a-dia, curto, assinado como Érica:
 ```
 🏢 Escritório: <n> entrega(s) pronta(s) para avaliar antes de ir para o cliente.
@@ -83,6 +105,7 @@ No #dia-a-dia, curto, assinado como Érica:
 Revisem no Notion (Status "Em revisão"). Se precisar ajustar, escrevam no card e mudem para "Ajustes".
 — Érica, time de suporte, Grupo Euforia
 ```
+Os avisos de "Falta info do pedido" (passo 2a) vão na mesma mensagem, depois das entregas prontas.
 Cards marcados "Precisa da Direção" não vão para o #dia-a-dia: liste-os no #ia-status numa linha cada
 (cliente, card, pergunta).
 
