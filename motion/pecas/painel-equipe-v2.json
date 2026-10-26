@@ -1,0 +1,1307 @@
+{
+ "fps": 30,
+ "largura": 1920,
+ "altura": 1080,
+ "duracao": 255.53,
+ "audio": "painel2/narracao.mp3",
+ "marca": {
+  "primaria": "#FF5A00",
+  "secundaria": "#FF8A3D",
+  "escura": "#141414",
+  "fundo": "#FBFAF7",
+  "texto": "#5E5A54",
+  "fonteTitulo": "Montserrat",
+  "fonteCorpo": "Poppins",
+  "fonteDestaque": "Cormorant Garamond"
+ },
+ "cenas": [
+  {
+   "tipo": "pergunta",
+   "inicio": 0,
+   "fim": 8.72,
+   "palavras": [
+    {
+     "t": "Tudo",
+     "em": 5.48
+    },
+    {
+     "t": "o",
+     "em": 6.15
+    },
+    {
+     "t": "que",
+     "em": 6.32
+    },
+    {
+     "t": "o",
+     "em": 6.51
+    },
+    {
+     "t": "painel",
+     "em": 6.51,
+     "destaque": true
+    },
+    {
+     "t": "faz",
+     "em": 6.76,
+     "quebra": true
+    },
+    {
+     "t": "do",
+     "em": 7.16
+    },
+    {
+     "t": "começo",
+     "em": 7.31
+    },
+    {
+     "t": "ao",
+     "em": 7.91
+    },
+    {
+     "t": "fim.",
+     "em": 8.07,
+     "destaque": true
+    }
+   ]
+  },
+  {
+   "tipo": "navegador",
+   "inicio": 8.72,
+   "fim": 17.79,
+   "endereco": "painel da equipe",
+   "rotulo": "PRIMEIRO ACESSO",
+   "telas": [
+    {
+     "src": "painel2/pin.png",
+     "em": 0
+    }
+   ],
+   "texto": [
+    {
+     "t": "Link",
+     "em": 1.07
+    },
+    {
+     "t": "pessoal",
+     "em": 1.32
+    },
+    {
+     "t": "+",
+     "em": 5.18,
+     "quebra": true
+    },
+    {
+     "t": "PIN",
+     "em": 5.18,
+     "destaque": true
+    },
+    {
+     "t": "de",
+     "em": 5.42,
+     "quebra": true
+    },
+    {
+     "t": "4",
+     "em": 5.55
+    },
+    {
+     "t": "números",
+     "em": 5.9
+    }
+   ],
+   "camera": [
+    {
+     "em": 4.62,
+     "x": 0.5,
+     "y": 0.547,
+     "zoom": 1.7
+    }
+   ],
+   "cursor": [
+    {
+     "em": 4.62,
+     "x": 0.5,
+     "y": 0.547,
+     "clique": true
+    },
+    {
+     "em": 6.65,
+     "x": 0.5,
+     "y": 0.661,
+     "clique": true
+    }
+   ],
+   "destaques": [
+    {
+     "x": 0.362,
+     "y": 0.503,
+     "w": 0.276,
+     "h": 0.088,
+     "em": 4.62,
+     "ate": 6.65
+    }
+   ]
+  },
+  {
+   "tipo": "abas",
+   "inicio": 17.79,
+   "fim": 39.63,
+   "titulo": [
+    {
+     "t": "Cada",
+     "em": 0.15
+    },
+    {
+     "t": "um",
+     "em": 0.21
+    },
+    {
+     "t": "vê",
+     "em": 0.63
+    },
+    {
+     "t": "o",
+     "em": 1.08
+    },
+    {
+     "t": "que",
+     "em": 1.67
+    },
+    {
+     "t": "é",
+     "em": 1.74
+    },
+    {
+     "t": "seu",
+     "em": 1.91,
+     "destaque": true
+    }
+   ],
+   "abas": [
+    {
+     "t": "Edição",
+     "desc": "Minha fila, Fila de demandas e Grade de postagem",
+     "em": 2.73,
+     "icone": "camera"
+    },
+    {
+     "t": "Ismael",
+     "desc": "+ Revisão, Postar, Responder e Pedir ao escritório",
+     "em": 8.64,
+     "icone": "check"
+    },
+    {
+     "t": "Rômulo",
+     "desc": "+ Postar, Responder e Pedir ao escritório",
+     "em": 14.27,
+     "icone": "balao"
+    },
+    {
+     "t": "Diretoria",
+     "desc": "A visão geral de tudo",
+     "em": 18.81,
+     "icone": "coroa"
+    }
+   ]
+  },
+  {
+   "tipo": "lista",
+   "inicio": 39.63,
+   "fim": 51.64,
+   "estilo": "numeros",
+   "titulo": [
+    {
+     "t": "Sua",
+     "em": 0.15
+    },
+    {
+     "t": "fila",
+     "em": 0.3
+    },
+    {
+     "t": "já",
+     "em": 1.98
+    },
+    {
+     "t": "vem",
+     "em": 2.2
+    },
+    {
+     "t": "na",
+     "em": 2.48
+    },
+    {
+     "t": "ordem",
+     "em": 2.66
+    },
+    {
+     "t": "certa",
+     "em": 3.02,
+     "destaque": true
+    }
+   ],
+   "itens": [
+    {
+     "t": "Ajustes pedidos",
+     "sub": "o cliente já está esperando",
+     "em": 3.73
+    },
+    {
+     "t": "O que vai ao ar antes",
+     "em": 5.18
+    },
+    {
+     "t": "Faixa do cliente: A, B, C",
+     "em": 7.72
+    },
+    {
+     "t": "O prazo mais perto",
+     "em": 10.34
+    }
+   ]
+  },
+  {
+   "tipo": "pergunta",
+   "inicio": 51.64,
+   "fim": 57.37,
+   "palavras": [
+    {
+     "t": "Regra",
+     "em": 1.11
+    },
+    {
+     "t": "de",
+     "em": 1.49
+    },
+    {
+     "t": "ouro:",
+     "em": 1.65,
+     "destaque": true
+    },
+    {
+     "t": "comece",
+     "em": 2.99,
+     "quebra": true
+    },
+    {
+     "t": "sempre",
+     "em": 4.05
+    },
+    {
+     "t": "pelo",
+     "em": 4.6
+    },
+    {
+     "t": "primeiro",
+     "em": 4.81
+    },
+    {
+     "t": "card.",
+     "em": 5.2,
+     "destaque": true
+    }
+   ]
+  },
+  {
+   "tipo": "lista",
+   "inicio": 57.37,
+   "fim": 67.11,
+   "estilo": "faixas",
+   "titulo": [
+    {
+     "t": "A",
+     "em": 0.15
+    },
+    {
+     "t": "faixa",
+     "em": 0.33
+    },
+    {
+     "t": "do",
+     "em": 0.72
+    },
+    {
+     "t": "lado",
+     "em": 0.85
+    },
+    {
+     "t": "mostra",
+     "em": 1.23
+    },
+    {
+     "t": "a",
+     "em": 1.73
+    },
+    {
+     "t": "urgência.",
+     "em": 1.84,
+     "destaque": true
+    }
+   ],
+   "itens": [
+    {
+     "t": "Atrasado",
+     "sub": "faixa vermelha",
+     "em": 2.81,
+     "cor": "#B42318"
+    },
+    {
+     "t": "Prazo é hoje",
+     "sub": "faixa laranja",
+     "em": 4.9,
+     "cor": "#FF5A00"
+    },
+    {
+     "t": "Ajuste pedido",
+     "sub": "faixa mostarda",
+     "em": 7.27,
+     "cor": "#9A6200"
+    }
+   ]
+  },
+  {
+   "tipo": "navegador",
+   "inicio": 67.11,
+   "fim": 75.19,
+   "endereco": "painel da equipe",
+   "rotulo": "MINHA FILA",
+   "telas": [
+    {
+     "src": "painel2/fila-editor.png",
+     "em": 0
+    },
+    {
+     "src": "painel2/drawer-comecar.png",
+     "em": 0.9
+    }
+   ],
+   "camera": [
+    {
+     "em": 1.36,
+     "x": 0.82,
+     "y": 0.302,
+     "zoom": 1.7
+    },
+    {
+     "em": 4.66,
+     "x": 0.689,
+     "y": 0.421,
+     "zoom": 1.7
+    }
+   ],
+   "cursor": [
+    {
+     "em": 0.5,
+     "x": 0.3,
+     "y": 0.5,
+     "clique": true
+    },
+    {
+     "em": 6.15,
+     "x": 0.689,
+     "y": 0.421,
+     "clique": true
+    }
+   ],
+   "destaques": [
+    {
+     "x": 0.65,
+     "y": 0.22,
+     "w": 0.34,
+     "h": 0.164,
+     "em": 1.36,
+     "ate": 4.66
+    },
+    {
+     "x": 0.65,
+     "y": 0.392,
+     "w": 0.077,
+     "h": 0.057,
+     "em": 5.8500000000000005,
+     "ate": 8.085999999999999
+    }
+   ]
+  },
+  {
+   "tipo": "navegador",
+   "inicio": 75.19,
+   "fim": 87.16,
+   "endereco": "painel da equipe",
+   "rotulo": "ENTREGAR",
+   "telas": [
+    {
+     "src": "painel2/drawer-fazendo.png",
+     "em": 0
+    }
+   ],
+   "camera": [
+    {
+     "em": 1.28,
+     "x": 0.82,
+     "y": 0.515,
+     "zoom": 1.7
+    },
+    {
+     "em": 6.78,
+     "x": 0.718,
+     "y": 0.86,
+     "zoom": 1.6
+    }
+   ],
+   "cursor": [
+    {
+     "em": 1.6800000000000002,
+     "x": 0.82,
+     "y": 0.515,
+     "clique": true
+    },
+    {
+     "em": 7.59,
+     "x": 0.718,
+     "y": 0.86,
+     "clique": true
+    }
+   ],
+   "destaques": [
+    {
+     "x": 0.65,
+     "y": 0.416,
+     "w": 0.34,
+     "h": 0.198,
+     "em": 1.28,
+     "ate": 6.78
+    },
+    {
+     "x": 0.65,
+     "y": 0.832,
+     "w": 0.136,
+     "h": 0.057,
+     "em": 6.78,
+     "ate": 11.969999999999999
+    }
+   ]
+  },
+  {
+   "tipo": "navegador",
+   "inicio": 87.16,
+   "fim": 94.81,
+   "endereco": "painel da equipe",
+   "rotulo": "REVISÃO · ISMAEL",
+   "telas": [
+    {
+     "src": "painel2/revisao.png",
+     "em": 0
+    },
+    {
+     "src": "painel2/drawer-revisao.png",
+     "em": 2.05
+    }
+   ],
+   "camera": [
+    {
+     "em": 3.17,
+     "x": 0.737,
+     "y": 0.485,
+     "zoom": 1.6
+    },
+    {
+     "em": 4.27,
+     "x": 0.82,
+     "y": 0.61,
+     "zoom": 1.6
+    }
+   ],
+   "cursor": [
+    {
+     "em": 1.65,
+     "x": 0.3,
+     "y": 0.35,
+     "clique": true
+    },
+    {
+     "em": 3.17,
+     "x": 0.737,
+     "y": 0.485,
+     "clique": true
+    }
+   ],
+   "destaques": [
+    {
+     "x": 0.65,
+     "y": 0.456,
+     "w": 0.174,
+     "h": 0.057,
+     "em": 3.17,
+     "ate": 4.27
+    },
+    {
+     "x": 0.65,
+     "y": 0.514,
+     "w": 0.34,
+     "h": 0.192,
+     "em": 4.27,
+     "ate": 7.650999999999996
+    }
+   ]
+  },
+  {
+   "tipo": "navegador",
+   "inicio": 94.81,
+   "fim": 102.45,
+   "endereco": "painel da equipe",
+   "rotulo": "AJUSTES",
+   "telas": [
+    {
+     "src": "painel2/fila-editor.png",
+     "em": 0
+    }
+   ],
+   "camera": [
+    {
+     "em": 0.6,
+     "x": 0.583,
+     "y": 0.332,
+     "zoom": 1.6
+    }
+   ],
+   "destaques": [
+    {
+     "x": 0.188,
+     "y": 0.271,
+     "w": 0.79,
+     "h": 0.122,
+     "em": 0.7,
+     "ate": 3.89
+    },
+    {
+     "x": 0.203,
+     "y": 0.344,
+     "w": 0.654,
+     "h": 0.034,
+     "em": 3.89,
+     "ate": 7.638999999999996
+    }
+   ],
+   "cursor": [
+    {
+     "em": 6.48,
+     "x": 0.91,
+     "y": 0.332,
+     "clique": true
+    }
+   ]
+  },
+  {
+   "tipo": "ciclo",
+   "inicio": 102.45,
+   "fim": 110.29,
+   "card": "Vídeo longo · Cliente",
+   "titulo": [
+    {
+     "t": "O",
+     "em": 0.1
+    },
+    {
+     "t": "caminho",
+     "em": 0.25
+    },
+    {
+     "t": "de",
+     "em": 0.5
+    },
+    {
+     "t": "toda",
+     "em": 0.6
+    },
+    {
+     "t": "entrega",
+     "em": 0.8,
+     "destaque": true
+    }
+   ],
+   "etapas": [
+    {
+     "t": "Fazendo",
+     "quem": "você",
+     "em": 0
+    },
+    {
+     "t": "Em revisão",
+     "quem": "Ismael",
+     "em": 0.15
+    },
+    {
+     "t": "Aguardando cliente",
+     "em": 1.71
+    },
+    {
+     "t": "Aprovado",
+     "quem": "cliente",
+     "em": 3.25
+    },
+    {
+     "t": "Agendado",
+     "em": 6.71
+    },
+    {
+     "t": "Postado",
+     "quem": "com o link",
+     "em": 7.51
+    }
+   ],
+   "saiEm": 7.24,
+   "saiTexto": "Vai para Postar"
+  },
+  {
+   "tipo": "navegador",
+   "inicio": 110.29,
+   "fim": 116.92,
+   "endereco": "painel da equipe",
+   "rotulo": "POSTAR · ISMAEL E RÔMULO",
+   "telas": [
+    {
+     "src": "painel2/postar.png",
+     "em": 0
+    },
+    {
+     "src": "painel2/drawer-postar.png",
+     "em": 0.8
+    }
+   ],
+   "camera": [
+    {
+     "em": 3.61,
+     "x": 0.82,
+     "y": 0.539,
+     "zoom": 1.7
+    }
+   ],
+   "cursor": [
+    {
+     "em": 0.4,
+     "x": 0.3,
+     "y": 0.3,
+     "clique": true
+    },
+    {
+     "em": 2.72,
+     "x": 0.82,
+     "y": 0.598,
+     "clique": true
+    }
+   ],
+   "destaques": [
+    {
+     "x": 0.65,
+     "y": 0.57,
+     "w": 0.34,
+     "h": 0.057,
+     "em": 1.29,
+     "ate": 3.61
+    },
+    {
+     "x": 0.65,
+     "y": 0.509,
+     "w": 0.34,
+     "h": 0.06,
+     "em": 3.61,
+     "ate": 6.629000000000005
+    }
+   ]
+  },
+  {
+   "tipo": "navegador",
+   "inicio": 116.92,
+   "fim": 133.08,
+   "endereco": "painel da equipe",
+   "rotulo": "FILA DE DEMANDAS",
+   "telas": [
+    {
+     "src": "painel2/demandas.png",
+     "em": 0
+    }
+   ],
+   "camera": [
+    {
+     "em": 3.73,
+     "x": 0.583,
+     "y": 0.368,
+     "zoom": 1.4
+    },
+    {
+     "em": 10.68,
+     "x": 0.288,
+     "y": 0.209,
+     "zoom": 1.7
+    }
+   ],
+   "cursor": [
+    {
+     "em": 5.59,
+     "x": 0.937,
+     "y": 0.323,
+     "clique": true
+    }
+   ],
+   "destaques": [
+    {
+     "x": 0.188,
+     "y": 0.276,
+     "w": 0.79,
+     "h": 0.184,
+     "em": 0.5,
+     "ate": 3.73
+    },
+    {
+     "x": 0.906,
+     "y": 0.294,
+     "w": 0.062,
+     "h": 0.057,
+     "em": 3.73,
+     "ate": 10.68
+    },
+    {
+     "x": 0.188,
+     "y": 0.156,
+     "w": 0.2,
+     "h": 0.105,
+     "em": 10.68,
+     "ate": 16.160999999999987
+    }
+   ]
+  },
+  {
+   "tipo": "navegador",
+   "inicio": 133.08,
+   "fim": 145.47,
+   "endereco": "painel da equipe",
+   "rotulo": "NÃO É COMIGO OU JÁ FOI FEITO",
+   "telas": [
+    {
+     "src": "painel2/drawer-naoemeu.png",
+     "em": 0
+    }
+   ],
+   "camera": [
+    {
+     "em": 0.6,
+     "x": 0.82,
+     "y": 0.509,
+     "zoom": 1.25
+    }
+   ],
+   "cursor": [
+    {
+     "em": 9.41,
+     "x": 0.702,
+     "y": 0.751,
+     "clique": true
+    }
+   ],
+   "destaques": [
+    {
+     "x": 0.65,
+     "y": 0.137,
+     "w": 0.34,
+     "h": 0.744,
+     "em": 3.67,
+     "ate": 12.388000000000005
+    }
+   ]
+  },
+  {
+   "tipo": "navegador",
+   "inicio": 145.47,
+   "fim": 158.42,
+   "endereco": "painel da equipe",
+   "rotulo": "PASSAR PARA · ISMAEL E RÔMULO",
+   "telas": [
+    {
+     "src": "painel2/drawer-passar.png",
+     "em": 0
+    }
+   ],
+   "camera": [
+    {
+     "em": 0.6,
+     "x": 0.82,
+     "y": 0.588,
+     "zoom": 1.5
+    }
+   ],
+   "cursor": [
+    {
+     "em": 10.06,
+     "x": 0.711,
+     "y": 0.653,
+     "clique": true
+    }
+   ],
+   "destaques": [
+    {
+     "x": 0.65,
+     "y": 0.392,
+     "w": 0.34,
+     "h": 0.391,
+     "em": 0.8,
+     "ate": 12.956999999999994
+    }
+   ]
+  },
+  {
+   "tipo": "navegador",
+   "inicio": 158.42,
+   "fim": 173.45,
+   "endereco": "painel da equipe",
+   "rotulo": "GRADE DE POSTAGEM",
+   "telas": [
+    {
+     "src": "painel2/grade.png",
+     "em": 0
+    }
+   ],
+   "camera": [
+    {
+     "em": 1.44,
+     "x": 0.583,
+     "y": 0.543,
+     "zoom": 1.3
+    },
+    {
+     "em": 8.81,
+     "x": 0.583,
+     "y": 0.281,
+     "zoom": 1.6
+    }
+   ],
+   "destaques": [
+    {
+     "x": 0.188,
+     "y": 0.388,
+     "w": 0.79,
+     "h": 0.31,
+     "em": 1.44,
+     "ate": 8.81
+    },
+    {
+     "x": 0.188,
+     "y": 0.237,
+     "w": 0.79,
+     "h": 0.088,
+     "em": 8.81,
+     "ate": 15.023000000000025
+    }
+   ]
+  },
+  {
+   "tipo": "navegador",
+   "inicio": 173.45,
+   "fim": 187.61,
+   "endereco": "painel da equipe",
+   "rotulo": "PEDIR AO ESCRITÓRIO",
+   "telas": [
+    {
+     "src": "painel2/pedir.png",
+     "em": 0
+    }
+   ],
+   "camera": [
+    {
+     "em": 10.06,
+     "x": 0.41,
+     "y": 0.694,
+     "zoom": 1.25
+    }
+   ],
+   "cursor": [
+    {
+     "em": 10.06,
+     "x": 0.3,
+     "y": 0.23,
+     "clique": true
+    },
+    {
+     "em": 11.62,
+     "x": 0.25,
+     "y": 0.32,
+     "clique": true
+    }
+   ],
+   "destaques": [
+    {
+     "x": 0.188,
+     "y": 0.118,
+     "w": 0.445,
+     "h": 1.152,
+     "em": 10.06,
+     "ate": 14.163999999999987
+    }
+   ]
+  },
+  {
+   "tipo": "navegador",
+   "inicio": 187.61,
+   "fim": 198.25,
+   "endereco": "painel da equipe",
+   "rotulo": "ANEXOS",
+   "telas": [
+    {
+     "src": "painel2/pedir-anexos.png",
+     "em": 0
+    }
+   ],
+   "camera": [
+    {
+     "em": 0.5,
+     "x": 0.411,
+     "y": 0.552,
+     "zoom": 1.35
+    },
+    {
+     "em": 5.73,
+     "x": 0.411,
+     "y": 0.808,
+     "zoom": 1.7
+    }
+   ],
+   "destaques": [
+    {
+     "x": 0.203,
+     "y": 0.253,
+     "w": 0.416,
+     "h": 0.598,
+     "em": 0.5,
+     "ate": 5.73
+    },
+    {
+     "em": 5.73,
+     "ate": 10.633999999999986,
+     "x": 0.205,
+     "y": 0.77,
+     "w": 0.412,
+     "h": 0.08
+    }
+   ]
+  },
+  {
+   "tipo": "navegador",
+   "inicio": 198.25,
+   "fim": 213.1,
+   "endereco": "painel da equipe",
+   "rotulo": "FALTA INFORMAÇÃO",
+   "telas": [
+    {
+     "src": "painel2/fila-revisor.png",
+     "em": 0
+    },
+    {
+     "src": "painel2/drawer-completar.png",
+     "em": 7.840000000000001
+    }
+   ],
+   "camera": [
+    {
+     "em": 0.5,
+     "x": 0.583,
+     "y": 0.332,
+     "zoom": 1.5
+    },
+    {
+     "em": 9.81,
+     "x": 0.82,
+     "y": 0.616,
+     "zoom": 1.6
+    }
+   ],
+   "cursor": [
+    {
+     "em": 7.44,
+     "x": 0.906,
+     "y": 0.332,
+     "clique": true
+    },
+    {
+     "em": 11.51,
+     "x": 0.753,
+     "y": 1.135,
+     "clique": true
+    }
+   ],
+   "destaques": [
+    {
+     "x": 0.188,
+     "y": 0.271,
+     "w": 0.79,
+     "h": 0.122,
+     "em": 0.6,
+     "ate": 7.44
+    },
+    {
+     "x": 0.65,
+     "y": 0.416,
+     "w": 0.34,
+     "h": 0.113,
+     "em": 7.94,
+     "ate": 9.81
+    },
+    {
+     "x": 0.65,
+     "y": 0.56,
+     "w": 0.34,
+     "h": 0.112,
+     "em": 9.81,
+     "ate": 14.859000000000009
+    }
+   ]
+  },
+  {
+   "tipo": "navegador",
+   "inicio": 213.1,
+   "fim": 225.05,
+   "endereco": "painel da equipe",
+   "rotulo": "RESPONDER · ISMAEL E RÔMULO",
+   "telas": [
+    {
+     "src": "painel2/responder.png",
+     "em": 0
+    },
+    {
+     "src": "painel2/responder-qr.png",
+     "em": 5.29
+    },
+    {
+     "src": "painel2/responder.png",
+     "em": 7.71
+    }
+   ],
+   "camera": [
+    {
+     "em": 0.8,
+     "x": 0.583,
+     "y": 0.208,
+     "zoom": 1.5
+    },
+    {
+     "em": 6.34,
+     "x": 0.583,
+     "y": 0.361,
+     "zoom": 1.3
+    },
+    {
+     "em": 7.71,
+     "x": 0.583,
+     "y": 0.688,
+     "zoom": 1.2
+    }
+   ],
+   "cursor": [
+    {
+     "em": 4.79,
+     "x": 0.9,
+     "y": 0.208,
+     "clique": true
+    }
+   ],
+   "destaques": [
+    {
+     "x": 0.188,
+     "y": 0.332,
+     "w": 0.79,
+     "h": 0.711,
+     "em": 7.71,
+     "ate": 11.947000000000003
+    }
+   ]
+  },
+  {
+   "tipo": "navegador",
+   "inicio": 225.05,
+   "fim": 237.06,
+   "endereco": "painel da equipe",
+   "rotulo": "RESPOSTA NO GRUPO",
+   "telas": [
+    {
+     "src": "painel2/responder-escrever.png",
+     "em": 0
+    }
+   ],
+   "texto": [
+    {
+     "t": "Ismael:",
+     "em": 4.59,
+     "destaque": true
+    },
+    {
+     "t": "Oi,",
+     "em": 5.44,
+     "quebra": true
+    },
+    {
+     "t": "Paula!",
+     "em": 6.07
+    }
+   ],
+   "camera": [
+    {
+     "em": 0.5,
+     "x": 0.581,
+     "y": 0.559,
+     "zoom": 1.6
+    },
+    {
+     "em": 7.19,
+     "x": 0.238,
+     "y": 0.393,
+     "zoom": 1.6
+    }
+   ],
+   "cursor": [
+    {
+     "em": 2.05,
+     "x": 0.581,
+     "y": 0.559,
+     "clique": true
+    }
+   ],
+   "destaques": [
+    {
+     "x": 0.203,
+     "y": 0.503,
+     "w": 0.755,
+     "h": 0.112,
+     "em": 0.5,
+     "ate": 7.19
+    },
+    {
+     "x": 0.203,
+     "y": 0.375,
+     "w": 0.071,
+     "h": 0.036,
+     "em": 7.19,
+     "ate": 12.004999999999995
+    }
+   ]
+  },
+  {
+   "tipo": "navegador",
+   "inicio": 237.06,
+   "fim": 240.81,
+   "dispositivo": "celular",
+   "proporcao": 2.164102564102564,
+   "telas": [
+    {
+     "src": "painel2/mobile-fila.png",
+     "em": 0
+    }
+   ],
+   "texto": [
+    {
+     "t": "Igualzinho",
+     "em": 1.78
+    },
+    {
+     "t": "no",
+     "em": 2.7,
+     "quebra": true
+    },
+    {
+     "t": "celular",
+     "em": 2.82,
+     "destaque": true
+    }
+   ],
+   "cursor": [
+    {
+     "em": 1.6,
+     "x": 0.5,
+     "y": 0.45,
+     "clique": true
+    }
+   ]
+  },
+  {
+   "tipo": "pergunta",
+   "inicio": 240.81,
+   "fim": 244.72,
+   "palavras": [
+    {
+     "t": "Cada",
+     "em": 0.15
+    },
+    {
+     "t": "clique",
+     "em": 0.64
+    },
+    {
+     "t": "de",
+     "em": 0.97
+    },
+    {
+     "t": "vocês",
+     "em": 1.08
+    },
+    {
+     "t": "já",
+     "em": 1.96
+    },
+    {
+     "t": "atualiza",
+     "em": 2.31,
+     "quebra": true
+    },
+    {
+     "t": "o",
+     "em": 3.16
+    },
+    {
+     "t": "Notion.",
+     "em": 3.27,
+     "destaque": true
+    }
+   ]
+  },
+  {
+   "tipo": "pergunta",
+   "inicio": 244.72,
+   "fim": 248.39,
+   "simbolo": "",
+   "palavras": [
+    {
+     "t": "Sem",
+     "em": 0.15
+    },
+    {
+     "t": "campo",
+     "em": 0.52
+    },
+    {
+     "t": "esquecido.",
+     "em": 0.87
+    },
+    {
+     "t": "Sem",
+     "em": 1.99,
+     "quebra": true
+    },
+    {
+     "t": "status",
+     "em": 2.38
+    },
+    {
+     "t": "errado.",
+     "em": 2.96,
+     "destaque": true
+    }
+   ]
+  },
+  {
+   "tipo": "logo",
+   "inicio": 248.39,
+   "fim": 255.53,
+   "logo": "painel2/logo-3x.png",
+   "botao": "PAINEL DA EQUIPE",
+   "botaoEm": 0.9
+  }
+ ]
+}

@@ -1,0 +1,23 @@
+Pessoal, o Painel da Equipe ficou bem mais completo. Aqui vai tudo o que ele faz, do começo ao fim.
+Cada um tem um link pessoal, que chega no seu canal do Discord. Abre, digita o PIN de quatro números, e o aparelho lembra de você.
+O menu muda conforme a sua função. Quem edita vê a Minha fila, a Fila de demandas e a Grade de postagem. O Ismael ainda tem Revisão, Postar, Responder e Pedir ao escritório. O Rômulo tem Postar, Responder e Pedir ao escritório. E a diretoria tem a visão geral de tudo.
+Na Minha fila, os cards já vêm na ordem certa: primeiro os ajustes, depois o que vai ao ar antes, depois a faixa do cliente e, por último, o prazo.
+Por isso, a regra de ouro é uma só: comece sempre pelo primeiro card.
+A faixa do lado mostra a urgência. Vermelho: atrasado. Laranja: o prazo é hoje. Mostarda: tem ajuste pedido.
+Abriu o card? Leia como editar e do que esse cliente gosta. Aí é só apertar "Comecei".
+Terminou? Arraste o arquivo para a caixa. Ele sobe sozinho para a pasta do cliente no Drive. Aperte "Mandar para revisão", e o Ismael é avisado no Discord.
+Na aba Revisão, o Ismael abre o arquivo e aprova, ou pede ajuste, explicando o motivo.
+Se voltar com ajuste, o card sobe para o topo da sua fila, com o motivo escrito. Corrigiu? Manda de novo.
+Aprovado pelo Ismael, vai para o cliente. Quando o cliente aprova, a peça aparece na aba Postar. Quem posta marca "Agendei" ou "Postei", com o link da postagem, e o card sai da fila.
+Tem demanda sem dono? Ela fica na Fila de demandas. Escolha uma e aperte "Pegar": o card vai para a sua fila e some para todo mundo. Cada pessoa pode ter até oito cards em produção. Terminou um, pega outro.
+E se um card não é seu, ou já foi feito? Abra o card e use "Não é comigo ou já foi feito". Explique o motivo, e o Ismael e o Rômulo são avisados.
+O Ismael e o Rômulo também podem passar um card para outra pessoa: Victor, Lorena, Daniel ou o Escritório, que são as máquinas. Quem recebe é marcado no Discord.
+A Grade de postagem mostra o dia e o horário em que cada cliente posta, no YouTube, no Instagram e no TikTok. Dá para filtrar por cliente e por plataforma, e o Ismael e o Rômulo ajustam a grade ali mesmo.
+Precisa de uma thumb, um carrossel, uma apresentação ou uma página? O Ismael e o Rômulo pedem na aba "Pedir ao escritório". Escolha o cliente e o que precisa, e explique bem.
+Dá para anexar arquivos e links: prints, documentos, apresentações. A identidade visual do cliente, a máquina já pega sozinha no Drive.
+Se faltar informação, o pedido volta para quem pediu, com a faixa vermelha e o que falta escrito. É só apertar "Completar pedido", acrescentar o que faltou, e ele volta para a fila do escritório.
+Na aba Responder, o Ismael e o Rômulo conectam o WhatsApp de suporte uma vez só, pelo QR code, e veem quem está esperando resposta, na ordem certa.
+Dá para responder ali mesmo: a mensagem vai para o grupo do cliente com o seu nome em negrito na frente. Assunto de dinheiro, contrato ou jurídico fica com a diretoria.
+E tudo funciona igualzinho no celular.
+Cada clique de vocês já atualiza o Notion. Sem campo esquecido. Sem status errado.
+Painel da Equipe. Menos procura, mais entrega.
