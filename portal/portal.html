@@ -431,6 +431,31 @@ function renderRoteiros(){
   if (atual && [...sel.options].some(o => o.value === atual)) sel.value = atual;
 }
 
+// Teleprompter: só a fala (sem títulos, dicas e notas de gravação). Arquivo e PDF levam o roteiro inteiro.
+function prepararRoteiro(titulo, partes){
+  const nota = p => p.k === 'q' || /^notas? de grava/i.test(p.t);
+  const fala = partes.filter(p => p.k !== 'h' && !nota(p)).map(p => p.t).join('\n\n');
+  const inteiro = titulo + '\n\n' + partes.map(p => p.k === 'h' ? '\n' + p.t.toUpperCase() : p.k === 'li' ? '• ' + p.t : p.t).join('\n\n').trim();
+  const nomeArq = titulo.replace(/[\\/:*?"<>|]+/g, ' ').trim() || 'roteiro';
+  $('#rot-copiar').onclick = async () => {
+    try { await navigator.clipboard.writeText(fala); toast('Texto copiado. Agora é só colar no app de teleprompter.'); }
+    catch (e) { toast('Não deu para copiar. Use "Baixar .txt".'); }
+  };
+  $('#rot-txt').onclick = () => {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([inteiro], { type: 'text/plain;charset=utf-8' }));
+    a.download = nomeArq + '.txt'; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+  };
+  $('#rot-pdf').onclick = () => {
+    const w = window.open('', '_blank');
+    if (!w) { toast('Seu navegador bloqueou a janela. Use "Baixar .txt".'); return; }
+    const corpo = partes.map(p => p.k === 'h' ? '<h2>' + esc(p.t) + '</h2>' : p.k === 'li' ? '<p>• ' + esc(p.t) + '</p>' : nota(p) ? '<p class="n">' + esc(p.t) + '</p>' : '<p>' + esc(p.t) + '</p>').join('');
+    w.document.write('<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>' + esc(nomeArq) + '</title><style>body{font-family:Georgia,serif;font-size:20px;line-height:1.6;max-width:720px;margin:40px auto;padding:0 24px;color:#1a1a1a}h1{font-size:28px}h2{font-size:20px;margin-top:28px;text-transform:uppercase;letter-spacing:1px}.n{color:#666;font-style:italic;font-size:16px}</style></head><body><h1>' + esc(titulo) + '</h1>' + corpo + '</body></html>');
+    w.document.close(); w.focus(); setTimeout(() => w.print(), 300);
+  };
+}
+
 async function lerRoteiro(id){
   const r0 = D.roteiros.find(r => r.id === id);
   abrirGaveta(`<div class="row"><span class="chip">Roteiro</span><button class="btn ghost" id="close" aria-label="Fechar">Fechar</button></div><h2 id="d-title" style="font-size:24px">${esc(nomeRot(r0))}</h2><p class="loading">Abrindo o roteiro…</p>`);
@@ -438,7 +463,9 @@ async function lerRoteiro(id){
     const r = await api('euforia-portal-roteiro?a=' + encodeURIComponent(C) + '&r=' + encodeURIComponent(id), { method: 'GET', headers: {} });
     if (!r || !r.ok) throw 0;
     const corpo = r.partes.map(p => p.k === 'h' ? `<h3>${esc(p.t)}</h3>` : p.k === 'q' ? `<div class="q">${esc(p.t)}</div>` : p.k === 'li' ? `<li>${esc(p.t)}</li>` : /^notas? de grava/i.test(p.t) ? `<p class="nota">${esc(p.t)}</p>` : `<p>${esc(p.t)}</p>`).join('');
-    $('#drawer-in').querySelector('.loading').outerHTML = `<div class="rot-txt">${corpo || '<p class="sub">Este roteiro ainda está sem texto.</p>'}</div>`;
+    const acoes = r.partes.length ? '<div class="actions"><button class="btn primary" id="rot-copiar">Copiar texto para o teleprompter</button><button class="btn" id="rot-txt">Baixar .txt</button><button class="btn" id="rot-pdf">Salvar em PDF</button></div>' : '';
+    $('#drawer-in').querySelector('.loading').outerHTML = `${acoes}<div class="rot-txt">${corpo || '<p class="sub">Este roteiro ainda está sem texto.</p>'}</div>`;
+    if (acoes) prepararRoteiro(nomeRot(r0), r.partes);
   } catch (e) { const l = $('#drawer-in').querySelector('.loading'); if (l) l.textContent = 'Não conseguimos abrir o roteiro agora. Tente de novo em instantes.'; }
 }
 
