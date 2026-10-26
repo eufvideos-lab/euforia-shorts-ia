@@ -167,6 +167,27 @@ textarea{min-height:90px;resize:vertical}
 }
 @media (prefers-reduced-motion:no-preference){.drawer{animation:slide .18s ease-out}@keyframes slide{from{transform:translateX(24px);opacity:.6}}}
 
+/* Grade de postagem */
+.filtros{display:flex;flex-wrap:wrap;gap:10px;align-items:end}
+.filtros label{min-width:180px;flex:1 1 180px;max-width:280px}
+.semana{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px}
+.semana .col{border:1px solid var(--line);border-radius:12px;padding:10px 8px;display:flex;flex-direction:column;gap:6px;min-width:0;background:var(--surface)}
+.semana .col.hoje{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset;background:var(--accent-soft)}
+.semana .col h3{font-size:14px;margin:0 2px 2px;display:flex;justify-content:space-between;gap:6px}
+.semana .col h3 .mono{color:var(--muted);font-weight:500}
+.slot{display:flex;flex-direction:column;gap:3px;text-align:left;border:1px solid var(--line);border-left:4px solid var(--muted);border-radius:8px;padding:7px 8px;background:var(--surface);font-size:13px;min-width:0;width:100%}
+.slot b{font-size:13px;line-height:1.25;overflow-wrap:anywhere}
+.slot .sub{font-size:12px}
+.slot.YouTube{border-left-color:#E5281A}
+.slot.TikTok{border-left-color:#141414}
+.slot.Instagram{border-left-color:#C13584}
+.slot.Blog{border-left-color:var(--info)}
+.slot.pausado{opacity:.5;border-style:dashed}
+.slot.confirmar{background:var(--warn-soft)}
+button.slot:hover{border-color:var(--muted)}
+.legenda{display:flex;flex-wrap:wrap;gap:14px;font-size:13px;color:var(--muted)}
+.legenda i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+@media (max-width:860px){.semana{grid-template-columns:minmax(0,1fr)}.semana .col.vazio{display:none}.filtros label{max-width:none}}
 /* Página real: login por PIN, telas de espera e barra de envio. */
 .gate{min-height:100vh;display:grid;place-items:center;padding:24px max(16px,env(safe-area-inset-right,0px)) 24px max(16px,env(safe-area-inset-left,0px))}
 .gate-box{width:min(380px,100%);display:flex;flex-direction:column;gap:18px;text-align:center;align-items:center}
@@ -265,6 +286,7 @@ const ERRO = 'Deu erro, a diretoria está resolvendo.';
 const $ = s => document.querySelector(s);
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let D = null, R = null, W = null, WQR = '', PIN = '', view = 'fila', ocupado = false;
+let G = null, GC = '', GP = '';
 try { PIN = localStorage.getItem(KEY) || ''; view = localStorage.getItem('painel-view') || 'fila'; } catch (e) {}
 if (DEMO) PIN = '0000';
 
@@ -393,6 +415,42 @@ const VIEWS = {
       <section class="group"><h2>Esperando resposta <span class="count">${R.itens.length}</span></h2>${R.itens.length ? `<ul class="rows">${R.itens.map(item).join('')}</ul>` : '<p class="empty">Ninguém esperando resposta agora. 🎉</p>'}</section>
       <p class="note">A ordem é: assunto sensível, cliente 🔴 em atenção, faixa A, B e C, e depois quem espera há mais tempo. Responder direto daqui vem na próxima versão, saindo pelo seu número de suporte.</p>`;
     } },
+  grade: { nome: 'Grade de postagem', pode: () => true,
+    html(){
+      if (!G) { carregarGrade(); return `<div class="head"><div><p class="eyebrow">Quando cada cliente posta</p><h1>Grade de postagem</h1></div></div><p class="sub">Carregando…</p>`; }
+      const nome = id => (G.clientes.find(c => c.id === id) || {}).nome || '';
+      const base = dia(D.hoje), hj = (base.getDay() + 6) % 7, seg = new Date(base.getTime() - hj * 864e5);
+      const hs = G.horarios.filter(h => (!GC || h.cliente === GC) && (!GP || h.plataforma === GP))
+        .sort((a, b) => (a.horario || '99').localeCompare(b.horario || '99') || nome(a.cliente).localeCompare(nome(b.cliente)));
+      const cartao = h => `<button class="slot ${esc(h.plataforma)} ${h.status.includes('Pausado') ? 'pausado' : ''} ${h.status.includes('Confirmar') ? 'confirmar' : ''}" data-slot="${h.id}">
+        <b>${esc(nome(h.cliente))}</b><span class="sub">${esc(h.plataforma)} · ${esc(h.formato)}${h.qtd > 1 ? ' ×' + h.qtd : ''}</span>
+        <span class="sub">${h.horario ? esc(h.horario) : 'sem horário'}${h.status.includes('Pausado') ? ' · pausado' : h.status.includes('Confirmar') ? ' · ❓ confirmar' : ''}</span></button>`;
+      const cols = GDIAS.map((d, i) => { const l = hs.filter(h => h.dia === d), dt = new Date(seg.getTime() + i * 864e5);
+        return `<div class="col ${i === hj ? 'hoje' : ''} ${l.length ? '' : 'vazio'}"><h3>${d.slice(2)}${i === hj ? ' · hoje' : ''} <span class="mono">${String(dt.getDate()).padStart(2, '0')}/${String(dt.getMonth() + 1).padStart(2, '0')}</span></h3>
+          ${l.length ? l.map(cartao).join('') : '<span class="sub" style="font-size:12px">Nada</span>'}</div>`; }).join('');
+      const hoje = hs.filter(h => h.dia === GDIAS[hj] && h.status.includes('Publicar'));
+      const com = new Set(G.horarios.map(h => h.cliente));
+      const sem = G.clientes.filter(c => c.ativo && !com.has(c.id) && (!GC || c.id === GC));
+      const nomes = G.clientes.slice().sort((a, b) => a.nome.localeCompare(b.nome));
+      return `<div class="head"><div><p class="eyebrow">Quando cada cliente posta</p><h1>Grade de postagem</h1></div><p class="sub">${G.podeMudar ? 'Clique num horário para ajustar ou pausar.' : 'Clique num horário para ver os detalhes.'}</p></div>
+      <div class="stats">
+        <div class="stat"><span class="v">${hoje.length}</span><span>postagens hoje</span></div>
+        <div class="stat"><span class="v">${G.horarios.filter(h => h.status.includes('Publicar')).length}</span><span>horários na semana</span></div>
+        <div class="stat ${sem.length ? 'hot' : ''}"><span class="v">${G.clientes.filter(c => c.ativo && !com.has(c.id)).length}</span><span>clientes sem dia definido</span></div>
+        <div class="stat"><span class="v">${G.horarios.filter(h => h.status.includes('Confirmar')).length}</span><span>a confirmar</span></div>
+      </div>
+      <div class="filtros">
+        <label for="gc">Cliente<select id="gc"><option value="">Todos</option>${nomes.map(c => `<option value="${c.id}" ${c.id === GC ? 'selected' : ''}>${esc(c.nome)}</option>`).join('')}</select></label>
+        <label for="gp">Plataforma<select id="gp"><option value="">Todas</option>${GPLAT.map(x => `<option ${x === GP ? 'selected' : ''}>${x}</option>`).join('')}</select></label>
+        ${G.podeMudar ? '<button class="btn primary" id="g-novo">+ Adicionar dia</button>' : ''}
+      </div>
+      <div class="legenda"><span><i style="background:#E5281A"></i>YouTube</span><span><i style="background:#141414"></i>TikTok</span><span><i style="background:#C13584"></i>Instagram</span><span><i style="background:var(--warn-soft);border:1px solid var(--warn)"></i>❓ confirmar com a diretoria</span><span><i style="border:1px dashed var(--muted)"></i>pausado</span></div>
+      <div class="semana">${cols}</div>
+      ${sem.length ? `<section class="group"><h2>Clientes ativos sem dia definido <span class="count">${sem.length}</span></h2><ul class="rows">${sem.map(c => `<li class="item"><span class="stripe"></span>
+        <div class="main" style="cursor:default"><span class="t">${esc(c.nome)}</span><span class="meta">${c.faixa ? `<span class="chip">Faixa ${esc(c.faixa)}</span>` : ''}${c.atencao ? '<span class="chip red">🔴 Atenção</span>' : ''}${c.yt ? `<span class="chip">Ficha: YouTube ${esc(c.yt)}</span>` : ''}${c.tt ? `<span class="chip">Ficha: TikTok ${esc(c.tt)}</span>` : ''}</span></div>
+        <span class="act">${G.podeMudar ? `<button class="btn" data-definir="${c.id}">Definir dia</button>` : ''}</span></li>`).join('')}</ul></section>` : ''}
+      <p class="note">A grade é o combinado fixo de cada cliente. A data de cada peça continua no card ("Vai ao ar"). ${G.podeMudar ? 'Toda mudança fica registrada com seu nome e a hora.' : 'Quem ajusta a grade é o Ismael ou o Rômulo.'}</p>`;
+    } },
   pedir: { nome: 'Pedir ao escritório', pode: () => true,
     html(){
       const grupos = Object.entries(TIPOS.reduce((g, t) => ((g[t.g] = g[t.g] || []).push(t), g), {}));
@@ -516,6 +574,70 @@ function abrir(id){
   };
 }
 function fechar(){ $('#layer').innerHTML = ''; }
+// Grade de postagem: dias fixos de cada cliente. Todos veem; Ismael e Rômulo mudam.
+const GDIAS = ['1 Seg', '2 Ter', '3 Qua', '4 Qui', '5 Sex', '6 Sáb', '7 Dom'];
+const GPLAT = ['YouTube', 'TikTok', 'Instagram', 'Blog'];
+const GFORM = ['Vídeo padrão', 'Shorts', 'Corte horizontal', 'Podcast', 'Carrossel', 'Reels', 'Blog', 'Outro'];
+const GMOTIVO = {permissao:'Só o Ismael e o Rômulo mudam a grade.', campos:'Escolha plataforma, formato e dia.', horario:'Esse horário mudou. A grade foi atualizada.', cliente:'Escolha um cliente ativo.', acesso: MOTIVO.acesso};
+async function carregarGrade(){
+  if (carregarGrade.indo) return; carregarGrade.indo = true;
+  try { const r = await api('euforia-painel-grade', { acao: 'listar' }); if (r && r.ok) { G = r; if (view === 'grade' && !ocupado && !$('#layer').innerHTML) render(); } else if (r && r.motivo === 'acesso') { PIN = ''; carregar(); } }
+  catch (e) { if (view === 'grade' && !G) $('#main').innerHTML = `<div class="view"><h1>Grade de postagem</h1><p class="sub">${ERRO}</p></div>`; }
+  carregarGrade.indo = false;
+}
+function abrirSlot(id, novoCliente){
+  const h = id ? G.horarios.find(x => x.id === id) : null;
+  if (id && !h) return;
+  const c = h ? (G.clientes.find(x => x.id === h.cliente) || {}) : {};
+  const v = h || { cliente: novoCliente || GC || '', plataforma: GP || 'YouTube', formato: 'Vídeo padrão', dia: '', horario: '', qtd: 1 };
+  const nomes = G.clientes.slice().sort((a, b) => a.nome.localeCompare(b.nome));
+  const op = (l, at) => l.map(x => `<option ${x === at ? 'selected' : ''}>${x}</option>`).join('');
+  const form = G.podeMudar ? `<form id="fslot">
+      ${h ? '' : `<label for="sc">Cliente<select id="sc" required><option value="">Escolha…</option>${nomes.map(x => `<option value="${x.id}" ${x.id === v.cliente ? 'selected' : ''}>${esc(x.nome)}</option>`).join('')}</select></label>`}
+      <div class="grid2"><label for="sp">Plataforma<select id="sp">${op(GPLAT, v.plataforma)}</select></label><label for="sf">Formato<select id="sf">${op(GFORM, v.formato)}</select></label></div>
+      <div class="grid2"><label for="sd">Dia<select id="sd" required><option value="">Escolha…</option>${GDIAS.map(d => `<option value="${d}" ${d === v.dia ? 'selected' : ''}>${d.slice(2)}</option>`).join('')}</select></label>
+      <label for="sh">Horário (opcional)<input type="text" id="sh" inputmode="numeric" placeholder="18:00" maxlength="5" value="${esc(v.horario)}"></label></div>
+      <div class="grid2"><label for="sq">Quantas peças nesse dia<input type="text" id="sq" inputmode="numeric" value="${v.qtd || 1}" maxlength="2"></label><span></span></div>
+      <label for="so">Observação (opcional)<input type="text" id="so" maxlength="300" placeholder="Ex.: cliente pediu para mudar de terça para quarta"></label>
+      <div class="actions"><button class="btn primary" type="submit">${h ? 'Salvar ajuste' : 'Adicionar à grade'}</button>
+      ${h ? (h.status.includes('Pausado') ? '<button class="btn ok" type="button" data-gact="reativar">Reativar</button>' : '<button class="btn warn" type="button" data-gact="pausar">Pausar</button>') : ''}</div></form>` : '';
+  $('#layer').innerHTML = `<div class="scrim" data-x></div><aside class="drawer" role="dialog" aria-modal="true" aria-labelledby="d-t"><div class="drawer-in">
+    <button class="close" data-x>Fechar</button>
+    <div><p class="eyebrow">Grade de postagem</p><h2 id="d-t" style="font-size:26px">${h ? esc(c.nome) + ' · ' + esc(h.dia.slice(2)) : 'Adicionar dia de postagem'}</h2></div>
+    ${h ? `<dl class="dl"><dt>Onde</dt><dd>${esc(h.plataforma)} · ${esc(h.formato)}${h.qtd > 1 ? ' ×' + h.qtd : ''}</dd><dt>Horário</dt><dd>${h.horario ? esc(h.horario) : 'sem horário fixo'}</dd><dt>Situação</dt><dd>${esc(h.status)}</dd>
+      ${c.faixa || c.atencao ? `<dt>Cliente</dt><dd>${c.faixa ? 'Faixa ' + esc(c.faixa) : ''}${c.atencao ? ' · 🔴 atenção redobrada' : ''}</dd>` : ''}${h.nota ? `<dt>Nota</dt><dd>${esc(h.nota)}</dd>` : ''}</dl>` : ''}
+    ${form || '<p class="note">Quem ajusta a grade é o Ismael ou o Rômulo. Viu algo errado? Avise um deles.</p>'}
+  </div></aside>`;
+  const mandar = async (acao, slot) => {
+    if (ocupado) return; ocupado = true; document.querySelectorAll('#layer .btn').forEach(b => b.disabled = true);
+    try {
+      const r = await api('euforia-painel-grade', { acao, slot });
+      if (!r || !r.ok) throw new Error((r && r.motivo) || 'erro');
+      ocupado = false; fechar();
+      toast({ salvar: h ? 'Grade ajustada.' : 'Dia adicionado à grade.', pausar: 'Horário pausado.', reativar: 'Horário reativado.' }[acao]);
+      G = null; carregarGrade();
+    } catch (err) {
+      ocupado = false; toast(GMOTIVO[err.message] || ERRO);
+      if (err.message === 'horario') { fechar(); G = null; carregarGrade(); return; }
+      document.querySelectorAll('#layer .btn').forEach(b => b.disabled = false);
+    }
+  };
+  $('#layer').onclick = e => {
+    if (e.target.closest('[data-x]')) { if (!ocupado) fechar(); return; }
+    const a = e.target.closest('[data-gact]'); if (a) mandar(a.dataset.gact, { id: h.id });
+  };
+  const f = $('#fslot');
+  if (f) f.onsubmit = e => {
+    e.preventDefault(); e.stopPropagation();
+    const hora = $('#sh').value.trim();
+    if (hora && !/^\d{1,2}([:h]\d{2})?h?$/i.test(hora)) { $('#sh').focus(); toast('Horário no formato 18:00.'); return; }
+    if (!h && !$('#sc').value) { $('#sc').focus(); toast('Escolha o cliente.'); return; }
+    if (!$('#sd').value) { $('#sd').focus(); toast('Escolha o dia.'); return; }
+    mandar('salvar', { id: h ? h.id : '', cliente: h ? h.cliente : $('#sc').value, plataforma: $('#sp').value, formato: $('#sf').value, dia: $('#sd').value,
+      horario: hora.replace(/h$/i, ''), qtd: $('#sq').value, obs: $('#so').value.trim() });
+  };
+}
+
 
 // WhatsApp de suporte de cada um: liga pelo QR code, igual ao WhatsApp Web.
 function caixaWhats(){
@@ -600,6 +722,9 @@ document.addEventListener('click', async e => {
     abrir(g.dataset.go); return;
   }
   const o = e.target.closest('#main [data-open]'); if (o) { abrir(o.dataset.open); return; }
+  const sl = e.target.closest('#main [data-slot]'); if (sl) { abrirSlot(sl.dataset.slot); return; }
+  const df = e.target.closest('#main [data-definir]'); if (df) { abrirSlot('', df.dataset.definir); return; }
+  if (e.target.id === 'g-novo') { abrirSlot(''); return; }
   const ds = e.target.closest('#main [data-dispensar]');
   if (ds) {
     ds.disabled = true;
@@ -618,6 +743,7 @@ document.addEventListener('click', async e => {
   if (e.target.id === 'sair') { try { localStorage.removeItem(KEY); } catch (x) {} PIN = ''; D = null; $('#pin-err').textContent = ''; carregar(); }
 });
 document.addEventListener('change', e => {
+  if (e.target.id === 'gc' || e.target.id === 'gp') { if (e.target.id === 'gc') GC = e.target.value; else GP = e.target.value; render(); return; }
   if (['pt', 'm-auto', 'm-mao', 'pf'].includes(e.target.id)) { if (e.target.id === 'pt') delete $('#pf').dataset.mexeu; if (e.target.id === 'pf') e.target.dataset.mexeu = 1; atualizarPedido(); }
 });
 document.addEventListener('submit', async e => {
@@ -642,7 +768,7 @@ document.addEventListener('submit', async e => {
 });
 
 // Atualiza sozinho a cada 2 minutos enquanto a aba está aberta e nada está sendo enviado.
-setInterval(() => { if (D && !ocupado && !document.hidden && !$('#layer').innerHTML) carregar(true); }, 120000);
+setInterval(() => { if (D && !ocupado && !document.hidden && !$('#layer').innerHTML) { if (view === 'grade') carregarGrade(); carregar(true); } }, 120000);
 // A fila de respostas muda mais rápido: atualiza a cada minuto quando a aba Responder está aberta.
 setInterval(() => { if (D && view === 'responder' && !ocupado && !document.hidden) carregarRespostas(); }, 60000);
 
@@ -657,6 +783,15 @@ function demoApi(path, b){
     return wait({ ok: true, estado: W === 'aguardando' ? (demoApi.n > 2 ? 'conectado' : 'aguardando') : (W || 'desconectado') });
   }
   if (path === 'euforia-painel-respostas') { if (b && b.acao === 'dispensar') return wait({ ok: true }); return wait(DEMO_R); }
+  if (path === 'euforia-painel-grade') {
+    if (b.acao === 'listar') return wait(JSON.parse(JSON.stringify(DEMO_G)));
+    const s = b.slot, h = DEMO_G.horarios.find(x => x.id === s.id);
+    if (b.acao === 'pausar') h.status = '⏸️ Pausado';
+    else if (b.acao === 'reativar') h.status = '✅ Publicar';
+    else { const hr = (String(s.horario || '').match(/^(\d{1,2})(?::(\d{2}))?$/) || []); const v = { plataforma: s.plataforma, formato: s.formato, dia: s.dia, horario: hr[1] ? hr[1].padStart(2, '0') + ':' + (hr[2] || '00') : '', qtd: Math.max(1, parseInt(s.qtd, 10) || 1) };
+      if (h) Object.assign(h, v); else DEMO_G.horarios.push(Object.assign({ id: 'g' + Date.now(), cliente: s.cliente, status: '✅ Publicar', nota: '' }, v)); }
+    return wait({ ok: true });
+  }
   if (path === 'euforia-painel-arquivo') return wait({ ok: true, link: 'https://drive.google.com/demo' });
   if (path === 'euforia-painel-pedido') return wait({ ok: true, quem: b.modo === 'mao' ? 'Escritório, à mão' : (TIPOS.find(t => t.id === b.tipo) || {}).maq });
   if (path === 'euforia-painel-acao') {
@@ -683,6 +818,22 @@ const DEMO_D = {"ok":true,"nome":"Ismael (exemplo)","papel":"revisor","hoje":"20
   {"id":"k6","cod":405,"titulo":"","nome":"THUMB 03","cliente":"c4","clienteNome":"Paula Reis (exemplo)","tipo":"Thumbnail","qtd":1,"status":"Aprovado","prazo":"2026-10-23","postar":"2026-10-26","link":"https://drive.google.com/demo","linkPost":"","obs":"[Portal 25/10 10:06] Cliente aprovou","resp":["Lorena"],"meu":false,"voltas":0},
   {"id":"k7","cod":407,"titulo":"","nome":"CARROSSEL 08","cliente":"c1","clienteNome":"Dra. Helena (exemplo)","tipo":"Carrossel","qtd":1,"status":"Aguardando cliente","prazo":"2026-10-24","postar":"2026-10-27","link":"https://drive.google.com/demo","linkPost":"","obs":"","resp":["Lorena"],"meu":false,"voltas":0}]};
 
+const DEMO_G = {"ok":true,"podeMudar":true,
+ "clientes":[{"id":"c1","nome":"Dra. Helena (exemplo)","faixa":"A","atencao":true,"ativo":true,"pausado":false,"yt":"Ter, Qui","tt":""},
+  {"id":"c2","nome":"Instituto Aurora (exemplo)","faixa":"A","atencao":false,"ativo":true,"pausado":false,"yt":"Qua","tt":"Seg, Qua, Sex"},
+  {"id":"c3","nome":"Marcos Lima (exemplo)","faixa":"B","atencao":false,"ativo":true,"pausado":false,"yt":"Seg","tt":""},
+  {"id":"c4","nome":"Paula Reis (exemplo)","faixa":"B","atencao":true,"ativo":true,"pausado":false,"yt":"Sex","tt":""},
+  {"id":"c5","nome":"Clínica Vida (exemplo)","faixa":"C","atencao":false,"ativo":true,"pausado":false,"yt":"Qui","tt":"Qui"}],
+ "horarios":[
+  {"id":"g1","cliente":"c1","plataforma":"YouTube","formato":"Vídeo padrão","dia":"2 Ter","horario":"18:00","qtd":1,"status":"✅ Publicar","nota":""},
+  {"id":"g2","cliente":"c1","plataforma":"YouTube","formato":"Shorts","dia":"4 Qui","horario":"12:00","qtd":3,"status":"✅ Publicar","nota":""},
+  {"id":"g3","cliente":"c2","plataforma":"YouTube","formato":"Vídeo padrão","dia":"3 Qua","horario":"19:00","qtd":1,"status":"✅ Publicar","nota":"Estreia com chat ao vivo"},
+  {"id":"g4","cliente":"c2","plataforma":"TikTok","formato":"Shorts","dia":"1 Seg","horario":"","qtd":1,"status":"✅ Publicar","nota":""},
+  {"id":"g5","cliente":"c2","plataforma":"TikTok","formato":"Shorts","dia":"3 Qua","horario":"","qtd":1,"status":"✅ Publicar","nota":""},
+  {"id":"g6","cliente":"c2","plataforma":"TikTok","formato":"Shorts","dia":"5 Sex","horario":"","qtd":1,"status":"✅ Publicar","nota":""},
+  {"id":"g7","cliente":"c3","plataforma":"YouTube","formato":"Vídeo padrão","dia":"1 Seg","horario":"17:00","qtd":1,"status":"✅ Publicar","nota":""},
+  {"id":"g8","cliente":"c3","plataforma":"Instagram","formato":"Carrossel","dia":"6 Sáb","horario":"10:00","qtd":1,"status":"❓ Confirmar com o Flau","nota":""},
+  {"id":"g9","cliente":"c4","plataforma":"YouTube","formato":"Vídeo padrão","dia":"5 Sex","horario":"","qtd":1,"status":"⏸️ Pausado","nota":"Cliente de férias até 10/11"}]};
 const DEMO_QR = 'data:image/svg+xml;utf8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 21 21" shape-rendering="crispEdges"><rect width="21" height="21" fill="#fff"/><path d="M1 1h7v7H1zM13 1h7v7h-7zM1 13h7v7H1z" fill="#111"/><path d="M2 2h5v5H2zM14 2h5v5h-5zM2 14h5v5H2z" fill="#fff"/><path d="M3 3h3v3H3zM15 3h3v3h-3zM3 15h3v3H3zM10 2h1v3h-1zM9 9h3v3H9zM13 10h2v1h-2zM16 13h3v2h-3zM10 15h3v1h-3zM13 17h2v3h-2zM17 17h3v1h-3z" fill="#111"/></svg>');
 const DEMO_R = {"ok":true,"agora":"11:58","itens":[
   {"chat":"1@g.us","msg":"m1","grupo":"EUFORIA | Paula Reis","cliente":"Paula Reis (exemplo)","faixa":"B","atencao":true,"sensivel":true,"direcao":false,"tema":"reclamação","resumo":"Reclama que o vídeo de ontem saiu com legenda errada","autor":"Paula","texto":"Gente, o vídeo de ontem saiu com o nome do curso errado na legenda 😕","contexto":"25/10 18:02 Euforia: Vídeo 03 no ar!\n26/10 09:14 Paula: Gente, o vídeo de ontem saiu com o nome do curso errado na legenda 😕","qtd":1,"desde":"26/10 09:14","espera":164},
