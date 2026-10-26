@@ -10,7 +10,22 @@ const pedir = trigger({ type: 'n8n-nodes-base.webhook', version: 2.1, config: { 
 const lerLink = node({ type: 'n8n-nodes-base.code', version: 2, config: { name: 'Ler pedido', parameters: { jsCode: `const q = ($input.first().json.query) || {};
 const limpa = v => String(v || '').replace(/-/g, '').toLowerCase();
 const ok = v => /^[0-9a-f]{32}$/.test(v) ? v : '00000000000000000000000000000000';
-return [{ json: { id: ok(limpa(q.c)), r: ok(limpa(q.r)) } }];
+return [{ json: { id: ok(limpa(q.a)), r: ok(limpa(q.r)) } }];
+` } } });
+
+
+// Cada pessoa do cliente tem o seu link (?a=<id da linha no 🔑 Acessos do portal>). Desmarcar "Ativo" corta o acesso.
+const acessoNode = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, config: { name: 'Acesso da pessoa', credentials: NOTION, onError: 'continueRegularOutput', alwaysOutputData: true, parameters: {
+  method: 'GET', url: '=https://api.notion.com/v1/pages/{{ $("Ler pedido").first().json.id }}', authentication: 'genericCredentialType', genericAuthType: 'httpHeaderAuth',
+  sendHeaders: true, headerParameters: NOTION_HDR, options: {} } } });
+
+const conferir = node({ type: 'n8n-nodes-base.code', version: 2, config: { name: 'Conferir acesso', parameters: { jsCode: `const a = $input.first().json || {};
+const pr = a.properties || {};
+const txt = v => { if (!v) return ''; const t = v.title || v.rich_text; if (t) return t.map(x => x.plain_text).join('').trim(); if (v.select) return v.select.name; return ''; };
+const valido = a.object === 'page' && !a.archived && !a.in_trash && ((a.parent || {}).database_id || '') === 'a95cdc41-6645-47f5-8c0f-99a85e31fb4e' && (pr['Ativo'] || {}).checkbox === true;
+const cliente = valido ? ((((pr['Cliente'] || {}).relation || [])[0] || {}).id || '').replace(/-/g, '') : '';
+const papel = txt(pr['Papel']) || 'Equipe';
+return [{ json: { id: /^[0-9a-f]{32}$/.test(cliente) ? cliente : '00000000000000000000000000000000', pessoa: valido ? txt(pr['Pessoa']).replace(/\\s*\\(.*?\\)\\s*$/, '') : '', papel, podeAprovar: ['Dono', 'Sócio'].includes(papel), fone8: String((pr['WhatsApp'] || {}).phone_number || '').replace(/[^0-9]/g, '').slice(-8) } }];
 ` } } });
 
 const pagina = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, config: { name: 'Página do roteiro', credentials: NOTION, onError: 'continueRegularOutput', alwaysOutputData: true, parameters: {
@@ -26,7 +41,7 @@ const montar = node({ type: 'n8n-nodes-base.code', version: 2, config: { name: '
 const pg = $('Página do roteiro').first().json;
 const pr = pg.properties || {};
 const txt = v => { if (!v) return ''; const a = v.title || v.rich_text; if (a) return a.map(t => t.plain_text).join('').trim(); if (v.select) return v.select.name; return ''; };
-const doCliente = ((pr['Cliente'] || {}).relation || []).some(x => x.id.replace(/-/g, '') === p.id);
+const doCliente = ((pr['Cliente'] || {}).relation || []).some(x => x.id.replace(/-/g, '') === $('Conferir acesso').first().json.id);
 const LIBERADO = ['📤 Enviado ao cliente', '👍 Aprovado pelo cliente', '🎬 Gravado'];
 if (!pg.id || !doCliente || txt(pr['Tipo']) !== 'Roteiro' || !LIBERADO.includes(txt(pr['Status']))) return [{ json: { resposta: { ok: false, motivo: 'link' } } }];
 const TIPOS = { heading_1: 'h', heading_2: 'h', heading_3: 'h', paragraph: 'p', bulleted_list_item: 'li', numbered_list_item: 'li', quote: 'q', callout: 'q', to_do: 'li' };
@@ -56,5 +71,5 @@ const devolver = node({ type: 'n8n-nodes-base.respondToWebhook', version: 1.5, c
 const nota = sticky('## Portal do cliente · roteiro (V1)\nMostra o texto de um roteiro do 🎬 Pautas e Roteiros no portal. Só se o roteiro for do próprio cliente e estiver Enviado, Aprovado ou Gravado. Só leitura.', [], { color: 4 });
 
 export default workflow('portal-roteiro', 'Portal | Roteiro para o cliente (V1)')
-  .add(pedir).to(lerLink).to(pagina).to(blocos).to(montar).to(devolver)
+  .add(pedir).to(lerLink).to(acessoNode).to(conferir).to(pagina).to(blocos).to(montar).to(devolver)
   .add(nota);

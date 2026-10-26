@@ -11,7 +11,7 @@ const pedir = trigger({ type: 'n8n-nodes-base.webhook', version: 2.1, config: { 
 
 const lerPedido = node({ type: 'n8n-nodes-base.code', version: 2, config: { name: 'Ler pedido', parameters: { jsCode: `const j = $input.first().json;
 const b = j.body || {}, h = j.headers || {};
-const id = String(b.c || '').replace(/-/g, '').toLowerCase();
+const id = String(b.a || '').replace(/-/g, '').toLowerCase();
 const ORIG = ['https://lp.grupoeuforia.tech', 'https://grupoeuforia.com.br', 'https://www.grupoeuforia.com.br'];
 const origem = ORIG.includes(h.origin) ? h.origin : 'https://grupoeuforia.com.br';
 const limpa = (v, n) => String(v || '').replace(/[\\\\/:*?"<>|\\r\\n]+/g, ' ').trim().slice(0, n);
@@ -23,8 +23,23 @@ return [{ json: { id: /^[0-9a-f]{32}$/.test(id) ? id : '000000000000000000000000
   fileId: /^[A-Za-z0-9_-]{10,80}$/.test(String(b.arquivo || '')) ? b.arquivo : '' } }];
 ` } } });
 
-const fichaNode = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, config: { name: 'Ficha do cliente', credentials: NOTION, onError: 'continueRegularOutput', alwaysOutputData: true, parameters: {
+
+// Cada pessoa do cliente tem o seu link (?a=<id da linha no 🔑 Acessos do portal>). Desmarcar "Ativo" corta o acesso.
+const acessoNode = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, config: { name: 'Acesso da pessoa', credentials: NOTION, onError: 'continueRegularOutput', alwaysOutputData: true, parameters: {
   method: 'GET', url: '=https://api.notion.com/v1/pages/{{ $("Ler pedido").first().json.id }}', authentication: 'genericCredentialType', genericAuthType: 'httpHeaderAuth',
+  sendHeaders: true, headerParameters: NOTION_HDR, options: {} } } });
+
+const conferirAcesso = node({ type: 'n8n-nodes-base.code', version: 2, config: { name: 'Conferir acesso', parameters: { jsCode: `const a = $input.first().json || {};
+const pr = a.properties || {};
+const txt = v => { if (!v) return ''; const t = v.title || v.rich_text; if (t) return t.map(x => x.plain_text).join('').trim(); if (v.select) return v.select.name; return ''; };
+const valido = a.object === 'page' && !a.archived && !a.in_trash && ((a.parent || {}).database_id || '') === 'a95cdc41-6645-47f5-8c0f-99a85e31fb4e' && (pr['Ativo'] || {}).checkbox === true;
+const cliente = valido ? ((((pr['Cliente'] || {}).relation || [])[0] || {}).id || '').replace(/-/g, '') : '';
+const papel = txt(pr['Papel']) || 'Equipe';
+return [{ json: { id: /^[0-9a-f]{32}$/.test(cliente) ? cliente : '00000000000000000000000000000000', pessoa: valido ? txt(pr['Pessoa']).replace(/\\s*\\(.*?\\)\\s*$/, '') : '', papel, podeAprovar: ['Dono', 'Sócio'].includes(papel), fone8: String((pr['WhatsApp'] || {}).phone_number || '').replace(/[^0-9]/g, '').slice(-8) } }];
+` } } });
+
+const fichaNode = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, config: { name: 'Ficha do cliente', credentials: NOTION, onError: 'continueRegularOutput', alwaysOutputData: true, parameters: {
+  method: 'GET', url: '=https://api.notion.com/v1/pages/{{ $("Conferir acesso").first().json.id }}', authentication: 'genericCredentialType', genericAuthType: 'httpHeaderAuth',
   sendHeaders: true, headerParameters: NOTION_HDR, options: {} } } });
 
 // Fallback: o campo Drive da ficha costuma estar vazio; aí procura "NN - NOME" na pasta CLIENTES.
@@ -169,11 +184,11 @@ const nn = pasta.id ? $('Próximo número').first().json.nome : '';
 const link = f.webViewLink || ('https://drive.google.com/file/d/' + v.fileId + '/view');
 const agora = DateTime.now().setZone(Z).toFormat('dd/MM HH:mm');
 const titulo = v.nome.toUpperCase() + ' | ' + (nn || 'VÍDEO') + ' (portal)';
-const obs = 'Enviado pelo cliente pelo portal em ' + agora + '.' + (v.roteiro ? ' Roteiro: ' + v.roteiro + '.' : '');
+const obs = 'Enviado por ' + ($('Conferir acesso').first().json.pessoa || 'cliente') + ' pelo portal em ' + agora + '.' + (v.roteiro ? ' Roteiro: ' + v.roteiro + '.' : '');
 const t = s => [{ type: 'text', text: { content: String(s).slice(0, 1900) } }];
 const body = { parent: { database_id: '3fea57fbb3ca4a7d9d16921d2f0b00cf' }, properties: {
   'Pedido': { title: t(titulo) },
-  'Cliente': { relation: [{ id: p.id }] },
+  'Cliente': { relation: [{ id: $('Conferir acesso').first().json.id }] },
   'Vídeo bruto (link do Drive)': { url: link },
   'Status': { select: { name: 'Editar' } },
   'Modelo': { select: { name: /acr[oó]pole/i.test(v.nome) ? 'Nova Acrópole' : 'Padrão' } },
@@ -191,7 +206,7 @@ const m = $('Montar pedido de edição').first().json;
 const pedido = $input.first().json;
 const onde = 'ARQUIVOS BRUTOS' + (m.nn ? ' › ' + m.nn : '');
 const edicao = pedido.id ? 'Pedido de edição aberto no quadro de Vídeos Longos IA (Editar): ' + (pedido.url || '') : '⚠️ Não consegui abrir o pedido de edição; abram no quadro de Vídeos Longos IA.';
-const msg = '📥 **' + v.nome + '** enviou uma gravação pelo portal' + (v.roteiro ? ' (roteiro: **' + v.roteiro + '**)' : '') + ':\\n' + m.nomeArq + (m.mb ? ' · ' + m.mb : '') + '\\nJá está em ' + onde + ': ' + m.link + '\\n' + edicao + '\\n' + v.quem + ', acompanhem a edição.\\n— Érica, time de suporte, Grupo Euforia';
+const msg = '📥 **' + ($('Conferir acesso').first().json.pessoa || v.nome) + '** (' + v.nome + ') enviou uma gravação pelo portal' + (v.roteiro ? ' (roteiro: **' + v.roteiro + '**)' : '') + ':\\n' + m.nomeArq + (m.mb ? ' · ' + m.mb : '') + '\\nJá está em ' + onde + ': ' + m.link + '\\n' + edicao + '\\n' + v.quem + ', acompanhem a edição.\\n— Érica, time de suporte, Grupo Euforia';
 return [{ json: { discord: JSON.stringify({ content: msg.slice(0, 1990) }) } }];
 ` } } });
 
@@ -211,7 +226,7 @@ const recusar = node({ type: 'n8n-nodes-base.respondToWebhook', version: 1.5, co
 const nota = sticky('## Portal do cliente · envio de gravação (V1)\n1) "iniciar": acha a pasta ARQUIVOS BRUTOS do cliente (link Drive da ficha ou "NN - NOME" em CLIENTES) e abre um envio no Drive. O navegador manda o vídeo direto ao Google, em partes.\n2) "pronto": confere o arquivo, cria a pasta "VÍDEO NN" seguinte em ARQUIVOS BRUTOS, move o vídeo para ela, abre o pedido "Editar" no quadro 🎞️ Pedidos de Vídeos Longos IA e avisa no #dia-a-dia marcando o responsável.\nNome do arquivo: "dd-MM HHhmm Portal - roteiro - nome original".', [], { color: 4 });
 
 export default workflow('portal-gravacao', 'Portal | Envio de gravação (V1)')
-  .add(pedir).to(lerPedido).to(fichaNode).to(pastaCliente).to(escolher).to(subpastas).to(brutos).to(brutosNeta).to(validar)
+  .add(pedir).to(lerPedido).to(acessoNode).to(conferirAcesso).to(fichaNode).to(pastaCliente).to(escolher).to(subpastas).to(brutos).to(brutosNeta).to(validar)
   .to(podeSeguir
     .onTrue(qualEtapa
       .onTrue(abrir.to(endereco).to(entregarEndereco))

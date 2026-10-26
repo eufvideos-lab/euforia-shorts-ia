@@ -294,7 +294,7 @@ a.btn{text-decoration:none;color:inherit;display:inline-block}
 <script>
 (function(){
 const BASE = 'https://n8n.grupoeuforia.tech/webhook/';
-const C = (new URLSearchParams(location.search).get('c') || '').replace(/[^0-9a-fA-F-]/g, '');
+const C = (new URLSearchParams(location.search).get('a') || '').replace(/[^0-9a-fA-F-]/g, '');
 const DEMO = new URLSearchParams(location.search).get('demo') === '1';
 const COLS = [{id:'afazer',nome:'A fazer'},{id:'producao',nome:'Em produção'},{id:'aprovar',nome:'Para você aprovar'},{id:'ajuste',nome:'Em ajuste'},{id:'aprovado',nome:'Aprovado'},{id:'publicado',nome:'Publicado'}];
 const CHIP = {aprovar:['red','Esperando você'],ajuste:['warn','Em ajuste'],aprovado:['ok','Aprovado'],publicado:['info','Publicado'],producao:['','Em produção'],afazer:['','A fazer']};
@@ -324,7 +324,7 @@ function falhou(txt){ $('#tela-carregando').hidden = true; $('#app').hidden = tr
 
 async function carregar(primeira){
   try {
-    const d = await api('euforia-portal-dados?c=' + encodeURIComponent(C), { method: 'GET', headers: {} });
+    const d = await api('euforia-portal-dados?a=' + encodeURIComponent(C), { method: 'GET', headers: {} });
     if (!d || !d.ok) { if (primeira) falhou(); return; }
     D = d; render();
     if (primeira) { $('#tela-carregando').hidden = true; $('#app').hidden = false; try { const v = localStorage.getItem('portal-view'); if (v && document.getElementById('v-' + v)) go(v); } catch (e) {} }
@@ -341,7 +341,7 @@ function render(){
   const d = D;
   document.title = 'Portal · ' + d.nome;
   $('#avatar').textContent = d.nome.split(' ').filter(Boolean).slice(0, 2).map(p => p[0]).join('').toUpperCase();
-  $('#who-nome').textContent = d.nome; $('#who-fase').textContent = d.fase || '';
+  $('#who-nome').textContent = d.nome; $('#who-fase').textContent = [d.pessoa, d.fase].filter(Boolean).join(' · ');
   $('#hoje').textContent = d.hoje; $('#ola').textContent = 'Olá, ' + d.primeiro;
   $('#fase-sub').textContent = d.fase ? 'Fase atual: ' + d.fase : '';
   const ap = d.cards.filter(k => k.col === 'aprovar');
@@ -379,7 +379,8 @@ function abrirCard(id){
   const ch = CHIP[k.col];
   const arquivo = k.link ? `<a class="btn" href="${esc(k.link)}" target="_blank" rel="noopener">${k.col === 'publicado' ? 'Ver publicação' : 'Abrir a peça'}</a>` : '';
   let acts = '';
-  if (k.col === 'aprovar') {
+  if (k.col === 'aprovar' && D.podeAprovar === false) acts = '<div class="rule">Quem aprova as peças é o dono ou sócio da conta. Se quiser comentar algo, mande em Mensagens.</div>';
+  else if (k.col === 'aprovar') {
     acts = `<div class="rule">Só publicamos depois do seu OK.${k.link ? '' : ' Se ainda não viu esta peça, peça o arquivo em Mensagens.'}</div>
     <div class="actions"><button class="btn ok" id="approve">Aprovar</button><button class="btn" id="ask">Pedir ajuste</button></div>
     <form id="adj" hidden style="display:flex;flex-direction:column;gap:10px">
@@ -405,7 +406,7 @@ function abrirCard(id){
 async function acao(k, tipo, texto, minuto, btn){
   btn.disabled = true;
   try {
-    const r = await api('euforia-portal-acao', { method: 'POST', body: JSON.stringify({ c: C, card: k.id, acao: tipo, texto, minuto }) });
+    const r = await api('euforia-portal-acao', { method: 'POST', body: JSON.stringify({ a: C, card: k.id, acao: tipo, texto, minuto }) });
     if (r && r.ok) {
       k.col = tipo === 'aprovar' ? 'aprovado' : 'ajuste'; k.info = tipo === 'aprovar' ? 'Entra no calendário de publicação' : '';
       fechar(); render();
@@ -413,7 +414,7 @@ async function acao(k, tipo, texto, minuto, btn){
       setTimeout(() => carregar(false), 4000);
     } else {
       btn.disabled = false;
-      toast(r && r.motivo === 'status' ? 'Esta peça mudou de etapa. Atualizamos o quadro para você.' : 'Não deu certo agora. Tente de novo em instantes.');
+      toast(r && r.motivo === 'papel' ? 'Quem aprova as peças é o dono ou sócio da conta.' : r && r.motivo === 'status' ? 'Esta peça mudou de etapa. Atualizamos o quadro para você.' : 'Não deu certo agora. Tente de novo em instantes.');
       if (r && r.motivo === 'status') { fechar(); carregar(false); }
     }
   } catch (e) { btn.disabled = false; toast('Sem conexão. Tente de novo em instantes.'); }
@@ -434,7 +435,7 @@ async function lerRoteiro(id){
   const r0 = D.roteiros.find(r => r.id === id);
   abrirGaveta(`<div class="row"><span class="chip">Roteiro</span><button class="btn ghost" id="close" aria-label="Fechar">Fechar</button></div><h2 id="d-title" style="font-size:24px">${esc(nomeRot(r0))}</h2><p class="loading">Abrindo o roteiro…</p>`);
   try {
-    const r = await api('euforia-portal-roteiro?c=' + encodeURIComponent(C) + '&r=' + encodeURIComponent(id), { method: 'GET', headers: {} });
+    const r = await api('euforia-portal-roteiro?a=' + encodeURIComponent(C) + '&r=' + encodeURIComponent(id), { method: 'GET', headers: {} });
     if (!r || !r.ok) throw 0;
     const corpo = r.partes.map(p => p.k === 'h' ? `<h3>${esc(p.t)}</h3>` : p.k === 'q' ? `<div class="q">${esc(p.t)}</div>` : p.k === 'li' ? `<li>${esc(p.t)}</li>` : /^notas? de grava/i.test(p.t) ? `<p class="nota">${esc(p.t)}</p>` : `<p>${esc(p.t)}</p>`).join('');
     $('#drawer-in').querySelector('.loading').outerHTML = `<div class="rot-txt">${corpo || '<p class="sub">Este roteiro ainda está sem texto.</p>'}</div>`;
@@ -468,7 +469,7 @@ $('#send-file').addEventListener('click', async () => {
   enviando = true; const btn = $('#send-file'); btn.disabled = true; $('#up-box').hidden = false; progresso(0, 1);
   const f = escolhido, roteiro = $('#rot').value;
   try {
-    const ini = await api('euforia-portal-gravacao', { method: 'POST', body: JSON.stringify({ c: C, etapa: 'iniciar', nome: f.name, tipo: f.type || 'video/mp4', tamanho: f.size, roteiro }) });
+    const ini = await api('euforia-portal-gravacao', { method: 'POST', body: JSON.stringify({ a: C, etapa: 'iniciar', nome: f.name, tipo: f.type || 'video/mp4', tamanho: f.size, roteiro }) });
     if (!ini || !ini.ok) throw new Error(ini && ini.motivo === 'sem-pasta' ? 'pasta' : 'inicio');
     const PARTE = 32 * 1024 * 1024; let pos = 0, fim = null;
     while (pos < f.size) {
@@ -483,7 +484,7 @@ $('#send-file').addEventListener('click', async () => {
       else throw new Error('status ' + x.status);
     }
     progresso(1, 1); $('#up-txt').textContent = 'Conferindo…';
-    const pronto = await api('euforia-portal-gravacao', { method: 'POST', body: JSON.stringify({ c: C, etapa: 'pronto', arquivo: fim && fim.id, roteiro }) });
+    const pronto = await api('euforia-portal-gravacao', { method: 'POST', body: JSON.stringify({ a: C, etapa: 'pronto', arquivo: fim && fim.id, roteiro }) });
     if (!pronto || !pronto.ok) throw new Error('pronto');
     $('#up-txt').textContent = 'Recebido! A equipe já foi avisada e a edição começa em seguida.';
     toast('Gravação recebida. Obrigado!');
@@ -505,7 +506,7 @@ $('#composer').addEventListener('submit', async e => {
   const v = $('#msg-in').value.trim(); if (!v) return;
   const btn = $('#msg-btn'); btn.disabled = true;
   try {
-    const r = await api('euforia-portal-mensagem', { method: 'POST', body: JSON.stringify({ c: C, texto: v }) });
+    const r = await api('euforia-portal-mensagem', { method: 'POST', body: JSON.stringify({ a: C, texto: v }) });
     if (r && r.ok) { D.mensagens.push({ eu: true, t: v, quem: 'você', em: 'agora' }); $('#msg-in').value = ''; renderChat(); const c = $('#chat'); c.scrollTop = c.scrollHeight; }
     else toast(r && r.motivo === 'fora' ? 'Nosso WhatsApp está instável agora. Tente de novo em alguns minutos ou escreva direto no grupo.' : 'Não deu para enviar agora. Tente de novo em instantes.');
   } catch (err) { toast('Sem conexão. Tente de novo em instantes.'); }

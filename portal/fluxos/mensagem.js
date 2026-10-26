@@ -9,13 +9,28 @@ const pedir = trigger({ type: 'n8n-nodes-base.webhook', version: 2.1, config: { 
   httpMethod: 'POST', path: 'euforia-portal-mensagem', responseMode: 'responseNode', options: { allowedOrigins: ORIGENS } } } });
 
 const lerPedido = node({ type: 'n8n-nodes-base.code', version: 2, config: { name: 'Ler mensagem', parameters: { jsCode: `const b = ($input.first().json.body) || {};
-const id = String(b.c || '').replace(/-/g, '').toLowerCase();
+const id = String(b.a || '').replace(/-/g, '').toLowerCase();
 const texto = String(b.texto || '').replace(/\\s+$/g, '').trim().slice(0, 2000);
 return [{ json: { id: /^[0-9a-f]{32}$/.test(id) ? id : '00000000000000000000000000000000', texto, robo: !!b.site_url } }];
 ` } } });
 
-const fichaNode = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, config: { name: 'Ficha do cliente', credentials: NOTION, onError: 'continueRegularOutput', alwaysOutputData: true, parameters: {
+
+// Cada pessoa do cliente tem o seu link (?a=<id da linha no 🔑 Acessos do portal>). Desmarcar "Ativo" corta o acesso.
+const acessoNode = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, config: { name: 'Acesso da pessoa', credentials: NOTION, onError: 'continueRegularOutput', alwaysOutputData: true, parameters: {
   method: 'GET', url: '=https://api.notion.com/v1/pages/{{ $("Ler mensagem").first().json.id }}', authentication: 'genericCredentialType', genericAuthType: 'httpHeaderAuth',
+  sendHeaders: true, headerParameters: NOTION_HDR, options: {} } } });
+
+const conferir = node({ type: 'n8n-nodes-base.code', version: 2, config: { name: 'Conferir acesso', parameters: { jsCode: `const a = $input.first().json || {};
+const pr = a.properties || {};
+const txt = v => { if (!v) return ''; const t = v.title || v.rich_text; if (t) return t.map(x => x.plain_text).join('').trim(); if (v.select) return v.select.name; return ''; };
+const valido = a.object === 'page' && !a.archived && !a.in_trash && ((a.parent || {}).database_id || '') === 'a95cdc41-6645-47f5-8c0f-99a85e31fb4e' && (pr['Ativo'] || {}).checkbox === true;
+const cliente = valido ? ((((pr['Cliente'] || {}).relation || [])[0] || {}).id || '').replace(/-/g, '') : '';
+const papel = txt(pr['Papel']) || 'Equipe';
+return [{ json: { id: /^[0-9a-f]{32}$/.test(cliente) ? cliente : '00000000000000000000000000000000', pessoa: valido ? txt(pr['Pessoa']).replace(/\\s*\\(.*?\\)\\s*$/, '') : '', papel, podeAprovar: ['Dono', 'Sócio'].includes(papel), fone8: String((pr['WhatsApp'] || {}).phone_number || '').replace(/[^0-9]/g, '').slice(-8) } }];
+` } } });
+
+const fichaNode = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, config: { name: 'Ficha do cliente', credentials: NOTION, onError: 'continueRegularOutput', alwaysOutputData: true, parameters: {
+  method: 'GET', url: '=https://api.notion.com/v1/pages/{{ $("Conferir acesso").first().json.id }}', authentication: 'genericCredentialType', genericAuthType: 'httpHeaderAuth',
   sendHeaders: true, headerParameters: NOTION_HDR, options: {} } } });
 
 const instancias = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, config: { name: 'Instâncias do WhatsApp', credentials: EVOLUTION, onError: 'continueRegularOutput', alwaysOutputData: true, executeOnce: true, parameters: {
@@ -32,7 +47,8 @@ if (!nome) erro = 'link';
 else if (p.robo || p.texto.length < 1) erro = 'texto';
 else if (!grupo || !/@g\\.us$/.test(grupo)) erro = 'sem-grupo';
 else if (!suporteOn) erro = 'fora';
-const texto = '💬 Pelo portal, ' + nome.split(' ')[0] + ':\\n' + p.texto;
+const pessoa = $('Conferir acesso').first().json.pessoa || nome.split(' ')[0];
+const texto = '💬 Pelo portal, ' + pessoa + ':\\n' + p.texto;
 return [{ json: { ok: !erro, envio: JSON.stringify({ number: grupo, text: texto }), resposta: erro ? { ok: false, motivo: erro } : { ok: true } } }];
 ` } } });
 
@@ -60,6 +76,6 @@ const recusar = node({ type: 'n8n-nodes-base.respondToWebhook', version: 1.5, co
 const nota = sticky('## Portal do cliente · mensagens (V1)\nO que o cliente escreve no portal vai para o grupo do WhatsApp dele pelo número do suporte (Érica), com "💬 Pelo portal, Nome:" na frente. A equipe responde no grupo e a resposta aparece no portal (lida do banco mensagens). Se o suporte estiver fora do ar, o portal pede para o cliente usar o grupo. Isabela não entra como plano B.', [], { color: 4 });
 
 export default workflow('portal-mensagem', 'Portal | Mensagem do cliente para o grupo (V1)')
-  .add(pedir).to(lerPedido).to(fichaNode).to(instancias).to(validar)
+  .add(pedir).to(lerPedido).to(acessoNode).to(conferir).to(fichaNode).to(instancias).to(validar)
   .to(podeSeguir.onTrue(enviar.to(resultado).to(confirmar)).onFalse(recusar))
   .add(nota);
