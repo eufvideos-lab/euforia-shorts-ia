@@ -51,12 +51,18 @@ const podeSeguir = ifElse({ version: 2.2, config: { name: 'Acesso válido?', par
 
 const entregas = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, config: { name: 'Cards da pessoa', credentials: NOTION, parameters: {
   method: 'POST', url: 'https://api.notion.com/v1/databases/74b3076a325749e3bac4ba6659215e48/query', authentication: 'genericCredentialType', genericAuthType: 'httpHeaderAuth',
-  sendHeaders: true, headerParameters: NOTION_HDR, sendBody: true, specifyBody: 'json', jsonBody: '={{ $json.consulta }}', options: {} } } });
+  sendHeaders: true, headerParameters: NOTION_HDR, sendBody: true, specifyBody: 'json', jsonBody: '={{ $json.consulta }}',
+  options: { pagination: { pagination: { paginationMode: 'updateAParameterInEachRequest',
+    parameters: { parameters: [{ type: 'body', name: 'start_cursor', value: '={{ $response.body.next_cursor }}' }] },
+    paginationCompleteWhen: 'other', completeExpression: '={{ !$response.body.has_more }}', limitPagesFetched: true, maxRequests: 10 } } } } } });
 
 const clientes = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, config: { name: 'Clientes ativos', credentials: NOTION, executeOnce: true, parameters: {
   method: 'POST', url: 'https://api.notion.com/v1/databases/3ddc91b406be49e98e630c298d9162d8/query', authentication: 'genericCredentialType', genericAuthType: 'httpHeaderAuth',
   sendHeaders: true, headerParameters: NOTION_HDR, sendBody: true, specifyBody: 'json',
-  jsonBody: '={{ JSON.stringify({ filter: { property: "Situação", select: { does_not_equal: "Encerrado" } }, sorts: [{ property: "Cliente", direction: "ascending" }], page_size: 100 }) }}', options: {} } } });
+  jsonBody: '={{ JSON.stringify({ filter: { property: "Situação", select: { does_not_equal: "Encerrado" } }, sorts: [{ property: "Cliente", direction: "ascending" }], page_size: 100 }) }}',
+  options: { pagination: { pagination: { paginationMode: 'updateAParameterInEachRequest',
+    parameters: { parameters: [{ type: 'body', name: 'start_cursor', value: '={{ $response.body.next_cursor }}' }] },
+    paginationCompleteWhen: 'other', completeExpression: '={{ !$response.body.has_more }}', limitPagesFetched: true, maxRequests: 10 } } } } } });
 
 // Só sai daqui o que a produção precisa. Nada de contrato, valores, risco, clima ou financeiro.
 const montar = node({ type: 'n8n-nodes-base.code', version: 2, config: { name: 'Montar fila', parameters: { jsCode: `const Z = 'America/Recife';
@@ -65,13 +71,13 @@ const txt = v => { if (!v) return ''; const a = v.title || v.rich_text; if (a) r
 const EQUIPE = { '3ea98c0cdde08182a952f3d9a5b73575': 'Victor', '3ea98c0cdde08163bd16f0213b098cb5': 'Lorena', '3ea98c0cdde0817e87aee637a96d4fd1': 'Daniel', '3ea98c0cdde0812d9cb4c41ce70df4ae': 'Ismael', '3ea98c0cdde081299709cf901fac7275': 'Rômulo', '3ea98c0cdde0812bba06cba7e4261426': 'Escritório' };
 const sem = id => String(id || '').replace(/-/g, '');
 const cli = {};
-for (const p of ($('Clientes ativos').first().json.results || [])) {
+for (const it of $('Clientes ativos').all()) for (const p of (it.json.results || [])) {
   const pr = p.properties || {};
   cli[sem(p.id)] = { id: sem(p.id), nome: txt(pr['Cliente']), faixa: txt(pr['Faixa']) || txt(pr['Faixa base']), atencao: !!(pr['🔴 Atenção redobrada'] || {}).checkbox,
     padroes: txt(pr['Padrões de edição']).slice(0, 1200), gosta: txt(pr['Direção criativa (gosta / não gosta)']).slice(0, 1200) };
 }
 const cards = [];
-for (const p of ($('Cards da pessoa').first().json.results || [])) {
+for (const it of $('Cards da pessoa').all()) for (const p of (it.json.results || [])) {
   const pr = p.properties || {};
   const titulo = txt(pr['Entrega']);
   const cid = sem(((pr['Cliente'] || {}).relation || [])[0] && pr['Cliente'].relation[0].id);
@@ -100,7 +106,7 @@ const devolver = node({ type: 'n8n-nodes-base.respondToWebhook', version: 1.5, c
 const recusar = node({ type: 'n8n-nodes-base.respondToWebhook', version: 1.5, config: { name: 'Recusar acesso', parameters: {
   respondWith: 'json', responseBody: '={{ JSON.stringify($json.resposta) }}', options: {} } } });
 
-const nota = sticky('## Painel da equipe · fila (V1)\nA página grupoeuforia.com.br/equipe?u=<token> pede aqui a fila da pessoa (token + PIN da tabela "Painel equipe · acesso").\nEditor: cards abertos em que ela é Responsável. Revisor (Ismael): os dele + tudo Em revisão, Aguardando cliente e o que vai ao ar até amanhã. Calls (Rômulo): os dele + Aguardando cliente e o que vai ao ar até amanhã. Teste: só cards com "TESTE PAINEL" no título.\nSó leitura. Cliente sai só com faixa, atenção, padrões de edição e gosta/não gosta.', [], { color: 4 });
+const nota = sticky('## Painel da equipe · fila (V1)\nA página grupoeuforia.com.br/equipe?u=<token> pede aqui a fila da pessoa (token + PIN da tabela "Painel equipe · acesso").\nEditor: cards abertos em que ela é Responsável. Revisor (Ismael): os dele + tudo Em revisão, Aguardando cliente e o que vai ao ar até amanhã. Calls (Rômulo): os dele + Aguardando cliente e o que vai ao ar até amanhã. Teste: só cards com "TESTE PAINEL" no título.\nSó leitura. Cliente sai só com faixa, atenção, padrões de edição e gosta/não gosta. Cards e clientes vêm página por página (sem limite de 100).', [], { color: 4 });
 
 export default workflow('painel-fila', 'Painel | Fila da equipe (V1)')
   .add(pedir).to(ler).to(acesso).to(validar)

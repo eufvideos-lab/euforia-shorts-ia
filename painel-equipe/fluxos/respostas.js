@@ -101,13 +101,16 @@ LIMIT 60;`, options: {} } } });
 const clientes = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, config: { name: 'Clientes com grupo', credentials: NOTION, executeOnce: true, parameters: {
   method: 'POST', url: 'https://api.notion.com/v1/databases/3ddc91b406be49e98e630c298d9162d8/query', authentication: 'genericCredentialType', genericAuthType: 'httpHeaderAuth',
   sendHeaders: true, headerParameters: NOTION_HDR, sendBody: true, specifyBody: 'json',
-  jsonBody: '={{ JSON.stringify({ filter: { and: [{ property: "Situação", select: { does_not_equal: "Encerrado" } }, { property: "Grupo WhatsApp (ID)", rich_text: { is_not_empty: true } }] }, page_size: 100 }) }}', options: {} } } });
+  jsonBody: '={{ JSON.stringify({ filter: { and: [{ property: "Situação", select: { does_not_equal: "Encerrado" } }, { property: "Grupo WhatsApp (ID)", rich_text: { is_not_empty: true } }] }, page_size: 100 }) }}',
+  options: { pagination: { pagination: { paginationMode: 'updateAParameterInEachRequest',
+    parameters: { parameters: [{ type: 'body', name: 'start_cursor', value: '={{ $response.body.next_cursor }}' }] },
+    paginationCompleteWhen: 'other', completeExpression: '={{ !$response.body.has_more }}', limitPagesFetched: true, maxRequests: 10 } } } } } });
 
 // Prioridade: sensível, 🔴 atenção, faixa A/B/C, depois quem espera há mais tempo. Assunto de dinheiro, contrato ou jurídico não mostra o texto: é da diretoria.
 const montar = node({ type: 'n8n-nodes-base.code', version: 2, config: { name: 'Montar fila de respostas', parameters: { jsCode: `const Z = 'America/Recife';
 const txt = v => { if (!v) return ''; const a = v.title || v.rich_text; if (a) return a.map(t => t.plain_text).join('').trim(); if (v.select) return v.select.name; if (v.formula) return String(v.formula.string || ''); return ''; };
 const cli = {};
-for (const p of ($('Clientes com grupo').first().json.results || [])) {
+for (const it of $('Clientes com grupo').all()) for (const p of (it.json.results || [])) {
   const pr = p.properties || {};
   const g = txt(pr['Grupo WhatsApp (ID)']).trim();
   if (g) cli[g] = { nome: txt(pr['Cliente']), faixa: txt(pr['Faixa']) || txt(pr['Faixa base']), atencao: !!(pr['🔴 Atenção redobrada'] || {}).checkbox };
