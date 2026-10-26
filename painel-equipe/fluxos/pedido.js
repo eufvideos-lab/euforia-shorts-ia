@@ -26,7 +26,7 @@ const fichaNode = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, confi
   method: 'GET', url: '=https://api.notion.com/v1/pages/{{ $("Ler pedido").first().json.cliente }}', authentication: 'genericCredentialType', genericAuthType: 'httpHeaderAuth',
   sendHeaders: true, headerParameters: NOTION_HDR, options: {} } } });
 
-// Catálogo igual ao da página. Enquanto o Tipo do Entregas não ganha as opções novas, o nome do pedido vai no título.
+// Catálogo igual ao da página: [Tipo no Entregas, nome no título, máquina que faz].
 const montar = node({ type: 'n8n-nodes-base.code', version: 2, config: { name: 'Montar card', parameters: { jsCode: `const Z = 'America/Recife';
 const p = $('Ler pedido').first().json;
 const r = $('Achar pessoa').first().json || {};
@@ -36,10 +36,10 @@ const txt = v => { if (!v) return ''; const a = v.title || v.rich_text; if (a) r
 const CAT = {
   longo: ['Vídeo longo', 'VÍDEO LONGO', 'Máquina de Longos'], shorts: ['Shorts', 'SHORTS', 'Máquina de Shorts'], ajvid: ['Vídeo longo', 'AJUSTE EM VÍDEO', ''],
   carrossel: ['Carrossel', 'CARROSSEL', 'Máquina de Carrosséis'], thumb: ['Thumbnail', 'THUMB', 'Máquina do Escritório'], arte: ['Arte', 'ARTE', 'Máquina do Escritório'],
-  idv: ['ID visual', 'ID VISUAL', 'Máquina do Escritório'], alinhamento: ['Outro', 'APRESENTAÇÃO DE ALINHAMENTO', 'Máquina do Escritório'],
-  call: ['Outro', 'APRESENTAÇÃO DE CALL', 'Máquina do Escritório'], relatorio: ['Outro', 'RELATÓRIO', 'Máquina do Escritório'],
-  recuperacao: ['Outro', 'ESTRATÉGIA DE RECUPERAÇÃO', 'Máquina do Escritório'], pautas: ['Roteiro', 'PAUTAS E ROTEIROS', 'Máquina do Escritório'],
-  pagina: ['Página', 'PÁGINA', 'Máquina do Escritório'], funil: ['Funil', 'FUNIL', 'Máquina do Escritório'], insta: ['Copy', 'INSTA-BLINDADO', 'Máquina do Escritório'],
+  idv: ['ID visual', 'ID VISUAL', 'Máquina do Escritório'], alinhamento: ['Apresentação', 'APRESENTAÇÃO DE ALINHAMENTO', 'Máquina do Escritório'],
+  call: ['Apresentação', 'APRESENTAÇÃO DE CALL', 'Máquina do Escritório'], relatorio: ['Relatório', 'RELATÓRIO', 'Máquina do Escritório'],
+  recuperacao: ['Estratégia', 'ESTRATÉGIA DE RECUPERAÇÃO', 'Máquina do Escritório'], pautas: ['Roteiro', 'PAUTAS E ROTEIROS', 'Máquina do Escritório'],
+  pagina: ['Página', 'PÁGINA', 'Máquina do Escritório'], funil: ['Funil', 'FUNIL', 'Máquina do Escritório'], insta: ['Insta-Blindado', 'INSTA-BLINDADO', 'Máquina do Escritório'],
   copy: ['Copy', 'COPY', 'Máquina do Escritório'], outro: ['Outro', 'PEDIDO', 'Máquina do Escritório'] };
 const c = CAT[p.tipo];
 const acessoOk = !!r.token && r.token === p.u && r.ativo === true && String(r.pin) === p.pin;
@@ -61,7 +61,7 @@ const props = {
   'Status': { select: { name: 'A fazer' } }, 'Origem': { select: { name: 'Extra' } }, 'Prazo': { date: { start: p.prazo } }, 'Obs': { rich_text: t(obs) } };
 if (!teste) {
   props['Responsável'] = { relation: [{ id: '3ea98c0cdde0812bba06cba7e4261426' }] };
-  props['🏢 Escritório IA'] = { select: { name: manual ? 'Precisa da Direção' : 'Na fila' } };
+  props['🏢 Escritório IA'] = { select: { name: manual ? 'À mão (Flau)' : 'Na fila' } };
 }
 if (/^https:\\/\\//.test(p.link)) props['Link do arquivo'] = { url: p.link };
 return [{ json: { ok: !erro, body: JSON.stringify({ parent: { database_id: '74b3076a325749e3bac4ba6659215e48' }, properties: props }),
@@ -83,7 +83,7 @@ const confirmar = node({ type: 'n8n-nodes-base.respondToWebhook', version: 1.5, 
 const recusar = node({ type: 'n8n-nodes-base.respondToWebhook', version: 1.5, config: { name: 'Recusar', parameters: {
   respondWith: 'json', responseBody: '={{ JSON.stringify($json.resposta) }}', options: {} } } });
 
-const nota = sticky('## Painel da equipe · pedir ao escritório (V1)\nCria card no Entregas: Responsável = Escritório (Flau + IA), Origem Extra, Status A fazer, Prazo e o texto na Obs.\nAutomático: 🏢 Escritório IA = Na fila (a Máquina do Escritório pega ou manda para a máquina certa). À mão: = Precisa da Direção, até existir a opção "À mão (Flau)".\nTeste: título "TESTE PAINEL", sem Responsável, para nenhuma máquina pegar.', [], { color: 4 });
+const nota = sticky('## Painel da equipe · pedir ao escritório (V1)\nCria card no Entregas: Responsável = Escritório (Flau + IA), Origem Extra, Status A fazer, Prazo e o texto na Obs.\nAutomático: 🏢 Escritório IA = Na fila (a Máquina do Escritório pega ou manda para a máquina certa). À mão: = À mão (Flau).\nTeste: título "TESTE PAINEL", sem Responsável, para nenhuma máquina pegar.', [], { color: 4 });
 
 export default workflow('painel-pedido', 'Painel | Pedido ao escritório (V1)')
   .add(pedir).to(ler).to(acesso).to(fichaNode).to(montar)
