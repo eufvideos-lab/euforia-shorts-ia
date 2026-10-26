@@ -525,8 +525,8 @@ const VIEWS = {
         ${x.direcao ? '<span class="sub" style="font-size:13px">Assunto de dinheiro, contrato ou jurídico. A diretoria responde; não precisa fazer nada.</span>'
           : `${x.resumo ? `<span style="font-size:14px"><b>${esc(x.resumo)}</b></span>` : ''}<span class="sub" style="font-size:14px">${esc(x.autor)}: ${esc(x.texto)}</span>
           ${x.contexto ? `<details><summary class="sub" style="font-size:13px;cursor:pointer">Ver a conversa</summary><p class="obs" style="margin-top:6px">${esc(x.contexto)}</p></details>` : ''}`}</div>
-        <span class="act">${x.direcao ? '' : `<button class="btn" data-dispensar="${esc(x.msg)}" data-chat="${esc(x.chat)}">Não precisa responder</button>`}</span></li>`;
-      return `<div class="head"><div><p class="eyebrow">WhatsApp do suporte · atualizado às ${esc(R.agora)}</p><h1>Responder</h1></div><p class="sub">Responda no WhatsApp do suporte. Quando alguém da equipe responde no grupo, o cliente sai daqui sozinho.</p></div>
+        <span class="act"></span></li>`;
+      return `<div class="head"><div><p class="eyebrow">WhatsApp do suporte · atualizado às ${esc(R.agora)}</p><h1>Responder</h1></div><p class="sub">Responda no WhatsApp do suporte. Todo cliente recebe resposta: quando alguém da equipe responde no grupo, o cliente sai daqui sozinho.</p></div>
       ${caixaWhats()}
       <section class="group"><h2>Esperando resposta <span class="count">${R.itens.length}</span></h2>${R.itens.length ? `<ul class="rows">${R.itens.map(item).join('')}</ul>` : '<p class="empty">Ninguém esperando resposta agora. 🎉</p>'}</section>
       <p class="note">A ordem é: assunto sensível, cliente 🔴 em atenção, faixa A, B e C, e depois quem espera há mais tempo. Responder direto daqui vem na próxima versão, saindo pelo seu número de suporte.</p>`;
