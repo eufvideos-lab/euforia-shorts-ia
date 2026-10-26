@@ -19,6 +19,8 @@ Gera animações (motion design) nas cores do cliente, renderizadas por código 
 | `preco` | o quadro vira círculo e o preço rola até o valor |
 | `logo` | logo em cartão branco sobre a cor da marca, brilho passando e botão |
 | `institucional` | logo, nome, frase em linhas e pilares com ícones que se desenham |
+| `navegador` | tela real (print) num navegador ou celular; `camera` dá zoom em áreas, `cursor` anda e clica, `destaques` acendem um contorno, `telas` troca o print num tempo. Posições em frações da tela (0 a 1). `texto` opcional ao lado, `rotulo` = pílula com o nome da área |
+| `abas` | título + cartões que entram um a um (ícone que se desenha, nome e descrição); o último que entrou fica aceso |
 
 Entre cenas entra uma faixa diagonal nas cores da marca (`"transicao": "nenhuma"` desliga).
 Para uma cena nova de outro cliente, basta escrever o JSON; tipo novo de cena = um componente novo em `cenas.tsx`.
@@ -40,3 +42,7 @@ CHROME=<chrome-headless-shell> node render.mjs ../motion/pecas/<peca>.json saida
 - `cta-nova-acropole.json`: CTA final da Acrópole Play (substitui o ACROPOLEPLAY.mov da pasta
   01 - ELEMENTOS ESSENCIAIS/05 - IDENTIDADE AUDIOVISUAL da NA). Usa o áudio original, as telas da plataforma e
   o trecho da apresentadora tirados do próprio .mov (pasta `remotion/public/cta-na/`).
+- `portal-do-cliente.json`: vídeo para o CLIENTE explicando o portal (narração ElevenLabs, voz Will). Telas tiradas do portal
+  em modo exemplo (`?demo=1`, cliente fictícia) em `remotion/public/portal/`. A narração vem do fluxo n8n "Motion | Voz da narração
+  (ElevenLabs)" (teste com pinData + get_execution: `audio_base64` e `alignment`); `portal-do-cliente.gera.py palavras.json saida.json`
+  monta o JSON com os tempos de cada palavra.
