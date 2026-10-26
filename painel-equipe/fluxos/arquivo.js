@@ -14,11 +14,13 @@ const ler = node({ type: 'n8n-nodes-base.code', version: 2, config: { name: 'Ler
 const b = j.body || {}, h = j.headers || {};
 const u = String(b.u || '').toLowerCase();
 const card = String(b.card || '').replace(/-/g, '').toLowerCase();
+const cli = String(b.cliente || '').replace(/-/g, '').toLowerCase();
 const ORIG = ['https://lp.grupoeuforia.tech', 'https://grupoeuforia.com.br', 'https://www.grupoeuforia.com.br'];
 const limpa = (v, n) => String(v || '').replace(/[\\\\/:*?"<>|\\r\\n]+/g, ' ').trim().slice(0, n);
 const tipo = /^[a-z]+\\/[a-z0-9.+-]+$/i.test(String(b.tipo || '')) ? b.tipo : 'application/octet-stream';
 return [{ json: { u: /^[0-9a-f]{24}$/.test(u) ? u : 'x', pin: String(b.pin || '').replace(/[^0-9]/g, '').slice(0, 6),
   card: /^[0-9a-f]{32}$/.test(card) ? card : '00000000000000000000000000000000',
+  modo: b.modo === 'pedido' ? 'pedido' : 'entrega', cliente: /^[0-9a-f]{32}$/.test(cli) ? cli : '00000000000000000000000000000000',
   etapa: ['iniciar', 'pronto'].includes(b.etapa) ? b.etapa : '', origem: ORIG.includes(h.origin) ? h.origin : 'https://grupoeuforia.com.br',
   arquivo: limpa(b.nome, 120) || 'arquivo', tipo, tamanho: Math.max(0, Math.floor(Number(b.tamanho) || 0)),
   fileId: /^[A-Za-z0-9_-]{10,80}$/.test(String(b.arquivo || '')) ? b.arquivo : '' } }];
@@ -33,7 +35,7 @@ const cardNode = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, config
   sendHeaders: true, headerParameters: NOTION_HDR, options: {} } } });
 
 const fichaNode = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, config: { name: 'Ficha do cliente', credentials: NOTION, onError: 'continueRegularOutput', alwaysOutputData: true, parameters: {
-  method: 'GET', url: '=https://api.notion.com/v1/pages/{{ ((($json.properties || {})["Cliente"] || {}).relation || [{ id: "00000000000000000000000000000000" }])[0].id }}', authentication: 'genericCredentialType', genericAuthType: 'httpHeaderAuth',
+  method: 'GET', url: '=https://api.notion.com/v1/pages/{{ $("Ler pedido").first().json.modo === "pedido" ? $("Ler pedido").first().json.cliente : ((($json.properties || {})["Cliente"] || {}).relation || [{ id: "00000000000000000000000000000000" }])[0].id }}', authentication: 'genericCredentialType', genericAuthType: 'httpHeaderAuth',
   sendHeaders: true, headerParameters: NOTION_HDR, options: {} } } });
 
 // Mesmo jeito do portal: o campo Drive da ficha costuma estar vazio; aí procura "NN - NOME" na pasta CLIENTES.
@@ -59,9 +61,16 @@ const acessoOk = !!r.token && r.token === p.u && r.ativo === true && String(r.pi
 const meu = r.papel === 'teste' ? /TESTE PAINEL/.test(titulo) : resp.includes(r.ficha);
 const doLink = (String((fp['Drive'] || {}).url || '').match(/folders\\/([A-Za-z0-9_-]{10,})/) || [])[1];
 const cliente = doLink || ((($('Achar pasta do cliente').first().json.files) || [])[0] || {}).id || '';
+// Anexo de pedido ao escritório: ainda não tem card; quem pede é Ismael, Rômulo, diretoria ou teste, e vai para a pasta de pedidos do cliente.
+const pedido = p.modo === 'pedido';
+const ficha = $('Ficha do cliente').first().json || {};
 let erro = '';
 if (!acessoOk) erro = 'acesso';
 else if (!p.etapa) erro = 'etapa';
+else if (pedido && !['revisor', 'calls', 'diretor', 'teste'].includes(r.papel)) erro = 'permissao';
+else if (pedido && sem((ficha.parent || {}).database_id) !== '3ddc91b406be49e98e630c298d9162d8') erro = 'cliente';
+else if (pedido && !cliente) erro = 'sem-pasta';
+else if (pedido) { if (p.etapa === 'iniciar' && (p.tamanho < 1 || p.tamanho > 5 * 1024 ** 3)) erro = 'tamanho'; else if (p.etapa === 'pronto' && !p.fileId) erro = 'arquivo'; }
 else if (!card.id || sem((card.parent || {}).database_id) !== '74b3076a325749e3bac4ba6659215e48') erro = 'card';
 else if (!meu) erro = 'permissao';
 else if (!['A fazer', 'Fazendo', 'Ajustes'].includes(status)) erro = 'etapa';
@@ -69,8 +78,8 @@ else if (!cliente) erro = 'sem-pasta';
 else if (p.etapa === 'iniciar' && (p.tamanho < 1 || p.tamanho > 20 * 1024 ** 3)) erro = 'tamanho';
 else if (p.etapa === 'pronto' && !p.fileId) erro = 'arquivo';
 const agora = DateTime.now().setZone('America/Recife');
-const nomeArq = (titulo.replace(/[\\\\/:*?"<>|]+/g, ' ').replace(/\\s+/g, ' ').trim() || 'ENTREGA') + ' - ' + agora.toFormat('dd-MM HH\\'h\\'mm') + ' - ' + p.arquivo;
-return [{ json: { ok: !erro, etapa: p.etapa, cliente, nomeArq, origem: p.origem, tipo: p.tipo, tamanho: p.tamanho, fileId: p.fileId,
+const nomeArq = pedido ? 'PEDIDO - ' + agora.toFormat('dd-MM HH\\'h\\'mm') + ' - ' + r.nome + ' - ' + p.arquivo : (titulo.replace(/[\\\\/:*?"<>|]+/g, ' ').replace(/\\s+/g, ' ').trim() || 'ENTREGA') + ' - ' + agora.toFormat('dd-MM HH\\'h\\'mm') + ' - ' + p.arquivo;
+return [{ json: { ok: !erro, etapa: p.etapa, cliente, nomeArq, pastaNome: pedido ? 'PEDIDOS DO PAINEL' : '${PASTA_PAINEL}', origem: p.origem, tipo: p.tipo, tamanho: p.tamanho, fileId: p.fileId,
   resposta: { ok: false, motivo: erro } } }];
 ` } } });
 
@@ -87,14 +96,14 @@ const qualEtapa = ifElse({ version: 2.2, config: { name: 'Começo ou fim do envi
 const acharPainel = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, config: { name: 'Achar pasta do painel', credentials: DRIVE, onError: 'continueRegularOutput', alwaysOutputData: true, parameters: {
   method: 'GET', url: 'https://www.googleapis.com/drive/v3/files', authentication: 'predefinedCredentialType', nodeCredentialType: 'googleDriveOAuth2Api',
   sendQuery: true, queryParameters: { parameters: [
-    { name: 'q', value: "={{ \"'\" + $json.cliente + \"' in parents and name = '" + PASTA_PAINEL + "' and mimeType = 'application/vnd.google-apps.folder' and trashed = false\" }}" },
+    { name: 'q', value: "={{ \"'\" + $json.cliente + \"' in parents and name = '\" + $json.pastaNome + \"' and mimeType = 'application/vnd.google-apps.folder' and trashed = false\" }}" },
     { name: 'fields', value: 'files(id,name)' },
     { name: 'supportsAllDrives', value: 'true' },
     { name: 'includeItemsFromAllDrives', value: 'true' }] }, options: {} } } });
 
 const decidir = node({ type: 'n8n-nodes-base.code', version: 2, config: { name: 'Pasta existe?', parameters: { jsCode: `const v = $('Validar envio').first().json;
 const achada = (($input.first().json.files || [])[0] || {}).id || '';
-return [{ json: { pasta: achada, meta: JSON.stringify({ name: '${PASTA_PAINEL}', mimeType: 'application/vnd.google-apps.folder', parents: [v.cliente] }) } }];
+return [{ json: { pasta: achada, meta: JSON.stringify({ name: v.pastaNome, mimeType: 'application/vnd.google-apps.folder', parents: [v.cliente] }) } }];
 ` } } });
 
 const temPasta = ifElse({ version: 2.2, config: { name: 'Já tem a pasta?', parameters: { conditions: {
@@ -141,7 +150,7 @@ const devolverLink = node({ type: 'n8n-nodes-base.respondToWebhook', version: 1.
 const recusar = node({ type: 'n8n-nodes-base.respondToWebhook', version: 1.5, config: { name: 'Recusar envio', parameters: {
   respondWith: 'json', responseBody: '={{ JSON.stringify($json.resposta) }}', options: {} } } });
 
-const nota = sticky('## Painel da equipe · envio de arquivo (V1)\n1) "iniciar": confere pessoa e card, acha a pasta do cliente (Drive da ficha ou "NN - NOME" em CLIENTES), cria "' + PASTA_PAINEL + '" se faltar e abre um envio no Drive. O navegador manda o arquivo direto ao Google.\n2) "pronto": confere o arquivo e devolve o link. Quem grava no card é o fluxo "Painel | Botões da equipe" (Mandar para revisão).', [], { color: 4 });
+const nota = sticky('## Painel da equipe · envio de arquivo (V1)\n1) "iniciar": confere pessoa e card, acha a pasta do cliente (Drive da ficha ou "NN - NOME" em CLIENTES), cria "' + PASTA_PAINEL + '" se faltar e abre um envio no Drive. O navegador manda o arquivo direto ao Google.\n2) "pronto": confere o arquivo e devolve o link. Quem grava no card é o fluxo "Painel | Botões da equipe" (Mandar para revisão).\nModo "pedido" (anexos do Pedir ao escritório): sem card, com o cliente escolhido; só Ismael, Rômulo, diretoria e teste; vai para "PEDIDOS DO PAINEL" na pasta do cliente; até 5 GB por arquivo.', [], { color: 4 });
 
 export default workflow('painel-arquivo', 'Painel | Envio de arquivo da equipe (V1)')
   .add(pedir).to(ler).to(acesso).to(cardNode).to(fichaNode).to(pastaCliente).to(validar)

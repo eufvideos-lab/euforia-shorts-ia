@@ -8,6 +8,7 @@ Tela da equipe por cima do Notion. O Notion continua sendo o banco (Entregas, Cl
   - Pedir ao escritório: só revisor, calls, diretor e teste. Editor não vê a aba e o `pedido.js` recusa (decisão do Henrique em 26/10/2026).
   - Passar para: Ismael, Rômulo e diretoria trocam o Responsável do card para Victor, Lorena, Daniel ou Escritório (botão na gaveta do card, `acao: 'passar'` no `acao.js`). Aviso no #dia-a-dia marcando a pessoa.
   - Fila de demandas: `fila.js` manda também os cards abertos sem Responsável de vídeo longo, shorts, podcast, carrossel e thumb (`livre`); `acao.js` ação `pegar` (vira Responsável; limite de 8 em produção; aviso no #dia-a-dia).
+  - Anexos no Pedir ao escritório: arquivos sobem pelo `arquivo.js` em modo `pedido` (pasta PEDIDOS DO PAINEL do cliente, até 5 GB cada, 10 por pedido) e os links entram na Obs do card pelo `pedido.js`.
   - Não é comigo / Já foi feito: quem é Responsável sai do card (`naoemeu`, aviso ao Ismael e Rômulo) ou marca Postado/Cancelado (`jafeito`), sempre com motivo obrigatório.
   - `responder.js` → "Painel | Responder cliente (V1)": Ismael e Rômulo respondem pela aba Responder. Sai pelo número de suporte da pessoa se conectado e no grupo; senão pelo "suporte" com "*Nome:*" na frente. Assunto de diretoria é recusado.
   - `acao.js` → "Painel | Botões da equipe (V1)": Comecei, Mandar para revisão, Aprovar, Pedir ajuste, Agendei, Postei. Cada botão só vale para quem pode e na etapa certa.

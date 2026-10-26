@@ -105,6 +105,7 @@ main{min-width:0;padding-block:32px 64px;padding-left:max(16px,min(40px,4vw));pa
 .passar{border:1px solid var(--line);border-radius:12px;padding:12px 14px}.passar summary{cursor:pointer;font-weight:600}
 .resp{display:flex;gap:8px;align-items:flex-end;margin-top:8px}.resp textarea{flex:1;min-width:0;border:1px solid var(--line);border-radius:9px;padding:8px 10px;font:inherit;background:var(--surface);color:inherit;resize:vertical}
 @media (max-width:600px){.resp{flex-direction:column;align-items:stretch}}
+.anexos{display:flex;flex-direction:column;gap:10px}.alist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}.alist li{display:flex;justify-content:space-between;align-items:center;gap:8px;border:1px solid var(--line);border-radius:9px;padding:6px 10px;min-width:0}.alist li>span{min-width:0;overflow-wrap:anywhere}
 /* Máquinas */
 .machines{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
 .mach{border:1px solid var(--line);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:6px}
@@ -320,6 +321,9 @@ const MOTIVO = {acesso:'Seu acesso mudou. Entre de novo com o PIN.', permissao:'
   pessoa:'Esse card já está com essa pessoa. Escolha outra.', fim:'Escolha o que aconteceu.', pego:'Alguém pegou esse card antes. A fila foi atualizada.', limite:'Você já está com 8 cards em produção. Termine um para pegar outro.', direcao:'Esse assunto é da diretoria. Não responda por aqui.', grupo:'Esse grupo não é de cliente do suporte.', whatsapp:'O WhatsApp não mandou. Tente de novo ou responda direto no grupo.', tamanho:'Arquivo vazio ou maior que 20 GB.', 'sem-pasta':'A pasta do cliente no Drive não foi achada. Cole o link do arquivo no lugar.'};
 const ERRO = 'Deu erro, a diretoria está resolvendo.';
 const LIMITE = 8;
+let PANEXOS = [];
+function listaAnexos(){ const l = $('#palist'); if (l) l.innerHTML = PANEXOS.map((f, i) => `<li><span>📎 ${esc(f.name)} <span class="mono">${(f.size / 1048576).toFixed(1)} MB</span></span><button type="button" class="btn" data-tiraanexo="${i}">Tirar</button></li>`).join(''); }
+function juntarAnexos(lista){ for (const f of lista) if (PANEXOS.length < 10 && f.size > 0) PANEXOS.push(f); if (lista.length && PANEXOS.length >= 10) toast('Até 10 arquivos por pedido.'); listaAnexos(); }
 const PASSAR = [['victor', 'Victor'], ['lorena', 'Lorena'], ['daniel', 'Daniel'], ['escritorio', 'Escritório (máquinas)']];
 
 const $ = s => document.querySelector(s);
@@ -602,6 +606,12 @@ const VIEWS = {
         <label for="pf" id="lpf" hidden>Onde fazer<select id="pf"><option>Canva</option><option>Edição de vídeo (Premiere / CapCut)</option><option>Google Slides</option><option>Notion</option><option>Outro</option></select></label>
         <label for="pl"><span id="lpl-t">Link ou pasta</span><input type="text" id="pl"></label>
         <label for="po">O que precisa, em detalhe<textarea id="po" required minlength="5"></textarea></label>
+        <div class="anexos"><b>Anexos (opcional)</b>
+          <div class="drop" id="pdrop"><b>Solte arquivos aqui</b><span>ou</span><label class="btn" for="pfile" style="flex-direction:row">Escolher arquivos<input type="file" id="pfile" multiple hidden></label><span class="mono">docs, pptx, PDF, prints · vão para a pasta do cliente no Drive</span></div>
+          <ul class="alist" id="palist"></ul>
+          <div class="up" id="up" hidden><span class="bar"><span id="up-bar" style="width:0%"></span></span><span class="mono" id="up-txt"></span></div>
+          <label for="plinks">Outros links (um por linha)<textarea id="plinks" rows="2" placeholder="https://"></textarea></label>
+          <p class="note">A identidade visual do cliente a máquina já pega sozinha no Drive e na ficha. Anexe só o que for novo ou não estiver lá.</p></div>
         <div class="actions"><button class="btn primary" type="submit" id="bpedir">Mandar pedido</button></div>
       </form>
       <aside class="panel" id="resumo" aria-live="polite"></aside></div>`;
@@ -635,7 +645,7 @@ function render(){
   // O formulário de pedido não é redesenhado na atualização automática, para não apagar o que a pessoa está digitando.
   if (view === 'pedir' && $('#fpedir')) return;
   $('#main').innerHTML = `<div class="view">${VIEWS[view].html()}</div>`;
-  atualizarPedido();
+  atualizarPedido(); listaAnexos();
 }
 
 // Gaveta do card: dados, passo a passo, histórico e só os botões que a pessoa pode apertar nesta etapa.
@@ -707,7 +717,7 @@ function abrir(id){
     ocupado = true; document.querySelectorAll('#layer .btn').forEach(b => b.disabled = true);
     try {
       let link = '', texto = '';
-      if (act === 'revisao') { link = arquivo ? await enviar(c, arquivo) : $('#lk').value.trim(); texto = $('#nota').value.trim(); }
+      if (act === 'revisao') { link = arquivo ? await enviar({ card: c.id }, arquivo) : $('#lk').value.trim(); texto = $('#nota').value.trim(); }
       if (act === 'ajuste') texto = $('#motivo').value.trim();
       if (act === 'agendei' || act === 'postei') link = $('#lpost').value.trim();
       if (act === 'passar') texto = $('#pnota').value.trim();
@@ -972,8 +982,9 @@ function putParte(url, f, ini, fim, total){
   });
 }
 function progresso(feito, total){ const p = Math.min(100, Math.round(feito / total * 100)); $('#up').hidden = false; $('#up-bar').style.width = p + '%'; $('#up-txt').textContent = 'Enviando… ' + p + '%'; }
-async function enviar(c, f){
-  const ini = await api('euforia-painel-arquivo', { card: c.id, etapa: 'iniciar', nome: f.name, tipo: f.type || 'application/octet-stream', tamanho: f.size });
+// alvo: { card } para entrega, ou { modo: 'pedido', cliente } para anexo de pedido ao escritório.
+async function enviar(alvo, f){
+  const ini = await api('euforia-painel-arquivo', { ...alvo, etapa: 'iniciar', nome: f.name, tipo: f.type || 'application/octet-stream', tamanho: f.size });
   if (!ini || !ini.ok) throw new Error((ini && ini.motivo) || 'drive');
   if (DEMO) return ini.link;
   const PARTE = 32 * 1024 * 1024; let pos = 0, fim = null;
@@ -990,12 +1001,15 @@ async function enviar(c, f){
     else throw new Error('drive');
   }
   $('#up-txt').textContent = 'Conferindo…';
-  const pronto = await api('euforia-painel-arquivo', { card: c.id, etapa: 'pronto', arquivo: fim && fim.id });
+  const pronto = await api('euforia-painel-arquivo', { ...alvo, etapa: 'pronto', arquivo: fim && fim.id });
   if (!pronto || !pronto.ok) throw new Error('drive');
   $('#up-txt').textContent = 'Arquivo no Drive.';
   return pronto.link;
 }
 
+document.addEventListener('dragover', e => { const d = e.target.closest && e.target.closest('#pdrop'); if (d) { e.preventDefault(); d.classList.add('over'); } });
+document.addEventListener('dragleave', e => { const d = e.target.closest && e.target.closest('#pdrop'); if (d) d.classList.remove('over'); });
+document.addEventListener('drop', e => { const d = e.target.closest && e.target.closest('#pdrop'); if (d) { e.preventDefault(); d.classList.remove('over'); juntarAnexos([...e.dataTransfer.files]); } });
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && !ocupado) fechar(); });
 document.addEventListener('click', async e => {
   const v = e.target.closest('[data-view]'); if (v) { view = v.dataset.view; try { localStorage.setItem('painel-view', view); } catch (x) {} $('#main').innerHTML = ''; render(); window.scrollTo({ top: 0 }); return; }
@@ -1020,6 +1034,7 @@ document.addEventListener('click', async e => {
   const sl = e.target.closest('#main [data-slot]'); if (sl) { abrirSlot(sl.dataset.slot); return; }
   const df = e.target.closest('#main [data-definir]'); if (df) { abrirSlot('', df.dataset.definir); return; }
   if (e.target.id === 'g-novo') { abrirSlot(''); return; }
+  const ta = e.target.closest('#main [data-tiraanexo]'); if (ta) { PANEXOS.splice(Number(ta.dataset.tiraanexo), 1); listaAnexos(); return; }
   const pg = e.target.closest('#main [data-pegar]');
   if (pg) {
     pg.disabled = true; ocupado = true;
@@ -1051,6 +1066,7 @@ document.addEventListener('change', e => {
   if (e.target.id === 'pf-s' || e.target.id === 'pq-s') { if (e.target.id === 'pf-s') PF = e.target.value; else PQ = e.target.value; render(); return; }
   if (['ts', 'tp', 'tt'].includes(e.target.id)) { ({ ts: v => TS = v, tp: v => TP = v, tt: v => TT = v })[e.target.id](e.target.value); $('#dres').innerHTML = tabelaTodos(); return; }
   if (e.target.id === 'mw') { MW = e.target.value; $('#dres').innerHTML = listaMensagens(); return; }
+  if (e.target.id === 'pfile') { juntarAnexos([...e.target.files]); e.target.value = ''; return; }
   if (['pt', 'm-auto', 'm-mao', 'pf'].includes(e.target.id)) { if (e.target.id === 'pt') delete $('#pf').dataset.mexeu; if (e.target.id === 'pf') e.target.dataset.mexeu = 1; atualizarPedido(); }
 });
 // Busca da diretoria: redesenha só a lista, para o campo não perder o foco.
@@ -1072,10 +1088,16 @@ document.addEventListener('submit', async e => {
   if (!$('#pc').value) { $('#pc').focus(); toast('Escolha o cliente.'); return; }
   ocupado = true; b.disabled = true;
   try {
-    const r = await api('euforia-painel-pedido', { cliente: $('#pc').value, tipo: t.id, modo: manual ? 'mao' : 'auto', ferramenta: manual ? $('#pf').value : '', prazo: $('#pz').value, link: $('#pl').value.trim(), texto: $('#po').value.trim() });
+    const anexos = [];
+    for (let i = 0; i < PANEXOS.length; i++) {
+      $('#up-txt').textContent = 'Enviando anexo ' + (i + 1) + ' de ' + PANEXOS.length + '…';
+      anexos.push({ nome: PANEXOS[i].name, link: await enviar({ modo: 'pedido', cliente: $('#pc').value }, PANEXOS[i]) });
+    }
+    $('#plinks').value.split('\n').map(x => x.trim()).filter(x => /^https:\/\//.test(x)).slice(0, 10).forEach(l => anexos.push({ nome: 'Link', link: l }));
+    const r = await api('euforia-painel-pedido', { cliente: $('#pc').value, tipo: t.id, modo: manual ? 'mao' : 'auto', ferramenta: manual ? $('#pf').value : '', prazo: $('#pz').value, link: $('#pl').value.trim(), texto: $('#po').value.trim(), anexos });
     if (!r || !r.ok) throw new Error((r && r.motivo) || 'erro');
-    toast('Pedido feito: ' + t.nome + ' → ' + r.quem + '. Card criado no Entregas.');
-    e.target.reset(); delete $('#pf').dataset.mexeu; atualizarPedido();
+    toast('Pedido feito: ' + t.nome + ' → ' + r.quem + '. Card criado no Entregas' + (anexos.length ? ' com ' + anexos.length + ' anexo' + (anexos.length > 1 ? 's' : '') : '') + '.');
+    e.target.reset(); delete $('#pf').dataset.mexeu; PANEXOS = []; listaAnexos(); $('#up').hidden = true; atualizarPedido();
   } catch (err) { toast(MOTIVO[err.message] || ERRO); }
   ocupado = false; b.disabled = false;
 });

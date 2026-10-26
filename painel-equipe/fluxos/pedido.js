@@ -15,7 +15,8 @@ const link = String(b.link || '').trim().slice(0, 500);
 return [{ json: { u: /^[0-9a-f]{24}$/.test(u) ? u : 'x', pin: String(b.pin || '').replace(/[^0-9]/g, '').slice(0, 6),
   cliente: /^[0-9a-f]{32}$/.test(cli) ? cli : '00000000000000000000000000000000',
   tipo: String(b.tipo || '').slice(0, 20), modo: b.modo === 'mao' ? 'mao' : 'auto', ferramenta: String(b.ferramenta || '').slice(0, 60),
-  prazo: /^\\d{4}-\\d{2}-\\d{2}$/.test(String(b.prazo || '')) ? b.prazo : '', link, texto: String(b.texto || '').trim().slice(0, 1500) } }];
+  prazo: /^\\d{4}-\\d{2}-\\d{2}$/.test(String(b.prazo || '')) ? b.prazo : '', link, texto: String(b.texto || '').trim().slice(0, 1500),
+  anexos: (Array.isArray(b.anexos) ? b.anexos : []).slice(0, 20).map(a => ({ nome: String((a || {}).nome || 'Anexo').replace(/[\\r\\n]+/g, ' ').slice(0, 120), link: String((a || {}).link || '').trim().slice(0, 500) })).filter(a => /^https:\\/\\/[^\\s]+$/.test(a.link)) } }];
 ` } } });
 
 const acesso = node({ type: 'n8n-nodes-base.dataTable', version: 1.1, config: { name: 'Achar pessoa', alwaysOutputData: true, parameters: {
@@ -53,9 +54,10 @@ else if (!c) erro = 'tipo';
 else if (!nome || String((ficha.parent || {}).database_id || '').replace(/-/g, '') !== '3ddc91b406be49e98e630c298d9162d8' || txt(fp['Situação']) === 'Encerrado') erro = 'cliente';
 else if (!p.prazo || p.prazo < hoje.toISODate()) erro = 'prazo';
 else if (p.texto.length < 5) erro = 'texto';
-const t = s => [{ type: 'text', text: { content: String(s).slice(0, 1990) } }];
+// Notion aceita até 2000 caracteres por pedaço de texto: a Obs vai em pedaços para caber os anexos.
+const t = s => (String(s).match(/[\\s\\S]{1,1990}/g) || ['']).slice(0, 8).map(c => ({ type: 'text', text: { content: c } }));
 const titulo = (teste ? 'TESTE PAINEL | ' : '') + nome.toUpperCase() + ' | ' + (c ? c[1] : '') + ' (painel)';
-const obs = '[Painel ' + hoje.toFormat('dd/MM HH:mm') + '] Pedido de ' + r.nome + ' · ' + (manual ? 'À MÃO' + (p.ferramenta ? ' em ' + p.ferramenta : '') : 'Automático (' + (c ? c[2] : '') + ')') + '\\n' + p.texto + (p.link ? '\\nLink: ' + p.link : '');
+const obs = '[Painel ' + hoje.toFormat('dd/MM HH:mm') + '] Pedido de ' + r.nome + ' · ' + (manual ? 'À MÃO' + (p.ferramenta ? ' em ' + p.ferramenta : '') : 'Automático (' + (c ? c[2] : '') + ')') + '\\n' + p.texto + (p.link ? '\\nLink: ' + p.link : '') + (p.anexos.length ? '\\nAnexos:\\n' + p.anexos.map(a => '- ' + a.nome + ': ' + a.link).join('\\n') : '');
 const props = {
   'Entrega': { title: t(titulo) }, 'Cliente': { relation: [{ id: p.cliente }] }, 'Tipo': { select: { name: c ? c[0] : 'Outro' } },
   'Status': { select: { name: 'A fazer' } }, 'Origem': { select: { name: 'Extra' } }, 'Prazo': { date: { start: p.prazo } }, 'Obs': { rich_text: t(obs) } };
@@ -64,6 +66,7 @@ if (!teste) {
   props['🏢 Escritório IA'] = { select: { name: manual ? 'À mão (Flau)' : 'Na fila' } };
 }
 if (/^https:\\/\\//.test(p.link)) props['Link do arquivo'] = { url: p.link };
+else if (p.anexos.length) props['Link do arquivo'] = { url: p.anexos[0].link };
 return [{ json: { ok: !erro, body: JSON.stringify({ parent: { database_id: '74b3076a325749e3bac4ba6659215e48' }, properties: props }),
   resposta: erro ? { ok: false, motivo: erro } : { ok: true, quem: manual ? 'Escritório, à mão' : c[2], titulo } } }];
 ` } } });
@@ -83,7 +86,7 @@ const confirmar = node({ type: 'n8n-nodes-base.respondToWebhook', version: 1.5, 
 const recusar = node({ type: 'n8n-nodes-base.respondToWebhook', version: 1.5, config: { name: 'Recusar', parameters: {
   respondWith: 'json', responseBody: '={{ JSON.stringify($json.resposta) }}', options: {} } } });
 
-const nota = sticky('## Painel da equipe · pedir ao escritório (V1)\nCria card no Entregas: Responsável = Escritório (Flau + IA), Origem Extra, Status A fazer, Prazo e o texto na Obs.\nAutomático: 🏢 Escritório IA = Na fila (a Máquina do Escritório pega ou manda para a máquina certa). À mão: = À mão (Flau).\nTeste: título "TESTE PAINEL", sem Responsável, para nenhuma máquina pegar.', [], { color: 4 });
+const nota = sticky('## Painel da equipe · pedir ao escritório (V1)\nCria card no Entregas: Responsável = Escritório (Flau + IA), Origem Extra, Status A fazer, Prazo e o texto na Obs.\nAutomático: 🏢 Escritório IA = Na fila (a Máquina do Escritório pega ou manda para a máquina certa). À mão: = À mão (Flau).\nTeste: título "TESTE PAINEL", sem Responsável, para nenhuma máquina pegar.\nAnexos: arquivos sobem antes pelo fluxo de envio (PEDIDOS DO PAINEL na pasta do cliente) e entram como links na Obs; o 1º vira Link do arquivo se não houver link.', [], { color: 4 });
 
 export default workflow('painel-pedido', 'Painel | Pedido ao escritório (V1)')
   .add(pedir).to(ler).to(acesso).to(fichaNode).to(montar)
