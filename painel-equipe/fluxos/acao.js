@@ -1,0 +1,114 @@
+import { workflow, node, trigger, ifElse, sticky } from '@n8n/workflow-sdk';
+
+const NOTION = { httpHeaderAuth: { id: 'VYOze6gUMvjy3QXF', name: 'Notion Euforia' } };
+const DISCORD = { httpHeaderAuth: { id: 'PY2ZcN5kAVFaS1io', name: 'Discord Bot' } };
+const ORIGENS = 'https://lp.grupoeuforia.tech,https://grupoeuforia.com.br,https://www.grupoeuforia.com.br';
+const NOTION_HDR = { parameters: [{ name: 'Notion-Version', value: '2022-06-28' }] };
+const ACESSO = { __rl: true, mode: 'id', value: 'ilXDZWGAcOjoajx7', cachedResultName: 'Painel equipe · acesso' };
+
+const pedir = trigger({ type: 'n8n-nodes-base.webhook', version: 2.1, config: { name: 'Botão do painel', parameters: {
+  httpMethod: 'POST', path: 'euforia-painel-acao', responseMode: 'responseNode', options: { allowedOrigins: ORIGENS } } } });
+
+const ler = node({ type: 'n8n-nodes-base.code', version: 2, config: { name: 'Ler pedido', parameters: { jsCode: `const b = ($input.first().json.body) || {};
+const u = String(b.u || '').toLowerCase();
+const card = String(b.card || '').replace(/-/g, '').toLowerCase();
+const ACOES = ['comecar', 'revisao', 'aprovar', 'ajuste', 'agendei', 'postei'];
+const link = String(b.link || '').trim().slice(0, 500);
+return [{ json: { u: /^[0-9a-f]{24}$/.test(u) ? u : 'x', pin: String(b.pin || '').replace(/[^0-9]/g, '').slice(0, 6),
+  card: /^[0-9a-f]{32}$/.test(card) ? card : '00000000000000000000000000000000',
+  acao: ACOES.includes(b.acao) ? b.acao : '', texto: String(b.texto || '').trim().slice(0, 1200),
+  link: /^https:\\/\\/[^\\s]+$/.test(link) ? link : '' } }];
+` } } });
+
+const acesso = node({ type: 'n8n-nodes-base.dataTable', version: 1.1, config: { name: 'Achar pessoa', alwaysOutputData: true, parameters: {
+  resource: 'row', operation: 'get', dataTableId: ACESSO, matchType: 'allConditions',
+  filters: { conditions: [{ keyName: 'token', condition: 'eq', keyValue: '={{ $json.u }}' }] }, limit: 1 } } });
+
+const cardNode = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, config: { name: 'Card da entrega', credentials: NOTION, onError: 'continueRegularOutput', alwaysOutputData: true, parameters: {
+  method: 'GET', url: '=https://api.notion.com/v1/pages/{{ $("Ler pedido").first().json.card }}', authentication: 'genericCredentialType', genericAuthType: 'httpHeaderAuth',
+  sendHeaders: true, headerParameters: NOTION_HDR, options: {} } } });
+
+// Cada botão só vale para quem pode apertar e só na etapa certa. Fora disso, nada muda no Notion.
+const validar = node({ type: 'n8n-nodes-base.code', version: 2, config: { name: 'Validar botão', parameters: { jsCode: `const Z = 'America/Recife';
+const p = $('Ler pedido').first().json;
+const r = $('Achar pessoa').first().json || {};
+const card = $('Card da entrega').first().json || {};
+const txt = v => { if (!v) return ''; const a = v.title || v.rich_text; if (a) return a.map(t => t.plain_text).join('').trim(); if (v.select) return v.select.name; return ''; };
+const cp = card.properties || {};
+const sem = id => String(id || '').replace(/-/g, '');
+const acessoOk = !!r.token && r.token === p.u && r.ativo === true && String(r.pin) === p.pin;
+const titulo = txt(cp['Entrega']);
+const status = txt(cp['Status']);
+const doEntregas = sem((card.parent || {}).database_id) === '74b3076a325749e3bac4ba6659215e48';
+const teste = r.papel === 'teste';
+const resp = ((cp['Responsável'] || {}).relation || []).map(x => sem(x.id));
+const meu = teste ? /TESTE PAINEL/.test(titulo) : resp.includes(r.ficha);
+const revisor = teste ? /TESTE PAINEL/.test(titulo) : r.papel === 'revisor';
+const posta = revisor || (!teste && r.papel === 'calls');
+const REGRA = {
+  comecar: { pode: meu, de: ['A fazer'], para: 'Fazendo', verbo: 'começou' },
+  revisao: { pode: meu, de: ['A fazer', 'Fazendo', 'Ajustes'], para: 'Em revisão', verbo: 'mandou para revisão', precisaLink: true },
+  aprovar: { pode: revisor, de: ['Em revisão'], para: 'Aguardando cliente', verbo: 'aprovou na revisão' },
+  ajuste: { pode: revisor, de: ['Em revisão'], para: 'Ajustes', verbo: 'pediu ajuste', precisaTexto: true },
+  agendei: { pode: posta, de: ['Aprovado'], para: 'Agendado', verbo: 'agendou', precisaLink: true },
+  postei: { pode: posta, de: ['Aprovado', 'Agendado'], para: 'Postado', verbo: 'postou', precisaLink: true } };
+const g = REGRA[p.acao];
+let erro = '';
+if (!acessoOk) erro = 'acesso';
+else if (!g) erro = 'acao';
+else if (!card.id || !doEntregas) erro = 'card';
+else if (!g.pode) erro = 'permissao';
+else if (!g.de.includes(status)) erro = 'etapa';
+else if (g.precisaLink && !p.link) erro = 'link';
+else if (g.precisaTexto && p.texto.length < 3) erro = 'texto';
+const agora = DateTime.now().setZone(Z);
+const linha = '[Painel ' + agora.toFormat('dd/MM HH:mm') + '] ' + (r.nome || '') + ' ' + (g ? g.verbo : '') + (p.texto ? ': ' + p.texto : '') + (p.link && p.acao === 'revisao' ? ' (' + p.link + ')' : '');
+const obsAntiga = txt(cp['Obs']);
+const props = g ? { 'Status': { select: { name: g.para } }, 'Obs': { rich_text: [{ type: 'text', text: { content: (linha + (obsAntiga ? '\\n' + obsAntiga : '')).slice(0, 1990) } }] } } : {};
+if (p.acao === 'revisao') props['Link do arquivo'] = { url: p.link };
+if (p.acao === 'agendei' || p.acao === 'postei') props['Link da postagem'] = { url: p.link };
+if (p.acao === 'postei') props['Postado em'] = { date: { start: agora.toISODate() } };
+let aviso = '';
+if (p.acao === 'revisao') aviso = '🎬 **' + titulo + '** foi para revisão (' + r.nome + '). <@1410287139169763471>, está na sua fila do painel.' + (p.texto ? '\\n> ' + p.texto : '');
+if (p.acao === 'ajuste') aviso = '🔁 **' + titulo + '** voltou para ajuste. O pedido está no card e no topo da fila de quem fez.';
+return [{ json: { ok: !erro, cardId: card.id || '', avisar: !!aviso && !teste,
+  body: JSON.stringify({ properties: props }),
+  discord: JSON.stringify({ content: (aviso + '\\n— Érica, time de suporte, Grupo Euforia').slice(0, 1990), allowed_mentions: { users: ['1410287139169763471'] } }),
+  resposta: erro ? { ok: false, motivo: erro, status } : { ok: true, status: g.para } } }];
+` } } });
+
+const podeSeguir = ifElse({ version: 2.2, config: { name: 'Botão válido?', parameters: { conditions: {
+  options: { caseSensitive: true, leftValue: '', typeValidation: 'loose' },
+  conditions: [{ leftValue: '={{ $json.ok }}', rightValue: '', operator: { type: 'boolean', operation: 'true', singleValue: true } }],
+  combinator: 'and' } } } });
+
+const atualizar = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, config: { name: 'Atualizar card no Entregas', credentials: NOTION, parameters: {
+  method: 'PATCH', url: '=https://api.notion.com/v1/pages/{{ $("Validar botão").first().json.cardId }}', authentication: 'genericCredentialType', genericAuthType: 'httpHeaderAuth',
+  sendHeaders: true, headerParameters: NOTION_HDR, sendBody: true, specifyBody: 'json', jsonBody: '={{ $("Validar botão").first().json.body }}', options: {} } } });
+
+const precisaAviso = ifElse({ version: 2.2, config: { name: 'Precisa de aviso?', parameters: { conditions: {
+  options: { caseSensitive: true, leftValue: '', typeValidation: 'loose' },
+  conditions: [{ leftValue: '={{ $("Validar botão").first().json.avisar }}', rightValue: '', operator: { type: 'boolean', operation: 'true', singleValue: true } }],
+  combinator: 'and' } } } });
+
+const avisar = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, config: { name: 'Avisar no #dia-a-dia', credentials: DISCORD, onError: 'continueRegularOutput', parameters: {
+  method: 'POST', url: 'https://discord.com/api/v10/channels/1556642691410956339/messages', authentication: 'genericCredentialType', genericAuthType: 'httpHeaderAuth',
+  sendBody: true, specifyBody: 'json', jsonBody: '={{ $("Validar botão").first().json.discord }}', options: {} } } });
+
+const confirmar = node({ type: 'n8n-nodes-base.respondToWebhook', version: 1.5, config: { name: 'Confirmar', parameters: {
+  respondWith: 'json', responseBody: '={{ JSON.stringify($("Validar botão").first().json.resposta) }}', options: {} } } });
+
+const confirmarSemAviso = node({ type: 'n8n-nodes-base.respondToWebhook', version: 1.5, config: { name: 'Confirmar sem aviso', parameters: {
+  respondWith: 'json', responseBody: '={{ JSON.stringify($("Validar botão").first().json.resposta) }}', options: {} } } });
+
+const recusar = node({ type: 'n8n-nodes-base.respondToWebhook', version: 1.5, config: { name: 'Recusar', parameters: {
+  respondWith: 'json', responseBody: '={{ JSON.stringify($json.resposta) }}', options: {} } } });
+
+const nota = sticky('## Painel da equipe · botões (V1)\nComecei (A fazer → Fazendo), Mandar para revisão (link obrigatório → Em revisão + Link do arquivo + aviso ao Ismael), Aprovar (Em revisão → Aguardando cliente), Pedir ajuste (texto obrigatório → Ajustes), Agendei / Postei (link obrigatório → Agendado / Postado + Link da postagem).\nSó o Responsável mexe no próprio card; revisão é do Ismael; postagem do Ismael e do Rômulo. Toda ação vira uma linha [Painel dd/mm] no topo da Obs. Teste só mexe em cards "TESTE PAINEL" e não avisa no Discord.', [], { color: 4 });
+
+export default workflow('painel-acao', 'Painel | Botões da equipe (V1)')
+  .add(pedir).to(ler).to(acesso).to(cardNode).to(validar)
+  .to(podeSeguir
+    .onTrue(atualizar.to(precisaAviso.onTrue(avisar.to(confirmar)).onFalse(confirmarSemAviso)))
+    .onFalse(recusar))
+  .add(nota);
