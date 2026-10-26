@@ -68,7 +68,7 @@ const noGrupo = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, config:
   method: 'GET', url: `=${BASE}/group/findGroupInfos/{{ $("Conferir pedido").first().json.inst }}`, authentication: 'genericCredentialType', genericAuthType: 'httpHeaderAuth',
   sendQuery: true, queryParameters: { parameters: [{ name: 'groupJid', value: '={{ $("Validar acesso").first().json.chat }}' }] }, options: SEM_ERRO } } });
 
-// Sai pelo número da pessoa quando ele está conectado e no grupo. Senão, pelo número do suporte com a assinatura "*Nome:*", como o Rômulo já faz.
+// Sai pelo número da pessoa quando ele está conectado e no grupo. Senão, pelo número do suporte.
 const escolher = node({ type: 'n8n-nodes-base.code', version: 2, config: { name: 'Escolher número', parameters: { jsCode: `const r = $('Achar pessoa').first().json || {};
 const p = $('Ler pedido').first().json;
 const v = $('Conferir pedido').first().json;
@@ -78,7 +78,8 @@ const aberto = st.statusCode >= 200 && st.statusCode < 300 && String(((st.body |
 const membro = gi.statusCode >= 200 && gi.statusCode < 300 && !!(gi.body || {}).id;
 const proprio = !v.diretor && aberto && membro;
 const nome = String(r.nome || '').split(' ')[0];
-const texto = proprio ? p.texto : (v.diretor ? p.texto + '\\n\\n*Érica, time de suporte, Grupo Euforia*' : '*' + nome + ':* ' + p.texto);
+// Sempre com o nome em negrito na frente, pelo número de quem for: assim um número pode ser usado por mais de uma pessoa.
+const texto = v.diretor ? p.texto + '\\n\\n*Érica, time de suporte, Grupo Euforia*' : '*' + nome + ':* ' + p.texto;
 return [{ json: { inst: proprio ? v.inst : 'suporte', proprio, corpo: JSON.stringify({ number: $('Validar acesso').first().json.chat, text: texto }) } }];
 ` } } });
 
@@ -101,7 +102,7 @@ const recusarGrupo = node({ type: 'n8n-nodes-base.respondToWebhook', version: 1.
 const recusar = node({ type: 'n8n-nodes-base.respondToWebhook', version: 1.5, config: { name: 'Recusar', parameters: {
   respondWith: 'json', responseBody: '={{ JSON.stringify($json.resposta) }}', options: {} } } });
 
-const nota = sticky('## Painel da equipe · responder cliente (V1)\nIsmael, Rômulo (e teste, só em grupo de teste) respondem pela aba Responder. Sai pelo número de suporte da pessoa (suporte-<nome>) se estiver conectado e no grupo; senão pelo "suporte" com "*Nome:*" na frente. Diretoria sai pelo "suporte" assinado como Érica.\nAssunto de dinheiro, contrato ou jurídico é recusado (só a diretoria). A mensagem cai no banco pelo webhook e o cliente sai da fila sozinho.', [], { color: 4 });
+const nota = sticky('## Painel da equipe · responder cliente (V1)\nIsmael, Rômulo (e teste, só em grupo de teste) respondem pela aba Responder. Sempre com "*Nome:*" na frente. Sai pelo número de suporte da pessoa (suporte-<nome>) se estiver conectado e no grupo; senão pelo "suporte". Diretoria sai pelo "suporte" assinado como Érica.\nAssunto de dinheiro, contrato ou jurídico é recusado (só a diretoria). A mensagem cai no banco pelo webhook e o cliente sai da fila sozinho.', [], { color: 4 });
 
 export default workflow('painel-responder', 'Painel | Responder cliente (V1)')
   .add(pedir).to(ler).to(acesso).to(validar)
