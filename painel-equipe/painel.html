@@ -103,6 +103,8 @@ main{min-width:0;padding-block:32px 64px;padding-left:max(16px,min(40px,4vw));pa
 .load .n{font-family:var(--f-mono);font-size:12px;text-align:right;color:var(--muted);font-variant-numeric:tabular-nums}
 
 .passar{border:1px solid var(--line);border-radius:12px;padding:12px 14px}.passar summary{cursor:pointer;font-weight:600}
+.resp{display:flex;gap:8px;align-items:flex-end;margin-top:8px}.resp textarea{flex:1;min-width:0;border:1px solid var(--line);border-radius:9px;padding:8px 10px;font:inherit;background:var(--surface);color:inherit;resize:vertical}
+@media (max-width:600px){.resp{flex-direction:column;align-items:stretch}}
 /* Máquinas */
 .machines{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
 .mach{border:1px solid var(--line);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:6px}
@@ -315,7 +317,7 @@ const TIPOS = [
 // Erros que a pessoa consegue resolver sozinha; o resto vira o aviso padrão.
 const MOTIVO = {acesso:'Seu acesso mudou. Entre de novo com o PIN.', permissao:'Esse card não está no seu nome.', etapa:'Esse card mudou de etapa. A fila foi atualizada.',
   link:'Cole o link antes de mandar.', texto:'Escreva o que precisa antes de mandar.', prazo:'Escolha um prazo de hoje em diante.', cliente:'Escolha um cliente ativo.',
-  pessoa:'Esse card já está com essa pessoa. Escolha outra.', tamanho:'Arquivo vazio ou maior que 20 GB.', 'sem-pasta':'A pasta do cliente no Drive não foi achada. Cole o link do arquivo no lugar.'};
+  pessoa:'Esse card já está com essa pessoa. Escolha outra.', direcao:'Esse assunto é da diretoria. Não responda por aqui.', grupo:'Esse grupo não é de cliente do suporte.', whatsapp:'O WhatsApp não mandou. Tente de novo ou responda direto no grupo.', tamanho:'Arquivo vazio ou maior que 20 GB.', 'sem-pasta':'A pasta do cliente no Drive não foi achada. Cole o link do arquivo no lugar.'};
 const ERRO = 'Deu erro, a diretoria está resolvendo.';
 const PASSAR = [['victor', 'Victor'], ['lorena', 'Lorena'], ['daniel', 'Daniel'], ['escritorio', 'Escritório (máquinas)']];
 
@@ -323,6 +325,7 @@ const $ = s => document.querySelector(s);
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let D = null, R = null, W = null, WQR = '', PIN = '', view = '', ocupado = false;
 let G = null, GC = '', GP = '';
+const RASC = {};
 let DD = null, MM = null, PF = 'abertos', PQ = '', TQ = '', TS = '', TP = '', TT = '', MQ = '', MW = '';
 try { PIN = localStorage.getItem(KEY) || ''; view = localStorage.getItem('painel-view') || ''; } catch (e) {}
 if (DEMO) PIN = '0000';
@@ -524,9 +527,10 @@ const VIEWS = {
         <span class="chip ${x.espera >= 60 ? 'red' : x.espera >= 30 ? 'org' : ''}">Esperando há ${espera(x.espera)}</span>${x.qtd > 1 ? `<span class="chip">${x.qtd} mensagens</span>` : ''}${x.tema && !x.direcao ? `<span class="chip">${esc(x.tema)}</span>` : ''}</span>
         ${x.direcao ? '<span class="sub" style="font-size:13px">Assunto de dinheiro, contrato ou jurídico. A diretoria responde; não precisa fazer nada.</span>'
           : `${x.resumo ? `<span style="font-size:14px"><b>${esc(x.resumo)}</b></span>` : ''}<span class="sub" style="font-size:14px">${esc(x.autor)}: ${esc(x.texto)}</span>
-          ${x.contexto ? `<details><summary class="sub" style="font-size:13px;cursor:pointer">Ver a conversa</summary><p class="obs" style="margin-top:6px">${esc(x.contexto)}</p></details>` : ''}`}</div>
+          ${x.contexto ? `<details><summary class="sub" style="font-size:13px;cursor:pointer">Ver a conversa</summary><p class="obs" style="margin-top:6px">${esc(x.contexto)}</p></details>` : ''}
+          <div class="resp"><textarea data-rtxt="${esc(x.msg)}" maxlength="2000" rows="2" placeholder="Escreva a resposta para o grupo">${esc(RASC[x.msg] || '')}</textarea><button class="btn primary" data-responder="${esc(x.msg)}" data-chat="${esc(x.chat)}">Responder</button></div>`}</div>
         <span class="act"></span></li>`;
-      return `<div class="head"><div><p class="eyebrow">WhatsApp do suporte · atualizado às ${esc(R.agora)}</p><h1>Responder</h1></div><p class="sub">Responda no WhatsApp do suporte. Todo cliente recebe resposta: quando alguém da equipe responde no grupo, o cliente sai daqui sozinho.</p></div>
+      return `<div class="head"><div><p class="eyebrow">WhatsApp do suporte · atualizado às ${esc(R.agora)}</p><h1>Responder</h1></div><p class="sub">Responda aqui ou no WhatsApp. Todo cliente recebe resposta: quando alguém da equipe responde no grupo, o cliente sai daqui sozinho.</p></div>
       ${caixaWhats()}
       <section class="group"><h2>Esperando resposta <span class="count">${R.itens.length}</span></h2>${R.itens.length ? `<ul class="rows">${R.itens.map(item).join('')}</ul>` : '<p class="empty">Ninguém esperando resposta agora. 🎉</p>'}</section>
       <p class="note">A ordem é: assunto sensível, cliente 🔴 em atenção, faixa A, B e C, e depois quem espera há mais tempo. Responder direto daqui vem na próxima versão, saindo pelo seu número de suporte.</p>`;
@@ -989,11 +993,13 @@ document.addEventListener('click', async e => {
   const sl = e.target.closest('#main [data-slot]'); if (sl) { abrirSlot(sl.dataset.slot); return; }
   const df = e.target.closest('#main [data-definir]'); if (df) { abrirSlot('', df.dataset.definir); return; }
   if (e.target.id === 'g-novo') { abrirSlot(''); return; }
-  const ds = e.target.closest('#main [data-dispensar]');
-  if (ds) {
-    ds.disabled = true;
-    try { const r = await api('euforia-painel-respostas', { acao: 'dispensar', msg: ds.dataset.dispensar, chat: ds.dataset.chat }); if (!r || !r.ok) throw new Error((r && r.motivo) || 'erro'); R.itens = R.itens.filter(x => x.msg !== ds.dataset.dispensar); render(); toast('Tirado da fila. O monitor não alerta mais sobre essa mensagem.'); }
-    catch (err) { ds.disabled = false; toast(MOTIVO[err.message] || ERRO); }
+  const rs = e.target.closest('#main [data-responder]');
+  if (rs) {
+    const m = rs.dataset.responder, t = (RASC[m] || '').trim();
+    if (t.length < 2) { toast('Escreva a resposta antes de mandar.'); return; }
+    rs.disabled = true; ocupado = true;
+    try { const r = await api('euforia-painel-responder', { msg: m, chat: rs.dataset.chat, texto: t }); if (!r || !r.ok) throw new Error((r && r.motivo) || 'erro'); delete RASC[m]; R.itens = R.itens.filter(x => x.msg !== m); ocupado = false; render(); toast('Resposta enviada no grupo pelo ' + (r.pelo || 'WhatsApp') + '.'); }
+    catch (err) { ocupado = false; rs.disabled = false; toast(MOTIVO[err.message] || ERRO); }
     return;
   }
   if (e.target.id === 'wa-ligar') { e.target.disabled = true; ligarWhats(); return; }
@@ -1017,6 +1023,7 @@ document.addEventListener('change', e => {
 document.addEventListener('input', e => {
   if (e.target.id === 'tq') { TQ = e.target.value; $('#dres').innerHTML = tabelaTodos(); }
   if (e.target.id === 'mq') { MQ = e.target.value; $('#dres').innerHTML = listaMensagens(); }
+  if (e.target.dataset && e.target.dataset.rtxt) RASC[e.target.dataset.rtxt] = e.target.value;
 });
 document.addEventListener('submit', async e => {
   e.preventDefault();
@@ -1044,7 +1051,7 @@ setInterval(() => { if (D && !ocupado && !document.hidden && !$('#layer').innerH
 // Mensagens da equipe: a cada 2 minutos quando a aba está aberta.
 setInterval(() => { if (D && diretor() && view === 'mensagens' && !document.hidden) carregarMensagens(); }, 120000);
 // A fila de respostas muda mais rápido: atualiza a cada minuto quando a aba Responder está aberta.
-setInterval(() => { if (D && view === 'responder' && !ocupado && !document.hidden) carregarRespostas(); }, 60000);
+setInterval(() => { if (D && view === 'responder' && !ocupado && !document.hidden && !(document.activeElement && document.activeElement.dataset && document.activeElement.dataset.rtxt)) carregarRespostas(); }, 60000);
 
 // Demonstração (?demo=1): dados de exemplo, nada é enviado.
 function demoApi(path, b){
@@ -1056,6 +1063,7 @@ function demoApi(path, b){
     if (W === 'aguardando') demoApi.n = (demoApi.n || 0) + 1;
     return wait({ ok: true, estado: W === 'aguardando' ? (demoApi.n > 2 ? 'conectado' : 'aguardando') : (W || 'desconectado') });
   }
+  if (path === 'euforia-painel-responder') return wait({ ok: true, pelo: 'seu número' });
   if (path === 'euforia-painel-respostas') { if (b && b.acao === 'dispensar') return wait({ ok: true }); return wait(DEMO_R); }
   if (path === 'euforia-painel-grade') {
     if (b.acao === 'listar') return wait(JSON.parse(JSON.stringify(DEMO_G)));
