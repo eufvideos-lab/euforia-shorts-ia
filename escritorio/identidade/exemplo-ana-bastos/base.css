@@ -1,0 +1,11 @@
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500;1,600;1,700&family=Montserrat:wght@300;400;500;600;700&display=block');
+:root{--bordo:#6B1E2C;--bordoe:#4E1520;--bordox:#2E0B12;--dourado:#B48A3E;--douradoc:#D9B97A;--bege:#F2E9DC;--branco:#FFFDF9;--tinta:#2B1A1D;--linha:#E2D3BE;
+--gold:linear-gradient(120deg,#8C6528 0%,#E4C88C 40%,#B48A3E 65%,#F0DDAE 100%);}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{color:var(--branco);font-family:'Montserrat',sans-serif;-webkit-font-smoothing:antialiased}
+.serif{font-family:'Cormorant Garamond',serif}
+.label{font-family:'Montserrat';font-weight:600;letter-spacing:.3em;text-transform:uppercase;color:var(--douradoc)}
+.goldtxt{background:var(--gold);-webkit-background-clip:text;background-clip:text;color:transparent}
+.bg-bordo{background:radial-gradient(ellipse at 72% 38%,#86283A 0%,var(--bordo) 38%,var(--bordoe) 72%,var(--bordox) 100%)}
+.fade-b{-webkit-mask-image:linear-gradient(180deg,#000 82%,transparent 100%);mask-image:linear-gradient(180deg,#000 82%,transparent 100%)}
+.mono{display:flex;align-items:center;justify-content:center;border-radius:50%;border:3px solid transparent;background:linear-gradient(var(--bordoe),var(--bordoe)) padding-box,var(--gold) border-box;font-family:'Cormorant Garamond';font-weight:600;letter-spacing:.04em}
