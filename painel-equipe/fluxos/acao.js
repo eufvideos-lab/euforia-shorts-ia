@@ -82,7 +82,7 @@ if (p.acao === 'passar' && alvo && !teste) {
 }
 let aviso = '';
 if (p.acao === 'revisao') aviso = '🎬 **' + titulo + '** foi para revisão (' + r.nome + '). <@1410287139169763471>, está na sua fila do painel.' + (p.texto ? '\\n> ' + p.texto : '');
-if (p.acao === 'passar' && alvo) aviso = '📌 **' + titulo + '** passou para ' + (alvo[2] ? '<@' + alvo[2] + '>' : 'o Escritório (máquinas)') + ' (por ' + r.nome + ').' + (p.texto ? '\n> ' + p.texto : '');
+if (p.acao === 'passar' && alvo) aviso = '📌 **' + titulo + '** passou para ' + (alvo[2] ? '<@' + alvo[2] + '>' : 'o Escritório (máquinas)') + ' (por ' + r.nome + ').' + (p.texto ? '\\n> ' + p.texto : '');
 if (p.acao === 'ajuste') aviso = '🔁 **' + titulo + '** voltou para ajuste. O pedido está no card e no topo da fila de quem fez.';
 return [{ json: { ok: !erro, cardId: card.id || '', avisar: !!aviso && !teste,
   body: JSON.stringify({ properties: props }),
