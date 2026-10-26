@@ -36,7 +36,7 @@ export type Cena = Base &
     | ({ tipo: 'apresentador'; video: string; videoInicio: number; texto: Palavra[] } & Enquadre)
     | ({ tipo: 'preco'; video: string; videoInicio: number; rotulo: string; moeda: string; valor: string; sufixo: string; cobrirEm?: number } & Enquadre)
     | { tipo: 'logo'; logo: string; botao: string; botaoEm: number }
-    | { tipo: 'navegador'; telas: { src: string; em: number }[]; dispositivo?: 'computador' | 'celular'; proporcao?: number; rotulo?: string; texto?: Palavra[]; camera?: Camera[]; cursor?: Cursor[]; destaques?: Destaque[] }
+    | { tipo: 'navegador'; telas: { src: string; em: number }[]; dispositivo?: 'computador' | 'celular'; proporcao?: number; rotulo?: string; endereco?: string; texto?: Palavra[]; camera?: Camera[]; cursor?: Cursor[]; destaques?: Destaque[] }
     | { tipo: 'abas'; titulo: Palavra[]; abas: Aba[] }
     | { tipo: 'institucional'; logo: string; titulo: string; linhas: string[]; pilares: { t: string; icone: 'coluna' | 'livro' | 'coracao' }[] }
   );

@@ -1,0 +1,1389 @@
+{
+ "fps": 30,
+ "largura": 1920,
+ "altura": 1080,
+ "duracao": 224.3,
+ "audio": "portal2/narracao.mp3",
+ "marca": {
+  "primaria": "#FF5A00",
+  "secundaria": "#FF8A3D",
+  "escura": "#141414",
+  "fundo": "#FFFFFF",
+  "texto": "#5E5A54",
+  "fonteTitulo": "Barlow Condensed",
+  "fonteCorpo": "Inter",
+  "fonteDestaque": "Barlow Condensed"
+ },
+ "cenas": [
+  {
+   "tipo": "pergunta",
+   "inicio": 0,
+   "fim": 7.2,
+   "palavras": [
+    {
+     "t": "Já",
+     "em": 0.0
+    },
+    {
+     "t": "imaginou",
+     "em": 0.22
+    },
+    {
+     "t": "acompanhar",
+     "em": 0.78
+    },
+    {
+     "t": "tudo",
+     "em": 1.49
+    },
+    {
+     "t": "do",
+     "em": 1.96
+    },
+    {
+     "t": "seu",
+     "em": 2.1
+    },
+    {
+     "t": "canal",
+     "em": 2.31
+    },
+    {
+     "t": "num",
+     "em": 2.98,
+     "quebra": true
+    },
+    {
+     "t": "lugar",
+     "em": 3.2,
+     "destaque": true
+    },
+    {
+     "t": "só,",
+     "em": 3.69,
+     "destaque": true
+    },
+    {
+     "t": "sem",
+     "em": 4.39,
+     "quebra": true
+    },
+    {
+     "t": "precisar",
+     "em": 4.69
+    },
+    {
+     "t": "procurar",
+     "em": 5.14
+    },
+    {
+     "t": "nada",
+     "em": 5.69
+    },
+    {
+     "t": "no",
+     "em": 6.09
+    },
+    {
+     "t": "WhatsApp?",
+     "em": 6.21
+    }
+   ]
+  },
+  {
+   "tipo": "navegador",
+   "inicio": 7.2,
+   "fim": 19.0,
+   "telas": [
+    {
+     "src": "portal2/inicio.png",
+     "em": 0
+    }
+   ],
+   "rotulo": "Portal do Cliente",
+   "endereco": "grupoeuforia.com.br/portal",
+   "camera": [
+    {
+     "em": 0.8,
+     "x": 0.5,
+     "y": 0.4,
+     "zoom": 1.06
+    }
+   ],
+   "destaques": [
+    {
+     "em": 4.3,
+     "ate": 5.7,
+     "x": 0.011,
+     "y": 0.157,
+     "w": 0.138,
+     "h": 0.047
+    },
+    {
+     "em": 5.8,
+     "ate": 7.6,
+     "x": 0.189,
+     "y": 0.124,
+     "w": 0.254,
+     "h": 0.235
+    },
+    {
+     "em": 7.7,
+     "ate": 9.6,
+     "x": 0.454,
+     "y": 0.124,
+     "w": 0.254,
+     "h": 0.235
+    },
+    {
+     "em": 9.7,
+     "ate": 11.6,
+     "x": 0.011,
+     "y": 0.206,
+     "w": 0.138,
+     "h": 0.047
+    }
+   ]
+  },
+  {
+   "tipo": "navegador",
+   "inicio": 19.0,
+   "fim": 27.6,
+   "telas": [
+    {
+     "src": "portal2/inicio.png",
+     "em": 0
+    }
+   ],
+   "rotulo": "Link próprio",
+   "endereco": "grupoeuforia.com.br/portal",
+   "texto": [
+    {
+     "t": "Um",
+     "em": 2.5
+    },
+    {
+     "t": "link",
+     "em": 2.7
+    },
+    {
+     "t": "só",
+     "em": 2.9
+    },
+    {
+     "t": "seu.",
+     "em": 3.1,
+     "destaque": true
+    },
+    {
+     "t": "Sem",
+     "em": 5.8,
+     "quebra": true
+    },
+    {
+     "t": "senha.",
+     "em": 6.05
+    },
+    {
+     "t": "Sem",
+     "em": 6.3,
+     "quebra": true
+    },
+    {
+     "t": "instalar",
+     "em": 6.55
+    },
+    {
+     "t": "nada.",
+     "em": 6.8
+    }
+   ],
+   "camera": [
+    {
+     "em": 1.5,
+     "x": 0.2,
+     "y": 0.8,
+     "zoom": 1.3
+    }
+   ],
+   "destaques": [
+    {
+     "em": 2.6,
+     "ate": 8.3,
+     "x": 0.011,
+     "y": 0.93,
+     "w": 0.138,
+     "h": 0.043
+    }
+   ]
+  },
+  {
+   "tipo": "abas",
+   "inicio": 27.6,
+   "fim": 33.6,
+   "titulo": [
+    {
+     "t": "O",
+     "em": 0.08
+    },
+    {
+     "t": "portal",
+     "em": 0.24
+    },
+    {
+     "t": "tem",
+     "em": 0.73
+    },
+    {
+     "t": "quatro",
+     "em": 0.98,
+     "destaque": true
+    },
+    {
+     "t": "abas:",
+     "em": 1.53
+    }
+   ],
+   "abas": [
+    {
+     "t": "Início",
+     "desc": "O que está esperando por você",
+     "em": 2.2,
+     "icone": "casa"
+    },
+    {
+     "t": "Entregas",
+     "desc": "Cada peça, do a fazer ao publicado",
+     "em": 3.0,
+     "icone": "quadro"
+    },
+    {
+     "t": "Gravações",
+     "desc": "Roteiros e envio do vídeo",
+     "em": 3.9,
+     "icone": "camera"
+    },
+    {
+     "t": "Mensagens",
+     "desc": "Conversa direta com a equipe",
+     "em": 5.0,
+     "icone": "balao"
+    }
+   ]
+  },
+  {
+   "tipo": "navegador",
+   "inicio": 33.6,
+   "fim": 49.8,
+   "telas": [
+    {
+     "src": "portal2/inicio.png",
+     "em": 0
+    }
+   ],
+   "rotulo": "Início",
+   "camera": [
+    {
+     "em": 0.8,
+     "x": 0.58,
+     "y": 0.26,
+     "zoom": 1.55
+    },
+    {
+     "em": 9.8,
+     "x": 0.6,
+     "y": 0.56,
+     "zoom": 1.55
+    }
+   ],
+   "cursor": [
+    {
+     "em": 0.4,
+     "x": 0.061,
+     "y": 0.131,
+     "clique": true
+    }
+   ],
+   "destaques": [
+    {
+     "em": 2.6,
+     "ate": 5.3,
+     "x": 0.189,
+     "y": 0.124,
+     "w": 0.254,
+     "h": 0.235
+    },
+    {
+     "em": 6.0,
+     "ate": 8.2,
+     "x": 0.454,
+     "y": 0.124,
+     "w": 0.254,
+     "h": 0.235
+    },
+    {
+     "em": 8.4,
+     "ate": 9.8,
+     "x": 0.719,
+     "y": 0.124,
+     "w": 0.254,
+     "h": 0.235
+    },
+    {
+     "em": 11.5,
+     "ate": 13.0,
+     "x": 0.189,
+     "y": 0.43,
+     "w": 0.435,
+     "h": 0.235
+    },
+    {
+     "em": 13.2,
+     "ate": 16.0,
+     "x": 0.665,
+     "y": 0.563,
+     "w": 0.293,
+     "h": 0.073
+    }
+   ]
+  },
+  {
+   "tipo": "navegador",
+   "inicio": 49.8,
+   "fim": 69.0,
+   "telas": [
+    {
+     "src": "portal2/entregas.png",
+     "em": 0
+    }
+   ],
+   "rotulo": "Entregas",
+   "camera": [
+    {
+     "em": 0.6,
+     "x": 0.55,
+     "y": 0.33,
+     "zoom": 1.15
+    },
+    {
+     "em": 10.2,
+     "x": 0.45,
+     "y": 0.3,
+     "zoom": 1.6
+    },
+    {
+     "em": 14.8,
+     "x": 0.55,
+     "y": 0.33,
+     "zoom": 1.15
+    }
+   ],
+   "cursor": [
+    {
+     "em": 0.3,
+     "x": 0.061,
+     "y": 0.181,
+     "clique": true
+    }
+   ],
+   "destaques": [
+    {
+     "em": 3.4,
+     "ate": 4.2,
+     "x": 0.189,
+     "y": 0.175,
+     "w": 0.153,
+     "h": 0.356
+    },
+    {
+     "em": 4.3,
+     "ate": 5.3,
+     "x": 0.35,
+     "y": 0.175,
+     "w": 0.153,
+     "h": 0.356
+    },
+    {
+     "em": 5.4,
+     "ate": 6.6,
+     "x": 0.511,
+     "y": 0.175,
+     "w": 0.153,
+     "h": 0.356
+    },
+    {
+     "em": 6.7,
+     "ate": 7.8,
+     "x": 0.6719999999999999,
+     "y": 0.175,
+     "w": 0.153,
+     "h": 0.356
+    },
+    {
+     "em": 7.9,
+     "ate": 9.1,
+     "x": 0.833,
+     "y": 0.175,
+     "w": 0.153,
+     "h": 0.356
+    },
+    {
+     "em": 10.6,
+     "ate": 11.3,
+     "x": 0.36,
+     "y": 0.238,
+     "w": 0.13,
+     "h": 0.08
+    },
+    {
+     "em": 11.4,
+     "ate": 12.0,
+     "x": 0.2,
+     "y": 0.238,
+     "w": 0.13,
+     "h": 0.07
+    },
+    {
+     "em": 12.1,
+     "ate": 14.0,
+     "x": 0.528,
+     "y": 0.37,
+     "w": 0.12,
+     "h": 0.08
+    },
+    {
+     "em": 15.1,
+     "ate": 18.8,
+     "x": 0.189,
+     "y": 0.175,
+     "w": 0.79,
+     "h": 0.356
+    }
+   ]
+  },
+  {
+   "tipo": "navegador",
+   "inicio": 69.0,
+   "fim": 84.5,
+   "telas": [
+    {
+     "src": "portal2/entregas.png",
+     "em": 0
+    },
+    {
+     "src": "portal2/aprovar.png",
+     "em": 8.55
+    },
+    {
+     "src": "portal2/aprovado.png",
+     "em": 12.65
+    }
+   ],
+   "rotulo": "Aprovar",
+   "camera": [
+    {
+     "em": 0.4,
+     "x": 0.59,
+     "y": 0.3,
+     "zoom": 1.7
+    },
+    {
+     "em": 4.7,
+     "x": 0.12,
+     "y": 0.2,
+     "zoom": 2.2
+    },
+    {
+     "em": 7.0,
+     "x": 0.59,
+     "y": 0.3,
+     "zoom": 1.7
+    },
+    {
+     "em": 8.7,
+     "x": 0.8,
+     "y": 0.3,
+     "zoom": 1.6
+    },
+    {
+     "em": 12.8,
+     "x": 0.6,
+     "y": 0.45,
+     "zoom": 1.15
+    }
+   ],
+   "cursor": [
+    {
+     "em": 8.3,
+     "x": 0.58,
+     "y": 0.26,
+     "clique": true
+    },
+    {
+     "em": 12.4,
+     "x": 0.686,
+     "y": 0.348,
+     "clique": true
+    }
+   ],
+   "destaques": [
+    {
+     "em": 3.2,
+     "ate": 4.6,
+     "x": 0.511,
+     "y": 0.175,
+     "w": 0.153,
+     "h": 0.356
+    },
+    {
+     "em": 4.8,
+     "ate": 6.8,
+     "x": 0.011,
+     "y": 0.157,
+     "w": 0.138,
+     "h": 0.047
+    },
+    {
+     "em": 8.9,
+     "ate": 10.3,
+     "x": 0.656,
+     "y": 0.188,
+     "w": 0.082,
+     "h": 0.047
+    },
+    {
+     "em": 13.4,
+     "ate": 15.3,
+     "x": 0.833,
+     "y": 0.175,
+     "w": 0.153,
+     "h": 0.356
+    },
+    {
+     "em": 13.4,
+     "ate": 15.3,
+     "x": 0.39,
+     "y": 0.925,
+     "w": 0.22,
+     "h": 0.045
+    }
+   ]
+  },
+  {
+   "tipo": "navegador",
+   "inicio": 84.5,
+   "fim": 97.7,
+   "telas": [
+    {
+     "src": "portal2/aprovar.png",
+     "em": 0
+    },
+    {
+     "src": "portal2/ajuste.png",
+     "em": 2.5
+    },
+    {
+     "src": "portal2/ajuste-escrito.png",
+     "em": 4.5
+    },
+    {
+     "src": "portal2/ajuste-enviado.png",
+     "em": 8.9
+    }
+   ],
+   "rotulo": "Pedir ajuste",
+   "camera": [
+    {
+     "em": 0.0,
+     "x": 0.8,
+     "y": 0.35,
+     "zoom": 1.55
+    },
+    {
+     "em": 3.0,
+     "x": 0.8,
+     "y": 0.5,
+     "zoom": 1.55
+    },
+    {
+     "em": 9.0,
+     "x": 0.6,
+     "y": 0.4,
+     "zoom": 1.15
+    }
+   ],
+   "cursor": [
+    {
+     "em": 2.3,
+     "x": 0.764,
+     "y": 0.348,
+     "clique": true
+    },
+    {
+     "em": 3.5,
+     "x": 0.8,
+     "y": 0.47,
+     "clique": true
+    },
+    {
+     "em": 6.4,
+     "x": 0.82,
+     "y": 0.592,
+     "clique": true
+    },
+    {
+     "em": 8.7,
+     "x": 0.72,
+     "y": 0.652,
+     "clique": true
+    }
+   ],
+   "destaques": [
+    {
+     "em": 4.1,
+     "ate": 6.1,
+     "x": 0.656,
+     "y": 0.423,
+     "w": 0.328,
+     "h": 0.107
+    },
+    {
+     "em": 6.4,
+     "ate": 8.1,
+     "x": 0.656,
+     "y": 0.57,
+     "w": 0.328,
+     "h": 0.05
+    },
+    {
+     "em": 9.9,
+     "ate": 12.9,
+     "x": 0.6719999999999999,
+     "y": 0.175,
+     "w": 0.153,
+     "h": 0.356
+    }
+   ]
+  },
+  {
+   "tipo": "pergunta",
+   "inicio": 97.7,
+   "fim": 101.2,
+   "simbolo": "",
+   "palavras": [
+    {
+     "t": "Nada",
+     "em": 0.17
+    },
+    {
+     "t": "vai",
+     "em": 0.77
+    },
+    {
+     "t": "ao",
+     "em": 1.06
+    },
+    {
+     "t": "ar",
+     "em": 1.27
+    },
+    {
+     "t": "sem",
+     "em": 1.83,
+     "quebra": true
+    },
+    {
+     "t": "o",
+     "em": 2.17
+    },
+    {
+     "t": "seu",
+     "em": 2.3
+    },
+    {
+     "t": "OK.",
+     "em": 2.8,
+     "destaque": true
+    }
+   ]
+  },
+  {
+   "tipo": "navegador",
+   "inicio": 101.2,
+   "fim": 107.0,
+   "telas": [
+    {
+     "src": "portal2/gravacoes.png",
+     "em": 0
+    },
+    {
+     "src": "portal2/roteiro.png",
+     "em": 3.5
+    }
+   ],
+   "rotulo": "Gravações",
+   "camera": [
+    {
+     "em": 0.6,
+     "x": 0.41,
+     "y": 0.26,
+     "zoom": 1.7
+    },
+    {
+     "em": 3.7,
+     "x": 0.8,
+     "y": 0.3,
+     "zoom": 1.5
+    }
+   ],
+   "cursor": [
+    {
+     "em": 0.3,
+     "x": 0.061,
+     "y": 0.22999999999999998,
+     "clique": true
+    },
+    {
+     "em": 3.3,
+     "x": 0.606,
+     "y": 0.222,
+     "clique": true
+    }
+   ],
+   "destaques": [
+    {
+     "em": 1.7,
+     "ate": 3.1,
+     "x": 0.203,
+     "y": 0.186,
+     "w": 0.421,
+     "h": 0.149
+    },
+    {
+     "em": 4.4,
+     "ate": 5.7,
+     "x": 0.656,
+     "y": 0.269,
+     "w": 0.328,
+     "h": 0.23
+    }
+   ]
+  },
+  {
+   "tipo": "navegador",
+   "inicio": 107.0,
+   "fim": 124.9,
+   "telas": [
+    {
+     "src": "portal2/roteiro.png",
+     "em": 0
+    },
+    {
+     "src": "portal2/roteiro-copiado.png",
+     "em": 3.3
+    }
+   ],
+   "rotulo": "Teleprompter",
+   "camera": [
+    {
+     "em": 0.0,
+     "x": 0.8,
+     "y": 0.3,
+     "zoom": 1.5
+    },
+    {
+     "em": 1.0,
+     "x": 0.78,
+     "y": 0.2,
+     "zoom": 1.9
+    },
+    {
+     "em": 5.4,
+     "x": 0.65,
+     "y": 0.55,
+     "zoom": 1.2
+    },
+    {
+     "em": 12.3,
+     "x": 0.8,
+     "y": 0.2,
+     "zoom": 1.9
+    }
+   ],
+   "cursor": [
+    {
+     "em": 3.0,
+     "x": 0.748,
+     "y": 0.166,
+     "clique": true
+    }
+   ],
+   "destaques": [
+    {
+     "em": 2.3,
+     "ate": 3.6,
+     "x": 0.656,
+     "y": 0.143,
+     "w": 0.184,
+     "h": 0.047
+    },
+    {
+     "em": 5.6,
+     "ate": 9.6,
+     "x": 0.656,
+     "y": 0.269,
+     "w": 0.328,
+     "h": 0.23
+    },
+    {
+     "em": 9.8,
+     "ate": 11.9,
+     "x": 0.34,
+     "y": 0.925,
+     "w": 0.32,
+     "h": 0.045
+    },
+    {
+     "em": 13.3,
+     "ate": 15.0,
+     "x": 0.847,
+     "y": 0.143,
+     "w": 0.072,
+     "h": 0.047
+    },
+    {
+     "em": 15.6,
+     "ate": 17.6,
+     "x": 0.656,
+     "y": 0.202,
+     "w": 0.094,
+     "h": 0.047
+    }
+   ]
+  },
+  {
+   "tipo": "navegador",
+   "inicio": 124.9,
+   "fim": 136.6,
+   "telas": [
+    {
+     "src": "portal2/gravacoes.png",
+     "em": 0
+    }
+   ],
+   "rotulo": "Antes de gravar",
+   "camera": [
+    {
+     "em": 0.3,
+     "x": 0.81,
+     "y": 0.64,
+     "zoom": 2.0
+    }
+   ],
+   "destaques": [
+    {
+     "em": 2.6,
+     "ate": 5.5,
+     "x": 0.665,
+     "y": 0.601,
+     "w": 0.293,
+     "h": 0.031
+    },
+    {
+     "em": 5.9,
+     "ate": 7.0,
+     "x": 0.665,
+     "y": 0.632,
+     "w": 0.293,
+     "h": 0.031
+    },
+    {
+     "em": 7.1,
+     "ate": 11.4,
+     "x": 0.665,
+     "y": 0.663,
+     "w": 0.293,
+     "h": 0.031
+    }
+   ]
+  },
+  {
+   "tipo": "navegador",
+   "inicio": 136.6,
+   "fim": 162.0,
+   "telas": [
+    {
+     "src": "portal2/gravacoes.png",
+     "em": 0
+    },
+    {
+     "src": "portal2/envio-escolhido.png",
+     "em": 5.8
+    },
+    {
+     "src": "portal2/envio-progresso.png",
+     "em": 9.7
+    },
+    {
+     "src": "portal2/envio-recebido.png",
+     "em": 20.0
+    }
+   ],
+   "rotulo": "Enviar gravação",
+   "camera": [
+    {
+     "em": 0.4,
+     "x": 0.81,
+     "y": 0.33,
+     "zoom": 1.6
+    }
+   ],
+   "cursor": [
+    {
+     "em": 5.6,
+     "x": 0.81,
+     "y": 0.26,
+     "clique": true
+    },
+    {
+     "em": 7.0,
+     "x": 0.81,
+     "y": 0.379,
+     "clique": true
+    },
+    {
+     "em": 9.5,
+     "x": 0.81,
+     "y": 0.44,
+     "clique": true
+    }
+   ],
+   "destaques": [
+    {
+     "em": 5.0,
+     "ate": 6.3,
+     "x": 0.665,
+     "y": 0.186,
+     "w": 0.293,
+     "h": 0.148
+    },
+    {
+     "em": 6.6,
+     "ate": 8.4,
+     "x": 0.665,
+     "y": 0.356,
+     "w": 0.293,
+     "h": 0.046
+    },
+    {
+     "em": 10.9,
+     "ate": 15.2,
+     "x": 0.665,
+     "y": 0.417,
+     "w": 0.293,
+     "h": 0.031
+    },
+    {
+     "em": 16.0,
+     "ate": 19.3,
+     "x": 0.665,
+     "y": 0.463,
+     "w": 0.293,
+     "h": 0.047
+    },
+    {
+     "em": 20.6,
+     "ate": 25.2,
+     "x": 0.665,
+     "y": 0.417,
+     "w": 0.293,
+     "h": 0.035
+    }
+   ]
+  },
+  {
+   "tipo": "abas",
+   "inicio": 162.0,
+   "fim": 172.9,
+   "titulo": [
+    {
+     "t": "Do",
+     "em": 0.15
+    },
+    {
+     "t": "envio",
+     "em": 0.31
+    },
+    {
+     "t": "até",
+     "em": 0.47
+    },
+    {
+     "t": "o",
+     "em": 0.63
+    },
+    {
+     "t": "ar",
+     "em": 0.79,
+     "destaque": true
+    }
+   ],
+   "abas": [
+    {
+     "t": "Edição",
+     "desc": "A edição começa assim que o vídeo chega",
+     "em": 0.6,
+     "icone": "computador"
+    },
+    {
+     "t": "Aprovação",
+     "desc": "O vídeo aparece em Entregas para você",
+     "em": 2.0,
+     "icone": "check"
+    },
+    {
+     "t": "Shorts",
+     "desc": "Os cortes do mesmo conteúdo",
+     "em": 6.5,
+     "icone": "celular"
+    },
+    {
+     "t": "Carrossel",
+     "desc": "Também chega por aqui",
+     "em": 7.3,
+     "icone": "quadro"
+    }
+   ]
+  },
+  {
+   "tipo": "navegador",
+   "inicio": 172.9,
+   "fim": 183.2,
+   "telas": [
+    {
+     "src": "portal2/mensagens.png",
+     "em": 0
+    },
+    {
+     "src": "portal2/msg-escrita.png",
+     "em": 6.3
+    },
+    {
+     "src": "portal2/msg-enviada.png",
+     "em": 7.1
+    }
+   ],
+   "rotulo": "Mensagens",
+   "camera": [
+    {
+     "em": 0.7,
+     "x": 0.55,
+     "y": 0.26,
+     "zoom": 1.4
+    }
+   ],
+   "cursor": [
+    {
+     "em": 0.3,
+     "x": 0.061,
+     "y": 0.279,
+     "clique": true
+    },
+    {
+     "em": 6.1,
+     "x": 0.45,
+     "y": 0.343,
+     "clique": true
+    },
+    {
+     "em": 6.9,
+     "x": 0.93,
+     "y": 0.343,
+     "clique": true
+    }
+   ],
+   "destaques": [
+    {
+     "em": 2.8,
+     "ate": 5.7,
+     "x": 0.203,
+     "y": 0.147,
+     "w": 0.754,
+     "h": 0.157
+    },
+    {
+     "em": 8.2,
+     "ate": 10.1,
+     "x": 0.21,
+     "y": 0.155,
+     "w": 0.43,
+     "h": 0.06
+    }
+   ]
+  },
+  {
+   "tipo": "navegador",
+   "inicio": 183.2,
+   "fim": 193.8,
+   "telas": [
+    {
+     "src": "portal2/inicio.png",
+     "em": 0
+    }
+   ],
+   "rotulo": "Quem acessa",
+   "texto": [
+    {
+     "t": "Cada",
+     "em": 2.66
+    },
+    {
+     "t": "pessoa",
+     "em": 3.07
+    },
+    {
+     "t": "tem",
+     "em": 3.64
+    },
+    {
+     "t": "o",
+     "em": 3.89,
+     "quebra": true
+    },
+    {
+     "t": "próprio",
+     "em": 3.99
+    },
+    {
+     "t": "link,",
+     "em": 4.46,
+     "destaque": true
+    }
+   ],
+   "camera": [
+    {
+     "em": 3.1,
+     "x": 0.2,
+     "y": 0.8,
+     "zoom": 1.6
+    }
+   ],
+   "destaques": [
+    {
+     "em": 5.2,
+     "ate": 10.3,
+     "x": 0.011,
+     "y": 0.93,
+     "w": 0.138,
+     "h": 0.043
+    }
+   ]
+  },
+  {
+   "tipo": "abas",
+   "inicio": 193.8,
+   "fim": 199.8,
+   "titulo": [
+    {
+     "t": "Quem",
+     "em": 0.15
+    },
+    {
+     "t": "faz",
+     "em": 0.31
+    },
+    {
+     "t": "o",
+     "em": 0.47
+    },
+    {
+     "t": "quê",
+     "em": 0.63,
+     "destaque": true
+    }
+   ],
+   "abas": [
+    {
+     "t": "Você e seu sócio",
+     "desc": "Aprovam e pedem ajuste",
+     "em": 0.2,
+     "icone": "coroa"
+    },
+    {
+     "t": "Sua equipe",
+     "desc": "Acompanha, manda mensagem e envia gravações",
+     "em": 4.0,
+     "icone": "grupo"
+    }
+   ]
+  },
+  {
+   "tipo": "navegador",
+   "inicio": 199.8,
+   "fim": 203.4,
+   "telas": [
+    {
+     "src": "portal2/equipe-aprovar.png",
+     "em": 0
+    }
+   ],
+   "rotulo": "Equipe",
+   "camera": [
+    {
+     "em": 0.0,
+     "x": 0.8,
+     "y": 0.3,
+     "zoom": 1.6
+    }
+   ],
+   "destaques": [
+    {
+     "em": 2.4,
+     "ate": 3.5,
+     "x": 0.656,
+     "y": 0.255,
+     "w": 0.328,
+     "h": 0.073
+    }
+   ]
+  },
+  {
+   "tipo": "pergunta",
+   "inicio": 203.4,
+   "fim": 208.5,
+   "simbolo": "",
+   "palavras": [
+    {
+     "t": "Para",
+     "em": 0.09
+    },
+    {
+     "t": "incluir",
+     "em": 0.32
+    },
+    {
+     "t": "alguém,",
+     "em": 0.88
+    },
+    {
+     "t": "ou",
+     "em": 1.7
+    },
+    {
+     "t": "se",
+     "em": 1.97
+    },
+    {
+     "t": "perder",
+     "em": 2.1
+    },
+    {
+     "t": "o",
+     "em": 2.45
+    },
+    {
+     "t": "seu",
+     "em": 2.52
+    },
+    {
+     "t": "link,",
+     "em": 2.72
+    },
+    {
+     "t": "é",
+     "em": 3.37,
+     "quebra": true
+    },
+    {
+     "t": "só",
+     "em": 3.59
+    },
+    {
+     "t": "pedir",
+     "em": 3.95
+    },
+    {
+     "t": "no",
+     "em": 4.35
+    },
+    {
+     "t": "grupo.",
+     "em": 4.49,
+     "destaque": true
+    }
+   ]
+  },
+  {
+   "tipo": "navegador",
+   "inicio": 208.5,
+   "fim": 218.4,
+   "telas": [
+    {
+     "src": "portal2/cel-inicio.png",
+     "em": 0
+    },
+    {
+     "src": "portal2/cel-entregas.png",
+     "em": 4.1
+    },
+    {
+     "src": "portal2/cel-gravacoes.png",
+     "em": 6.7
+    }
+   ],
+   "dispositivo": "celular",
+   "rotulo": "De onde estiver",
+   "texto": [
+    {
+     "t": "Funciona",
+     "em": 0.09
+    },
+    {
+     "t": "no",
+     "em": 0.81
+    },
+    {
+     "t": "celular",
+     "em": 0.94,
+     "destaque": true
+    },
+    {
+     "t": "e",
+     "em": 1.54,
+     "quebra": true
+    },
+    {
+     "t": "no",
+     "em": 1.77
+    },
+    {
+     "t": "computador.",
+     "em": 1.97,
+     "destaque": true
+    }
+   ],
+   "cursor": [
+    {
+     "em": 3.9,
+     "x": 0.36,
+     "y": 0.107,
+     "clique": true
+    },
+    {
+     "em": 6.5,
+     "x": 0.66,
+     "y": 0.107,
+     "clique": true
+    }
+   ]
+  },
+  {
+   "tipo": "logo",
+   "inicio": 218.4,
+   "fim": 224.3,
+   "logo": "portal2/logo-euforia-hd.png",
+   "botao": "BOAS-VINDAS!",
+   "botaoEm": 3.6
+  }
+ ]
+}

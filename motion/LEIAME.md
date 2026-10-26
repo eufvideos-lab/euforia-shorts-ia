@@ -46,3 +46,7 @@ CHROME=<chrome-headless-shell> node render.mjs ../motion/pecas/<peca>.json saida
   em modo exemplo (`?demo=1`, cliente fictícia) em `remotion/public/portal/`. A narração vem do fluxo n8n "Motion | Voz da narração
   (ElevenLabs)" (teste com pinData + get_execution: `audio_base64` e `alignment`); `portal-do-cliente.gera.py palavras.json saida.json`
   monta o JSON com os tempos de cada palavra.
+- `portal-do-cliente-v2.json`: versão completa (3min44) com todas as funções do portal em 26/10: papéis (dono/sócio/equipe),
+  roteiro com teleprompter, .txt e PDF, envio com progresso, edição e shorts/carrossel depois do envio. Telas em
+  `remotion/public/portal2/` (capturadas com `portal-do-cliente-v2.telas.js` a partir do portal em `?demo=1`). Narração em 3 partes
+  (o resultado da ElevenLabs passa do limite do n8n acima de ~1min40), juntas com 0,35 s de pausa; `portal-do-cliente-v2.gera.py` monta o JSON.

@@ -437,7 +437,7 @@ export const NavegadorCena: React.FC<P<'navegador'>> = ({ c, m }) => {
               {['#ff5f57', '#febc2e', '#28c840'].map((cor) => <div key={cor} style={{ width: 13, height: 13, borderRadius: '50%', background: cor }} />)}
               <div style={{ marginLeft: 22, height: 24, width: Math.min(460, cw * 0.42), borderRadius: 12, background: '#fff', border: '1px solid #E6E3DE', display: 'flex', alignItems: 'center', paddingLeft: 14, gap: 8, fontFamily: m.fonteCorpo, fontSize: 14, color: '#8a857e' }}>
                 <span style={{ width: 9, height: 11, border: '2px solid #8a857e', borderRadius: 2 }} />
-                portal do cliente
+                {c.endereco ?? 'portal do cliente'}
               </div>
             </div>
           )}
