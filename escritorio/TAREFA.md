@@ -67,7 +67,7 @@ A equipe às vezes manda só o link de um vídeo. Antes de travar, junte sozinho
 Se der para fazer, faça (passo 3) e escreva no Obs o que você buscou e de onde.
 
 Se ainda faltar o essencial (nenhuma foto do cliente em lugar nenhum, tema impossível de saber):
-1. Ache quem pediu na 1ª linha do Obs, que o painel grava assim: `[Painel dd/MM HH:mm] Pedido de <Nome> · ...`.
+1. Ache quem pediu na linha do Obs que o painel grava assim: `[Painel dd/MM HH:mm] Pedido de <Nome> · ...`.
 2. Devolva o card para essa pessoa: **Responsável** = ficha dela (Ismael `3ea98c0cdde0812d9cb4c41ce70df4ae`,
    Rômulo `3ea98c0cdde081299709cf901fac7275`; outra pessoa, a ficha dela no banco da equipe). Status fica
    **A fazer**; "🏢 Escritório IA" = **Falta informação**.
@@ -76,8 +76,10 @@ Se ainda faltar o essencial (nenhuma foto do cliente em lugar nenhum, tema impos
 4. No #dia-a-dia, marque a pessoa, numa linha por card:
    `⚠️ <@id>, não consegui fazer <o que é> de <Cliente>: falta <o que falta>. Complete no painel e passe para o Escritório: <link do card>`
    (Ismael `<@1410287139169763471>`, Rômulo `<@1490768736876237082>`).
-5. A pessoa completa e usa "Passar para → Escritório (máquinas)" no painel. Isso volta o Responsável para o
-   Escritório com "🏢 Escritório IA" = Na fila, e a máquina pega de novo.
+5. O painel põe o card no topo da fila da pessoa, com faixa vermelha e o texto depois de "Falta informação:".
+   Ela aperta "Completar pedido" e o card volta ao Escritório (Na fila, A fazer), com uma linha no topo do Obs:
+   `[Painel dd/MM HH:mm] <Nome> completou o pedido: <texto>` e, se tiver, `Anexos:` com links.
+   Na próxima rodada, leia essa linha (e os anexos) como o complemento do pedido e faça.
 
 ## 3. Produzir
 1. Card: "🏢 Escritório IA" = Fazendo (IA); Status = Fazendo.
