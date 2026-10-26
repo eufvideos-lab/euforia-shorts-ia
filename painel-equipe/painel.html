@@ -264,7 +264,7 @@ const ERRO = 'Deu erro, a diretoria está resolvendo.';
 
 const $ = s => document.querySelector(s);
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-let D = null, PIN = '', view = 'fila', ocupado = false;
+let D = null, R = null, W = null, WQR = '', PIN = '', view = 'fila', ocupado = false;
 try { PIN = localStorage.getItem(KEY) || ''; view = localStorage.getItem('painel-view') || 'fila'; } catch (e) {}
 if (DEMO) PIN = '0000';
 
@@ -298,6 +298,7 @@ async function carregar(silencioso){
       PIN = ''; D = null; tela('tela-pin'); $('#pin-err').textContent = 'PIN errado ou acesso desligado.'; $('#pin').value = ''; $('#pin').focus(); return;
     }
     D = d; render(); tela('app');
+    if (VIEWS.responder.pode()) { carregarRespostas(); if (!W) carregarWhats(); }
   } catch (e) {
     if (!D) { tela('tela-aviso'); $('#aviso-t').textContent = 'Não abriu agora'; $('#aviso-p').textContent = 'Confira a internet e tente de novo em alguns minutos. Se continuar, avise a diretoria.'; }
   }
@@ -374,6 +375,23 @@ const VIEWS = {
       return `<div class="head"><div><p class="eyebrow">Postagem do dia vem primeiro</p><h1>Postar hoje e amanhã</h1></div></div>
       ${grupo('Aprovado, falta subir', l, 'Tudo de hoje e amanhã já está no ar.')}
       ${grupo('Esperando o cliente aprovar', esp, 'Nenhuma peça parada no cliente.')}`;
+    } },
+  responder: { nome: 'Responder', pode: () => ['revisor', 'calls', 'teste'].includes(papel()), badge: () => R ? R.itens.length : 0,
+    html(){
+      if (!R) return `<div class="head"><div><p class="eyebrow">WhatsApp do suporte</p><h1>Responder</h1></div></div><p class="sub">Carregando…</p>`;
+      const espera = m => m < 60 ? m + ' min' : m < 1440 ? Math.floor(m / 60) + 'h' + (m % 60 ? String(m % 60).padStart(2, '0') : '') : Math.floor(m / 1440) + 'd';
+      const item = x => `<li class="item ${x.sensivel || x.espera >= 60 ? 'late' : x.espera >= 30 ? 'today' : ''}"><span class="stripe"></span>
+        <div class="main" style="cursor:default"><span class="t">${esc(x.cliente || x.grupo)}</span>
+        <span class="meta">${x.direcao ? '<span class="chip red">🔴 Com a diretoria</span>' : x.sensivel ? '<span class="chip red">🔴 Sensível</span>' : ''}${x.atencao ? '<span class="chip red">🔴 Atenção</span>' : ''}${x.faixa ? `<span class="chip">Faixa ${esc(x.faixa)}</span>` : ''}
+        <span class="chip ${x.espera >= 60 ? 'red' : x.espera >= 30 ? 'org' : ''}">Esperando há ${espera(x.espera)}</span>${x.qtd > 1 ? `<span class="chip">${x.qtd} mensagens</span>` : ''}${x.tema && !x.direcao ? `<span class="chip">${esc(x.tema)}</span>` : ''}</span>
+        ${x.direcao ? '<span class="sub" style="font-size:13px">Assunto de dinheiro, contrato ou jurídico. A diretoria responde; não precisa fazer nada.</span>'
+          : `${x.resumo ? `<span style="font-size:14px"><b>${esc(x.resumo)}</b></span>` : ''}<span class="sub" style="font-size:14px">${esc(x.autor)}: ${esc(x.texto)}</span>
+          ${x.contexto ? `<details><summary class="sub" style="font-size:13px;cursor:pointer">Ver a conversa</summary><p class="obs" style="margin-top:6px">${esc(x.contexto)}</p></details>` : ''}`}</div>
+        <span class="act">${x.direcao ? '' : `<button class="btn" data-dispensar="${esc(x.msg)}" data-chat="${esc(x.chat)}">Não precisa responder</button>`}</span></li>`;
+      return `<div class="head"><div><p class="eyebrow">WhatsApp do suporte · atualizado às ${esc(R.agora)}</p><h1>Responder</h1></div><p class="sub">Responda no WhatsApp do suporte. Quando alguém da equipe responde no grupo, o cliente sai daqui sozinho.</p></div>
+      ${caixaWhats()}
+      <section class="group"><h2>Esperando resposta <span class="count">${R.itens.length}</span></h2>${R.itens.length ? `<ul class="rows">${R.itens.map(item).join('')}</ul>` : '<p class="empty">Ninguém esperando resposta agora. 🎉</p>'}</section>
+      <p class="note">A ordem é: assunto sensível, cliente 🔴 em atenção, faixa A, B e C, e depois quem espera há mais tempo. Responder direto daqui vem na próxima versão, saindo pelo seu número de suporte.</p>`;
     } },
   pedir: { nome: 'Pedir ao escritório', pode: () => true,
     html(){
@@ -499,6 +517,37 @@ function abrir(id){
 }
 function fechar(){ $('#layer').innerHTML = ''; }
 
+// WhatsApp de suporte de cada um: liga pelo QR code, igual ao WhatsApp Web.
+function caixaWhats(){
+  if (!W) return '';
+  if (W === 'conectado') return `<div class="panel" style="flex-direction:row;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-bottom:22px"><span><span class="chip ok">● Conectado</span> <span class="sub" style="font-size:14px">Seu WhatsApp de suporte está ligado ao painel.</span></span><button class="btn" id="wa-sair">Desconectar</button></div>`;
+  if (W === 'aguardando' && WQR) return `<div class="panel" style="margin-bottom:22px"><h2 style="margin:0">Conectar meu WhatsApp de suporte</h2>
+    <div style="display:flex;gap:20px;flex-wrap:wrap;align-items:center"><img src="${WQR}" alt="QR code para conectar o WhatsApp" style="width:220px;height:220px;border-radius:10px;background:#fff;padding:6px">
+    <ol class="sub" style="font-size:14px;line-height:1.7;margin:0;padding-left:18px;max-width:340px"><li>Pegue o celular do <b>número de suporte</b> (não o pessoal).</li><li>No WhatsApp, toque em <b>⋮</b> ou <b>Configurações</b> › <b>Aparelhos conectados</b>.</li><li>Toque em <b>Conectar um aparelho</b> e aponte a câmera para o código.</li><li>Pronto: esta caixa vira <b>Conectado</b> sozinha.</li></ol></div>
+    <p class="note" style="margin:0">O código troca a cada 30 segundos. Se não ler, espere o próximo.</p></div>`;
+  return `<div class="panel" style="flex-direction:row;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-bottom:22px"><span><span class="chip warn">○ Desconectado</span> <span class="sub" style="font-size:14px">Ligue o seu número de suporte para o painel acompanhar as conversas dele.</span></span><button class="btn primary" id="wa-ligar">Conectar meu WhatsApp</button></div>`;
+}
+async function carregarWhats(){
+  try { const r = await api('euforia-painel-whatsapp', { acao: 'status' }); if (r && r.ok) { const antes = W; W = r.estado; if (W === 'conectado') { WQR = ''; pararWhats(); if (antes === 'aguardando') toast('WhatsApp conectado!'); } if (!ocupado) render(); } } catch (e) {}
+}
+async function pedirQR(){
+  const r = await api('euforia-painel-whatsapp', { acao: 'conectar' });
+  if (!r || !r.ok) throw new Error((r && r.motivo) || 'erro');
+  W = r.estado; WQR = r.qr || ''; render();
+}
+function pararWhats(){ clearInterval(pararWhats.a); clearInterval(pararWhats.b); }
+async function ligarWhats(){
+  try { await pedirQR(); } catch (err) { toast(MOTIVO[err.message] || ERRO); return; }
+  pararWhats();
+  pararWhats.a = setInterval(carregarWhats, 4000);
+  pararWhats.b = setInterval(() => { if (W === 'aguardando') pedirQR().catch(() => {}); }, 30000);
+  setTimeout(() => { if (W !== 'conectado') { pararWhats(); W = 'desconectado'; WQR = ''; render(); } }, 300000);
+}
+
+async function carregarRespostas(){
+  try { const r = await api('euforia-painel-respostas'); if (r && r.ok) { R = r; if (!ocupado) render(); } } catch (e) {}
+}
+
 // Envio direto ao Drive em partes de 32 MB (mesmo jeito do portal do cliente). Devolve o link do arquivo.
 function putParte(url, f, ini, fim, total){
   return new Promise((ok, erro) => {
@@ -551,6 +600,21 @@ document.addEventListener('click', async e => {
     abrir(g.dataset.go); return;
   }
   const o = e.target.closest('#main [data-open]'); if (o) { abrir(o.dataset.open); return; }
+  const ds = e.target.closest('#main [data-dispensar]');
+  if (ds) {
+    ds.disabled = true;
+    try { const r = await api('euforia-painel-respostas', { acao: 'dispensar', msg: ds.dataset.dispensar, chat: ds.dataset.chat }); if (!r || !r.ok) throw new Error((r && r.motivo) || 'erro'); R.itens = R.itens.filter(x => x.msg !== ds.dataset.dispensar); render(); toast('Tirado da fila. O monitor não alerta mais sobre essa mensagem.'); }
+    catch (err) { ds.disabled = false; toast(MOTIVO[err.message] || ERRO); }
+    return;
+  }
+  if (e.target.id === 'wa-ligar') { e.target.disabled = true; ligarWhats(); return; }
+  if (e.target.id === 'wa-sair') {
+    if (!confirm('Desconectar o WhatsApp de suporte do painel?')) return;
+    e.target.disabled = true;
+    try { const r = await api('euforia-painel-whatsapp', { acao: 'desconectar' }); if (!r || !r.ok) throw new Error('erro'); W = 'desconectado'; render(); toast('WhatsApp desconectado.'); }
+    catch (err) { e.target.disabled = false; toast(ERRO); }
+    return;
+  }
   if (e.target.id === 'sair') { try { localStorage.removeItem(KEY); } catch (x) {} PIN = ''; D = null; $('#pin-err').textContent = ''; carregar(); }
 });
 document.addEventListener('change', e => {
@@ -579,11 +643,20 @@ document.addEventListener('submit', async e => {
 
 // Atualiza sozinho a cada 2 minutos enquanto a aba está aberta e nada está sendo enviado.
 setInterval(() => { if (D && !ocupado && !document.hidden && !$('#layer').innerHTML) carregar(true); }, 120000);
+// A fila de respostas muda mais rápido: atualiza a cada minuto quando a aba Responder está aberta.
+setInterval(() => { if (D && view === 'responder' && !ocupado && !document.hidden) carregarRespostas(); }, 60000);
 
 // Demonstração (?demo=1): dados de exemplo, nada é enviado.
 function demoApi(path, b){
   const wait = v => new Promise(r => setTimeout(() => r(v), 350));
   if (path === 'euforia-painel-fila') return wait(DEMO_D);
+  if (path === 'euforia-painel-whatsapp') {
+    if (b.acao === 'conectar') { demoApi.n = 0; return wait({ ok: true, estado: 'aguardando', qr: DEMO_QR }); }
+    if (b.acao === 'desconectar') return wait({ ok: true, estado: 'desconectado' });
+    if (W === 'aguardando') demoApi.n = (demoApi.n || 0) + 1;
+    return wait({ ok: true, estado: W === 'aguardando' ? (demoApi.n > 2 ? 'conectado' : 'aguardando') : (W || 'desconectado') });
+  }
+  if (path === 'euforia-painel-respostas') { if (b && b.acao === 'dispensar') return wait({ ok: true }); return wait(DEMO_R); }
   if (path === 'euforia-painel-arquivo') return wait({ ok: true, link: 'https://drive.google.com/demo' });
   if (path === 'euforia-painel-pedido') return wait({ ok: true, quem: b.modo === 'mao' ? 'Escritório, à mão' : (TIPOS.find(t => t.id === b.tipo) || {}).maq });
   if (path === 'euforia-painel-acao') {
@@ -609,6 +682,12 @@ const DEMO_D = {"ok":true,"nome":"Ismael (exemplo)","papel":"revisor","hoje":"20
   {"id":"k5","cod":411,"titulo":"","nome":"SHORTS 13-15","cliente":"c2","clienteNome":"Instituto Aurora (exemplo)","tipo":"Shorts","qtd":3,"status":"Em revisão","prazo":"2026-10-24","postar":"2026-10-28","link":"https://drive.google.com/demo","linkPost":"","obs":"","resp":["Victor"],"meu":false,"voltas":0},
   {"id":"k6","cod":405,"titulo":"","nome":"THUMB 03","cliente":"c4","clienteNome":"Paula Reis (exemplo)","tipo":"Thumbnail","qtd":1,"status":"Aprovado","prazo":"2026-10-23","postar":"2026-10-26","link":"https://drive.google.com/demo","linkPost":"","obs":"[Portal 25/10 10:06] Cliente aprovou","resp":["Lorena"],"meu":false,"voltas":0},
   {"id":"k7","cod":407,"titulo":"","nome":"CARROSSEL 08","cliente":"c1","clienteNome":"Dra. Helena (exemplo)","tipo":"Carrossel","qtd":1,"status":"Aguardando cliente","prazo":"2026-10-24","postar":"2026-10-27","link":"https://drive.google.com/demo","linkPost":"","obs":"","resp":["Lorena"],"meu":false,"voltas":0}]};
+
+const DEMO_QR = 'data:image/svg+xml;utf8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 21 21" shape-rendering="crispEdges"><rect width="21" height="21" fill="#fff"/><path d="M1 1h7v7H1zM13 1h7v7h-7zM1 13h7v7H1z" fill="#111"/><path d="M2 2h5v5H2zM14 2h5v5h-5zM2 14h5v5H2z" fill="#fff"/><path d="M3 3h3v3H3zM15 3h3v3h-3zM3 15h3v3H3zM10 2h1v3h-1zM9 9h3v3H9zM13 10h2v1h-2zM16 13h3v2h-3zM10 15h3v1h-3zM13 17h2v3h-2zM17 17h3v1h-3z" fill="#111"/></svg>');
+const DEMO_R = {"ok":true,"agora":"11:58","itens":[
+  {"chat":"1@g.us","msg":"m1","grupo":"EUFORIA | Paula Reis","cliente":"Paula Reis (exemplo)","faixa":"B","atencao":true,"sensivel":true,"direcao":false,"tema":"reclamação","resumo":"Reclama que o vídeo de ontem saiu com legenda errada","autor":"Paula","texto":"Gente, o vídeo de ontem saiu com o nome do curso errado na legenda 😕","contexto":"25/10 18:02 Euforia: Vídeo 03 no ar!\n26/10 09:14 Paula: Gente, o vídeo de ontem saiu com o nome do curso errado na legenda 😕","qtd":1,"desde":"26/10 09:14","espera":164},
+  {"chat":"2@g.us","msg":"m2","grupo":"EUFORIA | Dra. Helena","cliente":"Dra. Helena (exemplo)","faixa":"A","atencao":true,"sensivel":true,"direcao":true,"tema":"financeiro","resumo":"","autor":"Helena","texto":"","contexto":"","qtd":1,"desde":"26/10 11:20","espera":38},
+  {"chat":"3@g.us","msg":"m3","grupo":"EUFORIA | Marcos Lima","cliente":"Marcos Lima (exemplo)","faixa":"B","atencao":false,"sensivel":false,"direcao":false,"tema":"material","resumo":"Mandou o bruto do vídeo 12 e pergunta se chegou","autor":"Marcos","texto":"Subi o vídeo 12 no drive, chegou certinho?","contexto":"26/10 11:31 Marcos: Subi o vídeo 12 no drive, chegou certinho?","qtd":2,"desde":"26/10 11:31","espera":27}]};
 
 carregar();
 })();
