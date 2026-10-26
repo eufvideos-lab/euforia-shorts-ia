@@ -38,7 +38,7 @@ export type Cena = Base &
     | { tipo: 'logo'; logo: string; botao: string; botaoEm: number }
     | { tipo: 'lista'; titulo: Palavra[]; itens: { t: string; sub?: string; em: number; cor?: string }[]; estilo?: 'numeros' | 'faixas' }
     | { tipo: 'ciclo'; titulo: Palavra[]; card: string; etapas: { t: string; quem?: string; em: number }[]; saiEm?: number; saiTexto?: string }
-    | { tipo: 'navegador'; telas: { src: string; em: number }[]; dispositivo?: 'computador' | 'celular'; proporcao?: number; rotulo?: string; texto?: Palavra[]; camera?: Camera[]; cursor?: Cursor[]; destaques?: Destaque[] }
+    | { tipo: 'navegador'; telas: { src: string; em: number }[]; dispositivo?: 'computador' | 'celular'; proporcao?: number; rotulo?: string; endereco?: string; texto?: Palavra[]; camera?: Camera[]; cursor?: Cursor[]; destaques?: Destaque[] }
     | { tipo: 'abas'; titulo: Palavra[]; abas: Aba[] }
     | { tipo: 'institucional'; logo: string; titulo: string; linhas: string[]; pilares: { t: string; icone: 'coluna' | 'livro' | 'coracao' }[] }
   );

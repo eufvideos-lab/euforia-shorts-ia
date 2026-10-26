@@ -49,6 +49,136 @@
    ]
   },
   {
+   "tipo": "telas",
+   "inicio": 3.3,
+   "fim": 11.0,
+   "telas": [
+    "painel/fila-editor.png",
+    "painel/pedir.png",
+    "painel/responder.png"
+   ],
+   "titulo": [
+    {
+     "t": "Todo",
+     "em": 1.45
+    },
+    {
+     "t": "o",
+     "em": 1.99
+    },
+    {
+     "t": "trabalho",
+     "em": 2.1
+    },
+    {
+     "t": "num",
+     "em": 4.45,
+     "quebra": true
+    },
+    {
+     "t": "lugar",
+     "em": 4.62
+    },
+    {
+     "t": "só",
+     "em": 5.04,
+     "destaque": true
+    }
+   ],
+   "pilulas": [
+    {
+     "t": "FILA",
+     "em": 5.9
+    },
+    {
+     "t": "ENTREGAS",
+     "em": 6.3
+    },
+    {
+     "t": "PEDIDOS",
+     "em": 6.7
+    }
+   ]
+  },
+  {
+   "tipo": "navegador",
+   "inicio": 11.0,
+   "fim": 20.6,
+   "endereco": "painel da equipe",
+   "rotulo": "PRIMEIRO ACESSO",
+   "telas": [
+    {
+     "src": "painel/pin.png",
+     "em": 0
+    }
+   ],
+   "texto": [
+    {
+     "t": "Link",
+     "em": 1.24
+    },
+    {
+     "t": "pessoal",
+     "em": 1.49
+    },
+    {
+     "t": "+",
+     "em": 5.3,
+     "quebra": true
+    },
+    {
+     "t": "PIN",
+     "em": 5.48,
+     "destaque": true
+    },
+    {
+     "t": "de",
+     "em": 5.73,
+     "quebra": true
+    },
+    {
+     "t": "4",
+     "em": 5.88
+    },
+    {
+     "t": "números",
+     "em": 6.28
+    }
+   ],
+   "camera": [
+    {
+     "em": 4.6,
+     "x": 0.5,
+     "y": 0.5,
+     "zoom": 1.7
+    }
+   ],
+   "cursor": [
+    {
+     "em": 5.0,
+     "x": 0.5,
+     "y": 0.55,
+     "clique": true
+    },
+    {
+     "em": 6.9,
+     "x": 0.5,
+     "y": 0.66,
+     "clique": true
+    }
+   ],
+   "destaques": [
+    {
+     "em": 5.2,
+     "ate": 6.6,
+     "x": 0.365,
+     "y": 0.505,
+     "w": 0.27,
+     "h": 0.085
+    }
+   ]
+  },
+  {
    "tipo": "lista",
    "inicio": 20.6,
    "fim": 33.3,
@@ -204,6 +334,177 @@
    ]
   },
   {
+   "tipo": "navegador",
+   "inicio": 47.9,
+   "fim": 54.4,
+   "endereco": "painel da equipe",
+   "rotulo": "MINHA FILA",
+   "telas": [
+    {
+     "src": "painel/fila-editor.png",
+     "em": 0
+    },
+    {
+     "src": "painel/drawer-comecar.png",
+     "em": 0.55
+    }
+   ],
+   "camera": [
+    {
+     "em": 1.5,
+     "x": 0.82,
+     "y": 0.33,
+     "zoom": 1.8
+    },
+    {
+     "em": 4.6,
+     "x": 0.78,
+     "y": 0.4,
+     "zoom": 1.6
+    }
+   ],
+   "cursor": [
+    {
+     "em": 0.3,
+     "x": 0.31,
+     "y": 0.42,
+     "clique": true
+    },
+    {
+     "em": 2.0,
+     "x": 0.8,
+     "y": 0.37
+    },
+    {
+     "em": 5.48,
+     "x": 0.69,
+     "y": 0.42,
+     "clique": true
+    }
+   ],
+   "destaques": [
+    {
+     "em": 1.9,
+     "ate": 4.3,
+     "x": 0.65,
+     "y": 0.345,
+     "w": 0.33,
+     "h": 0.05
+    }
+   ]
+  },
+  {
+   "tipo": "navegador",
+   "inicio": 54.4,
+   "fim": 65.1,
+   "endereco": "painel da equipe",
+   "rotulo": "ENTREGAR",
+   "telas": [
+    {
+     "src": "painel/drawer-fazendo.png",
+     "em": 0
+    }
+   ],
+   "camera": [
+    {
+     "em": 0.9,
+     "x": 0.82,
+     "y": 0.52,
+     "zoom": 1.8
+    },
+    {
+     "em": 5.6,
+     "x": 0.78,
+     "y": 0.8,
+     "zoom": 1.7
+    }
+   ],
+   "cursor": [
+    {
+     "em": 1.4,
+     "x": 0.82,
+     "y": 0.53,
+     "clique": true
+    },
+    {
+     "em": 6.9,
+     "x": 0.715,
+     "y": 0.86,
+     "clique": true
+    }
+   ],
+   "destaques": [
+    {
+     "em": 1.2,
+     "ate": 5.2,
+     "x": 0.655,
+     "y": 0.42,
+     "w": 0.33,
+     "h": 0.19
+    },
+    {
+     "em": 7.0,
+     "ate": 10.0,
+     "x": 0.655,
+     "y": 0.835,
+     "w": 0.125,
+     "h": 0.05
+    }
+   ]
+  },
+  {
+   "tipo": "navegador",
+   "inicio": 65.1,
+   "fim": 72.8,
+   "endereco": "painel da equipe",
+   "rotulo": "AJUSTES",
+   "telas": [
+    {
+     "src": "painel/fila-editor.png",
+     "em": 0
+    }
+   ],
+   "camera": [
+    {
+     "em": 0.8,
+     "x": 0.5,
+     "y": 0.33,
+     "zoom": 1.7
+    }
+   ],
+   "cursor": [
+    {
+     "em": 3.6,
+     "x": 0.3,
+     "y": 0.36
+    },
+    {
+     "em": 6.58,
+     "x": 0.91,
+     "y": 0.33,
+     "clique": true
+    }
+   ],
+   "destaques": [
+    {
+     "em": 0.9,
+     "ate": 3.6,
+     "x": 0.195,
+     "y": 0.285,
+     "w": 0.77,
+     "h": 0.105
+    },
+    {
+     "em": 4.0,
+     "ate": 6.3,
+     "x": 0.205,
+     "y": 0.345,
+     "w": 0.2,
+     "h": 0.03
+    }
+   ]
+  },
+  {
    "tipo": "ciclo",
    "inicio": 72.8,
    "fim": 83.1,
@@ -263,6 +564,161 @@
    ],
    "saiEm": 9.42,
    "saiTexto": "Saiu da fila"
+  },
+  {
+   "tipo": "navegador",
+   "inicio": 83.1,
+   "fim": 94.1,
+   "endereco": "painel da equipe",
+   "rotulo": "PEDIR AO ESCRITÓRIO",
+   "telas": [
+    {
+     "src": "painel/pedir.png",
+     "em": 0
+    }
+   ],
+   "camera": [
+    {
+     "em": 6.4,
+     "x": 0.42,
+     "y": 0.3,
+     "zoom": 1.6
+    },
+    {
+     "em": 9.0,
+     "x": 0.4,
+     "y": 0.62,
+     "zoom": 1.6
+    }
+   ],
+   "cursor": [
+    {
+     "em": 2.0,
+     "x": 0.1,
+     "y": 0.2,
+     "clique": true
+    },
+    {
+     "em": 7.25,
+     "x": 0.4,
+     "y": 0.2,
+     "clique": true
+    },
+    {
+     "em": 8.35,
+     "x": 0.3,
+     "y": 0.29,
+     "clique": true
+    },
+    {
+     "em": 9.4,
+     "x": 0.42,
+     "y": 0.65,
+     "clique": true
+    },
+    {
+     "em": 10.5,
+     "x": 0.255,
+     "y": 0.745,
+     "clique": true
+    }
+   ],
+   "destaques": [
+    {
+     "em": 0.3,
+     "ate": 4.0,
+     "x": 0.64,
+     "y": 0.13,
+     "w": 0.33,
+     "h": 0.33
+    }
+   ]
+  },
+  {
+   "tipo": "navegador",
+   "inicio": 94.1,
+   "fim": 106.0,
+   "endereco": "painel da equipe",
+   "rotulo": "RESPONDER · ISMAEL E RÔMULO",
+   "telas": [
+    {
+     "src": "painel/responder.png",
+     "em": 0
+    },
+    {
+     "src": "painel/responder-qr.png",
+     "em": 3.8
+    },
+    {
+     "src": "painel/responder-ok.png",
+     "em": 8.4
+    }
+   ],
+   "camera": [
+    {
+     "em": 2.6,
+     "x": 0.85,
+     "y": 0.21,
+     "zoom": 1.8
+    },
+    {
+     "em": 4.3,
+     "x": 0.37,
+     "y": 0.33,
+     "zoom": 1.6
+    },
+    {
+     "em": 8.6,
+     "x": 0.55,
+     "y": 0.55,
+     "zoom": 1.25
+    }
+   ],
+   "cursor": [
+    {
+     "em": 3.5,
+     "x": 0.885,
+     "y": 0.21,
+     "clique": true
+    }
+   ]
+  },
+  {
+   "tipo": "navegador",
+   "inicio": 106.0,
+   "fim": 108.9,
+   "dispositivo": "celular",
+   "proporcao": 2.164102564102564,
+   "telas": [
+    {
+     "src": "painel/mobile-fila.png",
+     "em": 0
+    }
+   ],
+   "texto": [
+    {
+     "t": "Igualzinho",
+     "em": 1.48
+    },
+    {
+     "t": "no",
+     "em": 2.24,
+     "quebra": true
+    },
+    {
+     "t": "celular",
+     "em": 2.33,
+     "destaque": true
+    }
+   ],
+   "cursor": [
+    {
+     "em": 1.8,
+     "x": 0.5,
+     "y": 0.45,
+     "clique": true
+    }
+   ]
   },
   {
    "tipo": "pergunta",
