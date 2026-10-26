@@ -565,7 +565,7 @@ const VIEWS = {
         <span class="act">${G.podeMudar ? `<button class="btn" data-definir="${c.id}">Definir dia</button>` : ''}</span></li>`).join('')}</ul></section>` : ''}
       <p class="note">A grade é o combinado fixo de cada cliente. A data de cada peça continua no card ("Vai ao ar"). ${G.podeMudar ? 'Toda mudança fica registrada com seu nome e a hora.' : 'Quem ajusta a grade é o Ismael ou o Rômulo.'}</p>`;
     } },
-  pedir: { nome: 'Pedir ao escritório', pode: () => true,
+  pedir: { nome: 'Pedir ao escritório', pode: () => papel() !== 'editor',
     html(){
       const grupos = Object.entries(TIPOS.reduce((g, t) => ((g[t.g] = g[t.g] || []).push(t), g), {}));
       const nomes = D.clientes.slice().sort((a, b) => a.nome.localeCompare(b.nome));

@@ -48,7 +48,7 @@ const hoje = DateTime.now().setZone(Z);
 const teste = r.papel === 'teste';
 const manual = p.modo === 'mao' || !(c && c[2]);
 let erro = '';
-if (!acessoOk) erro = 'acesso';
+if (!acessoOk || r.papel === 'editor') erro = 'acesso';
 else if (!c) erro = 'tipo';
 else if (!nome || String((ficha.parent || {}).database_id || '').replace(/-/g, '') !== '3ddc91b406be49e98e630c298d9162d8' || txt(fp['Situação']) === 'Encerrado') erro = 'cliente';
 else if (!p.prazo || p.prazo < hoje.toISODate()) erro = 'prazo';
