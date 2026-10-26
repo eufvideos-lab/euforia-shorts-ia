@@ -3,12 +3,16 @@ import { Composition } from 'remotion';
 import { ShortViral } from './ShortViral';
 import { ShortInstitucional } from './ShortInstitucional';
 import type { ShortProps } from './types';
+import { MotionCena } from './motion/MotionCena';
+import type { MotionProps } from './motion/tipos';
 import '@fontsource/montserrat/700.css';
 import '@fontsource/montserrat/800.css';
 import '@fontsource/montserrat/900.css';
 import '@fontsource/poppins/500.css';
 import '@fontsource/poppins/600.css';
 import '@fontsource/poppins/700.css';
+import '@fontsource/montserrat/600.css';
+import '@fontsource/cormorant-garamond/700-italic.css';
 
 const exemplo: ShortProps = {
   fps: 30,
@@ -48,6 +52,19 @@ export const Root: React.FC = () => (
       durationInFrames={150}
       defaultProps={{ ...exemplo, estilo: { corDestaque: '#E8B931', fonte: 'Poppins' } } as unknown as Record<string, unknown>}
       calculateMetadata={meta}
+    />
+    <Composition
+      id="MotionCena"
+      component={MotionCena as unknown as React.FC<Record<string, unknown>>}
+      width={1920}
+      height={1080}
+      fps={30}
+      durationInFrames={150}
+      defaultProps={{ fps: 30, largura: 1920, altura: 1080, duracao: 5, marca: {}, cenas: [] } as unknown as Record<string, unknown>}
+      calculateMetadata={({ props }) => {
+        const p = props as unknown as MotionProps;
+        return { fps: p.fps, width: p.largura, height: p.altura, durationInFrames: Math.ceil(p.duracao * p.fps) };
+      }}
     />
   </>
 );

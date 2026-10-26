@@ -1,0 +1,44 @@
+// Máquina de Motion: uma peça = marca do cliente + lista de cenas (cada uma de um tipo pronto).
+// Tempos em segundos. Nas cenas, `em` é contado a partir do início da cena.
+
+export type Marca = {
+  primaria: string; // cor principal (ex.: verde NA #076358)
+  secundaria: string; // cor de apoio (ex.: #2A978B)
+  escura: string; // fundo escuro / texto forte
+  fundo: string; // fundo claro (normalmente branco)
+  texto: string; // cor do texto corrido
+  fonteTitulo: string;
+  fonteCorpo: string;
+  fonteDestaque: string; // palavra em destaque (serifa itálica)
+};
+
+// imagem: a palavra vira um logo (ex.: Netflix) que entra com brilho e faixas de luz
+export type Palavra = { t: string; em: number; destaque?: boolean; quebra?: boolean; imagem?: string };
+
+// Vídeo da pessoa: tamanho do arquivo e ponto do rosto (px no arquivo) que fica no centro do quadro
+export type Enquadre = { videoTamanho: [number, number]; foco: [number, number] };
+
+// transicao: faixa diagonal nas cores da marca cobrindo o corte (padrão) ou nenhuma (cena continua a anterior)
+type Base = { inicio: number; fim: number; transicao?: 'faixa' | 'nenhuma' };
+
+export type Cena = Base &
+  (
+    | { tipo: 'pergunta'; palavras: Palavra[] }
+    | { tipo: 'telas'; telas: string[]; titulo: Palavra[]; pilulas: { t: string; em: number }[] }
+    | { tipo: 'ritmo'; linha1: Palavra[]; linha2: Palavra[]; tela: string; troca: number; episodios: number }
+    | { tipo: 'parede'; cards: string[]; texto: Palavra[]; logo: string; logoEm: number }
+    | ({ tipo: 'apresentador'; video: string; videoInicio: number; texto: Palavra[] } & Enquadre)
+    | ({ tipo: 'preco'; video: string; videoInicio: number; rotulo: string; moeda: string; valor: string; sufixo: string; cobrirEm?: number } & Enquadre)
+    | { tipo: 'logo'; logo: string; botao: string; botaoEm: number }
+    | { tipo: 'institucional'; logo: string; titulo: string; linhas: string[]; pilares: { t: string; icone: 'coluna' | 'livro' | 'coracao' }[] }
+  );
+
+export type MotionProps = {
+  fps: number;
+  largura: number;
+  altura: number;
+  duracao: number;
+  audio?: string | null; // arquivo em public/ (narração/trilha original)
+  marca: Marca;
+  cenas: Cena[];
+};

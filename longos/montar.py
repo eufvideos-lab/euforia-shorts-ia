@@ -21,7 +21,7 @@ TOTAL = segs[-1]['saida'] + segs[-1]['dur']
 KWD, END = 2.8, 8.0
 NA = plano.get('modelo') == 'nova-acropole'
 MODELOS = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'modelos')
-ENCERRAMENTO_NA = '1aGYR5P_zELGIDjghjC1JGL4be6h2F15S'  # ACROPOLEPLAY.mov: anúncio da Acrópole Play + cartão final da NA
+ENCERRAMENTO_NA = '118KGGb-75bLeEMHKnrIcZGi4Zrwod_71'  # CTA Acrópole Play em motion (v3, aprovado 26/10/2026); antigo: ACROPOLEPLAY.mov 1aGYR5P_zELGIDjghjC1JGL4be6h2F15S
 
 
 def t_saida(idx):
