@@ -146,6 +146,7 @@ textarea{min-height:90px;resize:vertical}
 .steps li.now{background:var(--grad);color:#fff}
 .drop{border:2px dashed var(--line);border-radius:12px;padding:20px;text-align:center;display:flex;flex-direction:column;gap:8px;align-items:center;font-size:14px;color:var(--muted)}
 .drop.over{border-color:var(--accent);background:var(--accent-soft)}
+.falta{display:flex;flex-direction:column;gap:4px;border-radius:12px;padding:12px 14px;background:var(--bad-soft);color:var(--bad);font-size:14px}.falta span{color:var(--ink)}
 .drop.has{border-style:solid;border-color:var(--ok);background:var(--ok-soft);color:var(--ok)}
 .hist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px;font-size:14px}
 .hist li{display:grid;grid-template-columns:96px minmax(0,1fr);gap:10px}
@@ -375,10 +376,15 @@ async function carregar(silencioso){
 
 // Regra de ouro: ajustes primeiro, depois o que vai ao ar antes, faixa A antes de B e C, depois o prazo.
 function ordenar(a){ return a.sort((x, y) => (y.status === 'Ajustes') - (x.status === 'Ajustes') || diff(x.postar) - diff(y.postar) || String(cli(x).faixa || 'Z').localeCompare(String(cli(y).faixa || 'Z')) || diff(x.prazo) - diff(y.prazo)); }
-function classe(c){ const k = diff(c.prazo); if (c.status === 'Ajustes') return 'adj'; if (ABERTO.includes(c.status) && k < 0) return 'late'; if (ABERTO.includes(c.status) && k === 0) return 'today'; return ''; }
+// A Máquina do Escritório devolve o pedido a quem pediu com "🏢 Escritório IA = Falta informação" e escreve na Obs o que falta.
+const falta = c => c.meu && c.escritorio === 'Falta informação' && ['A fazer', 'Fazendo', 'Ajustes'].includes(c.status);
+function oQueFalta(c){ const l = String(c.obs || '').split('\n').find(x => /Falta informação:/.test(x)); return l ? l.replace(/^.*Falta informação:\s*/, '') : 'Veja as observações do card.'; }
+let CANEXOS = [];
+function classe(c){ const k = diff(c.prazo); if (falta(c)) return 'late'; if (c.status === 'Ajustes') return 'adj'; if (ABERTO.includes(c.status) && k < 0) return 'late'; if (ABERTO.includes(c.status) && k === 0) return 'today'; return ''; }
 function ultimoAjuste(c){ const l = String(c.obs || '').split('\n').find(x => /pediu ajuste:/.test(x)); return l ? l.replace(/^.*pediu ajuste:\s*/, '') : ''; }
 function chips(c){
   const cl = cli(c), k = diff(c.prazo); let h = '';
+  if (falta(c)) h += `<span class="chip red">Falta informação</span>`;
   h += `<span class="chip">${esc(c.tipo || 'Entrega')}${c.qtd > 1 ? ' ×' + c.qtd : ''}</span>`;
   if (cl.faixa) h += `<span class="chip">Faixa ${esc(cl.faixa)}</span>`;
   if (cl.atencao) h += `<span class="chip red">🔴 Atenção</span>`;
@@ -390,6 +396,7 @@ function chips(c){
   return h;
 }
 function proximo(c){
+  if (falta(c)) return { label: 'Completar pedido', cls: 'primary' };
   if (c.meu && c.status === 'A fazer') return { label: 'Comecei', cls: 'primary', acao: 'comecar' };
   if (c.meu && c.status === 'Fazendo') return { label: 'Mandar para revisão', cls: 'primary' };
   if (c.meu && c.status === 'Ajustes') return { label: 'Mandar o ajuste', cls: 'primary' };
@@ -398,9 +405,9 @@ function proximo(c){
   return null;
 }
 function linha(c){
-  const p = proximo(c), aj = c.status === 'Ajustes' ? ultimoAjuste(c) : '';
+  const p = proximo(c), aj = c.status === 'Ajustes' && !falta(c) ? ultimoAjuste(c) : '';
   return `<li class="item ${classe(c)}"><span class="stripe"></span>
-    <button class="main" data-open="${c.id}"><span class="t">${esc(c.clienteNome)} · ${esc(c.nome)}</span><span class="meta">${chips(c)}</span>${aj ? `<span class="sub" style="font-size:13px">Ajuste pedido: ${esc(aj)}</span>` : ''}</button>
+    <button class="main" data-open="${c.id}"><span class="t">${esc(c.clienteNome)} · ${esc(c.nome)}</span><span class="meta">${chips(c)}</span>${aj ? `<span class="sub" style="font-size:13px">Ajuste pedido: ${esc(aj)}</span>` : ''}${falta(c) ? `<span class="sub" style="font-size:13px;color:var(--bad)">O escritório precisa: ${esc(oQueFalta(c))}</span>` : ''}</button>
     <span class="act">${p ? `<button class="btn ${p.cls}" data-go="${c.id}">${p.label}</button>` : `<button class="btn" data-open="${c.id}">Abrir</button>`}</span></li>`;
 }
 function grupo(titulo, lista, vazio){
@@ -491,9 +498,10 @@ const VIEWS = {
   fila: { nome: 'Minha fila', pode: () => true, badge: () => D.cards.filter(c => c.meu && ABERTO.includes(c.status)).length,
     html(){
       const meus = D.cards.filter(c => c.meu && ABERTO.includes(c.status));
-      const ag = ordenar(meus.filter(c => c.status === 'Ajustes' || diff(c.prazo) <= 0));
-      const am = ordenar(meus.filter(c => c.status !== 'Ajustes' && diff(c.prazo) === 1));
-      const sem = ordenar(meus.filter(c => c.status !== 'Ajustes' && diff(c.prazo) > 1));
+      const faltas = ordenar(meus.filter(falta)), resto = meus.filter(c => !falta(c));
+      const ag = ordenar(resto.filter(c => c.status === 'Ajustes' || diff(c.prazo) <= 0));
+      const am = ordenar(resto.filter(c => c.status !== 'Ajustes' && diff(c.prazo) === 1));
+      const sem = ordenar(resto.filter(c => c.status !== 'Ajustes' && diff(c.prazo) > 1));
       const comigo = ordenar(D.cards.filter(c => c.meu && ['Em revisão', 'Aguardando cliente'].includes(c.status)));
       const atras = meus.filter(c => diff(c.prazo) < 0).length;
       return `<div class="head"><div><p class="eyebrow">${esc(D.hojeTexto)}</p><h1>${saud()}, ${esc(primeiro())}</h1></div><p class="sub">Comece pelo primeiro da lista. A ordem já segue a regra de ouro.</p></div>
@@ -503,6 +511,7 @@ const VIEWS = {
         <div class="stat"><span class="v">${meus.filter(c => c.status === 'Ajustes').length}</span><span>ajustes pedidos</span></div>
         <div class="stat"><span class="v">${comigo.length}</span><span>na revisão ou com o cliente</span></div>
       </div>
+      ${grupo('Falta informação para o escritório', faltas, '')}
       ${grupo('Fazer agora', ag, 'Nada atrasado nem para hoje.')}
       ${grupo('Amanhã', am, 'Nada para amanhã.')}
       ${grupo('Resto da fila', sem, 'Nada mais na fila.')}
@@ -655,9 +664,17 @@ function abrir(id){
   const passa = posta() && !['Postado', 'Cancelado'].includes(c.status);
   const devolve = c.meu && !['Postado', 'Cancelado'].includes(c.status);
   let acoes = '';
-  if (c.livre) acoes = `<p class="note">Esse card está na Fila de demandas, sem dono.</p><div class="actions"><button class="btn primary" data-act="pegar">Pegar para mim</button></div>`;
-  if (c.meu && c.status === 'A fazer') acoes = `<div class="actions"><button class="btn primary" data-act="comecar">Comecei</button></div>`;
-  if (c.meu && ['Fazendo', 'Ajustes'].includes(c.status)) acoes = `
+  if (falta(c)) acoes = `
+    <div class="falta"><b>O escritório precisa de mais informação</b><span>${esc(oQueFalta(c))}</span></div>
+    <label for="ctx">O que você quer acrescentar (obrigatório)<textarea id="ctx" maxlength="1200" placeholder="Ex.: tema é 'os 3 erros do primeiro emprego'; foto dela sorrindo, de blazer azul"></textarea></label>
+    <div class="anexos"><div class="drop" id="cdrop"><b>Solte arquivos aqui</b><span>ou</span><label class="btn" for="cfile" style="flex-direction:row">Escolher arquivos<input type="file" id="cfile" multiple hidden></label><span class="mono">prints, fotos, docs, pptx · vão para a pasta do cliente no Drive</span></div><ul class="alist" id="calist"></ul></div>
+    <div class="up" id="up" hidden><span class="bar"><span id="up-bar" style="width:0%"></span></span><span class="mono" id="up-txt"></span></div>
+    <label for="clinks">Links (um por linha, opcional)<textarea id="clinks" rows="2" placeholder="https://"></textarea></label>
+    <div class="actions"><button class="btn primary" data-act="completar">Completar e devolver ao escritório</button></div>
+    <p class="note">O card volta para a fila da máquina com o que você escreveu e os anexos.</p>`;
+  else if (c.livre) acoes = `<p class="note">Esse card está na Fila de demandas, sem dono.</p><div class="actions"><button class="btn primary" data-act="pegar">Pegar para mim</button></div>`;
+  else if (c.meu && c.status === 'A fazer') acoes = `<div class="actions"><button class="btn primary" data-act="comecar">Comecei</button></div>`;
+  else if (c.meu && ['Fazendo', 'Ajustes'].includes(c.status)) acoes = `
     <div class="drop" id="drop"><b>Solte o arquivo aqui</b><span>ou</span><label class="btn" for="file" style="flex-direction:row">Escolher arquivo<input type="file" id="file" hidden></label><span class="mono">vai para a pasta do cliente no Drive</span></div>
     <div class="up" id="up" hidden><span class="bar"><span id="up-bar" style="width:0%"></span></span><span class="mono" id="up-txt"></span></div>
     <p class="or">ou cole o link</p>
@@ -696,6 +713,16 @@ function abrir(id){
     <div><h3 style="font-size:16px;margin-bottom:8px">Observações e histórico</h3>${c.obs ? `<p class="obs">${esc(c.obs)}</p>` : '<p class="sub">Sem observações.</p>'}</div>
   </div></aside>`;
   let arquivo = null;
+  CANEXOS = [];
+  const clista = () => { const l = $('#calist'); if (l) l.innerHTML = CANEXOS.map((f, j) => `<li><span>📎 ${esc(f.name)} <span class="mono">${(f.size / 1048576).toFixed(1)} MB</span></span><button type="button" class="btn" data-tiracanexo="${j}">Tirar</button></li>`).join(''); };
+  const cjuntar = lista => { for (const f of lista) if (CANEXOS.length < 10 && f.size > 0) CANEXOS.push(f); if (lista.length && CANEXOS.length >= 10) toast('Até 10 arquivos.'); clista(); };
+  const cdrop = $('#cdrop');
+  if (cdrop) {
+    $('#cfile').onchange = e => { cjuntar([...e.target.files]); e.target.value = ''; };
+    cdrop.ondragover = e => { e.preventDefault(); cdrop.classList.add('over'); };
+    cdrop.ondragleave = () => cdrop.classList.remove('over');
+    cdrop.ondrop = e => { e.preventDefault(); cdrop.classList.remove('over'); cjuntar([...e.dataTransfer.files]); };
+  }
   const drop = $('#drop');
   if (drop) {
     const marcar = f => { arquivo = f; drop.className = 'drop has'; drop.innerHTML = `<b>✓ ${esc(f.name)}</b><span class="mono">${(f.size / 1048576).toFixed(1)} MB · sobe quando você mandar</span>`; };
@@ -706,8 +733,10 @@ function abrir(id){
   }
   $('#layer').onclick = async e => {
     if (e.target.closest('[data-x]')) { if (!ocupado) fechar(); return; }
+    const tc = e.target.closest('[data-tiracanexo]'); if (tc && !ocupado) { CANEXOS.splice(Number(tc.dataset.tiracanexo), 1); clista(); return; }
     const a = e.target.closest('[data-act]'); if (!a || ocupado) return;
     const act = a.dataset.act;
+    if (act === 'completar' && $('#ctx').value.trim().length < 3) { $('#ctx').focus(); toast('Escreva o que está faltando antes de devolver.'); return; }
     if (act === 'mostrar-ajuste') { $('#lmotivo').hidden = false; $('#motivo').focus(); return; }
     if (act === 'ajuste' && $('#motivo').value.trim().length < 3) { $('#motivo').focus(); toast('Escreva o ajuste antes de mandar.'); return; }
     if ((act === 'agendei' || act === 'postei') && !/^https:\/\//.test($('#lpost').value.trim())) { $('#lpost').focus(); toast('Cole o link da postagem (começa com https://).'); return; }
@@ -721,12 +750,18 @@ function abrir(id){
       if (act === 'ajuste') texto = $('#motivo').value.trim();
       if (act === 'agendei' || act === 'postei') link = $('#lpost').value.trim();
       if (act === 'passar') texto = $('#pnota').value.trim();
+      const anexos = [];
+      if (act === 'completar') {
+        texto = $('#ctx').value.trim();
+        for (let j = 0; j < CANEXOS.length; j++) { $('#up').hidden = false; $('#up-txt').textContent = 'Enviando anexo ' + (j + 1) + ' de ' + CANEXOS.length + '…'; anexos.push({ nome: CANEXOS[j].name, link: await enviar({ modo: 'pedido', cliente: c.cliente }, CANEXOS[j]) }); }
+        $('#clinks').value.split(/\s+/).filter(x => /^https:\/\/\S+$/.test(x)).slice(0, 10).forEach((l, j) => anexos.push({ nome: 'Link ' + (j + 1), link: l }));
+      }
       let acao = act, fim = '';
       if (act === 'fim') { const v = document.querySelector('input[name=fim]:checked').value; acao = v === 'naoemeu' ? 'naoemeu' : 'jafeito'; fim = acao === 'jafeito' ? v : ''; texto = $('#fmot').value.trim(); link = /^https:\/\//.test($('#flk').value.trim()) ? $('#flk').value.trim() : ''; }
-      const r = await api('euforia-painel-acao', { card: c.id, acao, texto, link, fim, para: act === 'passar' ? $('#pp').value : '' });
+      const r = await api('euforia-painel-acao', { card: c.id, acao, texto, link, fim, anexos, para: act === 'passar' ? $('#pp').value : '' });
       if (!r || !r.ok) throw new Error((r && r.motivo) || 'erro');
       ocupado = false; fechar();
-      toast({ comecar: 'Bom trabalho! Card em Fazendo.', revisao: 'Mandado para revisão. O Ismael foi avisado.', aprovar: 'Aprovado. Agora é com o cliente.', ajuste: 'Voltou para ajuste com o seu recado.', agendei: 'Marcado como agendado.', postei: 'Marcado como postado.', passar: 'Card passado. A pessoa foi avisada.', fim: 'Pronto, ficou registrado e a equipe foi avisada.', pegar: 'É seu! O card já está na sua fila.' }[act]);
+      toast({ comecar: 'Bom trabalho! Card em Fazendo.', revisao: 'Mandado para revisão. O Ismael foi avisado.', aprovar: 'Aprovado. Agora é com o cliente.', ajuste: 'Voltou para ajuste com o seu recado.', agendei: 'Marcado como agendado.', postei: 'Marcado como postado.', passar: 'Card passado. A pessoa foi avisada.', fim: 'Pronto, ficou registrado e a equipe foi avisada.', pegar: 'É seu! O card já está na sua fila.', completar: 'Pronto! O pedido voltou para a fila do escritório.' }[act]);
       await carregar(true);
     } catch (err) {
       ocupado = false;
@@ -1143,6 +1178,7 @@ function demoApi(path, b){
   if (path === 'euforia-painel-pedido') return wait({ ok: true, quem: b.modo === 'mao' ? 'Escritório, à mão' : (TIPOS.find(t => t.id === b.tipo) || {}).maq });
   if (path === 'euforia-painel-acao') {
     const c = DEMO_D.cards.find(x => x.id === b.card);
+    if (b.acao === 'completar') { DEMO_D.cards = DEMO_D.cards.filter(x => x !== c); return wait({ ok: true, status: 'A fazer' }); }
     if (b.acao === 'pegar') { c.livre = false; c.meu = true; c.resp = [DEMO_D.nome]; return wait({ ok: true, status: c.status }); }
     if (b.acao === 'naoemeu' || b.acao === 'jafeito') { DEMO_D.cards = DEMO_D.cards.filter(x => x !== c); return wait({ ok: true, status: b.fim || c.status }); }
     if (b.acao === 'passar') { const n = PASSAR.find(x => x[0] === b.para)[1]; c.resp = [n]; c.meu = false; c.obs = '[Painel 26/10 ' + new Date().toTimeString().slice(0, 5) + '] ' + DEMO_D.nome + ' passou para ' + n + (b.texto ? ': ' + b.texto : '') + (c.obs ? '\n' + c.obs : ''); return wait({ ok: true, status: c.status }); }
@@ -1160,6 +1196,7 @@ const DEMO_D = {"ok":true,"nome":"Ismael (exemplo)","papel":"revisor","hoje":"20
   {"id":"c3","nome":"Marcos Lima (exemplo)","faixa":"B","atencao":false,"padroes":"Cortes secos, sem música por baixo da fala.","gosta":""},
   {"id":"c4","nome":"Paula Reis (exemplo)","faixa":"B","atencao":true,"padroes":"Thumb com rosto à esquerda, máximo 4 palavras.","gosta":""}],
  "cards":[
+  {"id":"f1","cod":433,"titulo":"PAULA REIS | THUMB (painel)","nome":"THUMB (painel)","cliente":"c4","clienteNome":"Paula Reis (exemplo)","tipo":"Thumbnail","qtd":1,"status":"A fazer","prazo":"2026-10-27","postar":"","prioridade":"","link":"","linkPost":"","obs":"[Escritório 26/10 17:20] Falta informação: só veio o link do vídeo. Mande o tema da thumb e qual foto da cliente usar.\n[Painel 26/10 16:02] Pedido de Ismael · Automático (Máquina do Escritório)\nThumb do vídeo novo\nLink: https://youtu.be/exemplo","resp":["Ismael"],"meu":true,"voltas":0,"escritorio":"Falta informação"},
   {"id":"l1","cod":431,"titulo":"Paula Reis | SHORTS 19-21","nome":"SHORTS 19-21","cliente":"c4","clienteNome":"Paula Reis (exemplo)","tipo":"Shorts","qtd":3,"status":"A fazer","prazo":"2026-10-25","postar":"2026-10-28","prioridade":"Urgente","link":"","linkPost":"","obs":"[Painel 26/10 15:40] Victor disse que não é com ele(a): é do pacote da Lorena","resp":[],"meu":false,"livre":true,"voltas":0},
   {"id":"l2","cod":432,"titulo":"Marcos Lima | THUMB 08","nome":"THUMB 08","cliente":"c3","clienteNome":"Marcos Lima (exemplo)","tipo":"Thumbnail","qtd":1,"status":"A fazer","prazo":"2026-10-28","postar":"2026-10-30","prioridade":"","link":"","linkPost":"","obs":"","resp":[],"meu":false,"livre":true,"voltas":0},
   {"id":"k1","cod":412,"titulo":"","nome":"VÍDEO 09","cliente":"c1","clienteNome":"Dra. Helena (exemplo)","tipo":"Vídeo longo","qtd":1,"status":"Ajustes","prazo":"2026-10-23","postar":"2026-10-28","link":"","linkPost":"","obs":"[Painel 24/10 09:15] Ismael pediu ajuste: trocar o B-roll do minuto 3\n[Painel 23/10 16:40] Ismael mandou para revisão","resp":["Ismael"],"meu":true,"voltas":1},

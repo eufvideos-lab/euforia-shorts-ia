@@ -21,3 +21,7 @@ Papel diretor (Henrique): no mesmo link do painel ganha Visão geral, Por pessoa
 O usuário de teste só enxerga e mexe em cards com "TESTE PAINEL" no título, e não avisa no Discord.
 
 Nada aqui está publicado. Publicar os fluxos e subir a página (slug `equipe`) só com OK do Henrique.
+
+## Falta informação (Máquina do Escritório devolve o pedido)
+Quando um pedido ao escritório não dá para fazer, a máquina põe o Responsável = quem pediu, "🏢 Escritório IA" = "Falta informação" e uma linha "[Escritório dd/MM HH:mm] Falta informação: ..." no topo da Obs, e marca a pessoa no #dia-a-dia.
+No painel o card aparece no topo da Minha fila (grupo "Falta informação para o escritório", faixa vermelha) com o que falta. O botão "Completar pedido" abre o campo de texto (obrigatório), arquivos (vão para PEDIDOS DO PAINEL na pasta do cliente) e links. O fluxo de botões (ação `completar`) grava tudo na Obs e devolve o card ao Escritório com "Na fila".

@@ -92,7 +92,7 @@ for (const it of $('Cards da pessoa').all()) for (const p of (it.json.results ||
   cards.push({ id: sem(p.id), cod: ((pr['Código'] || {}).unique_id || {}).number || null,
     titulo, nome: partes.length > 1 ? partes.slice(1).join(' · ') : titulo,
     cliente: cid, clienteNome: (cli[cid] || {}).nome || partes[0] || '',
-    tipo, qtd: (pr['Quantidade'] || {}).number || 1, status, livre,
+    tipo, qtd: (pr['Quantidade'] || {}).number || 1, status, livre, escritorio: txt(pr['🏢 Escritório IA']),
     prazo: txt(pr['Prazo']), postar: txt(pr['Postar em']), prioridade: txt(pr['Prioridade']),
     link: txt(pr['Link do arquivo']), linkPost: txt(pr['Link da postagem']),
     obs: txt(pr['Obs']).split('\\n').slice(0, 4).join('\\n').slice(0, 600),
