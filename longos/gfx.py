@@ -184,3 +184,89 @@ def lower(name,text,dur,icon=None):
                 fr.alpha_composite(tt,(x0+l,y0+int((1-ease_out((t-0.2)/0.35))*14)))
         wr.put(fr)
     wr.close()
+# ---- Modelo Nova Acrópole: cartão de citação (aspas, foto redonda do autor, nome) e frase-chave, no manual da NA ----
+NA_FUNDO=(255,255,255); NA_TEXTO=(31,41,55); NA_VERDE=(7,99,88); NA_VERDE2=(42,151,139)
+def serif(w,s): return ImageFont.truetype(F+{'i':'LiberationSerif-Italic.ttf','b':'LiberationSerif-Bold.ttf'}[w],s)
+def _quebrar(palavras,f,larg):
+    linhas=[[]]
+    for i,w in enumerate(palavras):
+        teste=' '.join(palavras[j] for j in linhas[-1]+[i])
+        if linhas[-1] and f.getlength(teste)>larg: linhas.append([])
+        linhas[-1].append(i)
+    return linhas
+def _foto_redonda(arq,d):
+    im=Image.open(arq).convert('RGB'); s=min(im.size)
+    # recorte quadrado puxado para cima (rosto costuma estar no terço de cima)
+    x=(im.width-s)//2; y=max(0,min(im.height-s,int(im.height*0.12) if im.height>im.width else 0))
+    im=im.crop((x,y,x+s,y+s)).resize((d,d),Image.LANCZOS)
+    m=Image.new('L',(d,d),0); ImageDraw.Draw(m).ellipse((0,0,d-1,d-1),fill=255)
+    out=Image.new('RGBA',(d+24,d+24),(0,0,0,0)); ImageDraw.Draw(out).ellipse((0,0,d+23,d+23),fill=NA_VERDE)
+    out.paste(im,(12,12),m); return out
+def _logo_na(larg):
+    """Logo da NA (tirado da marca d'água) em verde, para o topo dos cartões."""
+    m=Image.open(os.path.join(os.path.dirname(os.path.abspath(__file__)),'modelos','nova-acropole','marca.png'))
+    a=m.getchannel('A').crop((1601,867,1850,1018)); a=a.point(lambda v:min(255,int(v*1.6)))
+    lg=Image.new('RGBA',a.size,NA_VERDE+(255,)); lg.putalpha(a)
+    return lg.resize((larg,int(a.height*larg/a.width)),Image.LANCZOS)
+def _fundo_na():
+    """Branco com um brilho verde bem suave embaixo, como papel."""
+    g=np.clip((yy/H-0.35)/0.65,0,1)[...,None]**1.6
+    base=np.array(NA_FUNDO,np.float32)*(1-0.10*g)+np.array((225,240,236),np.float32)*0.10*g
+    return Image.fromarray(base.astype(np.uint8)).convert('RGBA')
+def citacao(name,texto,dur,tempos,autor=None,foto=None,destaque=None):
+    """Cartão de tela cheia no manual da NA: as palavras surgem acompanhando a fala (tempos = início de cada palavra,
+    em s a partir do começo do cartão). Com autor: aspas verdes, texto em serifa itálica e '— NOME'; com foto: foto
+    redonda do autor à esquerda. Sem autor: frase-chave centralizada em Inter, com a palavra `destaque` em verde
+    e sublinhada."""
+    pal=texto.split(); n=int(round(dur*FPS)); wr=Writer(f'{OUT}/{name}.mp4',W,H,False)
+    cit=bool(autor); fp=_foto_redonda(foto,480) if foto else None
+    tam=(84 if len(pal)<=10 else 72 if len(pal)<=20 else 60) if cit else (92 if len(pal)<=12 else 78 if len(pal)<=20 else 64)
+    f=serif('i',tam) if cit else font('eb',tam); lh=int(tam*1.3)
+    if fp: x0=820; larg=W-x0-170
+    elif cit: x0=330; larg=W-2*x0
+    else: x0=None; larg=W-360
+    linhas=_quebrar(pal,f,larg)
+    if len(linhas)>1:  # linhas equilibradas (sem palavra sozinha na última)
+        alvo=f.getlength(texto)/len(linhas)*1.06
+        while len(_quebrar(pal,f,alvo))>len(linhas): alvo+=20
+        linhas=_quebrar(pal,f,min(alvo,larg))
+    alt=len(linhas)*lh+(100 if cit else 0)
+    y0=H/2-alt/2+(30 if cit else 20)
+    hl=(destaque or '').lower().strip('.,!?;:')
+    fundo=_fundo_na(); logo=_logo_na(170); ln=lambda idx:f.getlength(' '.join(pal[i] for i in idx))
+    nome=None
+    if cit:
+        fn=font('b',40); txt='— '+autor.upper(); nome=Image.new('RGBA',(int(fn.getlength(txt))+8,64),(0,0,0,0))
+        ImageDraw.Draw(nome).text((0,0),txt,font=fn,fill=NA_VERDE)
+    aspas=serif('b',360)
+    for k in range(n):
+        t=k/FPS; fr=fundo.copy(); d=ImageDraw.Draw(fr)
+        d.rectangle((0,0,int(18*ease_out(t/0.4)),H),fill=NA_VERDE)
+        a=ease_out(t/0.5); lg=logo.copy(); lg.putalpha(lg.getchannel('A').point(lambda v:int(v*a)))
+        fr.alpha_composite(lg,(int(W/2-lg.width/2),70))
+        if fp:
+            a=ease_out((t-0.1)/0.4); sc=0.9+0.1*a
+            im=fp.resize((int(fp.width*sc),int(fp.height*sc)),Image.LANCZOS)
+            if a<1: im.putalpha(im.getchannel('A').point(lambda v:int(v*a)))
+            fr.alpha_composite(im,(int(470-im.width/2),int(H/2+20-im.height/2)))
+        if cit:
+            a=ease_out((t-0.15)/0.3)
+            if a>0.01:
+                q=Image.new('RGBA',(300,360),(0,0,0,0)); ImageDraw.Draw(q).text((0,0),'“',font=aspas,fill=NA_VERDE2+(int(255*a),))
+                fr.alpha_composite(q,(x0-40,int(y0-250)))
+        for li,idx in enumerate(linhas):
+            x=x0 if cit else W/2-ln(idx)/2; y=y0+li*lh
+            for i in idx:
+                w=pal[i]
+                if t>=tempos[i]-0.05:
+                    pa=ease_out((t-tempos[i]+0.05)/0.18); eh=hl and w.lower().strip('.,!?;:')==hl
+                    d.text((x,y+(1-pa)*12),w,font=f,fill=(NA_VERDE if eh else NA_TEXTO)+(int(255*pa),))
+                    if eh and not cit:
+                        u=ease_out((t-tempos[i]-0.1)/0.35); wl=f.getlength(w.strip('.,!?;:'))
+                        if u>0: d.rounded_rectangle((x,y+tam*1.12,x+wl*u,y+tam*1.12+10),radius=5,fill=NA_VERDE2)
+                x+=f.getlength(w+' ')
+        if nome and t>=tempos[-1]:
+            a=ease_out((t-tempos[-1])/0.3); nm=nome.copy(); nm.putalpha(nm.getchannel('A').point(lambda v:int(v*a)))
+            fr.alpha_composite(nm,(x0 if cit else int(W/2-nm.width/2),int(y0+len(linhas)*lh+44)))
+        wr.put(fr)
+    wr.close()

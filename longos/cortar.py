@@ -29,7 +29,8 @@ def silencio(a, b):
     return (a + int(np.argmin(env[a:b]))) / SR
 
 
-ZOOM = float(plano.get('zoom', 1.22))
+NA = plano.get('modelo') == 'nova-acropole'  # cortes de palestra: imagem antiga, zoom mais leve e sem vinheta
+ZOOM = float(plano.get('zoom', 1.15 if NA else 1.22))
 CX, CY = plano.get('centro_zoom', [0.5, 0.4])
 # Pessoa gravada fora do centro: "centralizar": true faz o plano aberto também cortar em volta dela.
 ABERTO = float(plano.get('zoom_aberto', 1.0))
@@ -71,7 +72,7 @@ for n, x in enumerate(segs):
 
 TM = ("zscale=t=linear:npl=100,format=gbrpf32le,zscale=p=bt709,tonemap=hable:desat=0,"
       "zscale=t=bt709:m=bt709:r=tv,format=yuv420p,") if info['hdr'] else ''
-GRADE = plano.get('cor', "eq=contrast=1.05:saturation=1.05,vignette=PI/6")
+GRADE = plano.get('cor', "eq=contrast=1.03:saturation=1.03" if NA else "eq=contrast=1.05:saturation=1.05,vignette=PI/6")
 os.makedirs(os.path.join(pasta, 'segs'), exist_ok=True)
 
 

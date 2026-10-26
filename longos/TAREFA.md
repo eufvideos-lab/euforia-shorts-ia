@@ -35,9 +35,11 @@ python3 -m pip install --break-system-packages -q numpy pillow
 3. `python3 longos/preparar.py pedidos/<id-curto> <file_id>` (bruto de 1 a 2 GB leva alguns minutos).
 4. Leia `pedidos/<id-curto>/palavras.txt`, as "Observações para a máquina", e a identidade do cliente.
    Tire 1 quadro do bruto (`ffmpeg -ss 60 -i bruto.* -frames:v 1 q.png`) para achar o rosto (`centro_zoom`).
-5. Escreva `pedidos/<id-curto>/plano.json` seguindo `longos/prompts/plano_longo.md`. Para as fotos específicas,
+5. Escreva `pedidos/<id-curto>/plano.json` seguindo `longos/prompts/plano_longo.md`. Se o campo "Modelo" do pedido
+   for "Nova Acrópole" (ou o cliente for a Nova Acrópole), siga a seção "Modelo Nova Acrópole" de lá: o bruto é uma
+   palestra inteira e sai um corte de 3 a 6 min, com legenda amarela, marca d'água e o encerramento da Acrópole Play. Para as fotos específicas,
    rode o fluxo de fotos (uma chamada com todas as buscas), pegue os IDs e ponha em `file_ids`.
-   A trilha: `"musica_file_id": "15UN5dqdxX_VcaJAdcJ1vOyuGgtmBSoiQ"`.
+   A trilha: `"musica_file_id": "15UN5dqdxX_VcaJAdcJ1vOyuGgtmBSoiQ"` (no modelo Nova Acrópole, sem trilha).
 6. `python3 longos/cortar.py pedidos/<id-curto>` (corta e aplica o zoom; ~16 min para um bruto de 14 min).
    Confira 3 emendas: tire quadros e ouça se nenhuma palavra foi comida (veja a transcrição das bordas).
 7. `python3 longos/brolls.py pedidos/<id-curto>` e olhe `brolls.png`. O que não mostra o que a pessoa fala sai do

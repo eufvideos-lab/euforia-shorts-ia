@@ -2,7 +2,8 @@
 """Vídeo longo, etapa 3: baixa os B-rolls do plano.json e monta a folha de conferência.
 Uso: python3 longos/brolls.py PASTA_DO_PEDIDO [ids para refazer...]
 Cada B-roll do plano: {"id": "b1", "fonte": "pixabay"|"foto", "busca": "...", "palavra": 123, "dur": 3,
-                      "file_ids": ["..."]  (só para "foto": partes salvas no Drive pelo fluxo de fotos do n8n)}
+                      "file_ids": ["..."]  (só para "foto": partes salvas no Drive pelo fluxo de fotos do n8n)
+                      ou "arquivo": caminho local, "legenda": crédito no canto (modelo NA), "foco_x": 0 a 1}
 - pixabay: vídeo genérico do banco (busca em inglês, 2 a 4 palavras). Só entra se as etiquetas batem com a busca.
 - foto: foto específica (pessoa, lugar, faculdade) já salva no Drive. Foto pequena entra com moldura arredondada
   sobre fundo desfocado, sem esticar; foto grande cobre a tela.
@@ -42,18 +43,34 @@ def pixabay(br):
     return out, f'pixabay {h["id"]} ({h.get("tags")})'
 
 
+def credito(im, texto):
+    """Crédito curto da obra/foto no canto de cima (modelo NA): "Gustave Courbet · Os Quebradores de Pedras (1849)"."""
+    if not texto:
+        return im
+    from PIL import ImageFont
+    f = ImageFont.truetype(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'fontes', 'InterDisplay-SemiBold.otf'), 30)
+    sh = Image.new('L', im.size, 0); ImageDraw.Draw(sh).text((150, 120), texto, font=f, fill=230)
+    im.paste((0, 0, 0), (0, 0), sh.filter(ImageFilter.GaussianBlur(5)))
+    ImageDraw.Draw(im).text((148, 117), texto, font=f, fill=(255, 255, 255))
+    return im
+
+
 def foto(br):
-    tmp = os.path.join(dest, f"_{br['id']}.img")
-    with open(tmp, 'wb') as f:
-        for fid in br['file_ids']:
-            parte = tmp + '.p'
-            ponte.baixar(fid, parte)
-            f.write(open(parte, 'rb').read()); os.remove(parte)
-    im = Image.open(tmp).convert('RGB'); os.remove(tmp)
+    if br.get('arquivo'):
+        im = Image.open(br['arquivo']).convert('RGB')
+    else:
+        tmp = os.path.join(dest, f"_{br['id']}.img")
+        with open(tmp, 'wb') as f:
+            for fid in br['file_ids']:
+                parte = tmp + '.p'
+                ponte.baixar(fid, parte)
+                f.write(open(parte, 'rb').read()); os.remove(parte)
+        im = Image.open(tmp).convert('RGB'); os.remove(tmp)
     out = os.path.join(dest, f"{br['id']}.jpg")
     s = max(CW / im.width, CH / im.height)
     if im.width >= 1800 and im.height >= 1000:
-        im.resize((int(im.width * s) + 1, int(im.height * s) + 1), Image.LANCZOS).crop((0, 0, CW, CH)).save(out, quality=93)
+        fx = br.get('foco_x', 0.5); w2 = int(im.width * s) + 1; x = int(min(max(fx * w2 - CW / 2, 0), w2 - CW))
+        credito(im.resize((w2, int(im.height * s) + 1), Image.LANCZOS).crop((x, 0, x + CW, CH)), br.get('legenda')).save(out, quality=93)
         return out, f'foto {im.width}x{im.height} (tela cheia)'
     bg = im.resize((int(im.width * s) + 1, int(im.height * s) + 1)).crop((0, 0, CW, CH)).filter(ImageFilter.GaussianBlur(40))
     bg = ImageEnhance.Brightness(bg).enhance(0.45)
@@ -64,7 +81,7 @@ def foto(br):
     sh = Image.new('L', (CW, CH), 0); ImageDraw.Draw(sh).rounded_rectangle((x + 10, y + 24, x + fg.width + 10, y + h + 24), radius=28, fill=200)
     bg.paste((0, 0, 0), (0, 0), sh.filter(ImageFilter.GaussianBlur(30)))
     m = Image.new('L', fg.size, 0); ImageDraw.Draw(m).rounded_rectangle((0, 0, fg.width - 1, h - 1), radius=28, fill=255)
-    bg.paste(fg, (x, y), m); bg.save(out, quality=93)
+    bg.paste(fg, (x, y), m); credito(bg, br.get('legenda')).save(out, quality=93)
     return out, f'foto {im.width}x{im.height} (com moldura)'
 
 
@@ -75,6 +92,8 @@ for br in plano.get('brolls', []):
     for e in ('mp4', 'jpg'):
         if os.path.exists(os.path.join(dest, f"{br['id']}.{e}")):
             os.remove(os.path.join(dest, f"{br['id']}.{e}"))
+    if plano.get('modelo') == 'nova-acropole' and br.get('fonte') != 'foto':
+        rel[br['id']] = 'ignorado: o modelo Nova Acrópole só usa imagem real ("fonte": "foto")'; print(br['id'], rel[br['id']]); continue
     try:
         out, msg = foto(br) if br.get('fonte') == 'foto' else pixabay(br)
     except Exception as e:
