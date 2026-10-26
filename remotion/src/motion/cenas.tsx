@@ -14,7 +14,7 @@ export const Pergunta: React.FC<P<'pergunta'>> = ({ c, m }) => {
     <AbsoluteFill>
       <Fundo m={m} />
       <AbsoluteFill style={{ justifyContent: 'center', alignItems: 'center' }}>
-        <div style={{ position: 'absolute', fontFamily: m.fonteDestaque, fontStyle: 'italic', fontSize: 1100, color: m.primaria, opacity: 0.06 * suave(t, 0, 0.8), transform: `rotate(${-8 + t * 2}deg) scale(${1 + t * 0.02})`, lineHeight: 1 }}>?</div>
+        <div style={{ position: 'absolute', fontFamily: m.fonteDestaque, fontStyle: 'italic', fontSize: 1100, color: m.primaria, opacity: 0.06 * suave(t, 0, 0.8), transform: `rotate(${-8 + t * 2}deg) scale(${1 + t * 0.02})`, lineHeight: 1 }}>{c.simbolo ?? '?'}</div>
         <div style={{ transform: `scale(${interpolate(t, [0, dur], [1, 1.06])})` }}>
           <Palavras m={m} palavras={c.palavras} tamanho={118} alinhar="center" largura={1560} />
         </div>

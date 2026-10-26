@@ -23,13 +23,15 @@ type Base = { inicio: number; fim: number; transicao?: 'faixa' | 'nenhuma' };
 
 export type Cena = Base &
   (
-    | { tipo: 'pergunta'; palavras: Palavra[] }
+    | { tipo: 'pergunta'; palavras: Palavra[]; simbolo?: string } // simbolo: marca d'água ao fundo ('?' padrão, '' tira)
     | { tipo: 'telas'; telas: string[]; titulo: Palavra[]; pilulas: { t: string; em: number }[] }
     | { tipo: 'ritmo'; linha1: Palavra[]; linha2: Palavra[]; tela: string; troca: number; episodios: number }
     | { tipo: 'parede'; cards: string[]; texto: Palavra[]; logo: string; logoEm: number }
     | ({ tipo: 'apresentador'; video: string; videoInicio: number; texto: Palavra[] } & Enquadre)
     | ({ tipo: 'preco'; video: string; videoInicio: number; rotulo: string; moeda: string; valor: string; sufixo: string; cobrirEm?: number } & Enquadre)
     | { tipo: 'logo'; logo: string; botao: string; botaoEm: number }
+    | { tipo: 'lista'; titulo: Palavra[]; itens: { t: string; sub?: string; em: number; cor?: string }[]; estilo?: 'numeros' | 'faixas' }
+    | { tipo: 'ciclo'; titulo: Palavra[]; card: string; etapas: { t: string; quem?: string; em: number }[]; saiEm?: number; saiTexto?: string }
     | { tipo: 'institucional'; logo: string; titulo: string; linhas: string[]; pilares: { t: string; icone: 'coluna' | 'livro' | 'coracao' }[] }
   );
 

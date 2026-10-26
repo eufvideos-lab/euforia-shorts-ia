@@ -4,6 +4,7 @@ import { AbsoluteFill, Audio, Sequence, staticFile, useVideoConfig } from 'remot
 import type { Cena, MotionProps } from './tipos';
 import { Faixa } from './primitivas';
 import { Apresentador, Institucional, Logo, Parede, Pergunta, Preco, Ritmo, Telas } from './cenas';
+import { Ciclo, Lista } from './cenas-extra';
 
 const SOBRA = 0.4; // a cena fica um pouco além do fim, por baixo da faixa da próxima
 
@@ -17,6 +18,8 @@ const render = (c: Cena, m: MotionProps['marca']) => {
     case 'preco': return <Preco c={c} m={m} />;
     case 'logo': return <Logo c={c} m={m} />;
     case 'institucional': return <Institucional c={c} m={m} />;
+    case 'lista': return <Lista c={c} m={m} />;
+    case 'ciclo': return <Ciclo c={c} m={m} />;
   }
 };
 

@@ -1,0 +1,352 @@
+{
+ "fps": 30,
+ "largura": 1920,
+ "altura": 1080,
+ "duracao": 121.6,
+ "audio": "painel/narracao.mp3",
+ "marca": {
+  "primaria": "#FF5A00",
+  "secundaria": "#FF8A3D",
+  "escura": "#141414",
+  "fundo": "#FBFAF7",
+  "texto": "#5E5A54",
+  "fonteTitulo": "Montserrat",
+  "fonteCorpo": "Poppins",
+  "fonteDestaque": "Cormorant Garamond"
+ },
+ "cenas": [
+  {
+   "tipo": "pergunta",
+   "inicio": 0,
+   "fim": 3.3,
+   "palavras": [
+    {
+     "t": "Chega",
+     "em": 1.06
+    },
+    {
+     "t": "de",
+     "em": 1.53
+    },
+    {
+     "t": "caçar",
+     "em": 1.66
+    },
+    {
+     "t": "tarefa",
+     "em": 2.07
+    },
+    {
+     "t": "no",
+     "em": 2.54,
+     "quebra": true
+    },
+    {
+     "t": "Notion.",
+     "em": 2.71,
+     "destaque": true
+    }
+   ]
+  },
+  {
+   "tipo": "lista",
+   "inicio": 20.6,
+   "fim": 33.3,
+   "estilo": "numeros",
+   "titulo": [
+    {
+     "t": "Sua",
+     "em": 1.22
+    },
+    {
+     "t": "fila",
+     "em": 1.52
+    },
+    {
+     "t": "já",
+     "em": 2.31
+    },
+    {
+     "t": "vem",
+     "em": 2.56
+    },
+    {
+     "t": "na",
+     "em": 2.78
+    },
+    {
+     "t": "ordem",
+     "em": 2.97
+    },
+    {
+     "t": "certa",
+     "em": 3.2,
+     "destaque": true
+    }
+   ],
+   "itens": [
+    {
+     "t": "Ajustes pedidos",
+     "sub": "o cliente já está esperando",
+     "em": 4.99
+    },
+    {
+     "t": "O que vai ao ar antes",
+     "em": 6.9
+    },
+    {
+     "t": "Faixa do cliente: A, B, C",
+     "em": 9.62
+    },
+    {
+     "t": "O prazo mais perto",
+     "em": 11.99
+    }
+   ]
+  },
+  {
+   "tipo": "pergunta",
+   "inicio": 33.3,
+   "fim": 38.6,
+   "palavras": [
+    {
+     "t": "Regra",
+     "em": 0.97
+    },
+    {
+     "t": "de",
+     "em": 1.3
+    },
+    {
+     "t": "ouro:",
+     "em": 1.47,
+     "destaque": true
+    },
+    {
+     "t": "comece",
+     "em": 2.67,
+     "quebra": true
+    },
+    {
+     "t": "sempre",
+     "em": 3.65
+    },
+    {
+     "t": "pelo",
+     "em": 4.15
+    },
+    {
+     "t": "primeiro",
+     "em": 4.37
+    },
+    {
+     "t": "card.",
+     "em": 4.73
+    }
+   ],
+   "simbolo": ""
+  },
+  {
+   "tipo": "lista",
+   "inicio": 38.6,
+   "fim": 47.9,
+   "estilo": "faixas",
+   "titulo": [
+    {
+     "t": "A",
+     "em": 0.18
+    },
+    {
+     "t": "faixa",
+     "em": 0.33
+    },
+    {
+     "t": "do",
+     "em": 0.61
+    },
+    {
+     "t": "lado",
+     "em": 0.71
+    },
+    {
+     "t": "mostra",
+     "em": 1.34
+    },
+    {
+     "t": "a",
+     "em": 1.81
+    },
+    {
+     "t": "urgência.",
+     "em": 1.92,
+     "destaque": true
+    }
+   ],
+   "itens": [
+    {
+     "t": "Atrasado",
+     "sub": "faixa vermelha",
+     "em": 2.78,
+     "cor": "#B42318"
+    },
+    {
+     "t": "Prazo é hoje",
+     "sub": "faixa laranja",
+     "em": 4.68,
+     "cor": "#FF5A00"
+    },
+    {
+     "t": "Ajuste pedido",
+     "sub": "faixa mostarda",
+     "em": 6.84,
+     "cor": "#9A6200"
+    }
+   ]
+  },
+  {
+   "tipo": "ciclo",
+   "inicio": 72.8,
+   "fim": 83.1,
+   "card": "Vídeo longo · Cliente",
+   "titulo": [
+    {
+     "t": "O",
+     "em": 0.1
+    },
+    {
+     "t": "caminho",
+     "em": 0.25
+    },
+    {
+     "t": "de",
+     "em": 0.5
+    },
+    {
+     "t": "toda",
+     "em": 0.6
+    },
+    {
+     "t": "entrega",
+     "em": 0.8,
+     "destaque": true
+    }
+   ],
+   "etapas": [
+    {
+     "t": "Fazendo",
+     "quem": "você",
+     "em": 0
+    },
+    {
+     "t": "Em revisão",
+     "quem": "Ismael",
+     "em": 0.15
+    },
+    {
+     "t": "Aguardando cliente",
+     "em": 0.73
+    },
+    {
+     "t": "Aprovado",
+     "quem": "cliente",
+     "em": 2.04
+    },
+    {
+     "t": "Agendado",
+     "em": 4.27
+    },
+    {
+     "t": "Postado",
+     "quem": "com o link",
+     "em": 5.66
+    }
+   ],
+   "saiEm": 9.42,
+   "saiTexto": "Saiu da fila"
+  },
+  {
+   "tipo": "pergunta",
+   "inicio": 108.9,
+   "fim": 112.9,
+   "palavras": [
+    {
+     "t": "Cada",
+     "em": 0.18
+    },
+    {
+     "t": "clique",
+     "em": 0.59
+    },
+    {
+     "t": "de",
+     "em": 0.94
+    },
+    {
+     "t": "vocês",
+     "em": 1.03
+    },
+    {
+     "t": "já",
+     "em": 1.89
+    },
+    {
+     "t": "atualiza",
+     "em": 2.31,
+     "quebra": true
+    },
+    {
+     "t": "o",
+     "em": 3.08
+    },
+    {
+     "t": "Notion.",
+     "em": 3.19,
+     "destaque": true
+    }
+   ],
+   "simbolo": ""
+  },
+  {
+   "tipo": "pergunta",
+   "inicio": 112.9,
+   "fim": 116.3,
+   "simbolo": "",
+   "palavras": [
+    {
+     "t": "Sem",
+     "em": 0.11
+    },
+    {
+     "t": "campo",
+     "em": 0.49
+    },
+    {
+     "t": "esquecido.",
+     "em": 0.78
+    },
+    {
+     "t": "Sem",
+     "em": 1.85,
+     "quebra": true
+    },
+    {
+     "t": "status",
+     "em": 2.26
+    },
+    {
+     "t": "errado.",
+     "em": 2.77,
+     "destaque": true
+    }
+   ]
+  },
+  {
+   "tipo": "logo",
+   "inicio": 116.3,
+   "fim": 121.6,
+   "logo": "painel/logo-3x.png",
+   "botao": "PAINEL DA EQUIPE",
+   "botaoEm": 0.9
+  }
+ ]
+}

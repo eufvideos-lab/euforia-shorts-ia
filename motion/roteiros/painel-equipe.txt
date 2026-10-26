@@ -1,0 +1,14 @@
+Pessoal, chega de caçar tarefa no Notion.
+A partir de agora, todo o trabalho de vocês mora num lugar só: o Painel da Equipe.
+Cada um recebe um link pessoal, no seu canal do Discord. Abre, digita o PIN de quatro números, e pronto: o aparelho lembra de você.
+Lá dentro está a sua fila. E ela já vem na ordem certa: primeiro os ajustes, depois o que vai ao ar antes, depois a faixa do cliente e, por último, o prazo. Por isso, a regra de ouro é uma só: comece sempre pelo primeiro card.
+A faixa do lado mostra a urgência. Vermelho: atrasado. Laranja: o prazo é hoje. Mostarda: tem ajuste pedido.
+Abriu o card? Leia como editar e do que esse cliente gosta. Aí é só apertar "Comecei".
+Terminou? Arraste o arquivo para a caixa. Ele sobe sozinho para a pasta do cliente no Drive. Aperte "Mandar para revisão", e o Ismael já fica sabendo.
+Se voltar com ajuste, o card sobe para o topo da fila, com o motivo escrito. Corrigiu? Manda de novo.
+O Ismael aprova, o cliente aprova, e quem posta marca "Agendei" ou "Postei", com o link da postagem. Pronto: o card sai da fila.
+Precisa de uma thumb, um carrossel, uma apresentação? Use a aba "Pedir ao escritório". Escolha o cliente, o que precisa, explique bem, e mande.
+Ismael e Rômulo ainda têm a aba "Responder": conectam o WhatsApp de suporte uma vez só, pelo QR code, e veem quem está esperando resposta, na ordem certa.
+E tudo funciona igualzinho no celular.
+Cada clique de vocês já atualiza o Notion. Sem campo esquecido. Sem status errado.
+Painel da Equipe. Menos procura, mais entrega.
