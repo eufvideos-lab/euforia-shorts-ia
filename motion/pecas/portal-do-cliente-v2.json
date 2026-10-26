@@ -2,8 +2,8 @@
  "fps": 30,
  "largura": 1920,
  "altura": 1080,
- "duracao": 224.3,
- "audio": "portal2/narracao.mp3",
+ "duracao": 224.38,
+ "audio": "portal2/narracao-v3.mp3",
  "marca": {
   "primaria": "#FF5A00",
   "secundaria": "#FF8A3D",
@@ -18,82 +18,87 @@
   {
    "tipo": "pergunta",
    "inicio": 0,
-   "fim": 7.2,
+   "fim": 8.57,
    "palavras": [
     {
      "t": "Já",
-     "em": 0.0
+     "em": 0
     },
     {
      "t": "imaginou",
-     "em": 0.22
+     "em": 0.2
     },
     {
      "t": "acompanhar",
-     "em": 0.78
+     "em": 1.07
     },
     {
-     "t": "tudo",
-     "em": 1.49
-    },
-    {
-     "t": "do",
+     "t": "todo",
      "em": 1.96
     },
     {
-     "t": "seu",
-     "em": 2.1
+     "t": "o",
+     "em": 2.54,
+     "quebra": true
     },
     {
-     "t": "canal",
-     "em": 2.31
+     "t": "seu",
+     "em": 2.66
+    },
+    {
+     "t": "ecossistema",
+     "em": 2.95,
+     "destaque": true
+    },
+    {
+     "t": "digital",
+     "em": 3.71,
+     "destaque": true
     },
     {
      "t": "num",
-     "em": 2.98,
+     "em": 4.55,
      "quebra": true
     },
     {
      "t": "lugar",
-     "em": 3.2,
-     "destaque": true
+     "em": 4.76
     },
     {
      "t": "só,",
-     "em": 3.69,
-     "destaque": true
+     "em": 5.18
     },
     {
      "t": "sem",
-     "em": 4.39,
+     "em": 5.78,
      "quebra": true
     },
     {
      "t": "precisar",
-     "em": 4.69
+     "em": 6.06
     },
     {
      "t": "procurar",
-     "em": 5.14
+     "em": 6.5
     },
     {
      "t": "nada",
-     "em": 5.69
+     "em": 7.0
     },
     {
      "t": "no",
-     "em": 6.09
+     "em": 7.34
     },
     {
      "t": "WhatsApp?",
-     "em": 6.21
+     "em": 7.42
     }
    ]
   },
   {
    "tipo": "navegador",
-   "inicio": 7.2,
-   "fim": 19.0,
+   "inicio": 8.57,
+   "fim": 20.43,
    "telas": [
     {
      "src": "portal2/inicio.png",
@@ -147,8 +152,8 @@
   },
   {
    "tipo": "navegador",
-   "inicio": 19.0,
-   "fim": 27.6,
+   "inicio": 20.43,
+   "fim": 29.03,
    "telas": [
     {
      "src": "portal2/inicio.png",
@@ -219,8 +224,8 @@
   },
   {
    "tipo": "abas",
-   "inicio": 27.6,
-   "fim": 33.6,
+   "inicio": 29.03,
+   "fim": 35.03,
    "titulo": [
     {
      "t": "O",
@@ -273,8 +278,8 @@
   },
   {
    "tipo": "navegador",
-   "inicio": 33.6,
-   "fim": 49.8,
+   "inicio": 35.03,
+   "fim": 51.23,
    "telas": [
     {
      "src": "portal2/inicio.png",
@@ -349,8 +354,8 @@
   },
   {
    "tipo": "navegador",
-   "inicio": 49.8,
-   "fim": 69.0,
+   "inicio": 51.23,
+   "fim": 70.43,
    "telas": [
     {
      "src": "portal2/entregas.png",
@@ -463,8 +468,8 @@
   },
   {
    "tipo": "navegador",
-   "inicio": 69.0,
-   "fim": 84.5,
+   "inicio": 70.43,
+   "fim": 85.93,
    "telas": [
     {
      "src": "portal2/entregas.png",
@@ -571,8 +576,8 @@
   },
   {
    "tipo": "navegador",
-   "inicio": 84.5,
-   "fim": 97.7,
+   "inicio": 85.93,
+   "fim": 99.13,
    "telas": [
     {
      "src": "portal2/aprovar.png",
@@ -667,8 +672,8 @@
   },
   {
    "tipo": "pergunta",
-   "inicio": 97.7,
-   "fim": 101.2,
+   "inicio": 99.13,
+   "fim": 102.63,
    "simbolo": "",
    "palavras": [
     {
@@ -709,8 +714,8 @@
   },
   {
    "tipo": "navegador",
-   "inicio": 101.2,
-   "fim": 107.0,
+   "inicio": 102.63,
+   "fim": 108.43,
    "telas": [
     {
      "src": "portal2/gravacoes.png",
@@ -771,8 +776,8 @@
   },
   {
    "tipo": "navegador",
-   "inicio": 107.0,
-   "fim": 124.9,
+   "inicio": 108.43,
+   "fim": 126.33,
    "telas": [
     {
      "src": "portal2/roteiro.png",
@@ -863,8 +868,8 @@
   },
   {
    "tipo": "navegador",
-   "inicio": 124.9,
-   "fim": 136.6,
+   "inicio": 126.33,
+   "fim": 138.03,
    "telas": [
     {
      "src": "portal2/gravacoes.png",
@@ -909,8 +914,8 @@
   },
   {
    "tipo": "navegador",
-   "inicio": 136.6,
-   "fim": 162.0,
+   "inicio": 138.03,
+   "fim": 163.43,
    "telas": [
     {
      "src": "portal2/gravacoes.png",
@@ -1003,8 +1008,8 @@
   },
   {
    "tipo": "abas",
-   "inicio": 162.0,
-   "fim": 172.9,
+   "inicio": 163.43,
+   "fim": 174.33,
    "titulo": [
     {
      "t": "Do",
@@ -1057,8 +1062,8 @@
   },
   {
    "tipo": "navegador",
-   "inicio": 172.9,
-   "fim": 183.2,
+   "inicio": 174.33,
+   "fim": 184.63,
    "telas": [
     {
      "src": "portal2/mensagens.png",
@@ -1123,8 +1128,8 @@
   },
   {
    "tipo": "navegador",
-   "inicio": 183.2,
-   "fim": 193.8,
+   "inicio": 184.63,
+   "fim": 195.23,
    "telas": [
     {
      "src": "portal2/inicio.png",
@@ -1181,8 +1186,8 @@
   },
   {
    "tipo": "abas",
-   "inicio": 193.8,
-   "fim": 199.8,
+   "inicio": 195.23,
+   "fim": 201.23,
    "titulo": [
     {
      "t": "Quem",
@@ -1219,8 +1224,8 @@
   },
   {
    "tipo": "navegador",
-   "inicio": 199.8,
-   "fim": 203.4,
+   "inicio": 201.23,
+   "fim": 204.83,
    "telas": [
     {
      "src": "portal2/equipe-aprovar.png",
@@ -1249,8 +1254,8 @@
   },
   {
    "tipo": "pergunta",
-   "inicio": 203.4,
-   "fim": 208.5,
+   "inicio": 204.83,
+   "fim": 209.93,
    "simbolo": "",
    "palavras": [
     {
@@ -1315,8 +1320,8 @@
   },
   {
    "tipo": "navegador",
-   "inicio": 208.5,
-   "fim": 218.4,
+   "inicio": 209.93,
+   "fim": 218.48,
    "telas": [
     {
      "src": "portal2/cel-inicio.png",
@@ -1379,8 +1384,8 @@
   },
   {
    "tipo": "logo",
-   "inicio": 218.4,
-   "fim": 224.3,
+   "inicio": 218.48,
+   "fim": 224.38,
    "logo": "portal2/logo-euforia-hd.png",
    "botao": "BOAS-VINDAS!",
    "botaoEm": 3.6

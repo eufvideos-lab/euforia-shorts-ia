@@ -1,4 +1,6 @@
 # Monta motion/pecas/portal-do-cliente-v2.json a partir dos tempos de cada palavra da narração (ElevenLabs).
+# Ajuste de 26/10: abertura e final trocados para "ecossistema digital" (voz regravada só nesses trechos e emendada;
+# o JSON publicado já tem os tempos novos, então rodar de novo exige as palavras da narração v3).
 # Uso: python3 portal-do-cliente-v2.gera.py palavras.json saida.json   (palavras = [[texto, inicio, fim], ...])
 import json, sys
 W = json.load(open(sys.argv[1]))
