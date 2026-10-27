@@ -431,16 +431,17 @@ function filaEscritorio(){
   const comigo = ordenar(D.cards.filter(c => c.meu && ['Em revisão', 'Aguardando cliente'].includes(c.status)));
   const seu = decidir.concat(mao), atras = seu.filter(c => diff(c.prazo) < 0).length;
   const fechado = (titulo, lista, nota) => !lista.length ? '' : `<details class="group" data-fold="${esc(titulo)}" ${FOLD.has(titulo) ? 'open' : ''}><summary><h2 style="display:inline">${titulo} <span class="count">${lista.length}</span></h2> <span class="sub" style="font-size:13px">${nota}</span></summary><ul class="rows" style="margin-top:12px">${lista.map(linha).join('')}</ul></details>`;
-  return `<div class="head"><div><p class="eyebrow">${esc(D.hojeTexto)}</p><h1>Fila do escritório</h1></div><p class="sub">Em cima, só o que depende de você. O que as máquinas estão fazendo fica recolhido embaixo.</p></div>
+  return `<div class="head"><div><p class="eyebrow">${esc(D.hojeTexto)}</p><h1>Fila do escritório</h1></div><p class="sub">Tudo recolhido: clique no grupo para abrir. Os dois primeiros dependem de você.</p></div>
     <div class="stats">
       <div class="stat ${decidir.length ? 'hot' : ''}"><span class="v">${decidir.length}</span><span>esperando decisão sua</span></div>
       <div class="stat"><span class="v">${mao.length}</span><span>para fazer à mão</span></div>
       <div class="stat ${atras ? 'hot' : ''}"><span class="v">${atras}</span><span>seus atrasados</span></div>
       <div class="stat"><span class="v">${maquina.length + outras.length}</span><span>com as máquinas</span></div>
     </div>
-    ${grupo('Esperando decisão sua', decidir, 'Nenhuma pergunta da máquina para você.')}
-    ${grupo('Para fazer à mão', mao, 'Nada à mão com você.')}
-    ${grupo('Falta informação de quem pediu', faltas, '')}
+    ${!seu.length ? '<p class="empty">Nada esperando você agora.</p>' : ''}
+    ${fechado('Esperando decisão sua', decidir, 'Perguntas da máquina e cards marcados para a direção.')}
+    ${fechado('Para fazer à mão', mao, 'Você faz pelo chat; a máquina não mexe.')}
+    ${fechado('Falta informação de quem pediu', faltas, 'Voltou para quem pediu completar.')}
     ${fechado('Com a Máquina do Escritório', maquina, 'Ela pega sozinha, por ordem de prazo.')}
     ${fechado('Com outras máquinas', outras, 'Shorts, carrossel ou longo: acompanhe no quadro de cada máquina.')}
     ${fechado('Já saiu da mão do escritório', comigo, 'Em revisão ou com o cliente.')}`;
