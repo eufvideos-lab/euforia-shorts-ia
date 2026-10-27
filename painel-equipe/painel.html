@@ -684,7 +684,8 @@ function hojeDiretor(){
   const pend = DD.cards.filter(c => ehApresCall(c) && !apresPronta(c) && !['Cancelado', 'Postado'].includes(c.status)).sort((a, b) => dd(a.prazo) - dd(b.prazo));
   const falta = (D.pedidos || []).filter(p => situacao(p).g === 'falta');
   const chipApres = k => { const a = apresDaCall(k);
-    if (!a) return '<span class="chip red">Sem apresentação</span>';
+    if (!a && /^https:\/\//.test(k.apresentacao || '')) return `<a class="chip ok" style="text-decoration:none" href="${esc(k.apresentacao)}" target="_blank" rel="noopener">Abrir apresentação</a>`;
+    if (!a) return k.apresentacao === 'producao' ? '<span class="chip warn">Apresentação em produção</span>' : '<span class="chip red">Sem apresentação</span>';
     return apresPronta(a) ? `<a class="chip ok" style="text-decoration:none" href="${esc(a.link)}" target="_blank" rel="noopener">Abrir apresentação</a>` : `<button class="chip warn" style="border:0;cursor:pointer" data-dcard="${a.id}">Apresentação ${a.status === 'Ajustes' ? 'em ajuste' : 'em produção'}</button>`; };
   const linhaCall = k => `<li class="item ${k.agora ? 'late' : ''}"><span class="stripe"></span><div class="main" style="cursor:default">
       <span class="t">${k.dia === CC.hoje ? 'Hoje' : 'Amanhã'} ${esc(k.hora)} · ${esc(k.cliente)}</span>
@@ -697,7 +698,7 @@ function hojeDiretor(){
       <span class="t">${esc(p.clienteNome)} · ${esc(p.nome)}</span>
       <span class="meta"><span class="chip">por ${esc(p.por)}</span><span class="chip">Pedido ${esc(p.quando)}</span></span>
       ${p.falta ? `<span class="sub" style="font-size:13px;color:var(--bad)">Falta: ${esc(p.falta)}</span>` : ''}</button></li>`;
-  const semApres = calls.filter(k => !apresDaCall(k)).length;
+  const semApres = calls.filter(k => !apresDaCall(k) && !k.apresentacao).length;
   return `<div class="hoje3" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;align-items:start;margin-bottom:16px">
     <section class="panel"><h2>Calls de hoje e amanhã <span class="count">${calls.length}</span></h2>
       ${!CC ? '<p class="sub">Carregando a agenda…</p>' : CC.erro ? '<p class="empty">Não consegui ler a agenda agora.</p>' : calls.length ? `${semApres ? `<p class="sub" style="font-size:13px;color:var(--bad)">${semApres} sem apresentação ainda.</p>` : ''}<ul class="rows">${calls.map(linhaCall).join('')}</ul>` : '<p class="empty">Nenhuma call hoje nem amanhã.</p>'}
