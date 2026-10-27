@@ -38,9 +38,10 @@ Card com "🏢 Escritório IA" = **Na fila** é sempre para fazer agora, mesmo q
 máquina: alguém o recolocou na fila de propósito. Leia o Obs inteiro e siga a instrução mais recente.
 Ordem:
 1. Pedidos do painel (Obs começa com "[Painel", título termina em "(painel)"), do mais antigo para o mais novo.
-2. Prioridade Urgente.
-3. Cliente com 🔴 atenção redobrada.
-4. Prazo mais antigo.
+2. Apresentações de call da agenda (título termina em "APRESENTAÇÃO DE CALL (agenda)"), a call mais próxima primeiro.
+3. Prioridade Urgente.
+4. Cliente com 🔴 atenção redobrada.
+5. Prazo mais antigo.
 **Atenda até 3 cards por rodada.** Sem nada a fazer, encerre sem avisar ninguém.
 
 ## 2. Classificar cada card (antes de produzir)
@@ -53,6 +54,7 @@ Ordem:
 | Pedido vago (só título) | Leia ficha, grupo e calls e faça o passo 2a. Se ainda não der para saber o que entregar: **Falta informação** com a dúvida em 1 linha. |
 | Já foi feito em outro lugar (link no grupo, no 🎬, na ficha, numa apresentação) | Ponha o link, Status Em revisão (ou Aprovado se já foi usado com o cliente), "Feito pela IA". |
 | Identidade do setup: ID DO CANAL, ANTES E DEPOIS DO CANAL, MODELO DE CARROSSEL, CALL DE CONSULTORIA AUDIOVISUAL / CALL DE APROVAÇÃO | **Produzir** seguindo `escritorio/identidade/IDENTIDADE.md` (kit em PNG, antes e depois, apresentação da call). |
+| Card "CLIENTE \| APRESENTAÇÃO DE CALL (agenda)" (criado pelo fluxo da agenda, Obs com "Evento da agenda: <id>") | **Produzir** como **Apresentação de call da agenda** (passo 3). |
 | O resto (relatório, apresentação de call, página de vendas, copy, funil, roteiros, pautas, SEO, bio, guia, estratégia, posicionamento, conferências) | **Produzir** (passo 3). |
 
 ## 2a. Pedido com pouca informação: buscar antes de travar
@@ -94,6 +96,26 @@ Se ainda faltar o essencial (nenhuma foto do cliente em lugar nenhum, tema impos
    - **Apresentação de call** (o Rômulo usa na call): slides HTML com notas do apresentador. Padrão das calls
      anteriores do cliente; termina com o slide de feedback "O que vocês estão achando do Grupo Euforia até agora?"
      antes do agradecimento.
+   - **Apresentação de call da agenda** (card "… \| APRESENTAÇÃO DE CALL (agenda)"; o painel abre o link direto para o
+     Rômulo e o Ismael na aba Próximas calls):
+     1. Leia a Obs (tipo da call, data, Meet, instruções), a ficha, o contrato, o grupo dos últimos 15–30 dias, a
+        última call (Gemini) e a apresentação anterior desse cliente (siga o mesmo padrão).
+     2. Slides HTML num arquivo único, nas cores do cliente: abertura, entregas do mês (o que foi feito e o que falta,
+        conferido no Entregas), resultados do canal **só em percentual**, próximos passos, o slide de feedback
+        "O que vocês estão achando do Grupo Euforia até agora?" e o agradecimento. Navegação por setas/clique;
+        notas do apresentador escondidas (aparecem só ao apertar N), porque a tela é compartilhada com o cliente.
+        Coloque `<meta name="robots" content="noindex, nofollow">` no `<head>`. Nada de valores, nada inventado,
+        nunca o nome do Henrique.
+     3. Slug: `apresentacao-<cliente>-<aaaammdd>-<8 letras minúsculas aleatórias>`, só letras, números e hífen,
+        no máximo 60 caracteres (encurte o nome do cliente se precisar; aaaammdd = dia da call).
+     4. Publique no n8n "Sites | Publicar LP" (`KyPEBbzbdL8pOklC`) com `test_workflow` e pinData no nó
+        "Receber página": `[{"json":{"body":{"slug":"<slug>","html":"<html>"}}}]`. Se o HTML passar de ~1 MB,
+        suba o .html no Drive do cliente (ponte) e mande `{"slug":"<slug>","drive_id":"<id do arquivo>"}`.
+        O resultado precisa trazer `ok: true`.
+     5. Card: "Link do arquivo" = `https://grupoeuforia.com.br/<slug>`, Status Em revisão, "🏢 Escritório IA" =
+        Feito pela IA. Na Obs, acrescente sua linha **sem mexer** no texto "Evento da agenda: <id>" (o painel casa a
+        call pela Obs). Se a publicação falhar: deixe o "Link do arquivo" vazio, Obs com "Deu erro ao publicar",
+        detalhe no #ia-status.
    - **Documento para o cliente** (relatório, posicionamento, guia, proposta): **PDF** no Drive do cliente.
      Nunca link do Claude para cliente.
    - **Página de vendas**: HTML único (imagens em base64), na paleta e fontes do cliente; sobe o .html no Drive do
