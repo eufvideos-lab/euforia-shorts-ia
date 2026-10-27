@@ -29,9 +29,13 @@ Confira os PNGs de `--prints` antes de publicar.
 | `frase` | kicker, titulo, sub | uma afirmação grande |
 | `imagens` | kicker, titulo, imagens (1 a 4 caminhos), rodape | prévias de thumbs, canal, identidade |
 | `feedback` | sub (opcional) | sempre, antes do agradecimento |
-| `obrigado` | titulo, sub | sempre o último |
+| `obrigado` | titulo, sub, foto (recorte sem fundo, opcional) | sempre o último |
 
 Regras de conteúdo: um assunto por slide; título com no máximo 70 caracteres; card com no máximo 170; item de lista
 com no máximo 60. Nada de "[a confirmar]" no slide: isso vai nas notas. Números do canal só em percentual. Nada de
 valores, nada inventado, nunca o nome do Henrique. Imagens são embutidas (reduzidas a 1600 px); o recorte da capa
 fica transparente.
+
+Fotos do cliente: sempre as profissionais em alta, de `03 - FOTOS/PROFISSIONAIS` (ou um recorte já pronto em
+`RECORTES`). Para a capa, recorte o fundo (`rembg`, modelo `isnet-general-use`) e corte da cabeça até a cintura.
+Foto de rede social ou print pequeno fica borrada no telão: o gerador recusa foto com menos de 900 px de altura.

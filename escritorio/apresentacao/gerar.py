@@ -22,12 +22,13 @@ def imagem(caminho, base):
     try:
         from PIL import Image
         im = Image.open(p)
-        im.thumbnail((1600, 1600))
         buf = io.BytesIO()
         if im.mode in ('RGBA', 'LA', 'P') and 'A' in im.convert('RGBA').getbands():
+            im.thumbnail((1100, 1100))  # recorte aparece com até 1000 px de altura
             im.convert('RGBA').save(buf, 'PNG', optimize=True)  # recorte sem fundo continua transparente
             tipo = 'png'
         else:
+            im.thumbnail((1600, 1600))
             im.convert('RGB').save(buf, 'JPEG', quality=82)
             tipo = 'jpeg'
         dados = buf.getvalue()
@@ -80,6 +81,18 @@ def cabeca(s, cores):
     return f'<div class="cab">{k}<h2>{esc(s.get("titulo"))}</h2></div>'
 
 
+def foto_cliente(arq, base):
+    # recorte do cliente (PNG sem fundo), em alta, com brilho atrás
+    p = arq if os.path.isabs(arq) else os.path.join(base, arq)
+    try:
+        from PIL import Image
+        if Image.open(p).height < 900:
+            raise SystemExit(f'foto do cliente pequena demais ({arq}): use uma foto profissional em alta (03 - FOTOS)')
+    except ImportError:
+        pass
+    return f'<div class="brilho"></div><img class="capa-foto" src="{imagem(arq, base)}" alt="">'
+
+
 def slide(s, d, n, base):
     c = d['cores']
     tipo = s['tipo']
@@ -89,7 +102,7 @@ def slide(s, d, n, base):
         dest = f'<br><span class="ouro">{esc(s["titulo_destaque"])}</span>' if s.get('titulo_destaque') else ''
         foto = ''
         if s.get('foto'):
-            foto = f'<img class="capa-foto" src="{imagem(s["foto"], base)}" alt="">'
+            foto = foto_cliente(s['foto'], base)
         corpo = (f'<div class="aro a1"></div><div class="aro a2"></div>{foto}'
                  f'<p class="kicker clara">{esc(s.get("kicker"))}</p>'
                  f'<div class="meio"><h1>{esc(s["titulo"])}{dest}</h1><p class="sub">{esc(s.get("sub"))}</p></div>'
@@ -133,9 +146,10 @@ def slide(s, d, n, base):
                  f'<p class="sub">{esc(s.get("sub") or "Queremos ouvir com sinceridade.")}</p>')
         return 'escuro grad centro', corpo, nota or 'Pausa. Deixar o cliente falar e anotar o feedback no card.'
     if tipo == 'obrigado':
-        corpo = (f'<div class="aro a1"></div><h2 class="grande">{esc(s.get("titulo") or "Obrigado!")}</h2>'
+        foto = foto_cliente(s['foto'], base) if s.get('foto') else ''
+        corpo = (f'<div class="aro a1"></div>{foto}<h2 class="grande">{esc(s.get("titulo") or "Obrigado!")}</h2>'
                  f'<p class="sub">{esc(s.get("sub"))}</p><p class="kicker clara">Grupo Euforia</p>')
-        return 'escuro grad centro', corpo, nota
+        return 'escuro grad centro' + (' comfoto' if foto else ''), corpo, nota
     raise SystemExit(f'tipo de slide desconhecido: {tipo}')
 
 
@@ -170,7 +184,10 @@ h3{font-size:38px;font-weight:700;line-height:1.2}
 .a1{left:1180px;top:-260px;width:1100px;height:1100px}
 .a2{left:1380px;top:-60px;width:700px;height:700px;border-color:var(--destaque);opacity:.3}
 .a3{left:1300px;top:120px;width:840px;height:840px;border-color:var(--destaque);opacity:.25}
-.capa-foto{position:absolute;right:60px;bottom:0;height:920px;max-width:820px;object-fit:contain;object-position:bottom}
+.capa-foto{position:absolute;right:40px;bottom:0;height:1000px;max-width:900px;object-fit:contain;object-position:bottom;filter:drop-shadow(0 24px 60px rgba(0,0,0,.45))}
+.brilho{position:absolute;right:-60px;bottom:-260px;width:1100px;height:1100px;border-radius:50%;background:radial-gradient(circle,var(--destaque) 0%,transparent 62%);opacity:.32;pointer-events:none}
+.comfoto>h2,.comfoto>.sub{max-width:840px}
+.g4 img:nth-child(odd){object-position:right center}.g4 img:nth-child(even){object-position:left center}
 .capa .sub{max-width:900px}
 .capa .meio{display:flex;flex-direction:column;gap:32px;position:relative}
 .linha{display:grid;gap:32px;flex:1;align-content:center}
@@ -189,7 +206,7 @@ h3{font-size:38px;font-weight:700;line-height:1.2}
 .bola{flex:none;width:76px;height:76px;border-radius:50%;background:var(--forte);color:var(--claro);display:flex;align-items:center;justify-content:center;font-size:36px;font-weight:700}
 .rodape{font-size:36px;color:var(--texto-2)}
 .galeria{display:grid;gap:24px;flex:1;min-height:0}
-.galeria img{width:100%;height:100%;object-fit:contain;border-radius:16px;min-height:0}
+.galeria img{width:100%;height:100%;object-fit:contain;border-radius:16px;min-height:0;filter:drop-shadow(0 12px 28px rgba(0,0,0,.18))}
 .g1{grid-template-columns:1fr}.g2{grid-template-columns:repeat(2,1fr)}.g3{grid-template-columns:repeat(3,1fr)}
 .g4{grid-template-columns:repeat(2,1fr);grid-template-rows:repeat(2,1fr)}
 #pag{position:fixed;right:24px;bottom:16px;font:600 14px Inter,Arial;color:#9a97ab}
