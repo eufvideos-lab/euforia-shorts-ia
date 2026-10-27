@@ -110,12 +110,16 @@ Se ainda faltar o essencial (nenhuma foto do cliente em lugar nenhum, tema impos
      Rômulo e o Ismael na aba Próximas calls):
      1. Leia a Obs (tipo da call, data, Meet, instruções), a ficha, o contrato, o grupo dos últimos 15–30 dias, a
         última call (Gemini) e a apresentação anterior desse cliente (siga o mesmo padrão).
-     2. Slides HTML num arquivo único, nas cores do cliente: abertura, entregas do mês (o que foi feito e o que falta,
-        conferido no Entregas), resultados do canal **só em percentual**, próximos passos, o slide de feedback
-        "O que vocês estão achando do Grupo Euforia até agora?" e o agradecimento. Navegação por setas/clique;
-        notas do apresentador escondidas (aparecem só ao apertar N), porque a tela é compartilhada com o cliente.
-        Coloque `<meta name="robots" content="noindex, nofollow">` no `<head>`. Nada de valores, nada inventado,
-        nunca o nome do Henrique.
+     2. **Nunca escreva o HTML à mão.** Escreva só o conteúdo em `pedidos/<id>/conteudo.json` e gere os slides com
+        o modelo fixo: `python3 escritorio/apresentacao/gerar.py pedidos/<id>/conteudo.json pedidos/<id>/apresentacao.html
+        --prints pedidos/<id>/prints` (formato e tipos de slide em `escritorio/apresentacao/LEIAME.md`). Roteiro:
+        capa (com recorte da foto do cliente, se houver), agenda, onde estamos/entregas do mês (conferido no
+        Entregas), um divisor por bloco da call, slides do tipo da call, resultados do canal **só em percentual**
+        (se houver dado), próximos passos, `feedback` e `obrigado`. Um assunto por slide, frases curtas: o que é
+        detalhe, pendência ou "a confirmar" vai nas `notas`, nunca no slide (o gerador recusa). Imagens: prévias de
+        identidade e thumbs do Drive do cliente (`PASTAS.md`), se existirem. Nada de valores, nada inventado, nunca
+        o nome do Henrique. Olhe os PNGs de `prints/` antes de publicar; se algo ficar cortado ou vazio, ajuste o
+        conteúdo e gere de novo.
      3. Slug: `apresentacao-<cliente>-<aaaammdd>-<8 letras minúsculas aleatórias>`, só letras, números e hífen,
         no máximo 60 caracteres (encurte o nome do cliente se precisar; aaaammdd = dia da call).
      4. Publique no n8n "Sites | Publicar LP" (`KyPEBbzbdL8pOklC`) com `test_workflow` e pinData no nó
