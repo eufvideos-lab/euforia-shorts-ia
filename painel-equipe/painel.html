@@ -417,6 +417,34 @@ function grupo(titulo, lista, vazio){
   if (!lista.length && !vazio) return '';
   return `<section class="group"><h2>${titulo} <span class="count">${lista.length}</span></h2>${lista.length ? `<ul class="rows">${lista.map(linha).join('')}</ul>` : `<p class="empty">${vazio}</p>`}</section>`;
 }
+const FOLD = new Set();
+document.addEventListener('toggle', e => { const d = e.target; if (d.dataset && d.dataset.fold) { if (d.open) FOLD.add(d.dataset.fold); else FOLD.delete(d.dataset.fold); } }, true);
+// Fila do escritório (diretor): separa o que é com o Flau do que as máquinas já estão fazendo.
+const perguntaMaquina = c => /Pergunta:|Posso |Qual é|Responda aqui|\?\s*$/m.test(String(c.obs || '')) && /Escritório/.test(String(c.obs || ''));
+function filaEscritorio(){
+  const meus = D.cards.filter(c => c.meu && ABERTO.includes(c.status));
+  const decidir = ordenar(meus.filter(c => c.escritorio === 'Precisa da Direção' || (c.escritorio === 'À mão (Flau)' && perguntaMaquina(c))));
+  const mao = ordenar(meus.filter(c => c.escritorio === 'À mão (Flau)' && !decidir.includes(c)));
+  const faltas = ordenar(meus.filter(c => ['Falta informação', 'Falta do cliente'].includes(c.escritorio)));
+  const outras = ordenar(meus.filter(c => c.escritorio === 'Foi para outra máquina'));
+  const maquina = ordenar(meus.filter(c => !decidir.includes(c) && !mao.includes(c) && !faltas.includes(c) && !outras.includes(c)));
+  const comigo = ordenar(D.cards.filter(c => c.meu && ['Em revisão', 'Aguardando cliente'].includes(c.status)));
+  const seu = decidir.concat(mao), atras = seu.filter(c => diff(c.prazo) < 0).length;
+  const fechado = (titulo, lista, nota) => !lista.length ? '' : `<details class="group" data-fold="${esc(titulo)}" ${FOLD.has(titulo) ? 'open' : ''}><summary><h2 style="display:inline">${titulo} <span class="count">${lista.length}</span></h2> <span class="sub" style="font-size:13px">${nota}</span></summary><ul class="rows" style="margin-top:12px">${lista.map(linha).join('')}</ul></details>`;
+  return `<div class="head"><div><p class="eyebrow">${esc(D.hojeTexto)}</p><h1>Fila do escritório</h1></div><p class="sub">Em cima, só o que depende de você. O que as máquinas estão fazendo fica recolhido embaixo.</p></div>
+    <div class="stats">
+      <div class="stat ${decidir.length ? 'hot' : ''}"><span class="v">${decidir.length}</span><span>esperando decisão sua</span></div>
+      <div class="stat"><span class="v">${mao.length}</span><span>para fazer à mão</span></div>
+      <div class="stat ${atras ? 'hot' : ''}"><span class="v">${atras}</span><span>seus atrasados</span></div>
+      <div class="stat"><span class="v">${maquina.length + outras.length}</span><span>com as máquinas</span></div>
+    </div>
+    ${grupo('Esperando decisão sua', decidir, 'Nenhuma pergunta da máquina para você.')}
+    ${grupo('Para fazer à mão', mao, 'Nada à mão com você.')}
+    ${grupo('Falta informação de quem pediu', faltas, '')}
+    ${fechado('Com a Máquina do Escritório', maquina, 'Ela pega sozinha, por ordem de prazo.')}
+    ${fechado('Com outras máquinas', outras, 'Shorts, carrossel ou longo: acompanhe no quadro de cada máquina.')}
+    ${fechado('Já saiu da mão do escritório', comigo, 'Em revisão ou com o cliente.')}`;
+}
 const saud = () => { const h = new Date().getHours(); return h < 12 ? 'Bom dia' : h < 18 ? 'Boa tarde' : 'Boa noite'; };
 const primeiro = () => String(D.nome || '').split(' ')[0];
 
@@ -500,8 +528,9 @@ const VIEWS = {
       </div>
       <div id="dres">${listaMensagens()}</div>`;
     } },
-  fila: { nome: 'Minha fila', pode: () => true, badge: () => D.cards.filter(c => c.meu && ABERTO.includes(c.status)).length,
+  fila: { nome: 'Minha fila', pode: () => true, badge: () => D.cards.filter(c => c.meu && ABERTO.includes(c.status) && (!diretor() || ['Precisa da Direção', 'À mão (Flau)'].includes(c.escritorio))).length,
     html(){
+      if (diretor()) return filaEscritorio();
       const meus = D.cards.filter(c => c.meu && ABERTO.includes(c.status));
       const faltas = ordenar(meus.filter(falta)), resto = meus.filter(c => !falta(c));
       const ag = ordenar(resto.filter(c => c.status === 'Ajustes' || diff(c.prazo) <= 0));
