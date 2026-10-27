@@ -59,7 +59,10 @@ Ordem:
 | O resto (relatório, apresentação de call, página de vendas, copy, funil, roteiros, pautas, SEO, bio, guia, estratégia, posicionamento, conferências) | **Produzir** (passo 3). |
 
 ## 2a. Pedido com pouca informação: buscar antes de travar
-A equipe às vezes manda só o link de um vídeo. Antes de travar, junte sozinho o que falta:
+Desde 27/10 o painel manda na Obs as linhas "Tema da thumb: ...", "Foto ou pasta: ..." e "Vídeo ou tema: ...":
+use-as primeiro (o tema é o texto base da thumb; a foto ou pasta é a primeira fonte de imagem).
+A equipe às vezes manda só o link de um vídeo. Antes de travar, junte sozinho o que falta (pastas no padrão de
+`PASTAS.md`, na raiz do repositório; os nomes abaixo são a reserva):
 - **Drive do cliente** (campo "Drive" da ficha; sem ele, a pasta "NN - NOME" em CLIENTES):
   - Fotos do cliente: pastas FOTOS, MATERIAIS VISUAIS, ARQUIVOS BRUTOS e thumbs anteriores.
   - Identidade: pasta MARCA / manual de marca, campo "Identidade shorts (IA)" da ficha.

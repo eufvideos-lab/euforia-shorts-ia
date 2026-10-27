@@ -58,7 +58,8 @@ bash instalar.sh   # instala Remotion e OpenCV (~15 s)
    produto de loja ou paisagem que não pareça Brasil sai do plano).
    Vídeo antigo com legenda/site gravados embaixo: em vez de marcar Erro, use `--cortar-baixo 0.22`.
 6. Identidade (só Institucional): leia "Identidade shorts (IA)" do cliente. Se estiver vazio, procure no Drive do
-   cliente (pasta MATERIAIS VISUAIS, tela final, carrosséis), tire as cores (fundo claro, texto escuro, destaque) e
+   cliente seguindo `PASTAS.md` (04 - IDENTIDADE VISUAL/LOGO E MANUAL e CAPAS DE SHORTS; reserva: MATERIAIS VISUAIS,
+   tela final, carrosséis), tire as cores (fundo claro, texto escuro, destaque) e
    grave no campo, no formato `fundo=#...; texto=#...; destaque=#...; fonte=...; logo=...`.
    Sem nada para tirar: fundo #FDFBF7, texto #1F2937, destaque #D45C78.
 7. Pasta de entrega: se "Pasta de entrega (opcional)" estiver preenchida, use ela. Senão, crie com o Google Drive
