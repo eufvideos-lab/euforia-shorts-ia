@@ -38,9 +38,10 @@ Card com "🏢 Escritório IA" = **Na fila** é sempre para fazer agora, mesmo q
 máquina: alguém o recolocou na fila de propósito. Leia o Obs inteiro e siga a instrução mais recente.
 Ordem:
 1. Pedidos do painel (Obs começa com "[Painel", título termina em "(painel)"), do mais antigo para o mais novo.
-2. Prioridade Urgente.
-3. Cliente com 🔴 atenção redobrada.
-4. Prazo mais antigo.
+2. Apresentações de call da agenda (título termina em "APRESENTAÇÃO DE CALL (agenda)"), a call mais próxima primeiro.
+3. Prioridade Urgente.
+4. Cliente com 🔴 atenção redobrada.
+5. Prazo mais antigo.
 **Atenda até 3 cards por rodada.** Sem nada a fazer, encerre sem avisar ninguém.
 
 ## 2. Classificar cada card (antes de produzir)
