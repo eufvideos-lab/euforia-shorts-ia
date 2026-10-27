@@ -436,6 +436,7 @@ const VIEWS = {
       const vermelhos = DD.clientes.filter(c => c.atencao).map(c => ({ c, ab: ab.filter(x => x.cliente === c.id), atr: atr.filter(x => x.cliente === c.id) }))
         .sort((a, b) => b.atr.length - a.atr.length || b.ab.length - a.ab.length);
       const ativ = atividade().slice(0, 40);
+      const hoje = hojeDiretor();
       return `<div class="head"><div><p class="eyebrow">${esc(DD.hojeTexto)} · atualizado às ${esc(DD.agora)}</p><h1>${saud()}, ${esc(primeiro())}</h1></div>
         <div class="actions"><button class="btn primary" id="d-novo">+ Novo card</button></div></div>
       <div class="stats six">
@@ -446,6 +447,7 @@ const VIEWS = {
         <button class="stat" data-filtro="Aguardando cliente" style="text-align:left;background:var(--surface)"><span class="v">${DD.cards.filter(c => c.status === 'Aguardando cliente').length}</span><span>com o cliente</span></button>
         <button class="stat" data-filtro="aranhoje" style="text-align:left;background:var(--surface)"><span class="v">${ar.length}</span><span>vão ao ar hoje</span></button>
       </div>
+      ${hoje}
       <div class="two">
         <section class="panel"><h2>Carga de cada um</h2><p class="sub" style="font-size:13px">Cards abertos (a fazer, fazendo e ajustes). Clique no nome para ver a fila da pessoa.</p><ul class="load">${DD.equipe.map(linhaCarga).join('')}</ul>
           <p class="note">Na semana: <b>${postados}</b> peças foram ao ar. Em revisão com o Ismael: <b>${DD.cards.filter(c => c.status === 'Em revisão').length}</b>.</p></section>
@@ -668,6 +670,45 @@ const VIEWS = {
       <div id="dres">${listaPedidos()}</div>`;
     } }
 };
+
+// Visão geral do diretor: calls de hoje e amanhã com a apresentação de cada uma, apresentações que ainda não ficaram prontas e pedidos parados por falta de informação.
+const ehApresCall = c => /APRESENTAÇÃO DE CALL/i.test(c.titulo || c.nome || '');
+const apresPronta = c => !!c.link && !ABERTO.includes(c.status);
+function apresDaCall(k){
+  const l = DD.cards.filter(c => ehApresCall(c) && c.status !== 'Cancelado');
+  const nome = String(k.cliente || '').toLowerCase().split(' ')[0];
+  return l.find(c => k.id && String(c.obs || '').includes(k.id)) || l.find(c => nome && /\(agenda\)/i.test(c.titulo || c.nome || '') && String(c.clienteNome || '').toLowerCase().includes(nome) && dd(c.prazo) >= -1);
+}
+function hojeDiretor(){
+  const calls = CC && !CC.erro ? CC.calls.filter(k => { const d = Math.round((dia(k.dia) - dia(CC.hoje)) / 864e5); return (d === 0 && k.fimHora > CC.agora) || d === 1; }) : [];
+  const pend = DD.cards.filter(c => ehApresCall(c) && !apresPronta(c) && !['Cancelado', 'Postado'].includes(c.status)).sort((a, b) => dd(a.prazo) - dd(b.prazo));
+  const falta = (D.pedidos || []).filter(p => situacao(p).g === 'falta');
+  const chipApres = k => { const a = apresDaCall(k);
+    if (!a) return '<span class="chip red">Sem apresentação</span>';
+    return apresPronta(a) ? `<a class="chip ok" style="text-decoration:none" href="${esc(a.link)}" target="_blank" rel="noopener">Abrir apresentação</a>` : `<button class="chip warn" style="border:0;cursor:pointer" data-dcard="${a.id}">Apresentação ${a.status === 'Ajustes' ? 'em ajuste' : 'em produção'}</button>`; };
+  const linhaCall = k => `<li class="item ${k.agora ? 'late' : ''}"><span class="stripe"></span><div class="main" style="cursor:default">
+      <span class="t">${k.dia === CC.hoje ? 'Hoje' : 'Amanhã'} ${esc(k.hora)} · ${esc(k.cliente)}</span>
+      <span class="meta">${k.agora ? '<span class="chip red">Acontecendo agora</span>' : ''}${k.tipo ? `<span class="chip">${esc(k.tipo)}</span>` : ''}${chipApres(k)}</span></div>
+    <span class="act">${k.meet ? `<a class="btn ${k.agora ? 'primary' : ''}" style="text-decoration:none" href="${esc(k.meet)}" target="_blank" rel="noopener">Meet</a>` : ''}</span></li>`;
+  const linhaPend = c => `<li class="item ${dd(c.prazo) < 0 ? 'late' : dd(c.prazo) === 0 ? 'today' : ''}"><span class="stripe"></span><button class="main" data-dcard="${c.id}">
+      <span class="t">${esc(c.clienteNome)} · ${esc(c.nome)}</span>
+      <span class="meta"><span class="chip">${esc(c.status)}</span>${c.prazo ? `<span class="chip ${dd(c.prazo) < 0 ? 'red' : ''}">Prazo ${fmt(c.prazo)}</span>` : ''}${c.escritorio ? `<span class="chip">${esc(c.escritorio)}</span>` : ''}</span></button></li>`;
+  const linhaFalta = p => `<li class="item late"><span class="stripe"></span><button class="main" data-dcard="${p.id}">
+      <span class="t">${esc(p.clienteNome)} · ${esc(p.nome)}</span>
+      <span class="meta"><span class="chip">por ${esc(p.por)}</span><span class="chip">Pedido ${esc(p.quando)}</span></span>
+      ${p.falta ? `<span class="sub" style="font-size:13px;color:var(--bad)">Falta: ${esc(p.falta)}</span>` : ''}</button></li>`;
+  const semApres = calls.filter(k => !apresDaCall(k)).length;
+  return `<div class="hoje3" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;align-items:start;margin-bottom:16px">
+    <section class="panel"><h2>Calls de hoje e amanhã <span class="count">${calls.length}</span></h2>
+      ${!CC ? '<p class="sub">Carregando a agenda…</p>' : CC.erro ? '<p class="empty">Não consegui ler a agenda agora.</p>' : calls.length ? `${semApres ? `<p class="sub" style="font-size:13px;color:var(--bad)">${semApres} sem apresentação ainda.</p>` : ''}<ul class="rows">${calls.map(linhaCall).join('')}</ul>` : '<p class="empty">Nenhuma call hoje nem amanhã.</p>'}
+      <button class="btn" data-view="calls" style="align-self:flex-start">Ver agenda completa</button></section>
+    <section class="panel"><h2>Apresentações pendentes <span class="count">${pend.length}</span></h2>
+      ${pend.length ? `<ul class="rows">${pend.map(linhaPend).join('')}</ul>` : '<p class="empty">Todas as apresentações de call estão prontas.</p>'}</section>
+    <section class="panel"><h2>Pedidos parados por falta de informação <span class="count">${falta.length}</span></h2>
+      ${falta.length ? `<ul class="rows">${falta.map(linhaFalta).join('')}</ul>` : '<p class="empty">Nenhum pedido esperando informação.</p>'}
+      <button class="btn" data-view="pedidos" style="align-self:flex-start">Ver todos os pedidos</button></section>
+  </div>`;
+}
 
 // Etapa do pedido do ponto de vista de quem pediu.
 function situacao(p){
@@ -1316,6 +1357,8 @@ const DEMO_DD = {"ok":true,"nome":"Flau (exemplo)","hoje":"2026-10-26","hojeText
  "equipe":[{"id":"p1","nome":"Victor","papel":"Edição"},{"id":"p2","nome":"Lorena","papel":"Edição"},{"id":"p3","nome":"Daniel","papel":"Edição"},{"id":"p4","nome":"Ismael","papel":"Revisão e postagem"},{"id":"p5","nome":"Rômulo","papel":"Calls e canal"},{"id":"p6","nome":"Escritório","papel":"Flau + IA"}],
  "clientes":[{"id":"c1","nome":"Dra. Helena (exemplo)","faixa":"A","atencao":true},{"id":"c2","nome":"Instituto Aurora (exemplo)","faixa":"A","atencao":false},{"id":"c3","nome":"Marcos Lima (exemplo)","faixa":"B","atencao":false},{"id":"c4","nome":"Paula Reis (exemplo)","faixa":"B","atencao":true},{"id":"c5","nome":"Clínica Vida (exemplo)","faixa":"C","atencao":false}],
  "cards":[
+  {"id":"d30","cod":450,"titulo":"MARCOS LIMA (EXEMPLO) | APRESENTAÇÃO DE CALL (agenda)","nome":"APRESENTAÇÃO DE CALL (agenda)","cliente":"c3","clienteNome":"Marcos Lima (exemplo)","tipo":"Apresentação","qtd":1,"status":"Fazendo","prazo":"2026-10-26","postar":"","prioridade":"","resp":["p6"],"obs":"Evento da agenda: k3","link":"","linkPost":"","origem":"Extra","escritorio":"Fazendo (IA)"},
+  {"id":"d31","cod":451,"titulo":"INSTITUTO AURORA (EXEMPLO) | APRESENTAÇÃO DE CALL (agenda)","nome":"APRESENTAÇÃO DE CALL (agenda)","cliente":"c2","clienteNome":"Instituto Aurora (exemplo)","tipo":"Apresentação","qtd":1,"status":"Em revisão","prazo":"2026-10-26","postar":"","prioridade":"","resp":["p6"],"obs":"Evento da agenda: k2","link":"https://drive.google.com/","linkPost":"","origem":"Extra","escritorio":"Feito pela IA"},
   {"id":"d1","cod":412,"nome":"VÍDEO 09","cliente":"c1","clienteNome":"Dra. Helena (exemplo)","tipo":"Vídeo longo","qtd":1,"status":"Ajustes","prazo":"2026-10-23","postar":"2026-10-28","prioridade":"Urgente","resp":["p1"],"obs":"[Painel 26/10 09:15] Ismael pediu ajuste: trocar o B-roll do minuto 3\n[Painel 23/10 16:40] Victor mandou para revisão","link":"https://drive.google.com/demo","linkPost":"","origem":"Pacote semanal","escritorio":""},
   {"id":"d2","cod":418,"nome":"SHORTS 10-12","cliente":"c3","clienteNome":"Marcos Lima (exemplo)","tipo":"Shorts","qtd":3,"status":"A fazer","prazo":"2026-10-26","postar":"2026-10-29","prioridade":"","resp":["p2"],"obs":"","link":"","linkPost":"","origem":"Pacote semanal","escritorio":""},
   {"id":"d3","cod":420,"nome":"VÍDEO 05","cliente":"c2","clienteNome":"Instituto Aurora (exemplo)","tipo":"Vídeo longo","qtd":1,"status":"Fazendo","prazo":"2026-10-27","postar":"2026-10-29","prioridade":"","resp":["p1"],"obs":"[Painel 26/10 08:31] Victor começou","link":"","linkPost":"","origem":"Pacote semanal","escritorio":""},

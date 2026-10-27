@@ -17,7 +17,7 @@ Tela da equipe por cima do Notion. O Notion continua sendo o banco (Entregas, Cl
   - `pedido.js` → "Painel | Pedido ao escritório (V1)": cria card no Entregas para o Escritório (Flau + IA), automático ou à mão.
 
 Acesso: tabela do n8n "Painel equipe · acesso" (token, PIN, nome, ficha, papel, ativo). Token e PIN nunca vão para o Notion, Discord ou este repositório.
-Papel diretor (Henrique): no mesmo link do painel ganha Visão geral, Por pessoa, Todos os cards e Mensagens da equipe; a "Minha fila" vira a fila do Escritório e ele revisa, posta e mexe na grade como o Ismael.
+Papel diretor (Henrique): no mesmo link do painel ganha Visão geral (com calls de hoje e amanhã e a apresentação de cada uma, apresentações pendentes e pedidos parados por falta de informação), Por pessoa, Todos os cards e Mensagens da equipe; a "Minha fila" vira a fila do Escritório e ele revisa, posta e mexe na grade como o Ismael.
 O usuário de teste só enxerga e mexe em cards com "TESTE PAINEL" no título, e não avisa no Discord.
 
 Nada aqui está publicado. Publicar os fluxos e subir a página (slug `equipe`) só com OK do Henrique.
