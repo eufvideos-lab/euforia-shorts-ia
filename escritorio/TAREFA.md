@@ -61,6 +61,12 @@ Ordem:
 ## 2a. Pedido com pouca informação: buscar antes de travar
 Desde 27/10 o painel manda na Obs as linhas "Tema da thumb: ...", "Foto ou pasta: ..." e "Vídeo ou tema: ...":
 use-as primeiro (o tema é o texto base da thumb; a foto ou pasta é a primeira fonte de imagem).
+Desde 27/10 pode vir também "Quantidade: ..." (thumb: "1 thumb", "3 thumbs", "6 thumbs" ou "12 thumbs"). Faça a
+quantidade pedida: uma thumb por tema, na ordem em que os temas vêm em "Tema da thumb" (separados por vírgula, ou
+uma faixa como "vídeos 05 a 08", que vira um tema por vídeo, tirado do roteiro ou do vídeo). Se vierem menos temas
+do que a quantidade, complete com os próximos roteiros do cliente. Pedido de 6 ou 12 pode ser feito em partes: deixe
+"Fazendo (IA)", anote no topo do Obs "[Escritório dd/MM HH:mm] Thumbs: X de N feitas" e continue na próxima rodada;
+só ponha Em revisão e avise quando todas estiverem prontas.
 A equipe às vezes manda só o link de um vídeo. Antes de travar, junte sozinho o que falta (pastas no padrão de
 `PASTAS.md`, na raiz do repositório; os nomes abaixo são a reserva):
 - **Drive do cliente** (campo "Drive" da ficha; sem ele, a pasta "NN - NOME" em CLIENTES):
