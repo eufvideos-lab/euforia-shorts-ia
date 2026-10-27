@@ -82,6 +82,7 @@ main{min-width:0;padding-block:32px 64px;padding-left:max(16px,min(40px,4vw));pa
 .empty{color:var(--muted);font-size:14px;padding:12px 2px}
 
 .btn{border:1px solid var(--line);background:var(--surface);border-radius:9px;padding:8px 14px;font-weight:600;white-space:nowrap}
+a.btn{color:var(--ink);text-decoration:none;display:inline-flex;align-items:center}
 .btn:hover{border-color:var(--muted)}
 .btn.primary{background:var(--grad);border-color:transparent;color:var(--on-accent)}
 .btn.ok{background:var(--ok);border-color:var(--ok);color:#fff}
@@ -332,7 +333,7 @@ const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp
 let D = null, R = null, W = null, WQR = '', PIN = '', view = '', ocupado = false;
 let G = null, GC = '', GP = '';
 const RASC = {};
-let MP = null, MPQ = '';
+let MP = null, MPQ = '', CC = null;
 let DD = null, MM = null, PF = 'abertos', PQ = '', TQ = '', TS = '', TP = '', TT = '', MQ = '', MW = '';
 try { PIN = localStorage.getItem(KEY) || ''; view = localStorage.getItem('painel-view') || ''; } catch (e) {}
 if (DEMO) PIN = '0000';
@@ -369,6 +370,7 @@ async function carregar(silencioso){
     }
     D = d; render(); tela('app');
     if (VIEWS.responder.pode()) { carregarRespostas(); if (!W && !diretor()) carregarWhats(); }
+    if (VIEWS.calls.pode() && !CC) carregarCalls();
     if (diretor()) carregarDiretor();
   } catch (e) {
     if (!D) { tela('tela-aviso'); $('#aviso-t').textContent = 'Não abriu agora'; $('#aviso-p').textContent = 'Confira a internet e tente de novo em alguns minutos. Se continuar, avise a diretoria.'; }
@@ -544,6 +546,26 @@ const VIEWS = {
       return `<div class="head"><div><p class="eyebrow">Postagem do dia vem primeiro</p><h1>Postar hoje e amanhã</h1></div></div>
       ${grupo('Aprovado, falta subir', l, 'Tudo de hoje e amanhã já está no ar.')}
       ${grupo('Esperando o cliente aprovar', esp, 'Nenhuma peça parada no cliente.')}`;
+    } },
+  calls: { nome: 'Próximas calls', pode: () => ['revisor', 'calls', 'diretor', 'teste'].includes(papel()), badge: () => CC ? CC.calls.filter(c => c.dia === CC.hoje && c.fimHora > CC.agora).length : 0,
+    html(){
+      const topo = `<div class="head"><div><p class="eyebrow">Agenda Assessoria EDL${CC ? ' · atualizada às ' + esc(CC.agora) : ''}</p><h1>Próximas calls</h1></div><p class="sub">Tudo o que está marcado na agenda das reuniões, inclusive o que o cliente marcou sozinho pela página. As marcadas nas últimas 24 horas aparecem com "Nova".</p></div>`;
+      if (!CC) return topo + '<p class="sub">Carregando…</p>';
+      if (CC.erro) return topo + '<p class="empty">Não consegui ler a agenda agora. Tente de novo em alguns minutos.</p>';
+      const dias = [...new Set(CC.calls.map(c => c.dia))];
+      const nomeDia = d => { const k = Math.round((dia(d) - dia(CC.hoje)) / 864e5); const t = dia(d).toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: '2-digit' }); return k === 0 ? 'Hoje · ' + t : k === 1 ? 'Amanhã · ' + t : t.charAt(0).toUpperCase() + t.slice(1); };
+      const item = c => `<li class="item ${c.agora ? 'late' : c.novo ? 'today' : ''}"><span class="stripe"></span>
+        <div class="main" style="cursor:default"><span class="t">${esc(c.hora)} · ${esc(c.cliente)}</span>
+        <span class="meta">${c.agora ? '<span class="chip red">Acontecendo agora</span>' : ''}${c.novo ? '<span class="chip org">Nova</span>' : ''}${c.tipo ? `<span class="chip">${esc(c.tipo)}</span>` : ''}<span class="chip">${esc(c.hora)} às ${esc(c.fimHora)}</span>${c.convidados ? `<span class="chip">${c.convidados} convidado${c.convidados > 1 ? 's' : ''}</span>` : ''}</span></div>
+        <span class="act">${c.meet ? `<a class="btn ${c.agora ? 'primary' : ''}" style="text-decoration:none" href="${esc(c.meet)}" target="_blank" rel="noopener">Entrar no Meet</a>` : ''}</span></li>`;
+      const passou = c => c.dia === CC.hoje && c.fimHora <= CC.agora;
+      const novas = CC.calls.filter(c => c.novo && !passou(c)).length;
+      return topo + `<div class="stats">
+        <div class="stat"><span class="v">${CC.calls.filter(c => c.dia === CC.hoje && !passou(c)).length}</span><span>hoje</span></div>
+        <div class="stat"><span class="v">${CC.calls.filter(c => Math.round((dia(c.dia) - dia(CC.hoje)) / 864e5) === 1).length}</span><span>amanhã</span></div>
+        <div class="stat"><span class="v">${CC.calls.filter(c => !passou(c)).length}</span><span>nas próximas 3 semanas</span></div>
+        <div class="stat ${novas ? 'hot' : ''}"><span class="v">${novas}</span><span>marcadas nas últimas 24h</span></div></div>
+      ${dias.length ? dias.map(d => { const l = CC.calls.filter(c => c.dia === d && !passou(c)); return l.length ? `<section class="group"><h2>${esc(nomeDia(d))} <span class="count">${l.length}</span></h2><ul class="rows">${l.map(item).join('')}</ul></section>` : ''; }).join('') : '<p class="empty">Nenhuma call marcada nas próximas 3 semanas.</p>'}`;
     } },
   responder: { nome: 'Responder', pode: () => ['revisor', 'calls', 'teste', 'diretor'].includes(papel()), badge: () => R ? R.itens.length : 0,
     html(){
@@ -1051,6 +1073,10 @@ async function ligarWhats(){
   setTimeout(() => { if (W !== 'conectado') { pararWhats(); W = 'desconectado'; WQR = ''; render(); } }, 300000);
 }
 
+async function carregarCalls(){
+  try { const r = await api('euforia-painel-calls'); CC = r && r.ok ? r : (CC || { erro: true, calls: [] }); } catch (e) { CC = CC || { erro: true, calls: [] }; }
+  if (!ocupado && !(view === 'pedir' && $('#fpedir'))) render();
+}
 async function carregarRespostas(){
   try { const r = await api('euforia-painel-respostas'); if (r && r.ok) { R = r; if (!ocupado) render(); } } catch (e) {}
 }
@@ -1195,6 +1221,7 @@ setInterval(() => { if (D && !ocupado && !document.hidden && !$('#layer').innerH
 // Mensagens da equipe: a cada 2 minutos quando a aba está aberta.
 setInterval(() => { if (D && diretor() && view === 'mensagens' && !document.hidden) carregarMensagens(); }, 120000);
 // A fila de respostas muda mais rápido: atualiza a cada minuto quando a aba Responder está aberta.
+setInterval(() => { if (D && VIEWS.calls.pode() && !ocupado && !document.hidden) carregarCalls(); }, 300000);
 setInterval(() => { if (D && view === 'responder' && !ocupado && !document.hidden && !(document.activeElement && document.activeElement.dataset && document.activeElement.dataset.rtxt)) carregarRespostas(); }, 60000);
 
 // Demonstração (?demo=1): dados de exemplo, nada é enviado.
@@ -1208,6 +1235,7 @@ function demoApi(path, b){
     return wait({ ok: true, estado: W === 'aguardando' ? (demoApi.n > 2 ? 'conectado' : 'aguardando') : (W || 'desconectado') });
   }
   if (path === 'euforia-painel-responder') return wait({ ok: true, pelo: 'seu número' });
+  if (path === 'euforia-painel-calls') return wait(DEMO_C);
   if (path === 'euforia-painel-respostas') { if (b && b.acao === 'dispensar') return wait({ ok: true }); return wait(DEMO_R); }
   if (path === 'euforia-painel-grade') {
     if (b.acao === 'listar') return wait(JSON.parse(JSON.stringify(DEMO_G)));
@@ -1309,6 +1337,11 @@ const DEMO_M = {"ok":true,"itens":[
   {"quem":"Rômulo","grupo":"EUFORIA | Instituto Aurora","texto":"Bom dia, pessoal! Os shorts desta semana vão para revisão hoje.","quando":"2026-10-26T09:02"},
   {"quem":"Rômulo","grupo":"EUFORIA | Clínica Vida","texto":"Tudo certo para a reunião de amanhã às 11h?","quando":"2026-10-25T17:20"}]};
 const DEMO_QR = 'data:image/svg+xml;utf8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 21 21" shape-rendering="crispEdges"><rect width="21" height="21" fill="#fff"/><path d="M1 1h7v7H1zM13 1h7v7h-7zM1 13h7v7H1z" fill="#111"/><path d="M2 2h5v5H2zM14 2h5v5h-5zM2 14h5v5H2z" fill="#fff"/><path d="M3 3h3v3H3zM15 3h3v3h-3zM3 15h3v3H3zM10 2h1v3h-1zM9 9h3v3H9zM13 10h2v1h-2zM16 13h3v2h-3zM10 15h3v1h-3zM13 17h2v3h-2zM17 17h3v1h-3z" fill="#111"/></svg>');
+const DEMO_C = {"ok":true,"hoje":"2026-10-26","agora":"10:20","calls":[
+  {"id":"k1","cliente":"Dra. Helena (exemplo)","tipo":"Reunião de Onboarding + Oferta","dia":"2026-10-26","hora":"10:00","fimHora":"11:00","meet":"https://meet.google.com/","convidados":1,"novo":false,"agora":true},
+  {"id":"k2","cliente":"Instituto Aurora (exemplo)","tipo":"Alinhamento","dia":"2026-10-26","hora":"15:00","fimHora":"16:00","meet":"https://meet.google.com/","convidados":2,"novo":true,"agora":false},
+  {"id":"k3","cliente":"Marcos Lima (exemplo)","tipo":"Reunião de Estratégia","dia":"2026-10-27","hora":"09:00","fimHora":"10:00","meet":"https://meet.google.com/","convidados":1,"novo":false,"agora":false},
+  {"id":"k4","cliente":"Paula Reis (exemplo)","tipo":"Reunião de Lançamento do Canal","dia":"2026-10-29","hora":"16:00","fimHora":"17:00","meet":"https://meet.google.com/","convidados":0,"novo":true,"agora":false}]};
 const DEMO_R = {"ok":true,"agora":"11:58","itens":[
   {"chat":"1@g.us","msg":"m1","grupo":"EUFORIA | Paula Reis","cliente":"Paula Reis (exemplo)","faixa":"B","atencao":true,"sensivel":true,"direcao":false,"tema":"reclamação","resumo":"Reclama que o vídeo de ontem saiu com legenda errada","autor":"Paula","texto":"Gente, o vídeo de ontem saiu com o nome do curso errado na legenda 😕","contexto":"25/10 18:02 Euforia: Vídeo 03 no ar!\n26/10 09:14 Paula: Gente, o vídeo de ontem saiu com o nome do curso errado na legenda 😕","qtd":1,"desde":"26/10 09:14","espera":164},
   {"chat":"2@g.us","msg":"m2","grupo":"EUFORIA | Dra. Helena","cliente":"Dra. Helena (exemplo)","faixa":"A","atencao":true,"sensivel":true,"direcao":true,"tema":"financeiro","resumo":"","autor":"Helena","texto":"","contexto":"","qtd":1,"desde":"26/10 11:20","espera":38},
