@@ -32,7 +32,9 @@ bash instalar.sh   # instala Remotion e OpenCV (~15 s)
 ```
 
 ## 3. Para cada pedido
-1. Mude o Status para "Em edição" e escreva no "Log da máquina": "iniciado <data hora>".
+1. Abra a página do pedido e confira que o Status ainda é "Editar" ou "Ajustar" (outra rodada pode ter pegado).
+   Se não for, pule este pedido sem mexer nele. Se for, mude o Status para "Em edição" na hora e escreva no
+   "Log da máquina": "iniciado <data hora>".
 2. Pegue o ID do arquivo no link "Vídeo editado (link do Drive)" (o trecho depois de /d/ ou id=).
    Se o link for de pasta, liste a pasta com o Google Drive e use o vídeo editado mais recente (.mp4/.mov).
    Se não achar vídeo: Status "Erro" e siga para o próximo (veja "Como tratar erro").

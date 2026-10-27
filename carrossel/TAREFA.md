@@ -37,7 +37,8 @@ cd carrossel && npm ci --no-audit --no-fund --loglevel=error; cd ..
 O Chrome já vem no ambiente (/opt/pw-browsers). Se não achar, use `CHROME=<caminho>`.
 
 ## 3. Para o pedido
-1. Status "Em produção"; no "Log da máquina": "iniciado <data hora>".
+1. Abra a página do pedido e confira que o Status ainda é "Criar" ou "Ajustar" (outra rodada pode ter pegado). Se não
+   for, pule este pedido sem mexer nele. Se for, Status "Em produção" na hora; no "Log da máquina": "iniciado <data hora>".
 2. Pasta de trabalho: `pedidos/<id-curto>/` com `assets/fotos/`.
 3. **Identidade da cliente.**
    a. Se "Identidade carrossel (IA)" do cliente estiver preenchida (JSON), baixe o logo pelos IDs
