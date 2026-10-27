@@ -5,6 +5,8 @@ no quadro 🎬 Pedidos de Shorts IA do Notion. Responda e registre tudo em portu
 
 ## Endereços fixos
 - Quadro de pedidos (Notion, data source): collection://ee1fefc1-6ee5-4751-92e3-22dab57f7356
+  (fila sem gastar cota: modo view em view://40698c0c-dde0-8109-8be7-000c3f588f28, "🤖 Fila da máquina", já filtrada
+  em Editar/Ajustar e do mais antigo para o mais novo)
 - Clientes (Notion, data source): collection://44f009f6-e49b-4b88-b155-3e73ee1ab79b (campo "Identidade shorts (IA)")
 - Ficha dos modelos: página "Modelos de Shorts" (3f298c0cdde0816ca611d7b844bf1c46)
 - Tabela de medição: collection://39d3d9d8-f32e-432f-ae98-9511c67fa53e
@@ -16,8 +18,10 @@ no quadro 🎬 Pedidos de Shorts IA do Notion. Responda e registre tudo em portu
     (mensagem exata, arquivo, tamanho, passo que falhou, sugestão de correção).
 
 ## 1. Ver se há trabalho (rápido, gasta pouco)
-Consulte o quadro: Status = "Editar" ou "Ajustar". Se não houver nenhum, encerre sem fazer mais nada.
-Atenda no máximo 2 pedidos por rodada (o resto fica para a próxima). Mais antigo primeiro.
+Leia a visão "🤖 Fila da máquina" com notion-query-data-sources em modo view (nunca SQL nem filtro: a cota do
+Notion é dividida com todas as máquinas e o painel, e quando acaba tudo para). Se vier vazia, encerre sem fazer mais nada.
+Atenda 2 pedidos por rodada, mais antigo primeiro. Se os 2 terminarem com a rodada abaixo de 35 minutos e ainda
+houver fila, pegue mais 1 (no máximo 4 por rodada). O resto fica para a próxima.
 
 ## 2. Preparar a máquina (só se houver pedido)
 O código está no repositório público da Euforia: `git clone --depth 1 https://github.com/eufvideos-lab/euforia-shorts-ia.git`.

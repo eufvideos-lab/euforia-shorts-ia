@@ -43,7 +43,7 @@ Ordem:
 3. Prioridade Urgente.
 4. Cliente com 🔴 atenção redobrada.
 5. Prazo mais antigo.
-**Atenda até 3 cards por rodada.** Sem nada a fazer, encerre sem avisar ninguém.
+**Atenda 3 cards por rodada; se a rodada ainda estiver abaixo de 30 minutos e houver fila, siga pegando (no máximo 6).** Sem nada a fazer, encerre sem avisar ninguém.
 
 ## 2. Classificar cada card (antes de produzir)
 | Caso | O que fazer |
