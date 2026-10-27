@@ -82,7 +82,7 @@ if (!teste && !manual && p.tipo === 'shorts') { const est = NA ? 'Nova Acrópole
   ...(/^https:\\/\\//.test(p.link) ? { 'Vídeo editado (link do Drive)': { url: p.link } } : {}) } }; }
 if (!teste && !manual && p.tipo === 'carrossel') quadro = { db: '4cc9fd21563940afb1512e1d4f9a2bfb', nome: 'quadro de Carrosséis IA', props: {
   'Pedido': { title: t(nome.toUpperCase() + ' | CARROSSEL (painel)') }, 'Cliente': { relation: [{ id: p.cliente }] }, 'Status': { select: { name: 'Criar' } },
-  'Pacote': { select: { name: '1 carrossel' } } } };
+  'Pacote': { select: { name: (p.texto.match(/Quantidade: *((?:1|3|6|12) carross[a-zéê]+)/) || [0, '1 carrossel'])[1] } } } };
 return [{ json: { ok: !erro, body: JSON.stringify({ parent: { database_id: '74b3076a325749e3bac4ba6659215e48' }, properties: props }),
   temQuadro: !erro && !!quadro, quadroNome: quadro ? quadro.nome : '', quadroDb: quadro ? quadro.db : '', quadroProps: quadro ? JSON.stringify(quadro.props) : '', resumo, obs,
   resposta: erro ? { ok: false, motivo: erro } : { ok: true, quem: manual ? 'Escritório, à mão' : c[2], titulo } } }];

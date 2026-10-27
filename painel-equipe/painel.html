@@ -731,7 +731,9 @@ const VIEWS = {
         <label for="pf" id="lpf" hidden>Onde fazer<select id="pf"><option>Canva</option><option>Edição de vídeo (Premiere / CapCut)</option><option>Google Slides</option><option>Notion</option><option>Outro</option></select></label>
         <label for="pl"><span id="lpl-t">Link ou pasta</span><input type="text" id="pl"></label>
         <p class="note" id="nshorts" hidden style="color:var(--bad)"><b>Mande o vídeo SEM legenda.</b> Vídeo com legenda embutida dá erro na máquina de shorts.</p>
-        <label for="ptema" id="lptema" hidden>Tema ou texto da thumb (obrigatório)<input type="text" id="ptema" maxlength="200" placeholder="Ex.: os 3 erros do primeiro emprego"></label>
+        <p class="note" id="npautas" hidden>Pautas e roteiros já saem em lote de 12.</p>
+        <label for="pqtd" id="lpqtd" hidden>Quantos<select id="pqtd"></select></label>
+        <label for="ptema" id="lptema" hidden>Tema ou texto da thumb (obrigatório; num pacote, separe por vírgula ou escreva "vídeos 05 a 08")<input type="text" id="ptema" maxlength="600" placeholder="Ex.: os 3 erros do primeiro emprego"></label>
         <label for="pfoto" id="lpfoto" hidden>Foto ou pasta (opcional)<input type="text" id="pfoto" maxlength="500" placeholder="Link da foto ou da pasta. Sem isso a máquina procura no Drive do cliente."></label>
         <label for="pvt" id="lpvt" hidden>Vídeo ou tema (opcional)<input type="text" id="pvt" maxlength="500" placeholder="Link do vídeo ou o tema. Sem roteiro, a máquina usa a fala do vídeo."></label>
         <label for="po">O que precisa, em detalhe<textarea id="po" required minlength="5"></textarea><small class="sub" id="po-min" hidden style="font-size:12px">Pedido livre: escreva pelo menos 40 letras, com o que é, para quê e onde vai.</small></label>
@@ -847,7 +849,11 @@ function atualizarPedido(){
   if (!pf.dataset.mexeu) pf.value = t.mao;
   $('#lpl-t').textContent = t.link;
   po.placeholder = 'Ex.: ' + t.ex;
-  $('#nshorts').hidden = t.id !== 'shorts'; $('#lptema').hidden = $('#lpfoto').hidden = t.id !== 'thumb'; $('#lpvt').hidden = t.id !== 'carrossel'; $('#po-min').hidden = t.id !== 'outro';
+  $('#nshorts').hidden = t.id !== 'shorts'; $('#lptema').hidden = $('#lpfoto').hidden = t.id !== 'thumb'; $('#lpvt').hidden = t.id !== 'carrossel';
+  // Pacotes: carrossel e thumb 1/3/6/12; shorts saem de um vídeo só (1 ou 3). Pautas e roteiros já vêm em lote de 12.
+  const QTD = { carrossel: ['1 carrossel', '3 carrosséis', '6 carrosséis', '12 carrosséis'], thumb: ['1 thumb', '3 thumbs', '6 thumbs', '12 thumbs'], shorts: ['3 shorts', '1 short'] }[t.id];
+  $('#lpqtd').hidden = !QTD; $('#npautas').hidden = t.id !== 'pautas';
+  if (QTD && $('#pqtd').dataset.tipo !== t.id) { $('#pqtd').innerHTML = QTD.map(q => `<option>${q}</option>`).join(''); $('#pqtd').dataset.tipo = t.id; } $('#po-min').hidden = t.id !== 'outro';
   $('#resumo').innerHTML = `<p class="eyebrow">O que acontece</p>
     <dl class="dl"><dt>Quem faz</dt><dd><b>${manual ? 'Escritório, à mão' : t.maq}</b>${manual ? ' em ' + esc(pf.value) : ''}</dd>
     ${manual ? '' : `<dt>O que lê</dt><dd>${t.le}</dd>`}
@@ -1485,6 +1491,7 @@ document.addEventListener('submit', async e => {
   if (t.id === 'outro' && $('#po').value.trim().length < 40) { $('#po').focus(); toast('Explique melhor o pedido: pelo menos 40 letras, com o que é, para quê e onde vai.'); return; }
   const extra = t.id === 'thumb' ? '\nTema da thumb: ' + $('#ptema').value.trim() + ($('#pfoto').value.trim() ? '\nFoto ou pasta: ' + $('#pfoto').value.trim() : '')
     : t.id === 'carrossel' && $('#pvt').value.trim() ? '\nVídeo ou tema: ' + $('#pvt').value.trim() : '';
+  const qtd = !$('#lpqtd').hidden ? '\nQuantidade: ' + $('#pqtd').value : '';
   ocupado = true; b.disabled = true;
   try {
     const anexos = [];
@@ -1493,7 +1500,7 @@ document.addEventListener('submit', async e => {
       anexos.push({ nome: PANEXOS[i].name, link: await enviar({ modo: 'pedido', cliente: $('#pc').value }, PANEXOS[i]) });
     }
     $('#plinks').value.split('\n').map(x => x.trim()).filter(x => /^https:\/\//.test(x)).slice(0, 10).forEach(l => anexos.push({ nome: 'Link', link: l }));
-    const r = await api('euforia-painel-pedido', { cliente: $('#pc').value, tipo: t.id, modo: manual ? 'mao' : 'auto', ferramenta: manual ? $('#pf').value : '', prazo: $('#pz').value, link: $('#pl').value.trim(), texto: $('#po').value.trim() + extra, anexos });
+    const r = await api('euforia-painel-pedido', { cliente: $('#pc').value, tipo: t.id, modo: manual ? 'mao' : 'auto', ferramenta: manual ? $('#pf').value : '', prazo: $('#pz').value, link: $('#pl').value.trim(), texto: $('#po').value.trim() + extra + qtd, anexos });
     if (!r || !r.ok) throw new Error((r && r.motivo) || 'erro');
     toast('Pedido feito: ' + t.nome + ' → ' + r.quem + '. Card criado no Entregas' + (anexos.length ? ' com ' + anexos.length + ' anexo' + (anexos.length > 1 ? 's' : '') : '') + '.');
     e.target.reset(); delete $('#pf').dataset.mexeu; PANEXOS = []; listaAnexos(); $('#up').hidden = true; atualizarPedido();
