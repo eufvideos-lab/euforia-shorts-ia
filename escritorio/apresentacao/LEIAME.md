@@ -33,7 +33,7 @@ Confira os PNGs de `--prints` antes de publicar.
 
 Regras de conteúdo: um assunto por slide; título com no máximo 70 caracteres; card com no máximo 170; item de lista
 com no máximo 60. Nada de "[a confirmar]" no slide: isso vai nas notas. Números do canal só em percentual. Nada de
-valores, nada inventado, nunca o nome do Henrique. Imagens são embutidas (reduzidas a 1600 px); o recorte da capa
+valores, nada inventado, nunca o nome do Henrique. Nome das calls sempre completo: "Call 1 Onboarding + Oferta" (nunca "Call 1" sozinha). Imagens são embutidas (reduzidas a 1600 px); o recorte da capa
 fica transparente.
 
 Fotos do cliente: sempre as profissionais em alta, de `03 - FOTOS/PROFISSIONAIS` (ou um recorte já pronto em
