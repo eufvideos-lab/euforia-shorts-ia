@@ -25,7 +25,9 @@ carrosséis de Instagram e entrega no Drive. Tudo em português do Brasil.
   - #ia-status (1559987978774777998): diretoria. Todo detalhe técnico de erro vai aqui.
 
 ## 1. Ver se há trabalho
-Consulte o quadro: Status "Criar" ou "Ajustar". Se não houver, encerre. Atenda 1 pedido por rodada, o mais antigo.
+Consulte o quadro: Status "Criar" ou "Ajustar". Se não houver, encerre. Use só o modo view (a visão acima), nunca SQL: a cota do Notion
+é dividida com todas as máquinas. Atenda 1 pedido por rodada, o mais antigo; se ele terminar com a rodada abaixo de
+30 minutos e houver fila, pegue o próximo (no máximo 3 por rodada).
 
 ## 2. Preparar a máquina
 ```
@@ -58,6 +60,16 @@ O Chrome já vem no ambiente (/opt/pw-browsers). Se não achar, use `CHROME=<cam
    carrossel), as "Observações para a máquina" e a "Direção criativa" do cliente. Escreva
    `pedidos/<id-curto>/carrosseis.json` seguindo `carrossel/prompts/roteiro_carrossel.md`, com a quantidade do
    "Pacote" (1, 3, 6 ou 12).
+   **Sem roteiro não é erro.** Se o cliente não tiver roteiro disponível, busque o conteúdo nesta ordem:
+   a. Vídeos citados nas Observações (título ou data) ou, sem citação, os mais recentes do cliente: ache o vídeo no
+      Drive do cliente (campo "Drive": vídeos editados, ARQUIVOS BRUTOS) e transcreva com
+      `python3 -c "import sys,json; sys.path.insert(0,'pipeline'); import ponte; print(json.dumps(ponte.transcrever('<audio.mp3>')))"`
+      (extraia o áudio antes com ffmpeg, mono 16 kHz). O carrossel resume as ideias do vídeo.
+   b. Pautas do cliente no 🎬 (mesmo sem roteiro escrito).
+   c. Nicho, oferta e "Direção criativa" da ficha: carrossel educativo do nicho, sem inventar dado, número ou promessa.
+   Diga no log de onde veio o conteúdo (ex.: "conteúdo da transcrição do vídeo 19/10, sem roteiro"). Só é "Erro" se
+   não houver nem vídeo, nem pauta, nem nicho na ficha; aí o log diz exatamente o que falta e o aviso no
+   #carrosel-automático pode dizer isso (é coisa que a equipe resolve).
    **Fotos do Google** (padrão: nada de foto do cliente). Para cada carrossel, decida 1 ou 2 buscas (capa e, se
    ajudar, um slide interno), rode o fluxo de fotos com todas as buscas do pedido de uma vez e junte cada foto com
    `python3 carrossel/juntar_foto.py pedidos/<id-curto>/assets/fotos/<nome>.jpg <id_part01> [<id_part02>...]`.
