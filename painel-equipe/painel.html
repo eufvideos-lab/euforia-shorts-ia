@@ -210,6 +210,17 @@ button.slot:hover{border-color:var(--muted)}
 .up .bar span{background:var(--accent);transition:width .2s}
 .or{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:13px}
 .or::before,.or::after{content:"";flex:1;border-top:1px solid var(--line)}
+.cl-prog{display:flex;flex-direction:column;gap:4px;min-width:130px}
+.cl-prog .bar{height:6px}
+.drawer section{display:flex;flex-direction:column;gap:6px;flex-shrink:0}
+.drawer section .bar,.cl-tipo .bar{flex:none;height:10px;display:block}
+.cl-ent{display:flex;gap:6px;flex-wrap:wrap}
+.cl-ent .chip{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.cl-tipo{display:grid;grid-template-columns:90px minmax(0,1fr) 150px;gap:10px;align-items:center;font-size:14px}
+.cl-tipo .n{font-family:var(--f-mono);font-size:12px;text-align:right;color:var(--muted)}
+.cl-links{display:flex;gap:8px;flex-wrap:wrap}
+.mini-l{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px;font-size:14px}
+.mini-l li{display:flex;justify-content:space-between;gap:10px;border-bottom:1px solid var(--line);padding-bottom:6px}
 .obs{white-space:pre-wrap;font-size:14px;background:var(--surface-2);border-radius:10px;padding:12px 14px;margin:0}
 .refresh{font-size:13px;color:var(--muted)}
 @media (max-width:860px){.who .linkbtn{margin-left:auto;align-self:center}}
@@ -334,6 +345,7 @@ let D = null, R = null, W = null, WQR = '', PIN = '', view = '', ocupado = false
 let G = null, GC = '', GP = '';
 const RASC = {};
 let MP = null, MPQ = '', CC = null;
+let CL = null, CLQ = '', CLF = '', CLO = 'atencao';
 let DD = null, MM = null, PF = 'abertos', PQ = '', TQ = '', TS = '', TP = '', TT = '', MQ = '', MW = '';
 try { PIN = localStorage.getItem(KEY) || ''; view = localStorage.getItem('painel-view') || ''; } catch (e) {}
 if (DEMO) PIN = '0000';
@@ -493,6 +505,24 @@ const VIEWS = {
         ${vermelhos.length ? `<div class="tbl"><table><thead><tr><th>Cliente</th><th>Faixa</th><th>Abertos</th><th>Atrasados</th><th>Próximo prazo</th></tr></thead><tbody>${vermelhos.map(v => { const prox = v.ab.slice().sort((a, b) => dd(a.prazo) - dd(b.prazo))[0];
           return `<tr class="click" data-cliente="${v.c.id}"><td><b>${esc(v.c.nome)}</b></td><td>${esc(v.c.faixa || '—')}</td><td>${v.ab.length}</td><td>${v.atr.length ? `<span class="chip red">${v.atr.length}</span>` : '0'}</td><td>${prox ? esc(prox.nome) + ' · ' + fmt(prox.prazo) : '—'}</td></tr>`; }).join('')}</tbody></table></div>` : '<p class="empty">Nenhum cliente marcado em atenção.</p>'}
       </section>`;
+    } },
+  clientes: { nome: 'Clientes', pode: diretor, badge: () => CL ? CL.clientes.filter(k => k.clima === 'Em rescisão' || k.recuperacao === '🚨 SOS').length : 0,
+    html(){
+      if (!CL) { carregarClientes(); return `<div class="head"><div><p class="eyebrow">Diretoria</p><h1>Clientes</h1></div></div><p class="sub">Carregando os clientes e as entregas do contrato… (leva uns segundos)</p>`; }
+      const L = CL.clientes, ativos = L.filter(k => k.situacao !== 'Encerrado');
+      const n = f => ativos.filter(f).length;
+      return `<div class="head"><div><p class="eyebrow">Diretoria · atualizado às ${esc(CL.agora)}</p><h1>Clientes</h1></div><p class="sub">Clima, contrato e entregas de cada cliente. Clique no cliente para ver os detalhes e mudar o clima.</p></div>
+      <div class="stats six">
+        ${[['', ativos.length, 'clientes na carteira'], ['clima', n(k => ['Sensível', 'Em rescisão'].includes(k.clima)), 'sensíveis ou em rescisão'], ['sos', n(k => k.recuperacao === '🚨 SOS' || k.atencao), 'SOS ou 🔴 atenção'],
+          ['renovar', n(k => k.contrato && k.contrato.faltamDias !== null && k.contrato.faltamDias <= 30), 'acaba em 30 dias ou já acabou'], ['atras', n(k => k.atrasados > 0), 'com entrega atrasada'], ['parado', n(k => grupoParado(k)), 'grupo sem conversa há 7 dias']]
+          .map(([f, v, t]) => `<button class="stat ${f && v && f !== 'renovar' ? 'hot' : ''}" data-clf="${f}" style="text-align:left;background:${CLF === f && f ? 'var(--accent-soft)' : 'var(--surface)'}"><span class="v">${v}</span><span>${t}</span></button>`).join('')}
+      </div>
+      <div class="filtros">
+        <label for="clq">Buscar<input type="text" id="clq" placeholder="Nome do cliente" value="${esc(CLQ)}"></label>
+        <label for="clf">Mostrar<select id="clf">${[['', 'Todos'], ['clima', 'Sensíveis ou em rescisão'], ['sos', 'SOS ou 🔴 atenção'], ['renovar', 'Contrato acaba em 30 dias ou já acabou'], ['atras', 'Com entrega atrasada'], ['parado', 'Grupo sem conversa há 7 dias'], ['semclima', 'Sem clima preenchido'], ['semcontrato', 'Sem contrato lido']].map(([v, t]) => `<option value="${v}" ${v === CLF ? 'selected' : ''}>${t}</option>`).join('')}</select></label>
+        <label for="clo">Ordenar<select id="clo">${[['atencao', 'Quem precisa de atenção primeiro'], ['nome', 'Nome'], ['fim', 'Contrato acabando primeiro'], ['atrasados', 'Mais atrasados']].map(([v, t]) => `<option value="${v}" ${v === CLO ? 'selected' : ''}>${t}</option>`).join('')}</select></label>
+      </div>
+      <div id="clres">${tabelaClientes()}</div>`;
     } },
   pessoas: { nome: 'Por pessoa', pode: diretor,
     html(){
@@ -988,6 +1018,95 @@ async function carregarDiretor(){
   catch (e) {}
   carregarDiretor.indo = false;
 }
+// Aba Clientes (diretoria): ficha, contrato e entregas. O contrato vem do "Resumo do contrato" da ficha no Notion.
+const CLIMA = { 'Eufórico': 'ok', 'Neutro': '', 'Ex-sensível': 'warn', 'Sensível': 'org', 'Em rescisão': 'red' };
+const TIPOS_CL = [['longos', 'Longos'], ['shorts', 'Shorts'], ['carrosseis', 'Carrosséis'], ['thumbs', 'Thumbs']];
+const chipClima = k => k.clima ? `<span class="chip ${CLIMA[k.clima] || ''}">${esc(k.clima)}</span>` : '<span class="chip">sem clima</span>';
+const grupoParado = k => !!(k.grupo && k.grupo.ultima && dcl(k.grupo.ultima.slice(0, 10)) < -7);
+const fmtA = s => { const a = dia(s); return a ? a.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit' }) : '—'; };
+const mesCl = c => c.faltamDias !== null && c.faltamDias < 0 ? '<b>Contrato acabou</b>' : `Mês <b>${c.mes}</b>${c.meses ? ' de ' + c.meses : ''}`;
+const dcl = s => { if (!s) return null; const a = dia(s), h = dia(CL.hoje); return Math.round((a - h) / 864e5); };
+// Total do contrato por tipo: vem do resumo; sem total no texto, ritmo semanal da ficha × duração.
+function ritmoCl(k){
+  const out = { tipos: [] }, c = k.contrato;
+  for (const [t, rot] of TIPOS_CL) {
+    const total = k.total[t] || (c && c.meses && k.ritmo[t] ? Math.round(k.ritmo[t] * c.meses * 4.3) : null);
+    if (!total && !k.feito[t]) continue;
+    out.tipos.push({ t, rot, feito: k.feito[t], total, mes: k.mes[t] });
+  }
+  return out;
+}
+function peso(k){ return (k.clima === 'Em rescisão' ? 50 : k.clima === 'Sensível' ? 30 : 0) + (k.recuperacao === '🚨 SOS' ? 40 : 0) + (k.atencao ? 20 : 0) + (k.risco === 'Alto' ? 25 : k.risco === 'Médio' ? 10 : 0) + k.atrasados * 3 + (grupoParado(k) ? 8 : 0); }
+function filtraCl(k){
+  if (CLQ && !k.nome.toLowerCase().includes(CLQ.trim().toLowerCase())) return false;
+  const c = k.contrato;
+  return { '': true, clima: ['Sensível', 'Em rescisão'].includes(k.clima), sos: k.recuperacao === '🚨 SOS' || k.atencao, renovar: !!(c && c.faltamDias !== null && c.faltamDias <= 30),
+    atras: k.atrasados > 0, parado: grupoParado(k), semclima: !k.clima, semcontrato: !c }[CLF];
+}
+function tabelaClientes(){
+  const fim = k => k.contrato && k.contrato.faltamDias !== null ? k.contrato.faltamDias : 9999;
+  const l = CL.clientes.filter(filtraCl).sort((a, b) => CLO === 'nome' ? a.nome.localeCompare(b.nome) : CLO === 'fim' ? fim(a) - fim(b) : CLO === 'atrasados' ? b.atrasados - a.atrasados : peso(b) - peso(a) || a.nome.localeCompare(b.nome));
+  if (!l.length) return '<p class="empty">Nenhum cliente com esse filtro.</p>';
+  return `<p class="sub" style="font-size:13px">${l.length} cliente${l.length > 1 ? 's' : ''}</p><div class="tbl"><table><thead><tr><th>Cliente</th><th>Clima</th><th>Contrato</th><th>Postado no painel</th><th>Atrasados</th><th>Última postagem</th><th>Grupo</th></tr></thead><tbody>
+    ${l.map(k => { const c = k.contrato, r = ritmoCl(k), up = dcl(k.ultimaPostagem);
+      return `<tr class="click" data-cli="${k.id}"><td><b>${esc(k.nome)}</b><br><span class="sub" style="font-size:12px">${esc([k.fase, k.situacao !== 'Ativo' ? k.situacao : '', k.faixa ? 'Faixa ' + k.faixa : ''].filter(Boolean).join(' · '))}</span></td>
+        <td>${chipClima(k)}${k.recuperacao === '🚨 SOS' ? ' <span class="chip red">SOS</span>' : ''}${k.atencao ? ' <span class="chip red">🔴</span>' : ''}${k.risco ? `<br><span class="sub" style="font-size:12px">risco ${esc(k.risco.toLowerCase())}</span>` : ''}</td>
+        <td>${c ? `<div class="cl-prog"><span style="font-size:13px">${mesCl(c)}</span>${c.pct !== null ? `<span class="bar"><span class="${c.faltamDias <= 30 ? 'mid' : ''}" style="width:${c.pct}%"></span></span><span class="sub" style="font-size:12px">${c.faltamDias < 0 ? 'acabou ' + fmtA(c.fim) : 'acaba ' + fmtA(c.fim)}</span>` : ''}</div>` : '<span class="sub" style="font-size:13px">sem contrato lido</span>'}</td>
+        <td><div class="cl-ent">${r.tipos.filter(x => x.t !== 'thumbs').map(x => `<span class="chip" title="${esc(x.rot)}: ${x.feito} marcados como postados${x.total ? ' de ' + x.total + ' do contrato' : ''}">${x.rot.slice(0, 1)} ${x.feito}${x.total ? '/' + x.total : ''}</span>`).join('') || '<span class="sub" style="font-size:13px">—</span>'}</div></td>
+        <td>${k.atrasados ? `<span class="chip red">${k.atrasados}</span>` : '0'}</td>
+        <td>${k.ultimaPostagem ? `<span class="${up < -10 ? 'chip red' : ''}">${fmt(k.ultimaPostagem)}</span>` : '—'}</td>
+        <td>${k.grupo ? `<span class="${grupoParado(k) ? 'chip warn' : ''}" style="font-size:13px">${fmt(k.grupo.ultima)}</span><br><span class="sub" style="font-size:12px">${k.grupo.semana} msgs na semana</span>` : '<span class="sub" style="font-size:13px">—</span>'}</td></tr>`; }).join('')}</tbody></table></div>`;
+}
+async function carregarClientes(){
+  if (carregarClientes.indo) return; carregarClientes.indo = true;
+  try { const r = await api('euforia-painel-diretor', { acao: 'clientes' }); if (r && r.ok) { CL = r; if (!ocupado && !$('#layer').innerHTML && !document.activeElement.matches('#clq')) render(); } }
+  catch (e) { if (view === 'clientes' && !CL) $('#main').innerHTML = `<div class="view"><h1>Clientes</h1><p class="sub">${ERRO}</p></div>`; }
+  carregarClientes.indo = false;
+}
+function abrirCliente(id){
+  const k = CL.clientes.find(x => x.id === id); if (!k) return;
+  const c = k.contrato, r = ritmoCl(k);
+  const op = (l, at) => l.map(x => `<option ${x === at ? 'selected' : ''}>${x}</option>`).join('');
+  const lk = (u, t) => u ? `<a class="btn" href="${esc(u)}" target="_blank" rel="noopener">${t}</a>` : '';
+  const linhaE = e => `<li><span>${DD && DD.cards.some(x => x.id === e.id) ? `<button class="link" data-dcard2="${e.id}" style="all:unset;cursor:pointer;font-weight:600">${esc(e.nome)}</button>` : `<b>${esc(e.nome)}</b>`}<br><span class="sub" style="font-size:12px">${esc(e.tipo || '')}${e.resp.length ? ' · ' + esc(e.resp.join(', ')) : ''}</span></span>
+    <span style="text-align:right;font-size:13px">${esc(e.status)}${e.status === 'Postado' ? `<br><span class="sub">${fmt(e.postado)}</span>${e.linkPost ? ` · <a href="${esc(e.linkPost)}" target="_blank" rel="noopener">ver</a>` : ''}` : e.prazo ? `<br><span class="${['A fazer', 'Fazendo', 'Ajustes'].includes(e.status) && dcl(e.prazo) < 0 ? 'chip red' : 'sub'}">prazo ${fmt(e.prazo)}</span>` : ''}</span></li>`;
+  $('#layer').innerHTML = `<div class="scrim" data-x></div><aside class="drawer" role="dialog" aria-modal="true" aria-labelledby="d-t"><div class="drawer-in">
+    <button class="close" data-x>Fechar</button>
+    <div><p class="eyebrow">${esc([k.tipo, k.fase, k.situacao, k.faixa ? 'Faixa ' + k.faixa : ''].filter(Boolean).join(' · '))}</p><h2 id="d-t" style="font-size:26px">${esc(k.nome)}</h2>
+      <p class="meta" style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">${chipClima(k)}${k.recuperacao ? `<span class="chip ${k.recuperacao === '🚨 SOS' ? 'red' : ''}">${esc(k.recuperacao)}</span>` : ''}${k.atencao ? '<span class="chip red">🔴 atenção redobrada</span>' : ''}${k.risco ? `<span class="chip ${k.risco === 'Alto' ? 'red' : k.risco === 'Médio' ? 'warn' : 'ok'}">risco ${esc(k.risco.toLowerCase())}</span>` : ''}</p></div>
+    <form id="fcl">
+      <div class="grid2"><label for="kc">Clima<select id="kc"><option value="">—</option>${op(Object.keys(CLIMA), k.clima)}</select></label><label for="kr">Risco de cancelamento<select id="kr"><option value="">—</option>${op(['Baixo', 'Médio', 'Alto'], k.risco)}</select></label></div>
+      <div class="grid2"><label for="kp">Recuperação<select id="kp"><option value="">—</option>${op(['🚨 SOS', '⏸️ Travado no cliente', '🆕 Onboarding', '✅ Estável', '👔 Direção'], k.recuperacao)}</select></label><label for="ka">Próximo alinhamento<input type="date" id="ka" value="${esc(k.alinhamento || '')}"></label></div>
+      <label style="flex-direction:row;align-items:center;gap:8px"><input type="checkbox" id="kt" ${k.atencao ? 'checked' : ''}> 🔴 Atenção redobrada</label>
+      <div class="actions"><button class="btn primary" type="submit">Salvar ficha</button>${lk(k.url, 'Abrir no Notion')}</div>
+    </form>
+    <section><h3 style="font-size:16px;margin-bottom:8px">Contrato</h3>
+      ${c ? `<p style="margin:0 0 8px">${mesCl(c)} · começou ${fmtA(c.inicio)}${c.fim ? (c.faltamDias < 0 ? ' · acabou ' : ' · acaba ') + fmtA(c.fim) + (c.faltamDias >= 0 ? ` (${c.faltamDias} dias)` : '') : ''}</p>${c.pct !== null ? `<div class="bar"><span class="${c.faltamDias <= 30 ? 'mid' : ''}" style="width:${c.pct}%"></span></div>` : ''}` : '<p class="sub">Não achei o início do contrato no resumo nem a data de entrada.</p>'}
+      ${r.tipos.length ? `<div style="display:flex;flex-direction:column;gap:8px;margin-top:12px">${r.tipos.map(x => `<div class="cl-tipo"><span>${x.rot}</span><div class="bar"><span style="width:${x.total ? Math.min(100, Math.round(x.feito / x.total * 100)) : 0}%"></span></div><span class="n">${x.feito}${x.total ? ' de ' + x.total : ''}</span></div>`).join('')}
+        <p class="sub" style="font-size:12px;margin:0">Neste mês: ${r.tipos.map(x => x.mes + ' ' + x.rot.toLowerCase()).join(', ')}. Só conta o que foi marcado como Postado no painel ou no Notion; o que foi ao ar antes do painel não aparece aqui.</p></div>` : ''}
+      ${k.extras.length ? `<p style="margin:12px 0 0;display:flex;gap:6px;flex-wrap:wrap">${k.extras.map(x => `<span class="chip info">${esc(x)}</span>`).join('')}</p>` : ''}
+      ${k.resumo ? `<details style="margin-top:12px"><summary class="sub">Resumo do contrato</summary><p class="obs" style="margin-top:8px">${esc(k.resumo)}</p></details>` : ''}
+    </section>
+    ${k.obs ? `<section><h3 style="font-size:16px;margin-bottom:8px">Observação importante</h3><p class="obs">${esc(k.obs)}</p></section>` : ''}
+    <section><h3 style="font-size:16px;margin-bottom:8px">Em andamento <span class="count">${k.abertos.length}</span></h3>${k.abertos.length ? `<ul class="mini-l">${k.abertos.map(linhaE).join('')}</ul>` : '<p class="empty">Nada aberto.</p>'}</section>
+    <section><h3 style="font-size:16px;margin-bottom:8px">Últimas postagens</h3>${k.postados.length ? `<ul class="mini-l">${k.postados.map(linhaE).join('')}</ul>` : '<p class="empty">Nada postado no último ano.</p>'}</section>
+    <section><h3 style="font-size:16px;margin-bottom:8px">Conversa no grupo</h3>${k.grupo ? `<p style="margin:0">${esc(k.grupo.nome)}: última mensagem ${fmt(k.grupo.ultima)} às ${esc(k.grupo.ultima.slice(11, 16))}, ${k.grupo.semana} mensagens nos últimos 7 dias.</p>` : '<p class="sub">Não achei o grupo do WhatsApp desse cliente.</p>'}</section>
+    <div class="cl-links">${lk(k.drive, 'Drive')}${lk(k.youtube, 'YouTube')}${lk(k.instagram, 'Instagram')}${lk(k.tiktok, 'TikTok')}</div>
+  </div></aside>`;
+  $('#layer').onclick = e => { if (e.target.closest('[data-x]') && !ocupado) { fechar(); return; } const b = e.target.closest('[data-dcard2]'); if (b) abrirDD(b.dataset.dcard2); };
+  $('#fcl').onsubmit = async e => {
+    e.preventDefault(); e.stopPropagation(); if (ocupado) return;
+    const novo = { clima: $('#kc').value, risco: $('#kr').value, recuperacao: $('#kp').value, alinhamento: $('#ka').value, atencao: $('#kt').checked };
+    const ficha = {}; for (const x of Object.keys(novo)) if (novo[x] !== (x === 'atencao' ? k.atencao : (k[x] || ''))) ficha[x] = novo[x];
+    if (!Object.keys(ficha).length) { toast('Nada mudou.'); return; }
+    ocupado = true; document.querySelectorAll('#layer .btn').forEach(b => b.disabled = true);
+    try {
+      const r = await api('euforia-painel-diretor', { acao: 'ficha', cliente: k.id, ficha });
+      if (!r || !r.ok) throw new Error((r && r.motivo) || 'erro');
+      Object.assign(k, novo); ocupado = false; fechar(); render(); toast('Ficha do cliente atualizada no Notion.');
+    } catch (err) { ocupado = false; document.querySelectorAll('#layer .btn').forEach(b => b.disabled = false); toast({ cliente: 'Esse cliente não foi achado no Notion.', acesso: MOTIVO.acesso }[err.message] || ERRO); }
+  };
+}
 async function carregarMensagens(){
   if (carregarMensagens.indo) return; carregarMensagens.indo = true;
   try { const r = await api('euforia-painel-diretor', { acao: 'mensagens' }); if (r && r.ok) { MM = r; if (view === 'mensagens' && !ocupado && !document.activeElement.matches('#mq')) render(); } }
@@ -1219,6 +1338,8 @@ document.addEventListener('click', async e => {
   const dp = e.target.closest('#main [data-pessoa]');
   if (dp) { view = 'pessoas'; PF = 'abertos'; PQ = ''; render(); const col = document.getElementById('col-' + dp.dataset.pessoa); if (col) col.scrollIntoView({ behavior: 'smooth', block: 'start' }); return; }
   const fl = e.target.closest('#main [data-filtro]'); if (fl) { view = 'todos'; TS = fl.dataset.filtro; TQ = ''; TP = ''; TT = ''; render(); window.scrollTo({ top: 0 }); return; }
+  const kcl = e.target.closest('#main [data-cli]'); if (kcl) { abrirCliente(kcl.dataset.cli); return; }
+  const kf = e.target.closest('#main [data-clf]'); if (kf) { CLF = CLF === kf.dataset.clf ? '' : kf.dataset.clf; render(); return; }
   const dcl = e.target.closest('#main [data-cliente]'); if (dcl) { view = 'todos'; TS = ''; TP = ''; TT = ''; TQ = cliDD(dcl.dataset.cliente).nome; render(); window.scrollTo({ top: 0 }); return; }
   const o = e.target.closest('#main [data-open]'); if (o) { abrir(o.dataset.open); return; }
   const sl = e.target.closest('#main [data-slot]'); if (sl) { abrirSlot(sl.dataset.slot); return; }
@@ -1255,6 +1376,8 @@ document.addEventListener('change', e => {
   if (e.target.id === 'gc' || e.target.id === 'gp') { if (e.target.id === 'gc') GC = e.target.value; else GP = e.target.value; render(); return; }
   if (e.target.id === 'pf-s' || e.target.id === 'pq-s') { if (e.target.id === 'pf-s') PF = e.target.value; else PQ = e.target.value; render(); return; }
   if (['ts', 'tp', 'tt'].includes(e.target.id)) { ({ ts: v => TS = v, tp: v => TP = v, tt: v => TT = v })[e.target.id](e.target.value); $('#dres').innerHTML = tabelaTodos(); return; }
+  if (e.target.id === 'clf') { CLF = e.target.value; render(); return; }
+  if (e.target.id === 'clo') { CLO = e.target.value; $('#clres').innerHTML = tabelaClientes(); return; }
   if (e.target.id === 'mw') { MW = e.target.value; $('#dres').innerHTML = listaMensagens(); return; }
   if (e.target.id === 'mp') { MP = e.target.value; $('#dres').innerHTML = listaPedidos(); return; }
   if (e.target.id === 'pfile') { juntarAnexos([...e.target.files]); e.target.value = ''; return; }
@@ -1263,6 +1386,7 @@ document.addEventListener('change', e => {
 // Busca da diretoria: redesenha só a lista, para o campo não perder o foco.
 document.addEventListener('input', e => {
   if (e.target.id === 'tq') { TQ = e.target.value; $('#dres').innerHTML = tabelaTodos(); }
+  if (e.target.id === 'clq') { CLQ = e.target.value; $('#clres').innerHTML = tabelaClientes(); }
   if (e.target.id === 'mq') { MQ = e.target.value; $('#dres').innerHTML = listaMensagens(); }
   if (e.target.id === 'mpq') { MPQ = e.target.value; $('#dres').innerHTML = listaPedidos(); }
   if (e.target.dataset && e.target.dataset.rtxt) RASC[e.target.dataset.rtxt] = e.target.value;
@@ -1328,6 +1452,8 @@ function demoApi(path, b){
   if (path === 'euforia-painel-diretor') {
     if (b.acao === 'visao') return wait(JSON.parse(JSON.stringify(DEMO_DD)));
     if (b.acao === 'mensagens') return wait(DEMO_M);
+    if (b.acao === 'clientes') return wait(JSON.parse(JSON.stringify(DEMO_CL)));
+    if (b.acao === 'ficha') { Object.assign(DEMO_CL.clientes.find(x => x.id === b.cliente), b.ficha); return wait({ ok: true }); }
     const hora = '[Painel 26/10 ' + new Date().toTimeString().slice(0, 5) + '] Flau ';
     if (b.acao === 'criar') { DEMO_DD.cards.push(Object.assign({ id: 'd' + Date.now(), cod: 500, nome: b.nome, cliente: b.cliente, clienteNome: b.clienteNome, linkPost: '', origem: 'Extra', escritorio: '', obs: hora + 'criou pelo painel do diretor' }, b.campos)); return wait({ ok: true }); }
     const c = DEMO_DD.cards.find(x => x.id === b.card); Object.assign(c, b.campos);
@@ -1410,6 +1536,7 @@ const DEMO_DD = {"ok":true,"nome":"Flau (exemplo)","hoje":"2026-10-26","hojeText
   {"id":"d12","cod":399,"nome":"VÍDEO 10","cliente":"c2","clienteNome":"Instituto Aurora (exemplo)","tipo":"Vídeo longo","qtd":1,"status":"Postado","prazo":"2026-10-20","postar":"2026-10-23","postado":"2026-10-23","prioridade":"","resp":["p1"],"obs":"[Painel 23/10 18:01] Ismael postou","link":"","linkPost":"https://youtu.be/demo","origem":"Pacote semanal","escritorio":""},
   {"id":"d13","cod":426,"nome":"SHORTS 16-18","cliente":"c1","clienteNome":"Dra. Helena (exemplo)","tipo":"Shorts","qtd":3,"status":"A fazer","prazo":"2026-10-29","postar":"2026-10-31","prioridade":"","resp":["p3"],"obs":"","link":"","linkPost":"","origem":"Pacote semanal","escritorio":""},
   {"id":"d14","cod":427,"nome":"CARROSSEL 09","cliente":"c4","clienteNome":"Paula Reis (exemplo)","tipo":"Carrossel","qtd":1,"status":"Fazendo","prazo":"2026-10-26","postar":"2026-10-28","prioridade":"","resp":["p6"],"obs":"","link":"","linkPost":"","origem":"Pacote semanal","escritorio":"Fazendo (IA)"}]};
+const DEMO_CL = {"ok": true, "hoje": "2026-10-26", "agora": "15:12", "clientes": [{"id": "c1", "nome": "Dra. Helena (exemplo)", "url": "https://app.notion.com/", "situacao": "Ativo", "fase": "3. Produção", "clima": "Sensível", "risco": "Médio", "recuperacao": "🚨 SOS", "atencao": true, "faixa": "A", "tipo": "CPNE - Padrão novo", "resumo": "Assessoria EDL, 6 meses, contrato de 10/05/2026. Total: 20 longos, 60 shorts, 20 carrosséis. (exemplo)", "obs": "Reclamou da demora nos ajustes em 20/10. (exemplo)", "extras": ["Página", "Funil"], "alinhamento": "2026-11-03", "ultimaPostagem": "2026-10-14", "canalDesde": "", "drive": "https://drive.google.com/", "youtube": "https://youtube.com/", "instagram": "", "tiktok": "", "contrato": {"inicio": "2026-05-10", "meses": 6, "fim": "2026-11-10", "mes": 6, "pct": 92, "faltamDias": 15, "semanas": 24}, "total": {"longos": 20, "shorts": 60, "carrosseis": 20}, "ritmo": {"longos": 1, "shorts": 3, "carrosseis": 1, "thumbs": 1}, "feito": {"longos": 9, "shorts": 25, "carrosseis": 6, "thumbs": 9}, "mes": {"longos": 2, "shorts": 6, "carrosseis": 1, "thumbs": 2}, "atrasados": 2, "abertos": [{"id": "d1", "nome": "VÍDEO 09", "tipo": "Vídeo longo", "qtd": 1, "status": "Ajustes", "prazo": "2026-10-23", "postar": "", "postado": "", "linkPost": "", "resp": ["Victor"]}], "postados": [{"id": "x1", "nome": "VÍDEO 08", "tipo": "Vídeo longo", "qtd": 1, "status": "Postado", "prazo": "2026-10-10", "postar": "", "postado": "2026-10-14", "linkPost": "https://youtube.com/", "resp": ["Ismael"]}], "grupo": {"nome": "Dra. Helena | Euforia", "ultima": "2026-10-26T10:12", "semana": 23}}, {"id": "c2", "nome": "Instituto Aurora (exemplo)", "url": "https://app.notion.com/", "situacao": "Ativo", "fase": "3. Produção", "clima": "Eufórico", "risco": "Baixo", "recuperacao": "✅ Estável", "atencao": false, "faixa": "A", "tipo": "CPNE - Padrão novo", "resumo": "Assessoria EDL, 12 meses, contrato de 02/03/2026. Total: 40 longos, 120 shorts, 40 carrosséis. (exemplo)", "obs": "", "extras": ["TikTok"], "alinhamento": "2026-11-03", "ultimaPostagem": "2026-10-24", "canalDesde": "", "drive": "https://drive.google.com/", "youtube": "https://youtube.com/", "instagram": "", "tiktok": "", "contrato": {"inicio": "2026-03-02", "meses": 12, "fim": "2027-03-02", "mes": 8, "pct": 65, "faltamDias": 127, "semanas": 34}, "total": {"longos": 40, "shorts": 120, "carrosseis": 40}, "ritmo": {"longos": 1, "shorts": 3, "carrosseis": 1, "thumbs": 1}, "feito": {"longos": 30, "shorts": 88, "carrosseis": 28, "thumbs": 30}, "mes": {"longos": 4, "shorts": 12, "carrosseis": 4, "thumbs": 4}, "atrasados": 0, "abertos": [], "postados": [{"id": "x2", "nome": "VÍDEO 31", "tipo": "Vídeo longo", "qtd": 1, "status": "Postado", "prazo": "2026-10-20", "postar": "", "postado": "2026-10-24", "linkPost": "https://youtube.com/", "resp": ["Ismael"]}], "grupo": {"nome": "Instituto Aurora", "ultima": "2026-10-25T18:40", "semana": 9}}, {"id": "c3", "nome": "Marcos Lima (exemplo)", "url": "https://app.notion.com/", "situacao": "Ativo", "fase": "3. Produção", "clima": "Neutro", "risco": "", "recuperacao": "✅ Estável", "atencao": false, "faixa": "B", "tipo": "CPNE - Padrão novo", "resumo": "Assessoria EDL, 6 meses, contrato de 15/04/2026. Total: 20 longos, 60 shorts, 20 carrosséis. (exemplo)", "obs": "", "extras": [], "alinhamento": "2026-11-03", "ultimaPostagem": "2026-10-22", "canalDesde": "", "drive": "https://drive.google.com/", "youtube": "https://youtube.com/", "instagram": "", "tiktok": "", "contrato": {"inicio": "2026-04-15", "meses": 6, "fim": "2026-10-15", "mes": 7, "pct": 106, "faltamDias": -11, "semanas": 27}, "total": {"longos": 20, "shorts": 60, "carrosseis": 20}, "ritmo": {"longos": 1, "shorts": 3, "carrosseis": 1, "thumbs": 1}, "feito": {"longos": 18, "shorts": 50, "carrosseis": 17, "thumbs": 18}, "mes": {"longos": 3, "shorts": 10, "carrosseis": 3, "thumbs": 3}, "atrasados": 0, "abertos": [], "postados": [], "grupo": {"nome": "Marcos Lima | Grupo Euforia", "ultima": "2026-10-23T09:05", "semana": 4}}, {"id": "c4", "nome": "Paula Reis (exemplo)", "url": "https://app.notion.com/", "situacao": "Ativo", "fase": "3. Produção", "clima": "Em rescisão", "risco": "Alto", "recuperacao": "👔 Direção", "atencao": true, "faixa": "B", "tipo": "CPNE - Padrão novo", "resumo": "Assessoria EDL, 6 meses, contrato de 01/07/2026. Total: 20 longos, 60 shorts, 20 carrosséis. (exemplo)", "obs": "Pediu reunião com a direção. (exemplo)", "extras": [], "alinhamento": "2026-11-03", "ultimaPostagem": "2026-10-05", "canalDesde": "", "drive": "https://drive.google.com/", "youtube": "https://youtube.com/", "instagram": "", "tiktok": "", "contrato": {"inicio": "2026-07-01", "meses": 6, "fim": "2027-01-01", "mes": 4, "pct": 64, "faltamDias": 67, "semanas": 16}, "total": {"longos": 20, "shorts": 60, "carrosseis": 20}, "ritmo": {"longos": 1, "shorts": 3, "carrosseis": 1, "thumbs": 1}, "feito": {"longos": 5, "shorts": 10, "carrosseis": 3, "thumbs": 5}, "mes": {"longos": 1, "shorts": 3, "carrosseis": 0, "thumbs": 1}, "atrasados": 3, "abertos": [], "postados": [], "grupo": {"nome": "Paula Reis", "ultima": "2026-10-26T08:30", "semana": 31}}, {"id": "c5", "nome": "Clínica Vida (exemplo)", "url": "https://app.notion.com/", "situacao": "Ativo", "fase": "3. Produção", "clima": "", "risco": "", "recuperacao": "", "atencao": false, "faixa": "C", "tipo": "CPNE - Padrão novo", "resumo": "Assessoria EDL, 10 meses, contrato de 20/01/2026. Total: 30 longos, 90 shorts, 30 carrosséis. (exemplo)", "obs": "", "extras": [], "alinhamento": "2026-11-03", "ultimaPostagem": "2026-10-21", "canalDesde": "", "drive": "https://drive.google.com/", "youtube": "https://youtube.com/", "instagram": "", "tiktok": "", "contrato": {"inicio": "2026-01-20", "meses": 10, "fim": "2026-11-20", "mes": 10, "pct": 92, "faltamDias": 25, "semanas": 39}, "total": {"longos": 30, "shorts": 90, "carrosseis": 30}, "ritmo": {"longos": 1, "shorts": 3, "carrosseis": 1, "thumbs": 1}, "feito": {"longos": 26, "shorts": 80, "carrosseis": 22, "thumbs": 26}, "mes": {"longos": 3, "shorts": 9, "carrosseis": 3, "thumbs": 3}, "atrasados": 1, "abertos": [], "postados": [], "grupo": null}]};
 const DEMO_M = {"ok":true,"itens":[
   {"quem":"Rômulo","grupo":"EUFORIA | Dra. Helena","texto":"Boa tarde, doutora! A apresentação da call de quinta já está sendo preparada.","quando":"2026-10-26T14:44"},
   {"quem":"Ismael","grupo":"EUFORIA | Paula Reis","texto":"Oi, Paula! Já corrigimos a legenda do vídeo de ontem. Pode conferir?","quando":"2026-10-26T13:10"},
