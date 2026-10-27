@@ -410,6 +410,8 @@ function ordenar(a){ return a.sort((x, y) => (y.status === 'Ajustes') - (x.statu
 // A Máquina do Escritório devolve o pedido a quem pediu com "🏢 Escritório IA = Falta informação" e escreve na Obs o que falta.
 const falta = c => c.meu && c.escritorio === 'Falta informação' && ['A fazer', 'Fazendo', 'Ajustes'].includes(c.status);
 function oQueFalta(c){ const l = String(c.obs || '').split('\n').find(x => /Falta informação:/.test(x)); return l ? l.replace(/^.*Falta informação:\s*/, '') : 'Veja as observações do card.'; }
+// Cliente ainda não gravou: card parado em Aguardando cliente pelo botão. Vale a marca mais recente da Obs.
+const naoGravou = c => c.status === 'Aguardando cliente' && (c.naogravou !== undefined ? !!c.naogravou : (String(c.obs || '').split('\n').find(x => /marcou: cliente (ainda não gravou|mandou o material)/.test(x)) || '').includes('ainda não gravou'));
 let CANEXOS = [];
 function classe(c){ const k = diff(c.prazo); if (falta(c)) return 'late'; if (c.status === 'Ajustes') return 'adj'; if (ABERTO.includes(c.status) && k < 0) return 'late'; if (ABERTO.includes(c.status) && k === 0) return 'today'; return ''; }
 function ultimoAjuste(c){ const l = String(c.obs || '').split('\n').find(x => /pediu ajuste:/.test(x)); return l ? l.replace(/^.*pediu ajuste:\s*/, '') : ''; }
@@ -422,7 +424,8 @@ function chips(c){
   if (ABERTO.includes(c.status) && c.prazo) h += k < 0 ? `<span class="chip red">Atrasado ${-k}d</span>` : k === 0 ? `<span class="chip org">Prazo hoje</span>` : `<span class="chip">Prazo ${fmt(c.prazo)}</span>`;
   if (c.postar) h += `<span class="chip">Vai ao ar ${fmt(c.postar)}</span>`;
   const sc = { 'Fazendo':'info', 'Em revisão':'info', 'Ajustes':'warn', 'Aprovado':'ok', 'Agendado':'ok', 'Aguardando cliente':'warn' }[c.status];
-  if (c.status !== 'A fazer') h += `<span class="chip ${sc || ''}">${esc(c.status)}</span>`;
+  if (naoGravou(c)) h += `<span class="chip warn">Cliente ainda não gravou</span>`;
+  else if (c.status !== 'A fazer') h += `<span class="chip ${sc || ''}">${esc(c.status)}</span>`;
   if (!c.meu && c.resp && c.resp.length) h += `<span class="chip">${esc(c.resp.join(', '))}</span>`;
   return h;
 }
@@ -626,10 +629,12 @@ const VIEWS = {
   postar: { nome: 'Postar', pode: posta, badge: () => D.cards.filter(c => c.status === 'Aprovado' && diff(c.postar) <= 1).length,
     html(){
       const l = ordenar(D.cards.filter(c => ['Aprovado', 'Agendado'].includes(c.status)));
-      const esp = ordenar(D.cards.filter(c => c.status === 'Aguardando cliente'));
+      const esp = ordenar(D.cards.filter(c => c.status === 'Aguardando cliente' && !naoGravou(c)));
+      const ng = ordenar(D.cards.filter(naoGravou));
       return `<div class="head"><div><p class="eyebrow">Postagem do dia vem primeiro</p><h1>Postar hoje e amanhã</h1></div></div>
       ${grupo('Aprovado, falta subir', l, 'Tudo de hoje e amanhã já está no ar.')}
-      ${grupo('Esperando o cliente aprovar', esp, 'Nenhuma peça parada no cliente.')}`;
+      ${grupo('Esperando o cliente aprovar', esp, 'Nenhuma peça parada no cliente.')}
+      ${grupo('Cliente ainda não gravou', ng, '')}`;
     } },
   calls: { nome: 'Próximas calls', pode: () => ['revisor', 'calls', 'diretor', 'teste'].includes(papel()), badge: () => CC ? CC.calls.filter(c => c.dia === CC.hoje && c.fimHora > CC.agora).length : 0,
     html(){
@@ -916,6 +921,7 @@ function abrir(id){
   const cl = cli(c), i = ETAPAS.indexOf(c.status);
   const passa = posta() && !['Postado', 'Cancelado'].includes(c.status);
   const devolve = c.meu && !['Postado', 'Cancelado'].includes(c.status);
+  const parar = (c.meu || posta()) && ABERTO.includes(c.status) && !falta(c) && !c.livre;
   let acoes = '';
   if (falta(c)) acoes = `
     <div class="falta"><b>O escritório precisa de mais informação</b><span>${esc(oQueFalta(c))}</span></div>
@@ -934,6 +940,10 @@ function abrir(id){
     <label for="lk">Link do arquivo (Drive, Canva, Frame.io…)<input type="url" id="lk" placeholder="https://" value="${esc(c.link || '')}"></label>
     <label for="nota">Recado para a revisão (opcional)<input type="text" id="nota" maxlength="300" placeholder="Ex.: troquei a música do final"></label>
     <div class="actions"><button class="btn primary" data-act="revisao">${c.status === 'Ajustes' ? 'Mandar o ajuste' : 'Mandar para revisão'}</button></div>`;
+  if (naoGravou(c) && (c.meu || posta())) acoes = `
+    <div class="falta" style="background:var(--warn-soft);color:var(--warn)"><b>O cliente ainda não gravou</b><span>Esse card saiu da fila de edição. Quando o material chegar, aperte o botão e ele volta para A fazer${(c.resp || []).length ? ' com ' + esc(c.resp.join(', ')) : ''}.</span></div>
+    <label for="gnota">Recado (opcional)<input type="text" id="gnota" maxlength="300" placeholder="Ex.: ela mandou 3 vídeos no grupo hoje"></label>
+    <div class="actions"><button class="btn primary" data-act="gravou">Cliente mandou o material</button></div>`;
   if (revisor() && c.status === 'Em revisão') acoes = `
     <p class="note">Arquivo: ${c.link ? `<a href="${esc(c.link)}" target="_blank" rel="noopener"><b>abrir</b></a>` : '<b>sem link</b>'}</p>
     <div class="actions"><button class="btn ok" data-act="aprovar">Aprovar e mandar ao cliente</button><button class="btn warn" data-act="mostrar-ajuste">Pedir ajuste</button></div>
@@ -955,6 +965,10 @@ function abrir(id){
       <label for="pp">Para quem<select id="pp"><option value="">Escolha</option>${PASSAR.map(([v, n]) => `<option value="${v}">${n}</option>`).join('')}</select></label>
       <label for="pnota">Recado (opcional)<input type="text" id="pnota" maxlength="300" placeholder="Ex.: o Victor está com menos cards hoje"></label>
       <div class="actions"><button class="btn" data-act="passar">Passar o card</button></div><p class="note">Sai da fila de quem está e entra na fila de quem você escolher. A pessoa é avisada no #dia-a-dia.</p></div></details>` : ''}
+    ${parar ? `<details class="passar"><summary>Cliente ainda não gravou</summary><div style="display:flex;flex-direction:column;gap:12px;margin-top:12px">
+      <p class="note">O card sai da fila de quem edita e vai para Aguardando cliente. Quando o material chegar, qualquer um aperta "Cliente mandou o material" e ele volta para a fila.</p>
+      <label for="ngnota">Recado (opcional)<input type="text" id="ngnota" maxlength="300" placeholder="Ex.: ela disse que grava na quinta"></label>
+      <div class="actions"><button class="btn warn" data-act="naogravou">Cliente ainda não gravou</button></div></div></details>` : ''}
     ${devolve ? `<details class="passar"><summary>Não é comigo ou já foi feito</summary><div style="display:flex;flex-direction:column;gap:12px;margin-top:12px">
       <fieldset class="modo" style="grid-template-columns:1fr"><legend>O que aconteceu</legend>
         <label class="opt" for="f-nao"><input type="radio" name="fim" id="f-nao" value="naoemeu" checked><span><b>Não é comigo</b><small>Seu nome sai do card e o Ismael e o Rômulo passam para outra pessoa.</small></span></label>
@@ -1003,6 +1017,8 @@ function abrir(id){
       if (act === 'ajuste') texto = $('#motivo').value.trim();
       if (act === 'agendei' || act === 'postei') link = $('#lpost').value.trim();
       if (act === 'passar') texto = $('#pnota').value.trim();
+      if (act === 'naogravou') texto = $('#ngnota').value.trim();
+      if (act === 'gravou') texto = $('#gnota').value.trim();
       const anexos = [];
       if (act === 'completar') {
         texto = $('#ctx').value.trim();
@@ -1014,7 +1030,7 @@ function abrir(id){
       const r = await api('euforia-painel-acao', { card: c.id, acao, texto, link, fim, anexos, para: act === 'passar' ? $('#pp').value : '' });
       if (!r || !r.ok) throw new Error((r && r.motivo) || 'erro');
       ocupado = false; fechar();
-      toast({ comecar: 'Bom trabalho! Card em Fazendo.', revisao: 'Mandado para revisão. O Ismael foi avisado.', aprovar: 'Aprovado. Agora é com o cliente.', ajuste: 'Voltou para ajuste com o seu recado.', agendei: 'Marcado como agendado.', postei: 'Marcado como postado.', passar: 'Card passado. A pessoa foi avisada.', fim: 'Pronto, ficou registrado e a equipe foi avisada.', pegar: 'É seu! O card já está na sua fila.', completar: 'Pronto! O pedido voltou para a fila do escritório.' }[act]);
+      toast({ comecar: 'Bom trabalho! Card em Fazendo.', revisao: 'Mandado para revisão. O Ismael foi avisado.', aprovar: 'Aprovado. Agora é com o cliente.', ajuste: 'Voltou para ajuste com o seu recado.', agendei: 'Marcado como agendado.', postei: 'Marcado como postado.', passar: 'Card passado. A pessoa foi avisada.', fim: 'Pronto, ficou registrado e a equipe foi avisada.', pegar: 'É seu! O card já está na sua fila.', completar: 'Pronto! O pedido voltou para a fila do escritório.', naogravou: 'Pronto. O card saiu da fila e está esperando o cliente gravar.', gravou: 'Voltou para a fila em A fazer.' }[act]);
       await carregar(true);
     } catch (err) {
       ocupado = false;
@@ -1061,7 +1077,7 @@ function carga(id){ const l = DD.cards.filter(c => (c.resp || []).includes(id) &
 function chipsDD(c){
   const cl = cliDD(c.cliente), k = dd(c.prazo); let h = '';
   const sc = { 'Fazendo':'info', 'Em revisão':'info', 'Ajustes':'warn', 'Aprovado':'ok', 'Agendado':'ok', 'Postado':'ok', 'Aguardando cliente':'warn' }[c.status];
-  h += `<span class="chip ${sc || ''}">${esc(c.status || 'sem etapa')}</span>`;
+  h += naoGravou(c) ? `<span class="chip warn">Cliente ainda não gravou</span>` : `<span class="chip ${sc || ''}">${esc(c.status || 'sem etapa')}</span>`;
   if (ABERTO.includes(c.status) && c.prazo) h += k < 0 ? `<span class="chip red">Atrasado ${-k}d</span>` : k === 0 ? `<span class="chip org">Prazo hoje</span>` : `<span class="chip">Prazo ${fmt(c.prazo)}</span>`;
   if (c.postar && c.status !== 'Postado') h += `<span class="chip">Ar ${fmt(c.postar)}</span>`;
   if (c.prioridade === 'Urgente') h += `<span class="chip red">Urgente</span>`;
@@ -1704,6 +1720,7 @@ function demoApi(path, b){
     if (b.acao === 'completar') { DEMO_D.cards = DEMO_D.cards.filter(x => x !== c); return wait({ ok: true, status: 'A fazer' }); }
     if (b.acao === 'pegar') { c.livre = false; c.meu = true; c.resp = [DEMO_D.nome]; return wait({ ok: true, status: c.status }); }
     if (b.acao === 'naoemeu' || b.acao === 'jafeito') { DEMO_D.cards = DEMO_D.cards.filter(x => x !== c); return wait({ ok: true, status: b.fim || c.status }); }
+    if (b.acao === 'naogravou' || b.acao === 'gravou') { c.status = b.acao === 'gravou' ? 'A fazer' : 'Aguardando cliente'; delete c.naogravou; c.obs = '[Painel 27/10 ' + new Date().toTimeString().slice(0, 5) + '] ' + DEMO_D.nome + ' marcou: cliente ' + (b.acao === 'gravou' ? 'mandou o material' : 'ainda não gravou') + (b.texto ? ': ' + b.texto : '') + (c.obs ? '\n' + c.obs : ''); return wait({ ok: true, status: c.status }); }
     if (b.acao === 'passar') { const n = PASSAR.find(x => x[0] === b.para)[1]; c.resp = [n]; c.meu = false; c.obs = '[Painel 26/10 ' + new Date().toTimeString().slice(0, 5) + '] ' + DEMO_D.nome + ' passou para ' + n + (b.texto ? ': ' + b.texto : '') + (c.obs ? '\n' + c.obs : ''); return wait({ ok: true, status: c.status }); }
     const para = { comecar: 'Fazendo', revisao: 'Em revisão', aprovar: 'Aguardando cliente', ajuste: 'Ajustes', agendei: 'Agendado', postei: 'Postado' }[b.acao];
     const verbo = { comecar: 'começou', revisao: 'mandou para revisão', aprovar: 'aprovou na revisão', ajuste: 'pediu ajuste', agendei: 'agendou', postei: 'postou' }[b.acao];

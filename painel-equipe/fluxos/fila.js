@@ -109,6 +109,7 @@ for (const it of $('Cards da pessoa').all()) for (const p of (it.json.results ||
     prazo: txt(pr['Prazo']), postar: txt(pr['Postar em']), prioridade: txt(pr['Prioridade']),
     link: txt(pr['Link do arquivo']), linkPost: txt(pr['Link da postagem']),
     obs: txt(pr['Obs']).split('\\n').slice(0, 4).join('\\n').slice(0, 600),
+    naogravou: status === 'Aguardando cliente' && (txt(pr['Obs']).split('\\n').find(x => /marcou: cliente (ainda não gravou|mandou o material)/.test(x)) || '').includes('ainda não gravou'),
     resp: resp.map(r => EQUIPE[r] || 'Outro'), meu: quem.papel === 'teste' || resp.includes(quem.ficha),
     comecou: txt(pr['⏱️ Começou em']), revisao: txt(pr['⏱️ Foi para revisão em']), voltas: (pr['⏱️ Voltas de ajuste'] || {}).number || 0 });
 }
