@@ -634,7 +634,7 @@ const VIEWS = {
       const item = c => `<li class="item ${c.agora ? 'late' : c.novo ? 'today' : ''}"><span class="stripe"></span>
         <div class="main" style="cursor:default"><span class="t">${esc(c.hora)} · ${esc(c.cliente)}</span>
         <span class="meta">${c.agora ? '<span class="chip red">Acontecendo agora</span>' : ''}${c.novo ? '<span class="chip org">Nova</span>' : ''}${c.tipo ? `<span class="chip">${esc(c.tipo)}</span>` : ''}<span class="chip">${esc(c.hora)} às ${esc(c.fimHora)}</span>${c.convidados ? `<span class="chip">${c.convidados} convidado${c.convidados > 1 ? 's' : ''}</span>` : ''}</span></div>
-        <span class="act" style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">${/^https:/.test(c.apresentacao || '') ? `<a class="btn ${c.agora ? '' : 'primary'}" href="${esc(c.apresentacao)}" target="_blank" rel="noopener">Abrir apresentação</a>` : c.apresentacao === 'producao' ? '<span class="chip">Apresentação em produção</span>' : ''}${c.meet ? `<a class="btn ${c.agora ? 'primary' : ''}" href="${esc(c.meet)}" target="_blank" rel="noopener">Entrar no Meet</a>` : ''}</span></li>`;
+        <span class="act" style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">${/^https:/.test(c.apresentacao || '') ? `<a class="btn ${c.agora ? '' : 'primary'}" href="${esc(c.apresentacao)}" target="_blank" rel="noopener">Abrir apresentação</a>` : c.apresentacao === 'producao' ? '<span class="chip">Apresentação em produção</span>' : ''}${/onboarding/i.test(c.tipo || '') ? `<a class="btn" href="${TOUR_PORTAL}" target="_blank" rel="noopener">Tour do Portal</a>` : ''}${c.meet ? `<a class="btn ${c.agora ? 'primary' : ''}" href="${esc(c.meet)}" target="_blank" rel="noopener">Entrar no Meet</a>` : ''}</span></li>`;
       const passou = c => c.dia === CC.hoje && c.fimHora <= CC.agora;
       const novas = CC.calls.filter(c => c.novo && !passou(c)).length;
       return topo + `<div class="stats">
@@ -1053,6 +1053,8 @@ const CLIMA = { 'Eufórico': 'ok', 'Neutro': '', 'Ex-sensível': 'warn', 'Sensí
 // Carteira da equipe (Ismael e Rômulo): plano, tempo e entregas do contrato. Sem valores, jurídico nem clima.
 // A aba fica escondida até a diretoria aprovar a prévia (na demonstração ela aparece).
 const CARTEIRA_NO_AR = true;
+// Tour do Portal do Cliente: fica fixo nas calls de Onboarding.
+const TOUR_PORTAL = 'https://claude.ai/artifact/8oZHtJ4aaXvLFV9dM368CV';
 const TIPOS_CE = [['longos', 'Longos'], ['shorts', 'Shorts'], ['carrosseis', 'Carrosséis'], ['thumbs', 'Thumbs'], ['roteiros', 'Roteiros']];
 const fimCe = k => k.contrato && k.contrato.faltamDias !== null ? k.contrato.faltamDias : null;
 // Abaixo do ritmo: longos postados bem abaixo do que o tempo de contrato já pede (só a partir do 2º mês).
