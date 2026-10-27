@@ -417,8 +417,14 @@ function grupo(titulo, lista, vazio){
   if (!lista.length && !vazio) return '';
   return `<section class="group"><h2>${titulo} <span class="count">${lista.length}</span></h2>${lista.length ? `<ul class="rows">${lista.map(linha).join('')}</ul>` : `<p class="empty">${vazio}</p>`}</section>`;
 }
-const FOLD = new Set();
-document.addEventListener('toggle', e => { const d = e.target; if (d.dataset && d.dataset.fold) { if (d.open) FOLD.add(d.dataset.fold); else FOLD.delete(d.dataset.fold); } }, true);
+const FOLD = new Set(), FECHOU = new Set();
+document.addEventListener('toggle', e => { const d = e.target; if (d.dataset && d.dataset.fold) { const k = d.dataset.fold; if (d.dataset.aberto) { if (d.open) FECHOU.delete(k); else FECHOU.add(k); } else if (d.open) FOLD.add(k); else FOLD.delete(k); } }, true);
+// Grupo recolhível da fila da equipe: os urgentes começam abertos, o resto fechado; o painel lembra o que a pessoa abriu ou fechou.
+function grupoFold(titulo, lista, vazio, aberto){
+  if (!lista.length && !vazio) return '';
+  const k = 'eq:' + titulo, open = aberto ? !FECHOU.has(k) : FOLD.has(k);
+  return `<details class="group" data-fold="${esc(k)}" ${aberto ? 'data-aberto="1"' : ''} ${open ? 'open' : ''}><summary style="cursor:pointer"><h2 style="display:inline">${titulo} <span class="count">${lista.length}</span></h2></summary><div style="margin-top:12px">${lista.length ? `<ul class="rows">${lista.map(linha).join('')}</ul>` : `<p class="empty">${vazio}</p>`}</div></details>`;
+}
 // Fila do escritório (diretor): separa o que é com o Flau do que as máquinas já estão fazendo.
 const perguntaMaquina = c => /Pergunta:|Posso |Qual é|Responda aqui|\?\s*$/m.test(String(c.obs || '')) && /Escritório/.test(String(c.obs || ''));
 function filaEscritorio(){
@@ -546,11 +552,11 @@ const VIEWS = {
         <div class="stat"><span class="v">${meus.filter(c => c.status === 'Ajustes').length}</span><span>ajustes pedidos</span></div>
         <div class="stat"><span class="v">${comigo.length}</span><span>na revisão ou com o cliente</span></div>
       </div>
-      ${grupo('Falta informação para o escritório', faltas, '')}
-      ${grupo('Fazer agora', ag, 'Nada atrasado nem para hoje.')}
-      ${grupo('Amanhã', am, 'Nada para amanhã.')}
-      ${grupo('Resto da fila', sem, 'Nada mais na fila.')}
-      ${grupo('Já saiu da sua mão', comigo, '')}`;
+      ${grupoFold('Falta informação para o escritório', faltas, '', true)}
+      ${grupoFold('Fazer agora', ag, 'Nada atrasado nem para hoje.', true)}
+      ${grupoFold('Amanhã', am, 'Nada para amanhã.', false)}
+      ${grupoFold('Resto da fila', sem, 'Nada mais na fila.', false)}
+      ${grupoFold('Já saiu da sua mão', comigo, '', false)}`;
     } },
   demandas: { nome: 'Fila de demandas', pode: () => papel() !== 'teste' || D.cards.some(c => c.livre), badge: () => D.cards.filter(c => c.livre).length,
     html(){
