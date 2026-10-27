@@ -551,7 +551,7 @@ const VIEWS = {
     } },
   calls: { nome: 'Próximas calls', pode: () => ['revisor', 'calls', 'diretor', 'teste'].includes(papel()), badge: () => CC ? CC.calls.filter(c => c.dia === CC.hoje && c.fimHora > CC.agora).length : 0,
     html(){
-      const topo = `<div class="head"><div><p class="eyebrow">Agenda Assessoria EDL${CC ? ' · atualizada às ' + esc(CC.agora) : ''}</p><h1>Próximas calls</h1></div><p class="sub">Tudo o que está marcado na agenda das reuniões, inclusive o que o cliente marcou sozinho pela página. As marcadas nas últimas 24 horas aparecem com "Nova".</p></div>`;
+      const topo = `<div class="head"><div><p class="eyebrow">Agenda Assessoria EDL${CC ? ' · atualizada às ' + esc(CC.agora) : ''}</p><h1>Próximas calls</h1></div><p class="sub">Tudo o que está marcado na agenda das reuniões, inclusive o que o cliente marcou sozinho pela página. As marcadas nas últimas 24 horas aparecem com "Nova". A apresentação de cada call fica pronta na véspera e aparece aqui.</p></div>`;
       if (!CC) return topo + '<p class="sub">Carregando…</p>';
       if (CC.erro) return topo + '<p class="empty">Não consegui ler a agenda agora. Tente de novo em alguns minutos.</p>';
       const dias = [...new Set(CC.calls.map(c => c.dia))];
@@ -559,7 +559,7 @@ const VIEWS = {
       const item = c => `<li class="item ${c.agora ? 'late' : c.novo ? 'today' : ''}"><span class="stripe"></span>
         <div class="main" style="cursor:default"><span class="t">${esc(c.hora)} · ${esc(c.cliente)}</span>
         <span class="meta">${c.agora ? '<span class="chip red">Acontecendo agora</span>' : ''}${c.novo ? '<span class="chip org">Nova</span>' : ''}${c.tipo ? `<span class="chip">${esc(c.tipo)}</span>` : ''}<span class="chip">${esc(c.hora)} às ${esc(c.fimHora)}</span>${c.convidados ? `<span class="chip">${c.convidados} convidado${c.convidados > 1 ? 's' : ''}</span>` : ''}</span></div>
-        <span class="act">${c.meet ? `<a class="btn ${c.agora ? 'primary' : ''}" style="text-decoration:none" href="${esc(c.meet)}" target="_blank" rel="noopener">Entrar no Meet</a>` : ''}</span></li>`;
+        <span class="act" style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">${/^https:/.test(c.apresentacao || '') ? `<a class="btn ${c.agora ? '' : 'primary'}" href="${esc(c.apresentacao)}" target="_blank" rel="noopener">Abrir apresentação</a>` : c.apresentacao === 'producao' ? '<span class="chip">Apresentação em produção</span>' : ''}${c.meet ? `<a class="btn ${c.agora ? 'primary' : ''}" href="${esc(c.meet)}" target="_blank" rel="noopener">Entrar no Meet</a>` : ''}</span></li>`;
       const passou = c => c.dia === CC.hoje && c.fimHora <= CC.agora;
       const novas = CC.calls.filter(c => c.novo && !passou(c)).length;
       return topo + `<div class="stats">
@@ -1382,8 +1382,8 @@ const DEMO_M = {"ok":true,"itens":[
 const DEMO_QR = 'data:image/svg+xml;utf8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 21 21" shape-rendering="crispEdges"><rect width="21" height="21" fill="#fff"/><path d="M1 1h7v7H1zM13 1h7v7h-7zM1 13h7v7H1z" fill="#111"/><path d="M2 2h5v5H2zM14 2h5v5h-5zM2 14h5v5H2z" fill="#fff"/><path d="M3 3h3v3H3zM15 3h3v3h-3zM3 15h3v3H3zM10 2h1v3h-1zM9 9h3v3H9zM13 10h2v1h-2zM16 13h3v2h-3zM10 15h3v1h-3zM13 17h2v3h-2zM17 17h3v1h-3z" fill="#111"/></svg>');
 const DEMO_C = {"ok":true,"hoje":"2026-10-26","agora":"10:20","calls":[
   {"id":"k1","cliente":"Dra. Helena (exemplo)","tipo":"Reunião de Onboarding + Oferta","dia":"2026-10-26","hora":"10:00","fimHora":"11:00","meet":"https://meet.google.com/","convidados":1,"novo":false,"agora":true},
-  {"id":"k2","cliente":"Instituto Aurora (exemplo)","tipo":"Alinhamento","dia":"2026-10-26","hora":"15:00","fimHora":"16:00","meet":"https://meet.google.com/","convidados":2,"novo":true,"agora":false},
-  {"id":"k3","cliente":"Marcos Lima (exemplo)","tipo":"Reunião de Estratégia","dia":"2026-10-27","hora":"09:00","fimHora":"10:00","meet":"https://meet.google.com/","convidados":1,"novo":false,"agora":false},
+  {"id":"k2","cliente":"Instituto Aurora (exemplo)","tipo":"Alinhamento","dia":"2026-10-26","hora":"15:00","fimHora":"16:00","meet":"https://meet.google.com/","convidados":2,"novo":true,"agora":false,"apresentacao":"producao"},
+  {"id":"k3","cliente":"Marcos Lima (exemplo)","tipo":"Reunião de Estratégia","dia":"2026-10-27","hora":"09:00","fimHora":"10:00","meet":"https://meet.google.com/","convidados":1,"novo":false,"agora":false,"apresentacao":"https://grupoeuforia.com.br/"},
   {"id":"k4","cliente":"Paula Reis (exemplo)","tipo":"Reunião de Lançamento do Canal","dia":"2026-10-29","hora":"16:00","fimHora":"17:00","meet":"https://meet.google.com/","convidados":0,"novo":true,"agora":false}]};
 const DEMO_R = {"ok":true,"agora":"11:58","itens":[
   {"chat":"1@g.us","msg":"m1","grupo":"EUFORIA | Paula Reis","cliente":"Paula Reis (exemplo)","faixa":"B","atencao":true,"sensivel":true,"direcao":false,"tema":"reclamação","resumo":"Reclama que o vídeo de ontem saiu com legenda errada","autor":"Paula","texto":"Gente, o vídeo de ontem saiu com o nome do curso errado na legenda 😕","contexto":"25/10 18:02 Euforia: Vídeo 03 no ar!\n26/10 09:14 Paula: Gente, o vídeo de ontem saiu com o nome do curso errado na legenda 😕","qtd":1,"desde":"26/10 09:14","espera":164},
