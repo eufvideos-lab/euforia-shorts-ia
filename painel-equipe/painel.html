@@ -191,6 +191,12 @@ textarea{min-height:90px;resize:vertical}
 .slot.pausado{opacity:.5;border-style:dashed}
 .slot.confirmar{background:var(--warn-soft)}
 button.slot:hover{border-color:var(--muted)}
+.acs{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+.acs li{border:1px solid var(--line);border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.acs .campo{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:14px;min-width:0}
+.acs .campo .mono{overflow-wrap:anywhere;min-width:0;flex:1 1 140px}
+.acs .campo .rot{color:var(--muted);font-size:12px;width:46px;flex-shrink:0}
+.acs .campo .btn{padding:4px 10px;font-size:12px}
 .gabas{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:18px}.gabas .count{margin-left:6px;opacity:.75}
 .legenda{display:flex;flex-wrap:wrap;gap:14px;font-size:13px;color:var(--muted)}
 .legenda i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px}
@@ -841,10 +847,32 @@ function listaPedidos(){
     const links = [p.quadro ? `<a class="btn" style="text-decoration:none" href="${esc(p.quadro)}" target="_blank" rel="noopener">Ver na máquina</a>` : '', s.g === 'pronto' && p.link ? `<a class="btn" style="text-decoration:none" href="${esc(p.link)}" target="_blank" rel="noopener">Abrir arquivo</a>` : ''].join('');
     return `<li class="item ${s.g === 'falta' ? 'late' : ''}"><span class="stripe"></span>
       ${abre ? `<button class="main" data-open="${p.id}">${corpo}</button>` : `<div class="main" style="cursor:default">${corpo}</div>`}
-      <span class="act">${s.g === 'falta' && abre ? `<button class="btn primary" data-go="${p.id}">Completar pedido</button>` : links}</span></li>`; };
+      <span class="act">${s.g === 'falta' && abre ? `<button class="btn primary" data-go="${p.id}">Completar pedido</button>` : links}${(p.por === D.nome || diretor()) && p.status !== 'Postado' ? `<button class="btn" data-apagaped="${p.id}" title="Apagar este pedido">Apagar</button>` : ''}</span></li>`; };
   const g = (titulo, k, vazio) => { const x = l.filter(p => situacao(p).g === k); return !x.length && !vazio ? '' : `<section class="group"><h2>${titulo} <span class="count">${x.length}</span></h2>${x.length ? `<ul class="rows">${x.map(item).join('')}</ul>` : `<p class="empty">${vazio}</p>`}</section>`; };
   if (!l.length) return `<p class="empty">${MP === 'eu' ? 'Você ainda não mandou nenhum pedido ao escritório pelo painel.' : 'Nenhum pedido encontrado.'}</p>`;
   return g('Falta informação', 'falta', '') + g('Em andamento', 'andando', 'Nada em andamento.') + g('Prontos', 'pronto', 'Nada pronto ainda.') + g('Cancelados', 'cancelado', '');
+}
+
+// Apagar pedido: dois cliques (Apagar → Confirmar). O card vai para a lixeira do Notion e sai também do quadro da máquina.
+async function apagarPedido(b){
+  if (ocupado) return;
+  if (!b.dataset.certeza) {
+    document.querySelectorAll('[data-apagaped][data-certeza]').forEach(x => { delete x.dataset.certeza; x.textContent = 'Apagar'; x.classList.remove('warn'); });
+    b.dataset.certeza = '1'; b.textContent = 'Confirmar: apagar'; b.classList.add('warn');
+    clearTimeout(apagarPedido.h); apagarPedido.h = setTimeout(() => { if (b.isConnected) { delete b.dataset.certeza; b.textContent = 'Apagar'; b.classList.remove('warn'); } }, 6000);
+    return;
+  }
+  ocupado = true; b.disabled = true;
+  try {
+    const r = await api('euforia-painel-acao', { card: b.dataset.apagaped, acao: 'apagar', texto: '', link: '', fim: '', anexos: [], para: '' });
+    if (!r || !r.ok) throw new Error((r && r.motivo) || 'erro');
+    D.pedidos = (D.pedidos || []).filter(x => x.id !== b.dataset.apagaped);
+    D.cards = D.cards.filter(x => x.id !== b.dataset.apagaped);
+    ocupado = false; toast('Pedido apagado.'); render(); carregar(true);
+  } catch (e) {
+    ocupado = false; b.disabled = false;
+    toast(e.message === 'permissao' ? 'Só quem fez o pedido pode apagar.' : e.message === 'etapa' ? 'Esse pedido já foi postado e não pode ser apagado.' : MOTIVO[e.message] || ERRO);
+  }
 }
 
 function atualizarPedido(){
@@ -1119,6 +1147,7 @@ function cartaoCe(k){
     ${linhas ? `<div style="display:flex;flex-direction:column;gap:6px">${linhas}${k.catalogo ? '<span class="sub" style="font-size:12px">Quantidades pelo padrão do plano (o texto do contrato não traz o número).</span>' : ''}</div>` : '<span class="sub" style="font-size:13px">Sem quantidade de vídeos no contrato.</span>'}
     ${extras}
     ${det}
+    <div class="actions" style="margin-top:2px"><button class="btn" data-acessos="${k.id}">🔑 Acessos do cliente</button></div>
     <span class="sub" style="font-size:12px">${[k.abertos ? k.abertos + ' card' + (k.abertos > 1 ? 's' : '') + ' aberto' + (k.abertos > 1 ? 's' : '') : 'nenhum card aberto', k.atrasados ? k.atrasados + ' atrasado' + (k.atrasados > 1 ? 's' : '') : '', k.dias.length ? 'posta ' + k.dias.join(', ') : ''].filter(Boolean).join(' · ')}</span>
   </article>`;
 }
@@ -1132,6 +1161,71 @@ async function carregarCarteira(){
   try { const r = await api('euforia-painel-clientes'); CE = r && r.ok ? r : (CE && CE.clientes ? CE : { erro: true }); } catch (e) { CE = CE && CE.clientes ? CE : { erro: true }; }
   carregarCarteira.indo = false;
   if (!ocupado && !$('#layer').innerHTML && !document.activeElement.matches('#ceq')) render();
+}
+// Acessos que o cliente mandou (hospedagem, domínio, Instagram...). Ficam numa tabela do n8n, nunca no Notion; só Ismael, Rômulo e diretoria.
+const SERVICOS = ['Hostinger', 'Registro.br', 'GoDaddy', 'WordPress', 'Instagram', 'Facebook / Meta', 'YouTube', 'TikTok', 'Google / Gmail', 'Hotmart', 'Kiwify', 'Canva', 'Outro'];
+async function copiar(t){
+  try { await navigator.clipboard.writeText(t); toast('Copiado.'); }
+  catch (e) { const x = document.createElement('textarea'); x.value = t; document.body.appendChild(x); x.select(); let ok = false; try { ok = document.execCommand('copy'); } catch (er) {} x.remove(); toast(ok ? 'Copiado.' : 'Não deu para copiar. Selecione e copie à mão.'); }
+}
+async function abrirAcessos(k, editar){
+  let lista = abrirAcessos.cache && abrirAcessos.cache.id === k.id ? abrirAcessos.cache.l : null;
+  const desenha = () => {
+    const v = editar || {};
+    const item = a => `<li>
+      <div style="display:flex;justify-content:space-between;gap:8px;align-items:baseline"><b>${esc(a.servico)}</b><span class="sub" style="font-size:12px">${esc(a.por)}${a.quando ? ' · ' + esc(a.quando) : ''}</span></div>
+      ${a.link ? `<div class="campo"><span class="rot">Link</span><a class="mono" href="${esc(/^https?:\/\//.test(a.link) ? a.link : 'https://' + a.link)}" target="_blank" rel="noopener">${esc(a.link)}</a></div>` : ''}
+      ${a.login ? `<div class="campo"><span class="rot">Login</span><span class="mono">${esc(a.login)}</span><button class="btn" data-copia="login" data-ac="${a.id}">Copiar</button></div>` : ''}
+      ${a.senha ? `<div class="campo"><span class="rot">Senha</span><span class="mono" data-senha="${a.id}">••••••••</span><button class="btn" data-mostra="${a.id}">Mostrar</button><button class="btn" data-copia="senha" data-ac="${a.id}">Copiar</button></div>` : ''}
+      ${a.obs ? `<p class="sub" style="font-size:13px;margin:0">${esc(a.obs)}</p>` : ''}
+      <div class="actions"><button class="btn" data-ajusta="${a.id}">Ajustar</button><button class="btn" data-apaga="${a.id}">Apagar</button></div></li>`;
+    $('#layer').innerHTML = `<div class="scrim" data-x></div><aside class="drawer" role="dialog" aria-modal="true" aria-labelledby="ac-t"><div class="drawer-in">
+      <button class="close" data-x>Fechar</button>
+      <div><p class="eyebrow">Acessos do cliente</p><h2 id="ac-t" style="font-size:26px">${esc(k.nome)}</h2></div>
+      <p class="note">Logins e senhas que o cliente mandou. Só você, o ${papel() === 'calls' ? 'Ismael' : 'Rômulo'} e a diretoria veem. Não cole senha no Notion, no Discord nem em grupo.</p>
+      ${lista === null ? '<p class="sub">Carregando…</p>' : lista.length ? `<ul class="acs">${lista.map(item).join('')}</ul>` : '<p class="empty">Nenhum acesso guardado ainda.</p>'}
+      <form id="facesso" style="display:flex;flex-direction:column;gap:12px;border-top:1px solid var(--line);padding-top:16px">
+        <h3 style="font-size:16px;margin:0">${v.id ? 'Ajustar ' + esc(v.servico) : 'Guardar acesso novo'}</h3>
+        <label for="acs-s">Serviço<input type="text" id="acs-s" list="acs-l" maxlength="80" placeholder="Ex.: Hostinger" value="${esc(v.servico || '')}"><datalist id="acs-l">${SERVICOS.map(x => `<option value="${x}">`).join('')}</datalist></label>
+        <label for="acs-u">Login ou e-mail<input type="text" id="acs-u" maxlength="200" autocomplete="off" value="${esc(v.login || '')}"></label>
+        <label for="acs-p">Senha<input type="text" id="acs-p" maxlength="200" autocomplete="off" spellcheck="false" value="${esc(v.senha || '')}"></label>
+        <label for="acs-k">Link de entrada (opcional)<input type="text" id="acs-k" maxlength="500" placeholder="https://" value="${esc(v.link || '')}"></label>
+        <label for="acs-o">Observação (opcional)<textarea id="acs-o" rows="2" maxlength="600" placeholder="Ex.: código de 2 fatores vai para o WhatsApp dela">${esc(v.obs || '')}</textarea></label>
+        <div class="actions"><button class="btn primary" type="submit">${v.id ? 'Salvar ajuste' : 'Guardar'}</button>${v.id ? '<button class="btn" type="button" data-novo>Cancelar ajuste</button>' : ''}</div>
+      </form></div></aside>`;
+  };
+  const recarregar = async () => {
+    try { const r = await api('euforia-painel-acessos', { acao: 'listar', cliente: k.id }); if (!r || !r.ok) throw new Error((r && r.motivo) || 'erro'); lista = r.acessos; abrirAcessos.cache = { id: k.id, l: lista }; }
+    catch (e) { lista = lista || []; toast(e.message === 'acesso' ? MOTIVO.acesso : ERRO); }
+    if ($("#ac-t")) desenha();
+  };
+  desenha();
+  if (lista === null || !editar) recarregar();
+  $('#layer').onclick = async e => {
+    if (e.target.closest('[data-x]')) { if (!ocupado) fechar(); return; }
+    const acha = id => (lista || []).find(a => String(a.id) === String(id));
+    const cp = e.target.closest('[data-copia]'); if (cp) { const a = acha(cp.dataset.ac); if (a) copiar(a[cp.dataset.copia]); return; }
+    const mo = e.target.closest('[data-mostra]'); if (mo) { const a = acha(mo.dataset.mostra), el = document.querySelector(`[data-senha="${mo.dataset.mostra}"]`); const vis = mo.textContent === 'Esconder'; el.textContent = vis ? '••••••••' : a.senha; mo.textContent = vis ? 'Mostrar' : 'Esconder'; return; }
+    const aj = e.target.closest('[data-ajusta]'); if (aj) { editar = acha(aj.dataset.ajusta); desenha(); $('#acs-s').focus(); return; }
+    if (e.target.closest('[data-novo]')) { editar = null; desenha(); return; }
+    const ap = e.target.closest('[data-apaga]'); if (ap && !ocupado) {
+      if (!ap.dataset.certeza) { ap.dataset.certeza = '1'; ap.textContent = 'Confirmar: apagar'; ap.classList.add('warn'); return; }
+      ocupado = true;
+      try { const r = await api('euforia-painel-acessos', { acao: 'apagar', cliente: k.id, acesso: { id: ap.dataset.apaga } }); if (!r || !r.ok) throw new Error((r && r.motivo) || 'erro'); toast('Acesso apagado.'); }
+      catch (er) { toast(MOTIVO[er.message] || ERRO); }
+      ocupado = false; editar = null; await recarregar();
+    }
+  };
+  $('#layer').onsubmit = async e => {
+    if (e.target.id !== 'facesso') return; e.preventDefault(); if (ocupado) return;
+    const acesso = { id: editar ? editar.id : '', servico: $('#acs-s').value.trim(), login: $('#acs-u').value.trim(), senha: $('#acs-p').value, link: $('#acs-k').value.trim(), obs: $('#acs-o').value.trim() };
+    if (acesso.servico.length < 2) { $('#acs-s').focus(); toast('Escreva de qual serviço é o acesso.'); return; }
+    if (!acesso.login && !acesso.senha && !acesso.link) { $('#acs-u').focus(); toast('Preencha pelo menos o login, a senha ou o link.'); return; }
+    ocupado = true;
+    try { const r = await api('euforia-painel-acessos', { acao: 'salvar', cliente: k.id, clienteNome: k.nome, acesso }); if (!r || !r.ok) throw new Error((r && r.motivo) || 'erro'); toast(acesso.id ? 'Acesso ajustado.' : 'Acesso guardado.'); editar = null; }
+    catch (er) { toast(MOTIVO[er.message] || ERRO); }
+    ocupado = false; await recarregar();
+  };
 }
 const TIPOS_CL = [['longos', 'Longos'], ['shorts', 'Shorts'], ['carrosseis', 'Carrosséis'], ['thumbs', 'Thumbs']];
 const chipClima = k => k.clima ? `<span class="chip ${CLIMA[k.clima] || ''}">${esc(k.clima)}</span>` : '<span class="chip">sem clima</span>';
@@ -1453,6 +1547,8 @@ document.addEventListener('click', async e => {
   const fl = e.target.closest('#main [data-filtro]'); if (fl) { view = 'todos'; TS = fl.dataset.filtro; TQ = ''; TP = ''; TT = ''; render(); window.scrollTo({ top: 0 }); return; }
   const kcl = e.target.closest('#main [data-cli]'); if (kcl) { abrirCliente(kcl.dataset.cli); return; }
   const kf = e.target.closest('#main [data-clf]'); if (kf) { CLF = CLF === kf.dataset.clf ? '' : kf.dataset.clf; render(); return; }
+  const ap = e.target.closest('#main [data-apagaped]'); if (ap) { apagarPedido(ap); return; }
+  const ac = e.target.closest('#main [data-acessos]'); if (ac) { const k = CE.clientes.find(x => x.id === ac.dataset.acessos); if (k) abrirAcessos(k); return; }
   const ga = e.target.closest('#main [data-gaba]'); if (ga) { GP = ga.dataset.gaba; render(); return; }
   const ef = e.target.closest('#main [data-cef]'); if (ef) { CEF = CEF === ef.dataset.cef ? '' : ef.dataset.cef; render(); return; }
   const dcl = e.target.closest('#main [data-cliente]'); if (dcl) { view = 'todos'; TS = ''; TP = ''; TT = ''; TQ = cliDD(dcl.dataset.cliente).nome; render(); window.scrollTo({ top: 0 }); return; }
@@ -1562,6 +1658,14 @@ function demoApi(path, b){
   if (path === 'euforia-painel-responder') return wait({ ok: true, pelo: 'seu número' });
   if (path === 'euforia-painel-calls') return wait(DEMO_C);
   if (path === 'euforia-painel-clientes') return wait(DEMO_CE);
+  if (path === 'euforia-painel-acessos') {
+    const l = DEMO_AC[b.cliente] = DEMO_AC[b.cliente] || [];
+    if (b.acao === 'listar') return wait({ ok: true, acessos: JSON.parse(JSON.stringify(l)) });
+    if (b.acao === 'apagar') { DEMO_AC[b.cliente] = l.filter(a => String(a.id) !== String(b.acesso.id)); return wait({ ok: true }); }
+    const novo = Object.assign({}, b.acesso, { id: b.acesso.id || Date.now() % 100000, por: DEMO_D.nome, quando: '27/10/2026 14:30' });
+    DEMO_AC[b.cliente] = b.acesso.id ? l.map(a => String(a.id) === String(b.acesso.id) ? novo : a) : l.concat(novo);
+    return wait({ ok: true });
+  }
   if (path === 'euforia-painel-respostas') { if (b && b.acao === 'dispensar') return wait({ ok: true }); return wait(DEMO_R); }
   if (path === 'euforia-painel-grade') {
     if (b.acao === 'listar') return wait(JSON.parse(JSON.stringify(DEMO_G)));
@@ -1587,6 +1691,7 @@ function demoApi(path, b){
   if (path === 'euforia-painel-pedido') return wait({ ok: true, quem: b.modo === 'mao' ? 'Escritório, à mão' : (TIPOS.find(t => t.id === b.tipo) || {}).maq });
   if (path === 'euforia-painel-acao') {
     const c = DEMO_D.cards.find(x => x.id === b.card);
+    if (b.acao === 'apagar') { DEMO_D.pedidos = (DEMO_D.pedidos || []).filter(x => x.id !== b.card); DEMO_D.cards = DEMO_D.cards.filter(x => x.id !== b.card); return wait({ ok: true, status: '' }); }
     if (b.acao === 'completar') { DEMO_D.cards = DEMO_D.cards.filter(x => x !== c); return wait({ ok: true, status: 'A fazer' }); }
     if (b.acao === 'pegar') { c.livre = false; c.meu = true; c.resp = [DEMO_D.nome]; return wait({ ok: true, status: c.status }); }
     if (b.acao === 'naoemeu' || b.acao === 'jafeito') { DEMO_D.cards = DEMO_D.cards.filter(x => x !== c); return wait({ ok: true, status: b.fim || c.status }); }
@@ -1668,6 +1773,7 @@ const DEMO_M = {"ok":true,"itens":[
   {"quem":"Rômulo","grupo":"EUFORIA | Instituto Aurora","texto":"Bom dia, pessoal! Os shorts desta semana vão para revisão hoje.","quando":"2026-10-26T09:02"},
   {"quem":"Rômulo","grupo":"EUFORIA | Clínica Vida","texto":"Tudo certo para a reunião de amanhã às 11h?","quando":"2026-10-25T17:20"}]};
 const DEMO_QR = 'data:image/svg+xml;utf8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 21 21" shape-rendering="crispEdges"><rect width="21" height="21" fill="#fff"/><path d="M1 1h7v7H1zM13 1h7v7h-7zM1 13h7v7H1z" fill="#111"/><path d="M2 2h5v5H2zM14 2h5v5h-5zM2 14h5v5H2z" fill="#fff"/><path d="M3 3h3v3H3zM15 3h3v3h-3zM3 15h3v3H3zM10 2h1v3h-1zM9 9h3v3H9zM13 10h2v1h-2zM16 13h3v2h-3zM10 15h3v1h-3zM13 17h2v3h-2zM17 17h3v1h-3z" fill="#111"/></svg>');
+const DEMO_AC = { c1: [{ id: 1, servico: 'Hostinger', login: 'helena@exemplo.com', senha: 'Exemplo#2026', link: 'https://hpanel.hostinger.com', obs: 'Código de 2 fatores vai para o WhatsApp dela.', por: 'Rômulo (exemplo)', quando: '24/10/2026 10:12' }] };
 const DEMO_CE = {"ok": true, "hoje": "2026-10-27", "clientes": [{"id": "c1", "nome": "Dra. Helena (exemplo)", "faixa": "A", "atencao": true, "situacao": "Ativo", "fase": "Produção", "plano": "Assessoria semestral", "tags": ["Relançamento do canal"], "semContrato": false, "contrato": {"inicio": "2026-05-10", "meses": 6, "fim": "2026-11-09", "mes": 6, "pct": 92, "faltamDias": 13}, "total": {"longos": 20, "shorts": 60, "carrosseis": 20, "thumbs": 20, "roteiros": 20}, "catalogo": false, "feito": {"longos": 12, "shorts": 31, "carrosseis": 9, "thumbs": 12, "roteiros": 16}, "mes": {}, "inclui": ["Setup e relançamento do canal", "1 funil, 1 página de vendas, 1 copy", "Replicação cortes TikTok (4 meses)", "Calls de alinhamento, ajustes e análises"], "diferencas": [], "extras": [{"tipo": "Página", "estado": "feito"}, {"tipo": "Copy", "estado": "feito"}, {"tipo": "Funil", "estado": "andando"}], "abertos": 4, "atrasados": 2, "dias": ["Ter", "Qui"], "alinhamento": "", "drive": ""}, {"id": "c2", "nome": "Instituto Aurora (exemplo)", "faixa": "A", "atencao": false, "situacao": "Ativo", "fase": "Produção", "plano": "Assessoria anual", "tags": [], "semContrato": false, "contrato": {"inicio": "2026-03-02", "meses": 12, "fim": "2027-03-02", "mes": 8, "pct": 65, "faltamDias": 126}, "total": {"longos": 44, "shorts": 132, "carrosseis": 44, "thumbs": 44, "roteiros": 44}, "catalogo": false, "feito": {"longos": 28, "shorts": 80, "carrosseis": 26, "thumbs": 28, "roteiros": 30}, "mes": {}, "inclui": ["1 Página de Vendas", "1 Copy da Página de Vendas", "1 Funil de Vendas", "ID do Canal (banner/capa)", "TikTok 1 mês"], "diferencas": ["Onboarding e Oferta em calls separadas"], "extras": [{"tipo": "Página", "estado": "feito"}, {"tipo": "Copy", "estado": "feito"}, {"tipo": "Funil", "estado": "feito"}, {"tipo": "ID visual", "estado": "feito"}], "abertos": 3, "atrasados": 0, "dias": ["Seg", "Qua", "Sex"], "alinhamento": "", "drive": ""}, {"id": "c3", "nome": "Marcos Lima (exemplo)", "faixa": "B", "atencao": false, "situacao": "Ativo", "fase": "Setup (aprovação criativa)", "plano": "Implementação EDL", "tags": ["Clone de voz e imagem"], "semContrato": false, "contrato": {"inicio": "2026-10-14", "meses": 1.5, "fim": "2026-11-29", "mes": 1, "pct": 28, "faltamDias": 33}, "total": {"longos": 2, "shorts": 4, "carrosseis": 2, "thumbs": 2, "roteiros": 2}, "catalogo": true, "feito": {"longos": 0, "shorts": 0, "carrosseis": 0, "thumbs": 0, "roteiros": 2}, "mes": {}, "inclui": [], "diferencas": ["Clone de Voz e Imagem incluído a mais", "Fase 3 (Análise e Ajustes) a mais, com calls de alinhamento"], "extras": [{"tipo": "ID visual", "estado": "andando"}], "abertos": 2, "atrasados": 0, "dias": [], "alinhamento": "", "drive": ""}, {"id": "c4", "nome": "Paula Reis (exemplo)", "faixa": "B", "atencao": false, "situacao": "Ativo", "fase": "Produção", "plano": "Assessoria trimestral", "tags": [], "semContrato": false, "contrato": {"inicio": "2026-07-01", "meses": 3, "fim": "2026-09-30", "mes": 4, "pct": 100, "faltamDias": -27}, "total": {"longos": 8, "shorts": 24, "carrosseis": 8, "thumbs": 8, "roteiros": 8}, "catalogo": false, "feito": {"longos": 7, "shorts": 21, "carrosseis": 6, "thumbs": 7, "roteiros": 8}, "mes": {}, "inclui": ["1 página de vendas, 1 copy, 1 funil"], "diferencas": ["Contrato congelado de 13/07 a 05/10/2026 a pedido da cliente"], "extras": [{"tipo": "Página", "estado": "falta"}, {"tipo": "Funil", "estado": "falta"}], "abertos": 1, "atrasados": 0, "dias": ["Qua"], "alinhamento": "", "drive": ""}, {"id": "c5", "nome": "Clínica Vida (exemplo)", "faixa": "C", "atencao": false, "situacao": "Ativo", "fase": "Produção", "plano": "", "tags": [], "semContrato": true, "contrato": null, "total": {"longos": null, "shorts": null, "carrosseis": null, "thumbs": null, "roteiros": null}, "catalogo": false, "feito": {"longos": 5, "shorts": 12, "carrosseis": 3, "thumbs": 5, "roteiros": 0}, "mes": {}, "inclui": [], "diferencas": [], "extras": [], "abertos": 1, "atrasados": 1, "dias": ["Sex"], "alinhamento": "", "drive": ""}]};
 const DEMO_C = {"ok":true,"hoje":"2026-10-26","agora":"10:20","calls":[
   {"id":"k1","cliente":"Dra. Helena (exemplo)","tipo":"Reunião de Onboarding + Oferta","dia":"2026-10-26","hora":"10:00","fimHora":"11:00","meet":"https://meet.google.com/","convidados":1,"novo":false,"agora":true},

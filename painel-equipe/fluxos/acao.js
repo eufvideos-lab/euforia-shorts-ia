@@ -12,7 +12,7 @@ const pedir = trigger({ type: 'n8n-nodes-base.webhook', version: 2.1, config: { 
 const ler = node({ type: 'n8n-nodes-base.code', version: 2, config: { name: 'Ler pedido', parameters: { jsCode: `const b = ($input.first().json.body) || {};
 const u = String(b.u || '').toLowerCase();
 const card = String(b.card || '').replace(/-/g, '').toLowerCase();
-const ACOES = ['comecar', 'revisao', 'aprovar', 'ajuste', 'agendei', 'postei', 'passar', 'naoemeu', 'jafeito', 'pegar', 'completar'];
+const ACOES = ['comecar', 'revisao', 'aprovar', 'ajuste', 'agendei', 'postei', 'passar', 'naoemeu', 'jafeito', 'pegar', 'completar', 'apagar'];
 const PARA = ['victor', 'lorena', 'daniel', 'escritorio'];
 const link = String(b.link || '').trim().slice(0, 500);
 return [{ json: { u: /^[0-9a-f]{24}$/.test(u) ? u : 'x', pin: String(b.pin || '').replace(/[^0-9]/g, '').slice(0, 6),
@@ -73,6 +73,8 @@ const REGRA = {
   // Completar pedido: a Máquina do Escritório devolveu o card a quem pediu com "Falta informação"; a pessoa completa e o card volta para a fila da máquina.
   completar: { pode: meu, de: ['A fazer', 'Fazendo', 'Ajustes'], para: 'A fazer', verbo: 'completou o pedido', precisaTexto: true },
   pegar: { pode: teste ? /TESTE PAINEL/.test(titulo) : !!r.ficha && r.papel !== 'teste', de: ['A fazer', 'Fazendo', 'Ajustes'], para: '', verbo: 'pegou na fila de demandas' },
+  // Apagar: quem pediu pelo painel (ou a diretoria) tira o pedido errado ou que não precisa mais. Vai para a lixeira do Notion (volta em até 30 dias).
+  apagar: { pode: teste ? /TESTE PAINEL/.test(titulo) : r.papel === 'diretor' || (['revisor', 'calls'].includes(r.papel) && txt(cp['Obs']).includes('Pedido de ' + r.nome + ' ·')), de: ['A fazer', 'Fazendo', 'Em revisão', 'Ajustes', 'Aguardando cliente', 'Aprovado', 'Agendado', 'Cancelado'], para: '', verbo: 'apagou o pedido' },
   passar: { pode: posta, de: ['A fazer', 'Fazendo', 'Em revisão', 'Ajustes', 'Aguardando cliente', 'Aprovado', 'Agendado'], para: '', verbo: 'passou para ' + (alvo ? alvo[1] : '') } };
 const g = REGRA[p.acao];
 let erro = '';
@@ -94,6 +96,7 @@ const linha = '[Painel ' + agora.toFormat('dd/MM HH:mm') + '] ' + (r.nome || '')
 // Notion aceita até 2000 caracteres por pedaço de texto: a Obs vai em pedaços.
 const pedacos = s => (String(s).match(/[\\s\\S]{1,1990}/g) || ['']).slice(0, 10).map(x => ({ type: 'text', text: { content: x } }));
 const obsAntiga = txt(cp['Obs']);
+const quadroId = p.acao === 'apagar' ? ((obsAntigaQ => (obsAntigaQ.match(/Pedido criado no quadro[^:]*: *\\S*?([0-9a-f]{32})/) || [])[1] || '')(txt(cp['Obs']))) : '';
 const props = g ? { 'Status': { select: { name: g.para || status } }, 'Obs': { rich_text: pedacos(linha + (obsAntiga ? '\\n' + obsAntiga : '')) } } : {};
 if (p.acao === 'revisao') props['Link do arquivo'] = { url: p.link };
 if (p.acao === 'agendei' || p.acao === 'postei') props['Link da postagem'] = { url: p.link };
@@ -117,7 +120,7 @@ if (p.acao === 'jafeito') aviso = '✅ **' + titulo + '** marcado como ' + (p.fi
 if (p.acao === 'pegar') aviso = '🙋 **' + titulo + '** foi pego por ' + r.nome + ' na Fila de demandas.';
 if (p.acao === 'ajuste') aviso = '🔁 **' + titulo + '** voltou para ajuste. O pedido está no card e no topo da fila de quem fez.';
 return [{ json: { ok: !erro, cardId: card.id || '', avisar: !!aviso && !teste,
-  body: JSON.stringify({ properties: props }),
+  body: JSON.stringify(p.acao === 'apagar' ? { properties: { 'Obs': props['Obs'] }, archived: true } : { properties: props }), apagar: p.acao === 'apagar', quadroId,
   discord: JSON.stringify({ content: (aviso + '\\n— Érica, time de suporte, Grupo Euforia').slice(0, 1990), allowed_mentions: { users: p.acao === 'naoemeu' ? ['1410287139169763471', '1490768736876237082'] : ['jafeito', 'pegar'].includes(p.acao) ? [] : [p.acao === 'passar' ? (alvo && alvo[2]) || '' : '1410287139169763471'].filter(Boolean) } }),
   resposta: erro ? { ok: false, motivo: erro, status } : { ok: true, status: g.para } } }];
 ` } } });
@@ -130,6 +133,19 @@ const podeSeguir = ifElse({ version: 2.2, config: { name: 'Botão válido?', par
 const atualizar = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, config: { name: 'Atualizar card no Entregas', credentials: NOTION, parameters: {
   method: 'PATCH', url: '=https://api.notion.com/v1/pages/{{ $("Validar botão").first().json.cardId }}', authentication: 'genericCredentialType', genericAuthType: 'httpHeaderAuth',
   sendHeaders: true, headerParameters: NOTION_HDR, sendBody: true, specifyBody: 'json', jsonBody: '={{ $("Validar botão").first().json.body }}', options: {} } } });
+
+const ehApagar = ifElse({ version: 2.2, config: { name: 'Foi apagar?', parameters: { conditions: {
+  options: { caseSensitive: true, leftValue: '', typeValidation: 'loose' },
+  conditions: [{ leftValue: '={{ $("Validar botão").first().json.apagar }}', rightValue: '', operator: { type: 'boolean', operation: 'true', singleValue: true } }],
+  combinator: 'and' } } } });
+
+// Pedido que já tinha ido para o quadro de uma máquina (longos, shorts, carrosséis) também sai de lá, para a máquina não fazer.
+const apagarQuadro = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, config: { name: 'Apagar pedido no quadro da máquina', credentials: NOTION, onError: 'continueRegularOutput', alwaysOutputData: true, parameters: {
+  method: 'PATCH', url: '=https://api.notion.com/v1/pages/{{ $("Validar botão").first().json.quadroId || "00000000000000000000000000000000" }}', authentication: 'genericCredentialType', genericAuthType: 'httpHeaderAuth',
+  sendHeaders: true, headerParameters: NOTION_HDR, sendBody: true, specifyBody: 'json', jsonBody: '{"archived":true}', options: {} } } });
+
+const confirmarApagar = node({ type: 'n8n-nodes-base.respondToWebhook', version: 1.5, config: { name: 'Confirmar apagado', parameters: {
+  respondWith: 'json', responseBody: '={{ JSON.stringify($("Validar botão").first().json.resposta) }}', options: {} } } });
 
 const precisaAviso = ifElse({ version: 2.2, config: { name: 'Precisa de aviso?', parameters: { conditions: {
   options: { caseSensitive: true, leftValue: '', typeValidation: 'loose' },
@@ -149,11 +165,13 @@ const confirmarSemAviso = node({ type: 'n8n-nodes-base.respondToWebhook', versio
 const recusar = node({ type: 'n8n-nodes-base.respondToWebhook', version: 1.5, config: { name: 'Recusar', parameters: {
   respondWith: 'json', responseBody: '={{ JSON.stringify($json.resposta) }}', options: {} } } });
 
-const nota = sticky('## Painel da equipe · botões (V1)\nComecei (A fazer → Fazendo), Mandar para revisão (link obrigatório → Em revisão + Link do arquivo + aviso ao Ismael), Aprovar (Em revisão → Aguardando cliente), Pedir ajuste (texto obrigatório → Ajustes), Agendei / Postei (link obrigatório → Agendado / Postado + Link da postagem), Passar para (Ismael, Rômulo e diretoria trocam o Responsável para Victor, Lorena, Daniel ou Escritório; aviso no #dia-a-dia marcando a pessoa), Não é comigo (quem é Responsável sai do card, motivo obrigatório, aviso ao Ismael e Rômulo), Já foi feito (Responsável marca Postado ou Cancelado, motivo obrigatório), Pegar (Fila de demandas: card sem Responsável de edição vira da pessoa; limite de 8 em produção), Completar pedido (card que a Máquina do Escritório devolveu com 🏢 Escritório IA = Falta informação: texto obrigatório, links e anexos na Obs, volta para Escritório + Na fila).\nSó o Responsável mexe no próprio card; revisão é do Ismael; postagem do Ismael e do Rômulo. Toda ação vira uma linha [Painel dd/mm] no topo da Obs. Teste só mexe em cards "TESTE PAINEL" e não avisa no Discord.', [], { color: 4 });
+const nota = sticky('## Painel da equipe · botões (V1)\nComecei (A fazer → Fazendo), Mandar para revisão (link obrigatório → Em revisão + Link do arquivo + aviso ao Ismael), Aprovar (Em revisão → Aguardando cliente), Pedir ajuste (texto obrigatório → Ajustes), Agendei / Postei (link obrigatório → Agendado / Postado + Link da postagem), Passar para (Ismael, Rômulo e diretoria trocam o Responsável para Victor, Lorena, Daniel ou Escritório; aviso no #dia-a-dia marcando a pessoa), Não é comigo (quem é Responsável sai do card, motivo obrigatório, aviso ao Ismael e Rômulo), Já foi feito (Responsável marca Postado ou Cancelado, motivo obrigatório), Pegar (Fila de demandas: card sem Responsável de edição vira da pessoa; limite de 8 em produção), Apagar (quem pediu pelo painel ou a diretoria: card vai para a lixeira do Notion com a linha no histórico; o pedido no quadro da máquina também), Completar pedido (card que a Máquina do Escritório devolveu com 🏢 Escritório IA = Falta informação: texto obrigatório, links e anexos na Obs, volta para Escritório + Na fila).\nSó o Responsável mexe no próprio card; revisão é do Ismael; postagem do Ismael e do Rômulo. Toda ação vira uma linha [Painel dd/mm] no topo da Obs. Teste só mexe em cards "TESTE PAINEL" e não avisa no Discord.', [], { color: 4 });
 
 export default workflow('painel-acao', 'Painel | Botões da equipe (V1)')
   .add(pedir).to(ler).to(acesso).to(cardNode).to(abertosNode).to(validar)
   .to(podeSeguir
-    .onTrue(atualizar.to(precisaAviso.onTrue(avisar.to(confirmar)).onFalse(confirmarSemAviso)))
+    .onTrue(atualizar.to(ehApagar
+      .onTrue(apagarQuadro.to(confirmarApagar))
+      .onFalse(precisaAviso.onTrue(avisar.to(confirmar)).onFalse(confirmarSemAviso))))
     .onFalse(recusar))
   .add(nota);
