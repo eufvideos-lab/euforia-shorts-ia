@@ -191,6 +191,7 @@ textarea{min-height:90px;resize:vertical}
 .slot.pausado{opacity:.5;border-style:dashed}
 .slot.confirmar{background:var(--warn-soft)}
 button.slot:hover{border-color:var(--muted)}
+.gabas{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:18px}.gabas .count{margin-left:6px;opacity:.75}
 .legenda{display:flex;flex-wrap:wrap;gap:14px;font-size:13px;color:var(--muted)}
 .legenda i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px}
 @media (max-width:860px){.semana{grid-template-columns:minmax(0,1fr)}.semana .col.vazio{display:none}.filtros label{max-width:none}}
@@ -350,7 +351,7 @@ const PASSAR = [['victor', 'Victor'], ['lorena', 'Lorena'], ['daniel', 'Daniel']
 const $ = s => document.querySelector(s);
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let D = null, R = null, W = null, WQR = '', PIN = '', view = '', ocupado = false;
-let G = null, GC = '', GP = '';
+let G = null, GC = '', GP = 'YouTube';
 const RASC = {};
 let MP = null, MPQ = '', CC = null;
 let CE = null, CEQ = '', CEF = '';
@@ -683,7 +684,11 @@ const VIEWS = {
       if (!G) { carregarGrade(); return `<div class="head"><div><p class="eyebrow">Quando cada cliente posta</p><h1>Grade de postagem</h1></div></div><p class="sub">Carregando…</p>`; }
       const nome = id => (G.clientes.find(c => c.id === id) || {}).nome || '';
       const base = dia(D.hoje), hj = (base.getDay() + 6) % 7, seg = new Date(base.getTime() - hj * 864e5);
-      const hs = G.horarios.filter(h => (!GC || h.cliente === GC) && (!GP || h.plataforma === GP))
+      // Uma grade por plataforma: YouTube e TikTok separados; Instagram e Blog só aparecem se tiverem horário.
+      const abas = ['YouTube', 'TikTok', ...['Instagram', 'Blog'].filter(x => G.horarios.some(h => h.plataforma === x))];
+      if (!abas.includes(GP)) GP = 'YouTube';
+      const daPlat = G.horarios.filter(h => h.plataforma === GP);
+      const hs = daPlat.filter(h => !GC || h.cliente === GC)
         .sort((a, b) => (a.horario || '99').localeCompare(b.horario || '99') || nome(a.cliente).localeCompare(nome(b.cliente)));
       const cartao = h => `<button class="slot ${esc(h.plataforma)} ${h.status.includes('Pausado') ? 'pausado' : ''} ${h.status.includes('Confirmar') ? 'confirmar' : ''}" data-slot="${h.id}">
         <b>${esc(nome(h.cliente))}</b><span class="sub">${esc(h.plataforma)} · ${esc(h.formato)}${h.qtd > 1 ? ' ×' + h.qtd : ''}</span>
@@ -692,24 +697,27 @@ const VIEWS = {
         return `<div class="col ${i === hj ? 'hoje' : ''} ${l.length ? '' : 'vazio'}"><h3>${d.slice(2)}${i === hj ? ' · hoje' : ''} <span class="mono">${String(dt.getDate()).padStart(2, '0')}/${String(dt.getMonth() + 1).padStart(2, '0')}</span></h3>
           ${l.length ? l.map(cartao).join('') : '<span class="sub" style="font-size:12px">Nada</span>'}</div>`; }).join('');
       const hoje = hs.filter(h => h.dia === GDIAS[hj] && h.status.includes('Publicar'));
-      const com = new Set(G.horarios.map(h => h.cliente));
-      const sem = G.clientes.filter(c => c.ativo && !com.has(c.id) && (!GC || c.id === GC));
+      const com = new Set(daPlat.map(h => h.cliente));
+      // Sem dia no YouTube: todo cliente ativo. No TikTok (e nas outras): só quem tem a plataforma na ficha.
+      const deve = c => GP === 'YouTube' || (GP === 'TikTok' && c.tt);
+      const semTodos = G.clientes.filter(c => c.ativo && deve(c) && !com.has(c.id));
+      const sem = semTodos.filter(c => !GC || c.id === GC);
       const nomes = G.clientes.slice().sort((a, b) => a.nome.localeCompare(b.nome));
       return `<div class="head"><div><p class="eyebrow">Quando cada cliente posta</p><h1>Grade de postagem</h1></div><p class="sub">${G.podeMudar ? 'Clique num horário para ajustar ou pausar.' : 'Clique num horário para ver os detalhes.'}</p></div>
+      <div class="gabas" role="tablist">${abas.map(x => `<button class="btn ${x === GP ? 'primary' : ''}" role="tab" aria-selected="${x === GP}" data-gaba="${x}">Grade ${x} <span class="count">${G.horarios.filter(h => h.plataforma === x && h.status.includes('Publicar')).length}</span></button>`).join('')}</div>
       <div class="stats">
         <div class="stat"><span class="v">${hoje.length}</span><span>postagens hoje</span></div>
-        <div class="stat"><span class="v">${G.horarios.filter(h => h.status.includes('Publicar')).length}</span><span>horários na semana</span></div>
-        <div class="stat ${sem.length ? 'hot' : ''}"><span class="v">${G.clientes.filter(c => c.ativo && !com.has(c.id)).length}</span><span>clientes sem dia definido</span></div>
-        <div class="stat"><span class="v">${G.horarios.filter(h => h.status.includes('Confirmar')).length}</span><span>a confirmar</span></div>
+        <div class="stat"><span class="v">${daPlat.filter(h => h.status.includes('Publicar')).length}</span><span>horários ${esc(GP)} na semana</span></div>
+        <div class="stat ${sem.length ? 'hot' : ''}"><span class="v">${semTodos.length}</span><span>clientes sem dia no ${esc(GP)}</span></div>
+        <div class="stat"><span class="v">${daPlat.filter(h => h.status.includes('Confirmar')).length}</span><span>a confirmar</span></div>
       </div>
       <div class="filtros">
         <label for="gc">Cliente<select id="gc"><option value="">Todos</option>${nomes.map(c => `<option value="${c.id}" ${c.id === GC ? 'selected' : ''}>${esc(c.nome)}</option>`).join('')}</select></label>
-        <label for="gp">Plataforma<select id="gp"><option value="">Todas</option>${GPLAT.map(x => `<option ${x === GP ? 'selected' : ''}>${x}</option>`).join('')}</select></label>
         ${G.podeMudar ? '<button class="btn primary" id="g-novo">+ Adicionar dia</button>' : ''}
       </div>
-      <div class="legenda"><span><i style="background:#E5281A"></i>YouTube</span><span><i style="background:#141414"></i>TikTok</span><span><i style="background:#C13584"></i>Instagram</span><span><i style="background:var(--warn-soft);border:1px solid var(--warn)"></i>❓ confirmar com a diretoria</span><span><i style="border:1px dashed var(--muted)"></i>pausado</span></div>
+      <div class="legenda"><span><i style="background:var(--warn-soft);border:1px solid var(--warn)"></i>❓ confirmar com a diretoria</span><span><i style="border:1px dashed var(--muted)"></i>pausado</span></div>
       <div class="semana">${cols}</div>
-      ${sem.length ? `<section class="group"><h2>Clientes ativos sem dia definido <span class="count">${sem.length}</span></h2><ul class="rows">${sem.map(c => `<li class="item"><span class="stripe"></span>
+      ${sem.length ? `<section class="group"><h2>${GP === 'YouTube' ? 'Clientes ativos sem dia no YouTube' : 'Com ' + esc(GP) + ' na ficha e sem dia na grade'} <span class="count">${sem.length}</span></h2><ul class="rows">${sem.map(c => `<li class="item"><span class="stripe"></span>
         <div class="main" style="cursor:default"><span class="t">${esc(c.nome)}</span><span class="meta">${c.faixa ? `<span class="chip">Faixa ${esc(c.faixa)}</span>` : ''}${c.atencao ? '<span class="chip red">🔴 Atenção</span>' : ''}${c.yt ? `<span class="chip">Ficha: YouTube ${esc(c.yt)}</span>` : ''}${c.tt ? `<span class="chip">Ficha: TikTok ${esc(c.tt)}</span>` : ''}</span></div>
         <span class="act">${G.podeMudar ? `<button class="btn" data-definir="${c.id}">Definir dia</button>` : ''}</span></li>`).join('')}</ul></section>` : ''}
       <p class="note">A grade é o combinado fixo de cada cliente. A data de cada peça continua no card ("Vai ao ar"). ${G.podeMudar ? 'Toda mudança fica registrada com seu nome e a hora.' : 'Quem ajusta a grade é o Ismael ou o Rômulo.'}</p>`;
@@ -1421,6 +1429,7 @@ document.addEventListener('click', async e => {
   const fl = e.target.closest('#main [data-filtro]'); if (fl) { view = 'todos'; TS = fl.dataset.filtro; TQ = ''; TP = ''; TT = ''; render(); window.scrollTo({ top: 0 }); return; }
   const kcl = e.target.closest('#main [data-cli]'); if (kcl) { abrirCliente(kcl.dataset.cli); return; }
   const kf = e.target.closest('#main [data-clf]'); if (kf) { CLF = CLF === kf.dataset.clf ? '' : kf.dataset.clf; render(); return; }
+  const ga = e.target.closest('#main [data-gaba]'); if (ga) { GP = ga.dataset.gaba; render(); return; }
   const ef = e.target.closest('#main [data-cef]'); if (ef) { CEF = CEF === ef.dataset.cef ? '' : ef.dataset.cef; render(); return; }
   const dcl = e.target.closest('#main [data-cliente]'); if (dcl) { view = 'todos'; TS = ''; TP = ''; TT = ''; TQ = cliDD(dcl.dataset.cliente).nome; render(); window.scrollTo({ top: 0 }); return; }
   const o = e.target.closest('#main [data-open]'); if (o) { abrir(o.dataset.open); return; }
@@ -1455,7 +1464,7 @@ document.addEventListener('click', async e => {
   if (e.target.id === 'sair') { try { localStorage.removeItem(KEY); } catch (x) {} PIN = ''; D = null; $('#pin-err').textContent = ''; carregar(); }
 });
 document.addEventListener('change', e => {
-  if (e.target.id === 'gc' || e.target.id === 'gp') { if (e.target.id === 'gc') GC = e.target.value; else GP = e.target.value; render(); return; }
+  if (e.target.id === 'gc') { GC = e.target.value; render(); return; }
   if (e.target.id === 'pf-s' || e.target.id === 'pq-s') { if (e.target.id === 'pf-s') PF = e.target.value; else PQ = e.target.value; render(); return; }
   if (['ts', 'tp', 'tt'].includes(e.target.id)) { ({ ts: v => TS = v, tp: v => TP = v, tt: v => TT = v })[e.target.id](e.target.value); $('#dres').innerHTML = tabelaTodos(); return; }
   if (e.target.id === 'clf') { CLF = e.target.value; render(); return; }
