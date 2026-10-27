@@ -34,8 +34,9 @@ entrega, guarda no Notion/Drive, põe o card em revisão e avisa a equipe. Tudo 
 Leia a visão da fila (modo view, paginando). Ignore **sempre** cards com "🏢 Escritório IA" = À mão (Flau).
 Ignore também Feito pela IA, Precisa da Direção, Falta do cliente ou Foi para outra máquina, **a não ser** que o
 card tenha sido editado depois da última anotação da máquina (a equipe respondeu algo no Obs/corpo): aí trate de novo.
-Card com "🏢 Escritório IA" = **Na fila** é sempre para fazer agora, mesmo que o Obs tenha uma pergunta antiga da
-máquina: alguém o recolocou na fila de propósito. Leia o Obs inteiro e siga a instrução mais recente.
+Cards para atender: os com "🏢 Escritório IA" **vazio**, **Na fila** ou **Fazendo (IA)**, mais os ignorados acima que
+foram editados depois. Um card **Na fila** é para fazer mesmo que o Obs tenha uma pergunta antiga da máquina:
+alguém o recolocou na fila de propósito. Leia o Obs inteiro e siga a instrução mais recente.
 Ordem:
 1. Pedidos do painel (Obs começa com "[Painel", título termina em "(painel)"), do mais antigo para o mais novo.
 2. Apresentações de call da agenda (título termina em "APRESENTAÇÃO DE CALL (agenda)"), a call mais próxima primeiro.
