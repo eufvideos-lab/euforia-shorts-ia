@@ -1052,7 +1052,7 @@ async function carregarDiretor(){
 const CLIMA = { 'Eufórico': 'ok', 'Neutro': '', 'Ex-sensível': 'warn', 'Sensível': 'org', 'Em rescisão': 'red' };
 // Carteira da equipe (Ismael e Rômulo): plano, tempo e entregas do contrato. Sem valores, jurídico nem clima.
 // A aba fica escondida até a diretoria aprovar a prévia (na demonstração ela aparece).
-const CARTEIRA_NO_AR = false;
+const CARTEIRA_NO_AR = true;
 const TIPOS_CE = [['longos', 'Longos'], ['shorts', 'Shorts'], ['carrosseis', 'Carrosséis'], ['thumbs', 'Thumbs'], ['roteiros', 'Roteiros']];
 const fimCe = k => k.contrato && k.contrato.faltamDias !== null ? k.contrato.faltamDias : null;
 // Abaixo do ritmo: longos postados bem abaixo do que o tempo de contrato já pede (só a partir do 2º mês).
