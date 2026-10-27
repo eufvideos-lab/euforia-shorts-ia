@@ -211,6 +211,14 @@ button.slot:hover{border-color:var(--muted)}
 .or{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:13px}
 .or::before,.or::after{content:"";flex:1;border-top:1px solid var(--line)}
 .cl-prog{display:flex;flex-direction:column;gap:4px;min-width:130px}
+.cart{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,340px),1fr));gap:12px}
+.cart .ccard{border:1px solid var(--line);border-radius:14px;background:var(--surface);padding:14px 16px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.cart .ccard.red{border-color:var(--bad)}
+.cart .ccard h3{margin:0;font-size:16px;line-height:1.25}
+.cart .linha{display:grid;grid-template-columns:84px minmax(0,1fr) auto;gap:8px;align-items:center;font-size:13px}
+.cart .linha .bar{height:8px}
+.cart details summary{cursor:pointer;font-size:13px;color:var(--muted)}
+.cart details ul{margin:6px 0 0;padding-left:18px;font-size:13px;display:flex;flex-direction:column;gap:3px}
 .cl-prog .bar{height:6px}
 .drawer section{display:flex;flex-direction:column;gap:6px;flex-shrink:0}
 .drawer section .bar,.cl-tipo .bar{flex:none;height:10px;display:block}
@@ -345,6 +353,7 @@ let D = null, R = null, W = null, WQR = '', PIN = '', view = '', ocupado = false
 let G = null, GC = '', GP = '';
 const RASC = {};
 let MP = null, MPQ = '', CC = null;
+let CE = null, CEQ = '', CEF = '';
 let CL = null, CLQ = '', CLF = '', CLO = 'atencao';
 let DD = null, MM = null, PF = 'abertos', PQ = '', TQ = '', TS = '', TP = '', TT = '', MQ = '', MW = '';
 try { PIN = localStorage.getItem(KEY) || ''; view = localStorage.getItem('painel-view') || ''; } catch (e) {}
@@ -634,6 +643,22 @@ const VIEWS = {
         <div class="stat"><span class="v">${CC.calls.filter(c => !passou(c)).length}</span><span>nas próximas 3 semanas</span></div>
         <div class="stat ${novas ? 'hot' : ''}"><span class="v">${novas}</span><span>marcadas nas últimas 24h</span></div></div>
       ${dias.length ? dias.map(d => { const l = CC.calls.filter(c => c.dia === d && !passou(c)); return l.length ? `<section class="group"><h2>${esc(nomeDia(d))} <span class="count">${l.length}</span></h2><ul class="rows">${l.map(item).join('')}</ul></section>` : ''; }).join('') : '<p class="empty">Nenhuma call marcada nas próximas 3 semanas.</p>'}`;
+    } },
+  carteira: { nome: 'Clientes', pode: () => (DEMO || CARTEIRA_NO_AR) && ['revisor', 'calls', 'teste'].includes(papel()), badge: () => CE && CE.clientes ? CE.clientes.filter(k => k.contrato && k.contrato.faltamDias !== null && k.contrato.faltamDias >= 0 && k.contrato.faltamDias <= 15).length : 0,
+    html(){
+      const topo = `<div class="head"><div><p class="eyebrow">Carteira${CE && CE.clientes ? ' · ' + CE.clientes.length + ' clientes' : ''}</p><h1>Clientes</h1></div><p class="sub">O que cada cliente contratou, em que ponto do contrato está e quanto já foi entregue. Os números de feito contam o que foi marcado como Postado no Entregas desde o início do contrato.</p></div>`;
+      if (!CE) { carregarCarteira(); return topo + '<p class="sub">Carregando os contratos e as entregas… (leva uns segundos)</p>'; }
+      if (CE.erro) return topo + '<p class="empty">Não consegui ler os clientes agora. Tente de novo em alguns minutos.</p>';
+      const L = CE.clientes, n = f => L.filter(f).length;
+      const planos = [...new Set(L.map(k => k.plano).filter(Boolean))].sort();
+      return topo + `<div class="stats">
+        ${[['', L.length, 'clientes'], ['acaba', n(k => fimCe(k) !== null && fimCe(k) >= 0 && fimCe(k) <= 30), 'contrato acaba em até 30 dias'], ['atras', n(atrasCe), 'abaixo do ritmo do contrato'], ['acabou', n(k => fimCe(k) !== null && fimCe(k) < 0), 'contrato já acabou']]
+          .map(([f, v, t]) => `<button class="stat ${f && v && f !== 'acabou' ? 'hot' : ''}" data-cef="${f}" style="text-align:left;background:${CEF === f && f ? 'var(--accent-soft)' : 'var(--surface)'}"><span class="v">${v}</span><span>${t}</span></button>`).join('')}</div>
+      <div class="filtros">
+        <label for="ceq">Buscar<input type="text" id="ceq" placeholder="Nome do cliente" value="${esc(CEQ)}"></label>
+        <label for="cep">Plano<select id="cep"><option value="">Todos os planos</option>${planos.map(x => `<option ${CEF === 'p:' + x ? 'selected' : ''} value="p:${esc(x)}">${esc(x)}</option>`).join('')}</select></label>
+      </div>
+      <div id="ceres">${listaCarteira()}</div>`;
     } },
   responder: { nome: 'Responder', pode: () => ['revisor', 'calls', 'teste', 'diretor'].includes(papel()), badge: () => R ? R.itens.length : 0,
     html(){
@@ -1020,6 +1045,49 @@ async function carregarDiretor(){
 }
 // Aba Clientes (diretoria): ficha, contrato e entregas. O contrato vem do "Resumo do contrato" da ficha no Notion.
 const CLIMA = { 'Eufórico': 'ok', 'Neutro': '', 'Ex-sensível': 'warn', 'Sensível': 'org', 'Em rescisão': 'red' };
+// Carteira da equipe (Ismael e Rômulo): plano, tempo e entregas do contrato. Sem valores, jurídico nem clima.
+// A aba fica escondida até a diretoria aprovar a prévia (na demonstração ela aparece).
+const CARTEIRA_NO_AR = false;
+const TIPOS_CE = [['longos', 'Longos'], ['shorts', 'Shorts'], ['carrosseis', 'Carrosséis'], ['thumbs', 'Thumbs'], ['roteiros', 'Roteiros']];
+const fimCe = k => k.contrato && k.contrato.faltamDias !== null ? k.contrato.faltamDias : null;
+// Abaixo do ritmo: longos postados bem abaixo do que o tempo de contrato já pede (só a partir do 2º mês).
+const atrasCe = k => { const c = k.contrato; return !!(c && c.pct !== null && c.pct < 100 && c.mes >= 2 && k.total.longos && k.feito.longos < Math.floor(k.total.longos * c.pct / 100 * 0.7)); };
+function filtraCe(k){
+  if (CEQ && !k.nome.toLowerCase().includes(CEQ.trim().toLowerCase())) return false;
+  if (CEF.startsWith('p:')) return k.plano === CEF.slice(2);
+  const f = fimCe(k);
+  return { '': true, acaba: f !== null && f >= 0 && f <= 30, atras: atrasCe(k), acabou: f !== null && f < 0 }[CEF];
+}
+function cartaoCe(k){
+  const c = k.contrato, f = fimCe(k);
+  const tempo = !c ? '<span class="sub" style="font-size:13px">Contrato ainda não lido. Confirme com a diretoria.</span>'
+    : `<div class="cl-prog"><span style="font-size:13px">${f !== null && f < 0 ? '<b>Contrato acabou</b> em ' + fmtA(c.fim) : `Mês <b>${c.mes}</b>${c.meses ? ' de ' + String(c.meses).replace('.', ',') : ''} · ${c.fim ? (f <= 30 ? '<b>acaba em ' + f + ' dia' + (f === 1 ? '' : 's') + '</b>' : 'acaba ' + fmtA(c.fim)) : 'sem data de fim'}`}</span>${c.pct !== null ? `<span class="bar"><span class="${f !== null && f <= 30 ? 'mid' : ''}" style="width:${c.pct}%"></span></span>` : ''}<span class="sub" style="font-size:12px">Começou ${fmtA(c.inicio)}</span></div>`;
+  const linhas = TIPOS_CE.filter(([t]) => k.total[t] || k.feito[t]).map(([t, rot]) => { const tot = k.total[t], fe = k.feito[t], pc = tot ? Math.min(100, Math.round(fe / tot * 100)) : 0;
+    return `<div class="linha"><span>${rot}</span><span class="bar"><span style="width:${pc}%"></span></span><span><b>${fe}</b>${tot ? ' de ' + tot : ''}</span></div>`; }).join('');
+  const EST = { feito: ['ok', '✓'], andando: ['org', '⏳'], falta: ['', '○'] };
+  const extras = k.extras.length ? `<div class="meta">${k.extras.map(e => `<span class="chip ${EST[e.estado][0]}" title="${e.estado === 'feito' ? 'Já entregue' : e.estado === 'andando' ? 'Em produção' : 'Ainda não tem card'}">${EST[e.estado][1]} ${esc(e.tipo)}</span>`).join('')}</div>` : '';
+  const det = k.inclui.length || k.diferencas.length ? `<details><summary>O que mais está no contrato</summary>${k.inclui.length ? `<ul>${k.inclui.map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : ''}${k.diferencas.length ? `<p class="sub" style="font-size:12px;margin:8px 0 0">Diferente do padrão:</p><ul>${k.diferencas.map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : ''}</details>` : '';
+  return `<article class="ccard ${k.atencao ? 'red' : ''}">
+    <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start"><h3>${esc(k.nome)}</h3><span class="meta" style="flex-shrink:0">${k.faixa ? `<span class="chip">Faixa ${esc(k.faixa)}</span>` : ''}${k.atencao ? '<span class="chip red">🔴 Atenção</span>' : ''}</span></div>
+    <div class="meta">${k.plano ? `<span class="chip org">${esc(k.plano)}</span>` : '<span class="chip">Plano a confirmar</span>'}${k.tags.map(t => `<span class="chip">${esc(t)}</span>`).join('')}${k.situacao && k.situacao !== 'Ativo' ? `<span class="chip warn">${esc(k.situacao)}</span>` : ''}${atrasCe(k) ? '<span class="chip red">Abaixo do ritmo</span>' : ''}</div>
+    ${tempo}
+    ${linhas ? `<div style="display:flex;flex-direction:column;gap:6px">${linhas}${k.catalogo ? '<span class="sub" style="font-size:12px">Quantidades pelo padrão do plano (o texto do contrato não traz o número).</span>' : ''}</div>` : '<span class="sub" style="font-size:13px">Sem quantidade de vídeos no contrato.</span>'}
+    ${extras}
+    ${det}
+    <span class="sub" style="font-size:12px">${[k.abertos ? k.abertos + ' card' + (k.abertos > 1 ? 's' : '') + ' aberto' + (k.abertos > 1 ? 's' : '') : 'nenhum card aberto', k.atrasados ? k.atrasados + ' atrasado' + (k.atrasados > 1 ? 's' : '') : '', k.dias.length ? 'posta ' + k.dias.join(', ') : ''].filter(Boolean).join(' · ')}</span>
+  </article>`;
+}
+function listaCarteira(){
+  const ordem = { A: 0, B: 1, C: 2 };
+  const l = CE.clientes.filter(filtraCe).sort((a, b) => (b.atencao - a.atencao) || ((ordem[a.faixa] ?? 3) - (ordem[b.faixa] ?? 3)) || a.nome.localeCompare(b.nome));
+  return l.length ? `<div class="cart">${l.map(cartaoCe).join('')}</div>` : '<p class="empty">Nenhum cliente com esse filtro.</p>';
+}
+async function carregarCarteira(){
+  if (carregarCarteira.indo) return; carregarCarteira.indo = true;
+  try { const r = await api('euforia-painel-clientes'); CE = r && r.ok ? r : (CE && CE.clientes ? CE : { erro: true }); } catch (e) { CE = CE && CE.clientes ? CE : { erro: true }; }
+  carregarCarteira.indo = false;
+  if (!ocupado && !$('#layer').innerHTML && !document.activeElement.matches('#ceq')) render();
+}
 const TIPOS_CL = [['longos', 'Longos'], ['shorts', 'Shorts'], ['carrosseis', 'Carrosséis'], ['thumbs', 'Thumbs']];
 const chipClima = k => k.clima ? `<span class="chip ${CLIMA[k.clima] || ''}">${esc(k.clima)}</span>` : '<span class="chip">sem clima</span>';
 const grupoParado = k => !!(k.grupo && k.grupo.ultima && dcl(k.grupo.ultima.slice(0, 10)) < -7);
@@ -1340,6 +1408,7 @@ document.addEventListener('click', async e => {
   const fl = e.target.closest('#main [data-filtro]'); if (fl) { view = 'todos'; TS = fl.dataset.filtro; TQ = ''; TP = ''; TT = ''; render(); window.scrollTo({ top: 0 }); return; }
   const kcl = e.target.closest('#main [data-cli]'); if (kcl) { abrirCliente(kcl.dataset.cli); return; }
   const kf = e.target.closest('#main [data-clf]'); if (kf) { CLF = CLF === kf.dataset.clf ? '' : kf.dataset.clf; render(); return; }
+  const ef = e.target.closest('#main [data-cef]'); if (ef) { CEF = CEF === ef.dataset.cef ? '' : ef.dataset.cef; render(); return; }
   const dcl = e.target.closest('#main [data-cliente]'); if (dcl) { view = 'todos'; TS = ''; TP = ''; TT = ''; TQ = cliDD(dcl.dataset.cliente).nome; render(); window.scrollTo({ top: 0 }); return; }
   const o = e.target.closest('#main [data-open]'); if (o) { abrir(o.dataset.open); return; }
   const sl = e.target.closest('#main [data-slot]'); if (sl) { abrirSlot(sl.dataset.slot); return; }
@@ -1377,6 +1446,7 @@ document.addEventListener('change', e => {
   if (e.target.id === 'pf-s' || e.target.id === 'pq-s') { if (e.target.id === 'pf-s') PF = e.target.value; else PQ = e.target.value; render(); return; }
   if (['ts', 'tp', 'tt'].includes(e.target.id)) { ({ ts: v => TS = v, tp: v => TP = v, tt: v => TT = v })[e.target.id](e.target.value); $('#dres').innerHTML = tabelaTodos(); return; }
   if (e.target.id === 'clf') { CLF = e.target.value; render(); return; }
+  if (e.target.id === 'cep') { CEF = e.target.value; render(); return; }
   if (e.target.id === 'clo') { CLO = e.target.value; $('#clres').innerHTML = tabelaClientes(); return; }
   if (e.target.id === 'mw') { MW = e.target.value; $('#dres').innerHTML = listaMensagens(); return; }
   if (e.target.id === 'mp') { MP = e.target.value; $('#dres').innerHTML = listaPedidos(); return; }
@@ -1387,6 +1457,7 @@ document.addEventListener('change', e => {
 document.addEventListener('input', e => {
   if (e.target.id === 'tq') { TQ = e.target.value; $('#dres').innerHTML = tabelaTodos(); }
   if (e.target.id === 'clq') { CLQ = e.target.value; $('#clres').innerHTML = tabelaClientes(); }
+  if (e.target.id === 'ceq') { CEQ = e.target.value; $('#ceres').innerHTML = listaCarteira(); }
   if (e.target.id === 'mq') { MQ = e.target.value; $('#dres').innerHTML = listaMensagens(); }
   if (e.target.id === 'mpq') { MPQ = e.target.value; $('#dres').innerHTML = listaPedidos(); }
   if (e.target.dataset && e.target.dataset.rtxt) RASC[e.target.dataset.rtxt] = e.target.value;
@@ -1438,6 +1509,7 @@ function demoApi(path, b){
   }
   if (path === 'euforia-painel-responder') return wait({ ok: true, pelo: 'seu número' });
   if (path === 'euforia-painel-calls') return wait(DEMO_C);
+  if (path === 'euforia-painel-clientes') return wait(DEMO_CE);
   if (path === 'euforia-painel-respostas') { if (b && b.acao === 'dispensar') return wait({ ok: true }); return wait(DEMO_R); }
   if (path === 'euforia-painel-grade') {
     if (b.acao === 'listar') return wait(JSON.parse(JSON.stringify(DEMO_G)));
@@ -1544,6 +1616,7 @@ const DEMO_M = {"ok":true,"itens":[
   {"quem":"Rômulo","grupo":"EUFORIA | Instituto Aurora","texto":"Bom dia, pessoal! Os shorts desta semana vão para revisão hoje.","quando":"2026-10-26T09:02"},
   {"quem":"Rômulo","grupo":"EUFORIA | Clínica Vida","texto":"Tudo certo para a reunião de amanhã às 11h?","quando":"2026-10-25T17:20"}]};
 const DEMO_QR = 'data:image/svg+xml;utf8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 21 21" shape-rendering="crispEdges"><rect width="21" height="21" fill="#fff"/><path d="M1 1h7v7H1zM13 1h7v7h-7zM1 13h7v7H1z" fill="#111"/><path d="M2 2h5v5H2zM14 2h5v5h-5zM2 14h5v5H2z" fill="#fff"/><path d="M3 3h3v3H3zM15 3h3v3h-3zM3 15h3v3H3zM10 2h1v3h-1zM9 9h3v3H9zM13 10h2v1h-2zM16 13h3v2h-3zM10 15h3v1h-3zM13 17h2v3h-2zM17 17h3v1h-3z" fill="#111"/></svg>');
+const DEMO_CE = {"ok": true, "hoje": "2026-10-27", "clientes": [{"id": "c1", "nome": "Dra. Helena (exemplo)", "faixa": "A", "atencao": true, "situacao": "Ativo", "fase": "Produção", "plano": "Assessoria semestral", "tags": ["Relançamento do canal"], "semContrato": false, "contrato": {"inicio": "2026-05-10", "meses": 6, "fim": "2026-11-09", "mes": 6, "pct": 92, "faltamDias": 13}, "total": {"longos": 20, "shorts": 60, "carrosseis": 20, "thumbs": 20, "roteiros": 20}, "catalogo": false, "feito": {"longos": 12, "shorts": 31, "carrosseis": 9, "thumbs": 12, "roteiros": 16}, "mes": {}, "inclui": ["Setup e relançamento do canal", "1 funil, 1 página de vendas, 1 copy", "Replicação cortes TikTok (4 meses)", "Calls de alinhamento, ajustes e análises"], "diferencas": [], "extras": [{"tipo": "Página", "estado": "feito"}, {"tipo": "Copy", "estado": "feito"}, {"tipo": "Funil", "estado": "andando"}], "abertos": 4, "atrasados": 2, "dias": ["Ter", "Qui"], "alinhamento": "", "drive": ""}, {"id": "c2", "nome": "Instituto Aurora (exemplo)", "faixa": "A", "atencao": false, "situacao": "Ativo", "fase": "Produção", "plano": "Assessoria anual", "tags": [], "semContrato": false, "contrato": {"inicio": "2026-03-02", "meses": 12, "fim": "2027-03-02", "mes": 8, "pct": 65, "faltamDias": 126}, "total": {"longos": 44, "shorts": 132, "carrosseis": 44, "thumbs": 44, "roteiros": 44}, "catalogo": false, "feito": {"longos": 28, "shorts": 80, "carrosseis": 26, "thumbs": 28, "roteiros": 30}, "mes": {}, "inclui": ["1 Página de Vendas", "1 Copy da Página de Vendas", "1 Funil de Vendas", "ID do Canal (banner/capa)", "TikTok 1 mês"], "diferencas": ["Onboarding e Oferta em calls separadas"], "extras": [{"tipo": "Página", "estado": "feito"}, {"tipo": "Copy", "estado": "feito"}, {"tipo": "Funil", "estado": "feito"}, {"tipo": "ID visual", "estado": "feito"}], "abertos": 3, "atrasados": 0, "dias": ["Seg", "Qua", "Sex"], "alinhamento": "", "drive": ""}, {"id": "c3", "nome": "Marcos Lima (exemplo)", "faixa": "B", "atencao": false, "situacao": "Ativo", "fase": "Setup (aprovação criativa)", "plano": "Implementação EDL", "tags": ["Clone de voz e imagem"], "semContrato": false, "contrato": {"inicio": "2026-10-14", "meses": 1.5, "fim": "2026-11-29", "mes": 1, "pct": 28, "faltamDias": 33}, "total": {"longos": 2, "shorts": 4, "carrosseis": 2, "thumbs": 2, "roteiros": 2}, "catalogo": true, "feito": {"longos": 0, "shorts": 0, "carrosseis": 0, "thumbs": 0, "roteiros": 2}, "mes": {}, "inclui": [], "diferencas": ["Clone de Voz e Imagem incluído a mais", "Fase 3 (Análise e Ajustes) a mais, com calls de alinhamento"], "extras": [{"tipo": "ID visual", "estado": "andando"}], "abertos": 2, "atrasados": 0, "dias": [], "alinhamento": "", "drive": ""}, {"id": "c4", "nome": "Paula Reis (exemplo)", "faixa": "B", "atencao": false, "situacao": "Ativo", "fase": "Produção", "plano": "Assessoria trimestral", "tags": [], "semContrato": false, "contrato": {"inicio": "2026-07-01", "meses": 3, "fim": "2026-09-30", "mes": 4, "pct": 100, "faltamDias": -27}, "total": {"longos": 8, "shorts": 24, "carrosseis": 8, "thumbs": 8, "roteiros": 8}, "catalogo": false, "feito": {"longos": 7, "shorts": 21, "carrosseis": 6, "thumbs": 7, "roteiros": 8}, "mes": {}, "inclui": ["1 página de vendas, 1 copy, 1 funil"], "diferencas": ["Contrato congelado de 13/07 a 05/10/2026 a pedido da cliente"], "extras": [{"tipo": "Página", "estado": "falta"}, {"tipo": "Funil", "estado": "falta"}], "abertos": 1, "atrasados": 0, "dias": ["Qua"], "alinhamento": "", "drive": ""}, {"id": "c5", "nome": "Clínica Vida (exemplo)", "faixa": "C", "atencao": false, "situacao": "Ativo", "fase": "Produção", "plano": "", "tags": [], "semContrato": true, "contrato": null, "total": {"longos": null, "shorts": null, "carrosseis": null, "thumbs": null, "roteiros": null}, "catalogo": false, "feito": {"longos": 5, "shorts": 12, "carrosseis": 3, "thumbs": 5, "roteiros": 0}, "mes": {}, "inclui": [], "diferencas": [], "extras": [], "abertos": 1, "atrasados": 1, "dias": ["Sex"], "alinhamento": "", "drive": ""}]};
 const DEMO_C = {"ok":true,"hoje":"2026-10-26","agora":"10:20","calls":[
   {"id":"k1","cliente":"Dra. Helena (exemplo)","tipo":"Reunião de Onboarding + Oferta","dia":"2026-10-26","hora":"10:00","fimHora":"11:00","meet":"https://meet.google.com/","convidados":1,"novo":false,"agora":true},
   {"id":"k2","cliente":"Instituto Aurora (exemplo)","tipo":"Alinhamento","dia":"2026-10-26","hora":"15:00","fimHora":"16:00","meet":"https://meet.google.com/","convidados":2,"novo":true,"agora":false,"apresentacao":"producao"},
