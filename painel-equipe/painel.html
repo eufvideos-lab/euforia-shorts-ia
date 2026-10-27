@@ -332,6 +332,7 @@ const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp
 let D = null, R = null, W = null, WQR = '', PIN = '', view = '', ocupado = false;
 let G = null, GC = '', GP = '';
 const RASC = {};
+let MP = null, MPQ = '';
 let DD = null, MM = null, PF = 'abertos', PQ = '', TQ = '', TS = '', TP = '', TT = '', MQ = '', MW = '';
 try { PIN = localStorage.getItem(KEY) || ''; view = localStorage.getItem('painel-view') || ''; } catch (e) {}
 if (DEMO) PIN = '0000';
@@ -560,7 +561,7 @@ const VIEWS = {
       return `<div class="head"><div><p class="eyebrow">WhatsApp do suporte · atualizado às ${esc(R.agora)}</p><h1>Responder</h1></div><p class="sub">Responda aqui ou no WhatsApp. Todo cliente recebe resposta: quando alguém da equipe responde no grupo, o cliente sai daqui sozinho.</p></div>
       ${caixaWhats()}
       <section class="group"><h2>Esperando resposta <span class="count">${R.itens.length}</span></h2>${R.itens.length ? `<ul class="rows">${R.itens.map(item).join('')}</ul>` : '<p class="empty">Ninguém esperando resposta agora. 🎉</p>'}</section>
-      <p class="note">A ordem é: assunto sensível, cliente 🔴 em atenção, faixa A, B e C, e depois quem espera há mais tempo. Responder direto daqui vem na próxima versão, saindo pelo seu número de suporte.</p>`;
+      <p class="note">A ordem é: assunto sensível, cliente 🔴 em atenção, faixa A, B e C, e depois quem espera há mais tempo. A resposta sai pelo seu número de suporte, com o seu nome em negrito na frente.</p>`;
     } },
   grade: { nome: 'Grade de postagem', pode: () => true,
     html(){
@@ -624,8 +625,58 @@ const VIEWS = {
         <div class="actions"><button class="btn primary" type="submit" id="bpedir">Mandar pedido</button></div>
       </form>
       <aside class="panel" id="resumo" aria-live="polite"></aside></div>`;
+    } },
+  pedidos: { nome: 'Meus pedidos', pode: () => ['revisor', 'calls', 'diretor', 'teste'].includes(papel()), badge: () => (D.pedidos || []).filter(p => p.por === D.nome && situacao(p).g === 'falta').length,
+    html(){
+      const l = D.pedidos || [];
+      if (MP === null) MP = diretor() ? '' : 'eu';
+      const quem = [...new Set(l.map(p => p.por))].filter(q => q !== D.nome).sort();
+      const meus = l.filter(p => p.por === D.nome);
+      return `<div class="head"><div><p class="eyebrow">Pedidos ao escritório pelo painel · desde 26/10</p><h1>${diretor() ? 'Pedidos da equipe' : 'Meus pedidos'}</h1></div><p class="sub">Tudo o que foi pedido ao escritório, com a etapa de cada um. Se não está aqui, o pedido não foi mandado.</p></div>
+      <div class="stats">
+        <div class="stat"><span class="v">${meus.length}</span><span>pedidos seus</span></div>
+        <div class="stat"><span class="v">${meus.filter(p => situacao(p).g === 'andando').length}</span><span>em andamento</span></div>
+        <div class="stat"><span class="v">${meus.filter(p => situacao(p).g === 'pronto').length}</span><span>prontos</span></div>
+        <div class="stat ${meus.some(p => situacao(p).g === 'falta') ? 'hot' : ''}"><span class="v">${meus.filter(p => situacao(p).g === 'falta').length}</span><span>falta informação sua</span></div>
+      </div>
+      <div class="filtros">
+        <label for="mp">Quem pediu<select id="mp"><option value="eu" ${MP === 'eu' ? 'selected' : ''}>Eu</option><option value="" ${MP === '' ? 'selected' : ''}>Todo mundo</option>${quem.map(q => `<option ${q === MP ? 'selected' : ''}>${esc(q)}</option>`).join('')}</select></label>
+        <label for="mpq">Buscar<input type="text" id="mpq" placeholder="Cliente ou pedido" value="${esc(MPQ)}"></label>
+      </div>
+      <div id="dres">${listaPedidos()}</div>`;
     } }
 };
+
+// Etapa do pedido do ponto de vista de quem pediu.
+function situacao(p){
+  const aberto = ['A fazer', 'Fazendo', 'Ajustes'].includes(p.status);
+  if (p.status === 'Cancelado') return { g: 'cancelado', t: 'Cancelado', c: '' };
+  if (p.escritorio === 'Falta informação' && aberto) return { g: 'falta', t: 'Falta informação', c: 'red' };
+  if (['Postado', 'Aprovado', 'Agendado'].includes(p.status)) return { g: 'pronto', t: p.status === 'Postado' ? 'Pronto · postado' : 'Pronto · aprovado', c: 'ok' };
+  if (['Em revisão', 'Aguardando cliente'].includes(p.status) || p.escritorio === 'Feito pela IA') return { g: 'pronto', t: p.status === 'Aguardando cliente' ? 'Pronto · com o cliente' : 'Pronto · em revisão', c: 'ok' };
+  if (p.status === 'Ajustes') return { g: 'andando', t: 'Em ajuste', c: 'warn' };
+  if (p.quadro || p.escritorio === 'Foi para outra máquina') return { g: 'andando', t: 'Na ' + (p.quadroNome ? p.quadroNome.replace(/^quadro de /, 'máquina de ') : 'máquina'), c: 'info' };
+  if (p.escritorio === 'Fazendo (IA)' || p.status === 'Fazendo') return { g: 'andando', t: 'Sendo feito', c: 'info' };
+  if (p.escritorio === 'À mão (Flau)') return { g: 'andando', t: 'Com o escritório, à mão', c: 'info' };
+  if (p.escritorio === 'Precisa da Direção') return { g: 'andando', t: 'Com a diretoria', c: 'warn' };
+  return { g: 'andando', t: 'Na fila do escritório', c: '' };
+}
+function listaPedidos(){
+  const q = MPQ.trim().toLowerCase();
+  const l = (D.pedidos || []).filter(p => (MP === 'eu' ? p.por === D.nome : !MP || p.por === MP) && (!q || (p.clienteNome + ' ' + p.nome + ' ' + p.texto).toLowerCase().includes(q)));
+  const item = p => { const s = situacao(p), k = diff(p.prazo), abre = D.cards.some(c => c.id === p.id);
+    const corpo = `<span class="t">${esc(p.clienteNome)} · ${esc(p.nome)}</span>
+      <span class="meta"><span class="chip ${s.c}">${esc(s.t)}</span><span class="chip">${esc(p.tipo || 'Pedido')}</span><span class="chip">Pedido ${esc(p.quando)}</span>${MP !== 'eu' ? `<span class="chip">por ${esc(p.por)}</span>` : ''}${s.g === 'andando' && p.prazo ? (k < 0 ? `<span class="chip red">Atrasado ${-k}d</span>` : `<span class="chip">Prazo ${fmt(p.prazo)}</span>`) : ''}${/À MÃO/.test(p.modo) ? '<span class="chip">À mão</span>' : ''}</span>
+      ${p.texto ? `<span class="sub" style="font-size:13px">${esc(p.texto)}</span>` : ''}
+      ${s.g === 'falta' && p.falta ? `<span class="sub" style="font-size:13px;color:var(--bad)">O escritório precisa: ${esc(p.falta)}</span>` : ''}`;
+    const links = [p.quadro ? `<a class="btn" style="text-decoration:none" href="${esc(p.quadro)}" target="_blank" rel="noopener">Ver na máquina</a>` : '', s.g === 'pronto' && p.link ? `<a class="btn" style="text-decoration:none" href="${esc(p.link)}" target="_blank" rel="noopener">Abrir arquivo</a>` : ''].join('');
+    return `<li class="item ${s.g === 'falta' ? 'late' : ''}"><span class="stripe"></span>
+      ${abre ? `<button class="main" data-open="${p.id}">${corpo}</button>` : `<div class="main" style="cursor:default">${corpo}</div>`}
+      <span class="act">${s.g === 'falta' && abre ? `<button class="btn primary" data-go="${p.id}">Completar pedido</button>` : links}</span></li>`; };
+  const g = (titulo, k, vazio) => { const x = l.filter(p => situacao(p).g === k); return !x.length && !vazio ? '' : `<section class="group"><h2>${titulo} <span class="count">${x.length}</span></h2>${x.length ? `<ul class="rows">${x.map(item).join('')}</ul>` : `<p class="empty">${vazio}</p>`}</section>`; };
+  if (!l.length) return `<p class="empty">${MP === 'eu' ? 'Você ainda não mandou nenhum pedido ao escritório pelo painel.' : 'Nenhum pedido encontrado.'}</p>`;
+  return g('Falta informação', 'falta', '') + g('Em andamento', 'andando', 'Nada em andamento.') + g('Prontos', 'pronto', 'Nada pronto ainda.') + g('Cancelados', 'cancelado', '');
+}
 
 function atualizarPedido(){
   const pt = $('#pt'); if (!pt) return;
@@ -1101,6 +1152,7 @@ document.addEventListener('change', e => {
   if (e.target.id === 'pf-s' || e.target.id === 'pq-s') { if (e.target.id === 'pf-s') PF = e.target.value; else PQ = e.target.value; render(); return; }
   if (['ts', 'tp', 'tt'].includes(e.target.id)) { ({ ts: v => TS = v, tp: v => TP = v, tt: v => TT = v })[e.target.id](e.target.value); $('#dres').innerHTML = tabelaTodos(); return; }
   if (e.target.id === 'mw') { MW = e.target.value; $('#dres').innerHTML = listaMensagens(); return; }
+  if (e.target.id === 'mp') { MP = e.target.value; $('#dres').innerHTML = listaPedidos(); return; }
   if (e.target.id === 'pfile') { juntarAnexos([...e.target.files]); e.target.value = ''; return; }
   if (['pt', 'm-auto', 'm-mao', 'pf'].includes(e.target.id)) { if (e.target.id === 'pt') delete $('#pf').dataset.mexeu; if (e.target.id === 'pf') e.target.dataset.mexeu = 1; atualizarPedido(); }
 });
@@ -1108,6 +1160,7 @@ document.addEventListener('change', e => {
 document.addEventListener('input', e => {
   if (e.target.id === 'tq') { TQ = e.target.value; $('#dres').innerHTML = tabelaTodos(); }
   if (e.target.id === 'mq') { MQ = e.target.value; $('#dres').innerHTML = listaMensagens(); }
+  if (e.target.id === 'mpq') { MPQ = e.target.value; $('#dres').innerHTML = listaPedidos(); }
   if (e.target.dataset && e.target.dataset.rtxt) RASC[e.target.dataset.rtxt] = e.target.value;
 });
 document.addEventListener('submit', async e => {
@@ -1191,6 +1244,11 @@ function demoApi(path, b){
   }
 }
 const DEMO_D = {"ok":true,"nome":"Ismael (exemplo)","papel":"revisor","hoje":"2026-10-26","hojeTexto":"segunda-feira, 26 de outubro",
+ "pedidos":[
+  {"id":"f1","cod":433,"quando":"26/10 16:02","por":"Ismael (exemplo)","modo":"Automático (Máquina do Escritório)","clienteNome":"Paula Reis (exemplo)","nome":"THUMB","tipo":"Thumbnail","status":"A fazer","escritorio":"Falta informação","prazo":"2026-10-27","resp":["Ismael"],"link":"","quadro":"","quadroNome":"","falta":"só veio o link do vídeo. Mande o tema da thumb e qual foto da cliente usar.","texto":"Thumb do vídeo novo"},
+  {"id":"p2","cod":440,"quando":"26/10 17:58","por":"Ismael (exemplo)","modo":"Automático (Máquina de Longos)","clienteNome":"Instituto Aurora (exemplo)","nome":"VÍDEO LONGO","tipo":"Vídeo longo","status":"A fazer","escritorio":"Foi para outra máquina","prazo":"2026-10-28","resp":["Escritório"],"link":"https://drive.google.com/","quadro":"https://www.notion.so/","quadroNome":"quadro de Vídeos Longos IA","falta":"","texto":"Corte da palestra de sábado no modelo Nova Acrópole"},
+  {"id":"p3","cod":436,"quando":"26/10 15:10","por":"Ismael (exemplo)","modo":"Automático (Máquina do Escritório)","clienteNome":"Dra. Helena (exemplo)","nome":"APRESENTAÇÃO DE CALL","tipo":"Apresentação","status":"Em revisão","escritorio":"Feito pela IA","prazo":"2026-10-27","resp":["Escritório"],"link":"https://drive.google.com/","quadro":"","quadroNome":"","falta":"","texto":"Apresentação da call de quinta com os números do mês"},
+  {"id":"p4","cod":438,"quando":"26/10 16:40","por":"Rômulo (exemplo)","modo":"À MÃO em Canva","clienteNome":"Marcos Lima (exemplo)","nome":"ARTE","tipo":"Arte","status":"A fazer","escritorio":"À mão (Flau)","prazo":"2026-10-29","resp":["Escritório"],"link":"","quadro":"","quadroNome":"","falta":"","texto":"Banner do evento de novembro"}],
  "clientes":[{"id":"c1","nome":"Dra. Helena (exemplo)","faixa":"A","atencao":true,"padroes":"Legenda branca, destaque dourado. Rosto só quando olha para a câmera.","gosta":"Gosta de cortes secos. Não gosta de música alta."},
   {"id":"c2","nome":"Instituto Aurora (exemplo)","faixa":"A","atencao":false,"padroes":"Modelo Nova Acrópole: citações com foto do autor, legenda amarela fixa.","gosta":""},
   {"id":"c3","nome":"Marcos Lima (exemplo)","faixa":"B","atencao":false,"padroes":"Cortes secos, sem música por baixo da fala.","gosta":""},

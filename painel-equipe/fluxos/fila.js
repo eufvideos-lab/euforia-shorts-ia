@@ -41,7 +41,13 @@ if (ok) {
     { and: [{ property: 'Status', select: { equals: 'Agendado' } }, { property: 'Postar em', date: { on_or_before: amanha } }] }, livre] };
   else filtro = { or: [{ and: [{ property: 'Responsável', relation: { contains: r.ficha } }, ...naoFechado] }, livre] };
 }
+// Meus pedidos: tudo que foi pedido ao escritório pelo painel desde 26/10 (quando o painel entrou no ar). A página filtra por quem pediu.
+const desde = { timestamp: 'created_time', created_time: { on_or_after: '2026-10-26' } };
+let pedidos = { property: 'Entrega', title: { equals: '-' } };
+if (ok && ['revisor', 'calls', 'diretor'].includes(r.papel)) pedidos = { and: [{ property: 'Entrega', title: { contains: '(painel)' } }, { property: 'Entrega', title: { does_not_contain: 'TESTE PAINEL' } }, desde] };
+else if (ok && r.papel === 'teste') pedidos = { and: [{ property: 'Entrega', title: { contains: 'TESTE PAINEL' } }, { property: 'Entrega', title: { contains: '(painel)' } }, desde] };
 return [{ json: { ok, nome: r.nome || '', ficha: r.ficha || '', papel: r.papel || '',
+  consultaPedidos: JSON.stringify({ filter: pedidos, sorts: [{ timestamp: 'created_time', direction: 'descending' }], page_size: 100 }),
   consulta: JSON.stringify({ filter: filtro || { property: 'Entrega', title: { equals: '-' } }, sorts: [{ property: 'Postar em', direction: 'ascending' }], page_size: 100 }),
   resposta: { ok: false, motivo: 'acesso' } } }];
 ` } } });
@@ -62,6 +68,13 @@ const clientes = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, config
   method: 'POST', url: 'https://api.notion.com/v1/databases/3ddc91b406be49e98e630c298d9162d8/query', authentication: 'genericCredentialType', genericAuthType: 'httpHeaderAuth',
   sendHeaders: true, headerParameters: NOTION_HDR, sendBody: true, specifyBody: 'json',
   jsonBody: '={{ JSON.stringify({ filter: { property: "Situação", select: { does_not_equal: "Encerrado" } }, sorts: [{ property: "Cliente", direction: "ascending" }], page_size: 100 }) }}',
+  options: { pagination: { pagination: { paginationMode: 'updateAParameterInEachRequest',
+    parameters: { parameters: [{ type: 'body', name: 'start_cursor', value: '={{ $response.body.next_cursor }}' }] },
+    paginationCompleteWhen: 'other', completeExpression: '={{ !$response.body.has_more }}', limitPagesFetched: true, maxRequests: 10 } } } } } });
+
+const pedidosNode = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, config: { name: 'Pedidos do painel', credentials: NOTION, executeOnce: true, onError: 'continueRegularOutput', alwaysOutputData: true, parameters: {
+  method: 'POST', url: 'https://api.notion.com/v1/databases/74b3076a325749e3bac4ba6659215e48/query', authentication: 'genericCredentialType', genericAuthType: 'httpHeaderAuth',
+  sendHeaders: true, headerParameters: NOTION_HDR, sendBody: true, specifyBody: 'json', jsonBody: '={{ $("Validar acesso").first().json.consultaPedidos }}',
   options: { pagination: { pagination: { paginationMode: 'updateAParameterInEachRequest',
     parameters: { parameters: [{ type: 'body', name: 'start_cursor', value: '={{ $response.body.next_cursor }}' }] },
     paginationCompleteWhen: 'other', completeExpression: '={{ !$response.body.has_more }}', limitPagesFetched: true, maxRequests: 10 } } } } } });
@@ -99,11 +112,29 @@ for (const it of $('Cards da pessoa').all()) for (const p of (it.json.results ||
     resp: resp.map(r => EQUIPE[r] || 'Outro'), meu: quem.papel === 'teste' || resp.includes(quem.ficha),
     comecou: txt(pr['⏱️ Começou em']), revisao: txt(pr['⏱️ Foi para revisão em']), voltas: (pr['⏱️ Voltas de ajuste'] || {}).number || 0 });
 }
+// Pedidos ao escritório: quem pediu sai da linha "[Painel dd/MM HH:mm] Pedido de Nome · ..." da Obs.
+const pedidos = [];
+for (const it of $('Pedidos do painel').all()) for (const p of (it.json.results || [])) {
+  const pr = p.properties || {};
+  const titulo = txt(pr['Entrega']), obs = txt(pr['Obs']);
+  const m = obs.match(/\\[Painel (\\d\\d\\/\\d\\d \\d\\d:\\d\\d)\\] Pedido de ([^·\\n]+?) · ([^\\n]*)/);
+  if (!m) continue;
+  const q = obs.match(/Pedido criado no (quadro de [^:]+): (https:\\/\\/\\S+)/);
+  const fl = obs.split('\\n').find(x => /Falta informação:/.test(x));
+  const cid = sem(((pr['Cliente'] || {}).relation || [])[0] && pr['Cliente'].relation[0].id);
+  const partes = titulo.replace(/\\s*\\(painel\\)\\s*$/, '').split('|').map(s => s.trim()).filter(Boolean);
+  const resp = ((pr['Responsável'] || {}).relation || []).map(r => EQUIPE[sem(r.id)] || 'Outro');
+  const texto = obs.slice(obs.indexOf(m[0]) + m[0].length).split('\\n').map(s => s.trim()).filter(s => s && !/^(Link:|Anexos:|- )/.test(s)).slice(0, 3).join(' ').slice(0, 400);
+  pedidos.push({ id: sem(p.id), cod: ((pr['Código'] || {}).unique_id || {}).number || null, quando: m[1], por: m[2].trim(), modo: m[3].trim(),
+    clienteNome: (cli[cid] || {}).nome || partes[0] || '', nome: partes.length > 1 ? partes.slice(1).join(' · ') : titulo,
+    tipo: txt(pr['Tipo']), status: txt(pr['Status']), escritorio: txt(pr['🏢 Escritório IA']), prazo: txt(pr['Prazo']), resp,
+    link: txt(pr['Link do arquivo']), quadro: q ? q[2] : '', quadroNome: q ? q[1] : '', falta: fl ? fl.replace(/^.*Falta informação:\\s*/, '').slice(0, 300) : '', texto });
+}
 const usados = new Set(cards.map(c => c.cliente));
 const hoje = DateTime.now().setZone(Z);
 return [{ json: { resposta: { ok: true, nome: quem.nome, papel: quem.papel, hoje: hoje.toISODate(),
   hojeTexto: hoje.setLocale('pt-BR').toFormat("cccc, dd 'de' LLLL"),
-  cards, clientes: Object.values(cli).map(c => usados.has(c.id) ? c : { id: c.id, nome: c.nome, faixa: c.faixa, atencao: c.atencao }) } } }];
+  cards, pedidos, clientes: Object.values(cli).map(c => usados.has(c.id) ? c : { id: c.id, nome: c.nome, faixa: c.faixa, atencao: c.atencao }) } } }];
 ` } } });
 
 const devolver = node({ type: 'n8n-nodes-base.respondToWebhook', version: 1.5, config: { name: 'Devolver fila', parameters: {
@@ -112,9 +143,9 @@ const devolver = node({ type: 'n8n-nodes-base.respondToWebhook', version: 1.5, c
 const recusar = node({ type: 'n8n-nodes-base.respondToWebhook', version: 1.5, config: { name: 'Recusar acesso', parameters: {
   respondWith: 'json', responseBody: '={{ JSON.stringify($json.resposta) }}', options: {} } } });
 
-const nota = sticky('## Painel da equipe · fila (V1)\nA página grupoeuforia.com.br/equipe?u=<token> pede aqui a fila da pessoa (token + PIN da tabela "Painel equipe · acesso").\nEditor: cards abertos em que ela é Responsável. Revisor (Ismael): os dele + tudo Em revisão, Aguardando cliente e o que vai ao ar até amanhã. Calls (Rômulo): os dele + Aguardando cliente e o que vai ao ar até amanhã. Teste: só cards com "TESTE PAINEL" no título.\nTodos (menos teste) recebem também a Fila de demandas: cards abertos sem Responsável de vídeo longo, shorts, podcast, carrossel e thumb (livre: true).\nSó leitura. Cliente sai só com faixa, atenção, padrões de edição e gosta/não gosta. Cards e clientes vêm página por página (sem limite de 100).', [], { color: 4 });
+const nota = sticky('## Painel da equipe · fila (V1)\nA página grupoeuforia.com.br/equipe?u=<token> pede aqui a fila da pessoa (token + PIN da tabela "Painel equipe · acesso").\nEditor: cards abertos em que ela é Responsável. Revisor (Ismael): os dele + tudo Em revisão, Aguardando cliente e o que vai ao ar até amanhã. Calls (Rômulo): os dele + Aguardando cliente e o que vai ao ar até amanhã. Teste: só cards com "TESTE PAINEL" no título.\nTodos (menos teste) recebem também a Fila de demandas: cards abertos sem Responsável de vídeo longo, shorts, podcast, carrossel e thumb (livre: true).\nSó leitura. Cliente sai só com faixa, atenção, padrões de edição e gosta/não gosta. Cards e clientes vêm página por página (sem limite de 100).\nMeus pedidos (Ismael, Rômulo, diretoria): todos os pedidos ao escritório feitos pelo painel desde 26/10 ("(painel)" no título), com quem pediu (da Obs), etapa e link do quadro da máquina. A página filtra por pessoa.', [], { color: 4 });
 
 export default workflow('painel-fila', 'Painel | Fila da equipe (V1)')
   .add(pedir).to(ler).to(acesso).to(validar)
-  .to(podeSeguir.onTrue(entregas.to(clientes).to(montar).to(devolver)).onFalse(recusar))
+  .to(podeSeguir.onTrue(entregas.to(clientes).to(pedidosNode).to(montar).to(devolver)).onFalse(recusar))
   .add(nota);
