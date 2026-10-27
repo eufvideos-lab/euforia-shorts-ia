@@ -33,7 +33,8 @@ python3 -m pip install --break-system-packages -q numpy pillow
 2. Pegue o ID do arquivo no link "Vídeo bruto" (depois de /d/ ou id=). Se for pasta, liste e use o vídeo mais recente.
    Sem vídeo: trate como erro.
 3. `python3 longos/preparar.py pedidos/<id-curto> <file_id>` (bruto de 1 a 2 GB leva alguns minutos).
-4. Leia `pedidos/<id-curto>/palavras.txt`, as "Observações para a máquina", e a identidade do cliente.
+4. Leia `pedidos/<id-curto>/palavras.txt`, as "Observações para a máquina", e a identidade do cliente
+   (campo "Identidade shorts (IA)"; se vazio, pastas do Drive do cliente no padrão de `PASTAS.md`).
    Tire 1 quadro do bruto (`ffmpeg -ss 60 -i bruto.* -frames:v 1 q.png`) para achar o rosto (`centro_zoom`).
 5. Escreva `pedidos/<id-curto>/plano.json` seguindo `longos/prompts/plano_longo.md`. Se o campo "Modelo" do pedido
    for "Nova Acrópole" (ou o cliente for a Nova Acrópole), siga a seção "Modelo Nova Acrópole" de lá: o bruto é uma

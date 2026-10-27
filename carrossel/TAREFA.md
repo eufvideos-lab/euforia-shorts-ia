@@ -43,7 +43,8 @@ O Chrome já vem no ambiente (/opt/pw-browsers). Se não achar, use `CHROME=<cam
    a. Se "Identidade carrossel (IA)" do cliente estiver preenchida (JSON), baixe o logo pelos IDs
       (`ponte.baixar`) para `assets/` e monte `identidade.json` (formato abaixo).
    b. Se estiver vazia, analise: abra a pasta "Fotos e identidade" do pedido ou, sem ela, o Drive do cliente (campo
-      "Drive"; procure MATERIAIS VISUAIS, manual da marca, logo, fotos, thumbs e carrosséis já postados).
+      "Drive"; siga `PASTAS.md`: 04 - IDENTIDADE VISUAL (LOGO E MANUAL, MODELOS DE CARROSSEL, MODELOS DE THUMB);
+      reserva: MATERIAIS VISUAIS, manual da marca, logo, fotos, thumbs e carrosséis já postados).
       Baixe as peças (até ~10), rode `python3 carrossel/analisar.py folha pedidos/<id>/ref.jpg <imagens>` e OLHE a folha.
       `python3 carrossel/analisar.py cores <logo/peças>` dá as cores dominantes. Defina:
       - cores: `claro` (fundo claro), `escuro` (fundo escuro), `destaque`, `texto_claro`, `texto_escuro`
