@@ -53,7 +53,8 @@ if (!acessoOk || r.papel === 'editor') erro = 'acesso';
 else if (!c) erro = 'tipo';
 else if (!nome || String((ficha.parent || {}).database_id || '').replace(/-/g, '') !== '3ddc91b406be49e98e630c298d9162d8' || txt(fp['Situação']) === 'Encerrado') erro = 'cliente';
 else if (!p.prazo || p.prazo < hoje.toISODate()) erro = 'prazo';
-else if (p.texto.length < 5) erro = 'texto';
+else if (p.texto.length < 5 || (p.tipo === 'outro' && p.texto.length < 40)) erro = 'texto';
+else if (p.tipo === 'thumb' && !/Tema da thumb: *\\S{2,}/.test(p.texto)) erro = 'tema';
 // Notion aceita até 2000 caracteres por pedaço de texto: a Obs vai em pedaços para caber os anexos.
 const t = s => (String(s).match(/[\\s\\S]{1,1990}/g) || ['']).slice(0, 8).map(c => ({ type: 'text', text: { content: c } }));
 const titulo = (teste ? 'TESTE PAINEL | ' : '') + nome.toUpperCase() + ' | ' + (c ? c[1] : '') + ' (painel)';

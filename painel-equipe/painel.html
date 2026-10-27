@@ -339,7 +339,7 @@ const TIPOS = [
 // Erros que a pessoa consegue resolver sozinha; o resto vira o aviso padrão.
 const MOTIVO = {acesso:'Seu acesso mudou. Entre de novo com o PIN.', permissao:'Esse card não está no seu nome.', etapa:'Esse card mudou de etapa. A fila foi atualizada.',
   link:'Cole o link antes de mandar.', texto:'Escreva o que precisa antes de mandar.', prazo:'Escolha um prazo de hoje em diante.', cliente:'Escolha um cliente ativo.',
-  pessoa:'Esse card já está com essa pessoa. Escolha outra.', fim:'Escolha o que aconteceu.', pego:'Alguém pegou esse card antes. A fila foi atualizada.', limite:'Você já está com 8 cards em produção. Termine um para pegar outro.', direcao:'Esse assunto é da diretoria. Não responda por aqui.', grupo:'Esse grupo não é de cliente do suporte.', whatsapp:'O WhatsApp não mandou. Tente de novo ou responda direto no grupo.', tamanho:'Arquivo vazio ou maior que 20 GB.', 'sem-pasta':'A pasta do cliente no Drive não foi achada. Cole o link do arquivo no lugar.'};
+  tema:'Escreva o tema ou o texto da thumb.', pessoa:'Esse card já está com essa pessoa. Escolha outra.', fim:'Escolha o que aconteceu.', pego:'Alguém pegou esse card antes. A fila foi atualizada.', limite:'Você já está com 8 cards em produção. Termine um para pegar outro.', direcao:'Esse assunto é da diretoria. Não responda por aqui.', grupo:'Esse grupo não é de cliente do suporte.', whatsapp:'O WhatsApp não mandou. Tente de novo ou responda direto no grupo.', tamanho:'Arquivo vazio ou maior que 20 GB.', 'sem-pasta':'A pasta do cliente no Drive não foi achada. Cole o link do arquivo no lugar.'};
 const ERRO = 'Deu erro, a diretoria está resolvendo.';
 const LIMITE = 8;
 let PANEXOS = [];
@@ -730,7 +730,11 @@ const VIEWS = {
         </fieldset>
         <label for="pf" id="lpf" hidden>Onde fazer<select id="pf"><option>Canva</option><option>Edição de vídeo (Premiere / CapCut)</option><option>Google Slides</option><option>Notion</option><option>Outro</option></select></label>
         <label for="pl"><span id="lpl-t">Link ou pasta</span><input type="text" id="pl"></label>
-        <label for="po">O que precisa, em detalhe<textarea id="po" required minlength="5"></textarea></label>
+        <p class="note" id="nshorts" hidden style="color:var(--bad)"><b>Mande o vídeo SEM legenda.</b> Vídeo com legenda embutida dá erro na máquina de shorts.</p>
+        <label for="ptema" id="lptema" hidden>Tema ou texto da thumb (obrigatório)<input type="text" id="ptema" maxlength="200" placeholder="Ex.: os 3 erros do primeiro emprego"></label>
+        <label for="pfoto" id="lpfoto" hidden>Foto ou pasta (opcional)<input type="text" id="pfoto" maxlength="500" placeholder="Link da foto ou da pasta. Sem isso a máquina procura no Drive do cliente."></label>
+        <label for="pvt" id="lpvt" hidden>Vídeo ou tema (opcional)<input type="text" id="pvt" maxlength="500" placeholder="Link do vídeo ou o tema. Sem roteiro, a máquina usa a fala do vídeo."></label>
+        <label for="po">O que precisa, em detalhe<textarea id="po" required minlength="5"></textarea><small class="sub" id="po-min" hidden style="font-size:12px">Pedido livre: escreva pelo menos 40 letras, com o que é, para quê e onde vai.</small></label>
         <div class="anexos"><b>Anexos (opcional)</b>
           <div class="drop" id="pdrop"><b>Solte arquivos aqui</b><span>ou</span><label class="btn" for="pfile" style="flex-direction:row">Escolher arquivos<input type="file" id="pfile" multiple hidden></label><span class="mono">docs, pptx, PDF, prints · vão para a pasta do cliente no Drive</span></div>
           <ul class="alist" id="palist"></ul>
@@ -843,6 +847,7 @@ function atualizarPedido(){
   if (!pf.dataset.mexeu) pf.value = t.mao;
   $('#lpl-t').textContent = t.link;
   po.placeholder = 'Ex.: ' + t.ex;
+  $('#nshorts').hidden = t.id !== 'shorts'; $('#lptema').hidden = $('#lpfoto').hidden = t.id !== 'thumb'; $('#lpvt').hidden = t.id !== 'carrossel'; $('#po-min').hidden = t.id !== 'outro';
   $('#resumo').innerHTML = `<p class="eyebrow">O que acontece</p>
     <dl class="dl"><dt>Quem faz</dt><dd><b>${manual ? 'Escritório, à mão' : t.maq}</b>${manual ? ' em ' + esc(pf.value) : ''}</dd>
     ${manual ? '' : `<dt>O que lê</dt><dd>${t.le}</dd>`}
@@ -1473,6 +1478,11 @@ document.addEventListener('submit', async e => {
   if (e.target.id !== 'fpedir' || ocupado) return;
   const t = TIPOS.find(x => x.id === $('#pt').value), manual = $('#m-mao').checked, b = $('#bpedir');
   if (!$('#pc').value) { $('#pc').focus(); toast('Escolha o cliente.'); return; }
+  // O mínimo que cada máquina precisa: tema na thumb, descrição de verdade no pedido livre.
+  if (t.id === 'thumb' && $('#ptema').value.trim().length < 3) { $('#ptema').focus(); toast(MOTIVO.tema); return; }
+  if (t.id === 'outro' && $('#po').value.trim().length < 40) { $('#po').focus(); toast('Explique melhor o pedido: pelo menos 40 letras, com o que é, para quê e onde vai.'); return; }
+  const extra = t.id === 'thumb' ? '\nTema da thumb: ' + $('#ptema').value.trim() + ($('#pfoto').value.trim() ? '\nFoto ou pasta: ' + $('#pfoto').value.trim() : '')
+    : t.id === 'carrossel' && $('#pvt').value.trim() ? '\nVídeo ou tema: ' + $('#pvt').value.trim() : '';
   ocupado = true; b.disabled = true;
   try {
     const anexos = [];
@@ -1481,7 +1491,7 @@ document.addEventListener('submit', async e => {
       anexos.push({ nome: PANEXOS[i].name, link: await enviar({ modo: 'pedido', cliente: $('#pc').value }, PANEXOS[i]) });
     }
     $('#plinks').value.split('\n').map(x => x.trim()).filter(x => /^https:\/\//.test(x)).slice(0, 10).forEach(l => anexos.push({ nome: 'Link', link: l }));
-    const r = await api('euforia-painel-pedido', { cliente: $('#pc').value, tipo: t.id, modo: manual ? 'mao' : 'auto', ferramenta: manual ? $('#pf').value : '', prazo: $('#pz').value, link: $('#pl').value.trim(), texto: $('#po').value.trim(), anexos });
+    const r = await api('euforia-painel-pedido', { cliente: $('#pc').value, tipo: t.id, modo: manual ? 'mao' : 'auto', ferramenta: manual ? $('#pf').value : '', prazo: $('#pz').value, link: $('#pl').value.trim(), texto: $('#po').value.trim() + extra, anexos });
     if (!r || !r.ok) throw new Error((r && r.motivo) || 'erro');
     toast('Pedido feito: ' + t.nome + ' → ' + r.quem + '. Card criado no Entregas' + (anexos.length ? ' com ' + anexos.length + ' anexo' + (anexos.length > 1 ? 's' : '') : '') + '.');
     e.target.reset(); delete $('#pf').dataset.mexeu; PANEXOS = []; listaAnexos(); $('#up').hidden = true; atualizarPedido();
