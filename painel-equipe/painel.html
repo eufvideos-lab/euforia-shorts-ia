@@ -678,9 +678,9 @@ const VIEWS = {
         ${x.direcao ? '<span class="sub" style="font-size:13px">Assunto de dinheiro, contrato ou jurídico. A diretoria responde; não precisa fazer nada.</span>'
           : `${x.resumo ? `<span style="font-size:14px"><b>${esc(x.resumo)}</b></span>` : ''}<span class="sub" style="font-size:14px">${esc(x.autor)}: ${esc(x.texto)}</span>
           ${x.contexto ? `<details><summary class="sub" style="font-size:13px;cursor:pointer">Ver a conversa</summary><p class="obs" style="margin-top:6px">${esc(x.contexto)}</p></details>` : ''}
-          <div class="resp"><textarea data-rtxt="${esc(x.msg)}" maxlength="2000" rows="2" placeholder="Escreva a resposta para o grupo">${esc(RASC[x.msg] || '')}</textarea><button class="btn primary" data-responder="${esc(x.msg)}" data-chat="${esc(x.chat)}">Responder</button></div>`}</div>
+          <div class="resp"><textarea data-rtxt="${esc(x.msg)}" maxlength="2000" rows="2" placeholder="Escreva a resposta para o grupo">${esc(RASC[x.msg] || '')}</textarea><span style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn primary" data-responder="${esc(x.msg)}" data-chat="${esc(x.chat)}">Responder</button><button class="btn" data-dispensar="${esc(x.msg)}" data-chat="${esc(x.chat)}" title="Para &quot;ok&quot;, &quot;obrigado&quot;, emoji: tira da fila sem mandar nada">Feito, não precisa responder</button></span></div>`}</div>
         <span class="act"></span></li>`;
-      return `<div class="head"><div><p class="eyebrow">WhatsApp do suporte · atualizado às ${esc(R.agora)}</p><h1>Responder</h1></div><p class="sub">Responda aqui ou no WhatsApp. Todo cliente recebe resposta: quando alguém da equipe responde no grupo, o cliente sai daqui sozinho.</p></div>
+      return `<div class="head"><div><p class="eyebrow">WhatsApp do suporte · atualizado às ${esc(R.agora)}</p><h1>Responder</h1></div><p class="sub">Responda aqui ou no WhatsApp. Quando alguém da equipe responde no grupo, o cliente sai daqui sozinho. Se o cliente só mandou "ok", "obrigado" ou um emoji, aperte "Feito, não precisa responder".</p></div>
       ${caixaWhats()}
       <section class="group"><h2>Esperando resposta <span class="count">${R.itens.length}</span></h2>${R.itens.length ? `<ul class="rows">${R.itens.map(item).join('')}</ul>` : '<p class="empty">Ninguém esperando resposta agora. 🎉</p>'}</section>
       <p class="note">A ordem é: assunto sensível, cliente 🔴 em atenção, faixa A, B e C, e depois quem espera há mais tempo. A resposta sai pelo seu número de suporte, com o seu nome em negrito na frente.</p>`;
@@ -1562,6 +1562,15 @@ document.addEventListener('click', async e => {
     pg.disabled = true; ocupado = true;
     try { const r = await api('euforia-painel-acao', { card: pg.dataset.pegar, acao: 'pegar' }); if (!r || !r.ok) throw new Error((r && r.motivo) || 'erro'); ocupado = false; toast('É seu! O card já está na sua fila.'); await carregar(true); }
     catch (err) { ocupado = false; pg.disabled = false; toast(MOTIVO[err.message] || ERRO); if (err.message === 'pego') carregar(true); }
+    return;
+  }
+  // "Feito, não precisa responder": para "ok", "obrigado", emoji. Sai da fila sem mandar nada ao grupo.
+  const ds = e.target.closest('#main [data-dispensar]');
+  if (ds) {
+    const m = ds.dataset.dispensar;
+    ds.disabled = true; ocupado = true;
+    try { const r = await api('euforia-painel-respostas', { acao: 'dispensar', msg: m, chat: ds.dataset.chat }); if (!r || !r.ok) throw new Error((r && r.motivo) || 'erro'); delete RASC[m]; R.itens = R.itens.filter(x => x.msg !== m); ocupado = false; render(); toast('Feito. Saiu da fila sem mandar nada ao cliente.'); }
+    catch (err) { ocupado = false; ds.disabled = false; toast(MOTIVO[err.message] || ERRO); }
     return;
   }
   const rs = e.target.closest('#main [data-responder]');
