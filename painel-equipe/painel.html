@@ -548,8 +548,8 @@ const VIEWS = {
         <label for="pf-s">Mostrar<select id="pf-s"><option value="abertos" ${PF === 'abertos' ? 'selected' : ''}>Na mão de cada um (a fazer, fazendo, ajustes)</option><option value="revisao" ${PF === 'revisao' ? 'selected' : ''}>Revisão, cliente e postagem</option><option value="tudo" ${PF === 'tudo' ? 'selected' : ''}>Tudo que não foi ao ar</option></select></label>
         <label for="pq-s">Cliente<select id="pq-s"><option value="">Todos</option>${nomes.map(c => `<option value="${c.id}" ${c.id === PQ ? 'selected' : ''}>${esc(c.nome)}</option>`).join('')}</select></label>
       </div>
-      <div class="board">${cols.filter(c => c.id || c.l.length).map(c => `<div class="col" id="col-${c.id || 'sem'}"><h3>${esc(c.nome)} <small>${c.l.length} · ${esc(c.papel)}</small></h3>
-        ${c.l.length ? c.l.map(mini).join('') : '<span class="sub" style="font-size:13px">Nada aqui.</span>'}</div>`).join('')}</div>`;
+      <div class="board">${cols.filter(c => c.id || c.l.length).map(c => { const x = extrasPessoa(c.nome); return `<div class="col" id="col-${c.id || 'sem'}"><h3>${esc(c.nome)} <small>${c.l.length + x.n} · ${esc(c.papel)}</small></h3>
+        ${c.l.length ? c.l.map(mini).join('') : x.h ? '' : '<span class="sub" style="font-size:13px">Nada aqui.</span>'}${x.h}</div>`; }).join('')}</div>`;
     } },
   todos: { nome: 'Todos os cards', pode: diretor,
     html(){
@@ -1003,6 +1003,30 @@ function fechar(){ $('#layer').innerHTML = ''; }
 const dd = s => { const a = dia(s), h = dia((DD || D).hoje); return a ? Math.round((a - h) / 864e5) : 999; };
 const nomeP = id => ((DD && DD.equipe.find(p => p.id === id)) || {}).nome || 'outro';
 const cliDD = id => (DD.clientes.find(c => c.id === id)) || { faixa: '', atencao: false, nome: '' };
+// Ismael e Rômulo quase não são "Responsável" de card: o trabalho deles é revisar, postar, fazer calls e pedir ao escritório.
+// Na coluna de cada um aparece também isso, junto com o que fizeram hoje pelo painel.
+function extrasPessoa(nome){
+  if (!['Ismael', 'Rômulo'].includes(nome)) return { h: '', n: 0 };
+  const doCli = c => !PQ || c.cliente === PQ;
+  const bloco = (t, l, f, cor) => !l.length ? '' : `<p class="eyebrow" style="margin:10px 2px 0;${cor ? 'color:var(--bad)' : ''}">${t} · ${l.length}</p>${l.slice(0, 5).map(mini).join('')}${l.length > 5 ? `<button class="btn" data-filtro="${f}" style="align-self:flex-start">+ ${l.length - 5} em Todos os cards</button>` : ''}`;
+  let h = '', n = 0;
+  if (nome === 'Ismael') {
+    const rev = ordDD(DD.cards.filter(c => c.status === 'Em revisão' && doCli(c)));
+    const post = DD.cards.filter(c => ['Aprovado', 'Agendado'].includes(c.status) && doCli(c)).sort((a, b) => dd(a.postar) - dd(b.postar));
+    h += bloco('Para revisar', rev, 'Em revisão') + bloco('Para postar', post, 'Aprovado', post.some(c => c.postar && dd(c.postar) < 0));
+    n += rev.length + post.length;
+  }
+  if (nome === 'Rômulo' && CC) {
+    const prox = CC.calls.filter(k => k.dia >= CC.hoje).slice(0, 6);
+    if (prox.length) h += `<p class="eyebrow" style="margin:10px 2px 0">Próximas calls · ${CC.calls.filter(k => k.dia >= CC.hoje).length}</p><ul class="mini-l" style="background:var(--surface);border-radius:10px;padding:8px 10px">${prox.map(k => `<li><span><b>${esc(k.cliente)}</b><br><span class="sub" style="font-size:12px">${esc(k.tipo || '')}</span></span><span style="text-align:right;font-size:13px">${fmt(k.dia)}<br>${esc(k.hora || '')}</span></li>`).join('')}</ul>`;
+    n += prox.length;
+  }
+  const ped = (D.pedidos || []).filter(p => String(p.por || '').startsWith(nome) && ['falta', 'andando'].includes(situacao(p).g));
+  if (ped.length) h += `<p class="eyebrow" style="margin:10px 2px 0">Pedidos ao escritório em andamento · ${ped.length}</p><ul class="mini-l" style="background:var(--surface);border-radius:10px;padding:8px 10px">${ped.slice(0, 5).map(p => { const st = situacao(p); return `<li style="display:block"><b>${esc(p.clienteNome)}</b> · ${esc(p.nome)}<br><span class="chip ${st.c}" style="margin-top:4px">${esc(st.t)}</span></li>`; }).join('')}</ul>`;
+  const hoje = atividade().filter(a => a.quem === nome).slice(0, 6);
+  h += `<p class="eyebrow" style="margin:10px 2px 0">Fez hoje pelo painel · ${atividade().filter(a => a.quem === nome).length}</p>${hoje.length ? `<ul class="mini-l" style="background:var(--surface);border-radius:10px;padding:8px 10px">${hoje.map(a => `<li><span><span class="mono">${esc(a.hora)}</span> ${esc(a.oque)}<br><span class="sub" style="font-size:12px">${esc(a.titulo)}</span></span></li>`).join('')}</ul>` : '<span class="sub" style="font-size:13px">Nada registrado hoje ainda.</span>'}`;
+  return { h, n };
+}
 function ordDD(a){ return a.sort((x, y) => (y.status === 'Ajustes') - (x.status === 'Ajustes') || dd(x.prazo) - dd(y.prazo) || dd(x.postar) - dd(y.postar)); }
 function classeDD(c){ const k = dd(c.prazo); if (c.status === 'Ajustes') return 'adj'; if (ABERTO.includes(c.status) && k < 0) return 'late'; if (ABERTO.includes(c.status) && k === 0) return 'today'; return ''; }
 function carga(id){ const l = DD.cards.filter(c => (c.resp || []).includes(id) && ABERTO.includes(c.status)); return { abertos: l.length, atrasados: l.filter(c => dd(c.prazo) < 0).length }; }
