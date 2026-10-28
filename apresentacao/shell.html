@@ -17,6 +17,9 @@ html,body{height:100%;background:#050506;overflow:hidden;font-family:Inter,Arial
 .slide img{max-width:none}
 .slide h1,.slide h2,.slide h3{font-weight:800}
 .slide ul,.slide ol{list-style:none}
+.slide table{width:100%;border-collapse:collapse}
+.slide th,.slide td{padding:11px 16px;border-bottom:1px solid rgba(255,255,255,.06);vertical-align:middle}
+.slide th{font-weight:700}
 img[data-video]{cursor:pointer}
 .playwrap{position:relative;display:inline-block;flex:none}
 .playbtn{position:absolute;left:50%;top:50%;width:132px;height:132px;margin:-66px 0 0 -66px;border-radius:50%;background:rgba(255,90,0,.92);box-shadow:0 18px 48px rgba(0,0,0,.45);pointer-events:none;display:flex;align-items:center;justify-content:center}
@@ -24,6 +27,7 @@ img[data-video]{cursor:pointer}
 #ui{position:fixed;right:18px;top:16px;display:flex;align-items:center;gap:8px;z-index:10;transition:opacity .3s}
 #ui.hide{opacity:0}
 #ui button{width:44px;height:44px;border-radius:12px;border:1px solid rgba(255,255,255,.14);background:rgba(20,20,22,.82);color:#F4F2EE;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+#ui button.jump{width:auto;padding:0 16px;font:600 14px Inter,Arial,sans-serif;letter-spacing:.3px}
 #ui button:hover{background:#FF5A00;border-color:#FF5A00}
 #bar{position:fixed;left:0;bottom:0;height:3px;background:linear-gradient(90deg,#FF7A1A,#FF4D00);z-index:10;transition:width .3s}
 </style>
@@ -34,6 +38,7 @@ img[data-video]{cursor:pointer}
 </div>
 <div id="bar"></div>
 <div id="ui">
+<button id="impl" class="jump" aria-label="Ir para a Implementação">Implementação &#8594;</button>
 <button id="prev" aria-label="Slide anterior">&#8249;</button>
 <button id="next" aria-label="Próximo slide">&#8250;</button>
 <button id="fs" aria-label="Tela cheia">&#x26F6;</button>
@@ -65,13 +70,19 @@ function go(i){
   var b=document.createElement('span'); b.className='playbtn'; wrap.appendChild(b);
   wrap.addEventListener('click',function(){
     var v=document.createElement('video');
-    v.src=img.getAttribute('data-video'); v.controls=true; v.autoplay=true; v.playsInline=true;
+    var src=img.getAttribute('data-video');
+    var alts=[src];
+    var m=src.match(/cdn\.jsdelivr\.net\/gh\/([^\/]+)\/([^@]+)@([^\/]+)\/(.*)$/);
+    if(m) alts.push('https://raw.githubusercontent.com/'+m[1]+'/'+m[2]+'/'+m[3]+'/'+m[4]);
+    alts.forEach(function(u){var so=document.createElement('source');so.src=u;so.type='video/mp4';v.appendChild(so);});
+    v.controls=true; v.autoplay=true; v.playsInline=true;
     v.setAttribute('style',img.getAttribute('style')); v.poster=img.src;
     if(!/object-fit/.test(v.getAttribute('style'))) v.style.objectFit='cover';
     v.style.background='#000';
     wrap.parentNode.replaceChild(v,wrap); v.play();
   },{once:true});
 });
+document.getElementById('impl').onclick=function(){for(var i=0;i<n;i++){if(slides[i].id==='implementacao'){go(i);return;}}};
 document.getElementById('prev').onclick=function(){go(cur-1)};
 document.getElementById('next').onclick=function(){go(cur+1)};
 document.getElementById('fs').onclick=function(){
