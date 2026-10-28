@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Grupo Euforia · Apresentação</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;background:#050506;overflow:hidden;font-family:Inter,Arial,sans-serif}
+#stage{position:fixed;left:50%;top:50%;width:1920px;height:1080px;transform-origin:0 0}
+.slide{position:absolute!important;left:0;top:0;width:1920px;height:1080px;overflow:hidden;opacity:0;visibility:hidden;transition:opacity .45s ease,visibility 0s linear .45s}
+.slide.on{opacity:1;visibility:visible;transition:opacity .45s ease}
+.slide img{max-width:none}
+.slide h1,.slide h2,.slide h3{font-weight:800}
+.slide ul,.slide ol{list-style:none}
+img[data-video]{cursor:pointer}
+.playwrap{position:relative;display:inline-block;flex:none}
+.playbtn{position:absolute;left:50%;top:50%;width:132px;height:132px;margin:-66px 0 0 -66px;border-radius:50%;background:rgba(255,90,0,.92);box-shadow:0 18px 48px rgba(0,0,0,.45);pointer-events:none;display:flex;align-items:center;justify-content:center}
+.playbtn:after{content:"";margin-left:12px;border-style:solid;border-width:28px 0 28px 46px;border-color:transparent transparent transparent #fff}
+#ui{position:fixed;right:18px;top:16px;display:flex;align-items:center;gap:8px;z-index:10;transition:opacity .3s}
+#ui.hide{opacity:0}
+#ui button{width:44px;height:44px;border-radius:12px;border:1px solid rgba(255,255,255,.14);background:rgba(20,20,22,.82);color:#F4F2EE;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+#ui button:hover{background:#FF5A00;border-color:#FF5A00}
+#bar{position:fixed;left:0;bottom:0;height:3px;background:linear-gradient(90deg,#FF7A1A,#FF4D00);z-index:10;transition:width .3s}
+</style>
+</head>
+<body>
+<div id="stage">
+<!--SLIDES-->
+</div>
+<div id="bar"></div>
+<div id="ui">
+<button id="prev" aria-label="Slide anterior">&#8249;</button>
+<button id="next" aria-label="Próximo slide">&#8250;</button>
+<button id="fs" aria-label="Tela cheia">&#x26F6;</button>
+</div>
+<script>
+(function(){
+var stage=document.getElementById('stage');
+var slides=[].slice.call(stage.querySelectorAll('.slide'));
+var n=slides.length, cur=0;
+function fit(){
+  var s=Math.min(innerWidth/1920,innerHeight/1080);
+  stage.style.transform='scale('+s+') translate(-50%,-50%)';
+}
+function stopVideos(el){
+  [].forEach.call(el.querySelectorAll('video'),function(v){v.pause();});
+}
+function go(i){
+  i=Math.max(0,Math.min(n-1,i));
+  if(slides[cur]) {stopVideos(slides[cur]);slides[cur].classList.remove('on');}
+  cur=i; slides[cur].classList.add('on');
+  document.getElementById('bar').style.width=((cur+1)/n*100)+'%';
+  if(location.hash!=='#'+(cur+1)) history.replaceState(null,'','#'+(cur+1));
+}
+// vídeos: a imagem vira vídeo no clique
+[].forEach.call(stage.querySelectorAll('img[data-video]'),function(img){
+  var wrap=document.createElement('span'); wrap.className='playwrap';
+  img.parentNode.insertBefore(wrap,img); wrap.appendChild(img);
+  if(img.style.position==='absolute'){wrap.style.position='absolute';wrap.style.left=img.style.left||0;wrap.style.top=img.style.top||0;wrap.style.width=img.style.width;wrap.style.height=img.style.height;}
+  var b=document.createElement('span'); b.className='playbtn'; wrap.appendChild(b);
+  wrap.addEventListener('click',function(){
+    var v=document.createElement('video');
+    v.src=img.getAttribute('data-video'); v.controls=true; v.autoplay=true; v.playsInline=true;
+    v.setAttribute('style',img.getAttribute('style')); v.poster=img.src;
+    if(!/object-fit/.test(v.getAttribute('style'))) v.style.objectFit='cover';
+    v.style.background='#000';
+    wrap.parentNode.replaceChild(v,wrap); v.play();
+  },{once:true});
+});
+document.getElementById('prev').onclick=function(){go(cur-1)};
+document.getElementById('next').onclick=function(){go(cur+1)};
+document.getElementById('fs').onclick=function(){
+  if(document.fullscreenElement) document.exitFullscreen(); else document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen();
+};
+addEventListener('keydown',function(e){
+  if(e.target.tagName==='VIDEO'&&(e.key===' '||e.key==='ArrowLeft'||e.key==='ArrowRight')) return;
+  if(['ArrowRight','PageDown',' ','ArrowDown'].indexOf(e.key)>=0){e.preventDefault();go(cur+1);}
+  else if(['ArrowLeft','PageUp','ArrowUp'].indexOf(e.key)>=0){e.preventDefault();go(cur-1);}
+  else if(e.key==='Home') go(0);
+  else if(e.key==='End') go(n-1);
+  else if(e.key==='f'||e.key==='F') document.getElementById('fs').click();
+});
+var tx=null;
+addEventListener('touchstart',function(e){tx=e.touches[0].clientX},{passive:true});
+addEventListener('touchend',function(e){if(tx===null)return;var dx=e.changedTouches[0].clientX-tx;if(Math.abs(dx)>50)go(cur+(dx<0?1:-1));tx=null});
+var t; function wake(){var u=document.getElementById('ui');u.classList.remove('hide');clearTimeout(t);t=setTimeout(function(){u.classList.add('hide')},2500)}
+addEventListener('mousemove',wake); wake();
+addEventListener('resize',fit); fit();
+addEventListener('hashchange',function(){var h=parseInt(location.hash.slice(1),10);if(h&&h-1!==cur)go(h-1)});
+var h0=parseInt(location.hash.slice(1),10); go(h0?h0-1:0);
+})();
+</script>
+</body>
+</html>
