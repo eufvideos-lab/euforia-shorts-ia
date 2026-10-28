@@ -42,6 +42,7 @@ const CAT = {
   recuperacao: ['Estratégia', 'ESTRATÉGIA DE RECUPERAÇÃO', 'Máquina do Escritório'], pautas: ['Roteiro', 'PAUTAS E ROTEIROS', 'Máquina do Escritório'],
   pagina: ['Página', 'PÁGINA', 'Máquina do Escritório'], funil: ['Funil', 'FUNIL', 'Máquina do Escritório'], insta: ['Insta-Blindado', 'INSTA-BLINDADO', 'Máquina do Escritório'],
   copy: ['Copy', 'COPY', 'Máquina do Escritório'], outro: ['Outro', 'PEDIDO', 'Máquina do Escritório'],
+  setup: ['Estratégia', 'SETUP', 'Máquina do Escritório'], estrategia: ['Estratégia', 'ESTRATÉGIA', 'Máquina do Escritório'],
   situacao: ['Relatório', 'SITUAÇÃO COMPLETA', 'Máquina do Escritório'], cronograma: ['Relatório', 'CRONOGRAMA', 'Máquina do Escritório'] };
 const c = CAT[p.tipo];
 const acessoOk = !!r.token && r.token === p.u && r.ativo === true && String(r.pin) === p.pin;

@@ -348,6 +348,8 @@ const TIPOS = [
  {id:'cronograma',g:'Estratégia e calls',nome:'Cronograma do cliente',maq:'Máquina do Escritório',so:true,le:'Contrato (só o que foi prometido e as datas), calls, grupo do WhatsApp e cards do Entregas.',volta:'PDF com o cronograma semana a semana até o fim do contrato e o que já está atrasado. Baixe em Meus pedidos.',link:'',ex:'ela viaja em dezembro; concentrar as gravações em novembro.'},
  {id:'recuperacao',g:'Estratégia e calls',nome:'Estratégia de recuperação',maq:'Máquina do Escritório',le:'Grupo do WhatsApp, histórico de entregas e atrasos, canal e portal.',volta:'Plano de ação e modelos novos de thumb e carrossel.',link:'Contexto (opcional)',ex:'Cliente insatisfeito com as thumbs. Precisa de modelos novos.',mao:'Canva'},
  {id:'pautas',g:'Estratégia e calls',nome:'Pautas e roteiros',maq:'Máquina do Escritório',le:'Dossiê, nicho e vídeos que já foram ao ar.',volta:'Lote no banco Pautas e Roteiros e aviso no #roteiros.',link:'Quantos roteiros',ex:'4 roteiros de novembro.',mao:'Notion'},
+ {id:'setup',g:'Página e Instagram',nome:'Setup (copy, funil e estratégia)',maq:'Máquina do Escritório',le:'Dossiê, calls, oferta, fotos e identidade do cliente.',volta:'Tudo junto: página de vendas pronta com a copy, desenho do funil e a estratégia.',link:'Referência (opcional)',ex:'Setup completo da mentoria. A call de oferta foi dia 27.',mao:'Outro'},
+ {id:'estrategia',g:'Página e Instagram',nome:'Estratégia',maq:'Máquina do Escritório',le:'Dossiê, calls, oferta e canal do cliente.',volta:'Documento de estratégia.',link:'Referência (opcional)',ex:'Estratégia de conteúdo para o lançamento de novembro.',mao:'Outro'},
  {id:'pagina',g:'Página e Instagram',nome:'Página',maq:'Máquina do Escritório',le:'Oferta, fotos e identidade do cliente.',volta:'Página pronta para subir.',link:'Referência (opcional)',ex:'Página de captura da mentoria.',mao:'Outro'},
  {id:'funil',g:'Página e Instagram',nome:'Funil',maq:'Máquina do Escritório',le:'Oferta e público do cliente.',volta:'Desenho do funil e textos.',link:'Oferta',ex:'Funil do produto de entrada.',mao:'Outro'},
  {id:'insta',g:'Página e Instagram',nome:'Insta-Blindado (bio, destaques, fixados)',maq:'Máquina do Escritório',le:'Perfil atual, identidade e oferta.',volta:'Bio, capas de destaque e posts fixados.',link:'@ do Instagram',ex:'Bio nova. O cliente mandou o texto no grupo dia 24.',mao:'Canva'},
@@ -767,6 +769,7 @@ const VIEWS = {
         <label for="pl" id="lpl"><span id="lpl-t">Link ou pasta</span><input type="text" id="pl"></label>
         <p class="note" id="nshorts" hidden style="color:var(--bad)"><b>Mande o vídeo SEM legenda.</b> Vídeo com legenda embutida dá erro na máquina de shorts.</p>
         <p class="note" id="npautas" hidden>Pautas e roteiros já saem em lote de 12.</p>
+        <p class="note" id="nsetup" hidden><b>Setup faz tudo de uma vez:</b> copy (página de vendas pronta), funil e estratégia. Se precisar só de um deles, peça Copy, Funil ou Estratégia separado.</p>
         <label for="pqtd" id="lpqtd" hidden>Quantos<select id="pqtd"></select></label>
         <label for="ptema" id="lptema" hidden>Tema ou texto da thumb (obrigatório; num pacote, separe por vírgula ou escreva "vídeos 05 a 08")<input type="text" id="ptema" maxlength="600" placeholder="Ex.: os 3 erros do primeiro emprego"></label>
         <label for="pfoto" id="lpfoto" hidden>Foto ou pasta (opcional)<input type="text" id="pfoto" maxlength="500" placeholder="Link da foto ou da pasta. Sem isso a máquina procura no Drive do cliente."></label>
@@ -916,7 +919,7 @@ function atualizarPedido(){
   $('#nshorts').hidden = t.id !== 'shorts'; $('#lptema').hidden = $('#lpfoto').hidden = t.id !== 'thumb'; $('#lpvt').hidden = t.id !== 'carrossel';
   // Pacotes: carrossel e thumb 1/3/6/12; shorts saem de um vídeo só (1 ou 3). Pautas e roteiros já vêm em lote de 12.
   const QTD = { carrossel: ['1 carrossel', '3 carrosséis', '6 carrosséis', '12 carrosséis'], thumb: ['1 thumb', '3 thumbs', '6 thumbs', '12 thumbs'], shorts: ['3 shorts', '1 short'] }[t.id];
-  $('#lpqtd').hidden = !QTD; $('#npautas').hidden = t.id !== 'pautas';
+  $('#lpqtd').hidden = !QTD; $('#npautas').hidden = t.id !== 'pautas'; $('#nsetup').hidden = t.id !== 'setup';
   if (QTD && $('#pqtd').dataset.tipo !== t.id) { $('#pqtd').innerHTML = QTD.map(q => `<option>${q}</option>`).join(''); $('#pqtd').dataset.tipo = t.id; } $('#po-min').hidden = t.id !== 'outro';
   $('#resumo').innerHTML = `<p class="eyebrow">O que acontece</p>
     <dl class="dl"><dt>Quem faz</dt><dd><b>${manual ? 'Escritório, à mão' : t.maq}</b>${manual ? ' em ' + esc(pf.value) : ''}</dd>
