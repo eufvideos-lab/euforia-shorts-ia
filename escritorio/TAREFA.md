@@ -56,6 +56,7 @@ Ordem:
 | Já foi feito em outro lugar (link no grupo, no 🎬, na ficha, numa apresentação) | Ponha o link, Status Em revisão (ou Aprovado se já foi usado com o cliente), "Feito pela IA". |
 | Identidade do setup: ID DO CANAL, ANTES E DEPOIS DO CANAL, MODELO DE CARROSSEL, CALL DE CONSULTORIA AUDIOVISUAL / CALL DE APROVAÇÃO | **Produzir** seguindo `escritorio/identidade/IDENTIDADE.md` (kit em PNG, antes e depois, apresentação da call). |
 | Card "CLIENTE \| APRESENTAÇÃO DE CALL (agenda)" (criado pelo fluxo da agenda, Obs com "Evento da agenda: <id>") | **Produzir** como **Apresentação de call da agenda** (passo 3). |
+| Card "CLIENTE \| SITUAÇÃO COMPLETA (painel)" ou "CLIENTE \| CRONOGRAMA (painel)" | **Produzir** seguindo `escritorio/diagnostico/DIAGNOSTICO.md` (PDF pelo gerador `escritorio/diagnostico/gerar.py`). Não é "contrato/financeiro": é leitura do contrato para planejar; nunca escreva valores. Um card desses vale uma rodada inteira: faça só ele na rodada. |
 | O resto (relatório, apresentação de call, página de vendas, copy, funil, roteiros, pautas, SEO, bio, guia, estratégia, posicionamento, conferências) | **Produzir** (passo 3). |
 
 ## 2a. Pedido com pouca informação: buscar antes de travar
@@ -128,6 +129,8 @@ Se ainda faltar o essencial (nenhuma foto do cliente em lugar nenhum, tema impos
         detalhe no #ia-status.
    - **Documento para o cliente** (relatório, posicionamento, guia, proposta): **PDF** no Drive do cliente.
      Nunca link do Claude para cliente.
+   - **Situação completa / Cronograma do cliente** (cards "… \| SITUAÇÃO COMPLETA (painel)" e "… \| CRONOGRAMA (painel)"):
+     siga `escritorio/diagnostico/DIAGNOSTICO.md` do começo ao fim (coleta, análise, JSON, PDF, Drive, card).
    - **Página de vendas**: HTML único (imagens em base64), na paleta e fontes do cliente; sobe o .html no Drive do
      cliente (pasta PÁGINA) + prints desktop/celular. Dados que faltam viram "[a confirmar: ...]" bem visíveis.
    - **Arte** (capa de destaque, post fixado, thumb avulsa): PNG pelo mesmo esquema HTML → PNG do `carrossel/`.
