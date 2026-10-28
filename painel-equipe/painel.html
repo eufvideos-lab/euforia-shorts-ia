@@ -344,6 +344,8 @@ const TIPOS = [
  {id:'alinhamento',g:'Estratégia e calls',nome:'Apresentação de alinhamento',maq:'Máquina do Escritório',le:'Drive, grupo do WhatsApp, portal do cliente, cards do Entregas e números do canal (só em %).',volta:'Apresentação pronta para a call e aviso ao Rômulo no #calls-e-setups.',link:'Data da call',ex:'Alinhamento do mês. Ela reclamou do atraso dos shorts no grupo.',mao:'Google Slides'},
  {id:'call',g:'Estratégia e calls',nome:'Apresentação de call (estratégia, onboarding)',maq:'Máquina do Escritório',le:'Dossiê, ficha do cliente e entregas feitas.',volta:'Deck com roteiro nas notas, aviso ao Rômulo.',link:'Tipo e data da call',ex:'Call 2 de estratégia, quinta 10h.',mao:'Google Slides'},
  {id:'relatorio',g:'Estratégia e calls',nome:'Relatório',maq:'Máquina do Escritório',le:'Dados do YouTube do período, entregas feitas e o que foi ao ar.',volta:'PDF só com percentuais.',link:'Período (ex.: 1 a 31/10)',ex:'Relatório de outubro para mandar no grupo.',mao:'Google Slides'},
+ {id:'situacao',g:'Estratégia e calls',nome:'Situação completa do cliente',maq:'Máquina do Escritório',so:true,le:'Contrato (só o que foi prometido e as datas), calls, grupo do WhatsApp, cards do Entregas e o que já foi ao ar.',volta:'PDF com o que falta, o que fazer, quem faz (equipe ou máquina) e quando. Baixe em Meus pedidos.',link:'',ex:'ela reclamou dos shorts no grupo; ver se o pacote de novembro está em dia.'},
+ {id:'cronograma',g:'Estratégia e calls',nome:'Cronograma do cliente',maq:'Máquina do Escritório',so:true,le:'Contrato (só o que foi prometido e as datas), calls, grupo do WhatsApp e cards do Entregas.',volta:'PDF com o cronograma semana a semana até o fim do contrato e o que já está atrasado. Baixe em Meus pedidos.',link:'',ex:'ela viaja em dezembro; concentrar as gravações em novembro.'},
  {id:'recuperacao',g:'Estratégia e calls',nome:'Estratégia de recuperação',maq:'Máquina do Escritório',le:'Grupo do WhatsApp, histórico de entregas e atrasos, canal e portal.',volta:'Plano de ação e modelos novos de thumb e carrossel.',link:'Contexto (opcional)',ex:'Cliente insatisfeito com as thumbs. Precisa de modelos novos.',mao:'Canva'},
  {id:'pautas',g:'Estratégia e calls',nome:'Pautas e roteiros',maq:'Máquina do Escritório',le:'Dossiê, nicho e vídeos que já foram ao ar.',volta:'Lote no banco Pautas e Roteiros e aviso no #roteiros.',link:'Quantos roteiros',ex:'4 roteiros de novembro.',mao:'Notion'},
  {id:'pagina',g:'Página e Instagram',nome:'Página',maq:'Máquina do Escritório',le:'Oferta, fotos e identidade do cliente.',volta:'Página pronta para subir.',link:'Referência (opcional)',ex:'Página de captura da mentoria.',mao:'Outro'},
@@ -352,6 +354,9 @@ const TIPOS = [
  {id:'copy',g:'Página e Instagram',nome:'Copy',maq:'Máquina do Escritório',le:'Oferta e tom do cliente.',volta:'Texto no corpo do card.',link:'Onde vai a copy',ex:'Legenda do lançamento.',mao:'Notion'},
  {id:'outro',g:'Outro',nome:'Outro pedido',maq:'Máquina do Escritório',le:'O que você escrever aqui.',volta:'Depende do pedido.',link:'Link (opcional)',ex:'Descreva o que precisa.',mao:'Outro'}
 ];
+// Situação completa e cronograma só aparecem no Pedir ao escritório quando a máquina deles estiver no ar.
+const SITUACAO_NO_AR = false;
+if (!SITUACAO_NO_AR && !DEMO) for (let i = TIPOS.length - 1; i >= 0; i--) if (TIPOS[i].so) TIPOS.splice(i, 1);
 // Erros que a pessoa consegue resolver sozinha; o resto vira o aviso padrão.
 const MOTIVO = {acesso:'Seu acesso mudou. Entre de novo com o PIN.', permissao:'Esse card não está no seu nome.', etapa:'Esse card mudou de etapa. A fila foi atualizada.',
   link:'Cole o link antes de mandar.', texto:'Escreva o que precisa antes de mandar.', prazo:'Escolha um prazo de hoje em diante.', cliente:'Escolha um cliente ativo.',
@@ -759,14 +764,14 @@ const VIEWS = {
           <label class="opt" for="m-mao"><input type="radio" name="modo" id="m-mao" value="mao"><span><b>À mão</b><small>O escritório faz pessoalmente. Use quando a máquina não serve.</small></span></label>
         </fieldset>
         <label for="pf" id="lpf" hidden>Onde fazer<select id="pf"><option>Canva</option><option>Edição de vídeo (Premiere / CapCut)</option><option>Google Slides</option><option>Notion</option><option>Outro</option></select></label>
-        <label for="pl"><span id="lpl-t">Link ou pasta</span><input type="text" id="pl"></label>
+        <label for="pl" id="lpl"><span id="lpl-t">Link ou pasta</span><input type="text" id="pl"></label>
         <p class="note" id="nshorts" hidden style="color:var(--bad)"><b>Mande o vídeo SEM legenda.</b> Vídeo com legenda embutida dá erro na máquina de shorts.</p>
         <p class="note" id="npautas" hidden>Pautas e roteiros já saem em lote de 12.</p>
         <label for="pqtd" id="lpqtd" hidden>Quantos<select id="pqtd"></select></label>
         <label for="ptema" id="lptema" hidden>Tema ou texto da thumb (obrigatório; num pacote, separe por vírgula ou escreva "vídeos 05 a 08")<input type="text" id="ptema" maxlength="600" placeholder="Ex.: os 3 erros do primeiro emprego"></label>
         <label for="pfoto" id="lpfoto" hidden>Foto ou pasta (opcional)<input type="text" id="pfoto" maxlength="500" placeholder="Link da foto ou da pasta. Sem isso a máquina procura no Drive do cliente."></label>
         <label for="pvt" id="lpvt" hidden>Vídeo ou tema (opcional)<input type="text" id="pvt" maxlength="500" placeholder="Link do vídeo ou o tema. Sem roteiro, a máquina usa a fala do vídeo."></label>
-        <label for="po">O que precisa, em detalhe<textarea id="po" required minlength="5"></textarea><small class="sub" id="po-min" hidden style="font-size:12px">Pedido livre: escreva pelo menos 40 letras, com o que é, para quê e onde vai.</small></label>
+        <label for="po"><span id="lpo-t">O que precisa, em detalhe</span><textarea id="po" required minlength="5"></textarea><small class="sub" id="po-min" hidden style="font-size:12px">Pedido livre: escreva pelo menos 40 letras, com o que é, para quê e onde vai.</small></label>
         <div class="anexos"><b>Anexos (opcional)</b>
           <div class="drop" id="pdrop"><b>Solte arquivos aqui</b><span>ou</span><label class="btn" for="pfile" style="flex-direction:row">Escolher arquivos<input type="file" id="pfile" multiple hidden></label><span class="mono">docs, pptx, PDF, prints · vão para a pasta do cliente no Drive</span></div>
           <ul class="alist" id="palist"></ul>
@@ -860,7 +865,7 @@ function listaPedidos(){
       <span class="meta"><span class="chip ${s.c}">${esc(s.t)}</span><span class="chip">${esc(p.tipo || 'Pedido')}</span><span class="chip">Pedido ${esc(p.quando)}</span>${MP !== 'eu' ? `<span class="chip">por ${esc(p.por)}</span>` : ''}${s.g === 'andando' && p.prazo ? (k < 0 ? `<span class="chip red">Atrasado ${-k}d</span>` : `<span class="chip">Prazo ${fmt(p.prazo)}</span>`) : ''}${/À MÃO/.test(p.modo) ? '<span class="chip">À mão</span>' : ''}</span>
       ${p.texto ? `<span class="sub" style="font-size:13px">${esc(p.texto)}</span>` : ''}
       ${s.g === 'falta' && p.falta ? `<span class="sub" style="font-size:13px;color:var(--bad)">O escritório precisa: ${esc(p.falta)}</span>` : ''}`;
-    const links = [p.quadro ? `<a class="btn" style="text-decoration:none" href="${esc(p.quadro)}" target="_blank" rel="noopener">Ver na máquina</a>` : '', s.g === 'pronto' && p.link ? `<a class="btn" style="text-decoration:none" href="${esc(p.link)}" target="_blank" rel="noopener">Abrir arquivo</a>` : ''].join('');
+    const links = [p.quadro ? `<a class="btn" style="text-decoration:none" href="${esc(p.quadro)}" target="_blank" rel="noopener">Ver na máquina</a>` : '', s.g === 'pronto' && p.link ? (docPdf(p) ? `<a class="btn primary" style="text-decoration:none" href="${esc(baixar(p.link))}" target="_blank" rel="noopener">Baixar PDF</a>` : `<a class="btn" style="text-decoration:none" href="${esc(p.link)}" target="_blank" rel="noopener">Abrir arquivo</a>`) : ''].join('');
     return `<li class="item ${s.g === 'falta' ? 'late' : ''}"><span class="stripe"></span>
       ${abre ? `<button class="main" data-open="${p.id}">${corpo}</button>` : `<div class="main" style="cursor:default">${corpo}</div>`}
       <span class="act">${s.g === 'falta' && abre ? `<button class="btn primary" data-go="${p.id}">Completar pedido</button>` : links}${(p.por === D.nome || diretor()) && p.status !== 'Postado' ? `<button class="btn" data-apagaped="${p.id}" title="Apagar este pedido">Apagar</button>` : ''}</span></li>`; };
@@ -891,10 +896,17 @@ async function apagarPedido(b){
   }
 }
 
+// Situação completa e cronograma voltam como PDF no Drive: o botão baixa direto (export de download do Drive).
+const docPdf = p => /SITUAÇÃO COMPLETA|CRONOGRAMA/.test(String(p.nome || ''));
+const baixar = l => { const m = String(l).match(/drive\.google\.com\/(?:file\/d\/|open\?id=|uc\?(?:export=download&)?id=)([\w-]{20,})/); return m ? 'https://drive.google.com/uc?export=download&id=' + m[1] : l; };
 function atualizarPedido(){
   const pt = $('#pt'); if (!pt) return;
   const t = TIPOS.find(x => x.id === pt.value), auto = $('#m-auto'), mao = $('#m-mao'), pf = $('#pf'), po = $('#po');
   auto.disabled = !t.maq; if (!t.maq) mao.checked = true;
+  // Situação completa e cronograma: sempre automático, sem link, e o texto vira só o foco (opcional).
+  mao.disabled = !!t.so; if (t.so) auto.checked = true;
+  $('#lpl').hidden = !!t.so; po.required = !t.so; po.minLength = t.so ? 0 : 5;
+  $('#lpo-t').textContent = t.so ? 'Foco ou dúvida (opcional)' : 'O que precisa, em detalhe';
   $('#m-auto-s').textContent = t.maq ? ('Vai para a ' + t.maq + '.') : 'Sem máquina para isso ainda.';
   const manual = mao.checked;
   $('#lpf').hidden = !manual;
@@ -1659,6 +1671,7 @@ document.addEventListener('submit', async e => {
   const extra = t.id === 'thumb' ? '\nTema da thumb: ' + $('#ptema').value.trim() + ($('#pfoto').value.trim() ? '\nFoto ou pasta: ' + $('#pfoto').value.trim() : '')
     : t.id === 'carrossel' && $('#pvt').value.trim() ? '\nVídeo ou tema: ' + $('#pvt').value.trim() : '';
   const qtd = !$('#lpqtd').hidden ? '\nQuantidade: ' + $('#pqtd').value : '';
+  const texto = t.so ? t.nome + ($('#po').value.trim() ? '\nFoco: ' + $('#po').value.trim() : '') : $('#po').value.trim() + extra + qtd;
   ocupado = true; b.disabled = true;
   try {
     const anexos = [];
@@ -1667,7 +1680,7 @@ document.addEventListener('submit', async e => {
       anexos.push({ nome: PANEXOS[i].name, link: await enviar({ modo: 'pedido', cliente: $('#pc').value }, PANEXOS[i]) });
     }
     $('#plinks').value.split('\n').map(x => x.trim()).filter(x => /^https:\/\//.test(x)).slice(0, 10).forEach(l => anexos.push({ nome: 'Link', link: l }));
-    const r = await api('euforia-painel-pedido', { cliente: $('#pc').value, tipo: t.id, modo: manual ? 'mao' : 'auto', ferramenta: manual ? $('#pf').value : '', prazo: $('#pz').value, link: $('#pl').value.trim(), texto: $('#po').value.trim() + extra + qtd, anexos });
+    const r = await api('euforia-painel-pedido', { cliente: $('#pc').value, tipo: t.id, modo: manual && !t.so ? 'mao' : 'auto', ferramenta: manual && !t.so ? $('#pf').value : '', prazo: $('#pz').value, link: t.so ? '' : $('#pl').value.trim(), texto, anexos });
     if (!r || !r.ok) throw new Error((r && r.motivo) || 'erro');
     toast('Pedido feito: ' + t.nome + ' → ' + r.quem + '. Card criado no Entregas' + (anexos.length ? ' com ' + anexos.length + ' anexo' + (anexos.length > 1 ? 's' : '') : '') + '.');
     e.target.reset(); delete $('#pf').dataset.mexeu; PANEXOS = []; listaAnexos(); $('#up').hidden = true; atualizarPedido();
@@ -1745,6 +1758,7 @@ function demoApi(path, b){
 }
 const DEMO_D = {"ok":true,"nome":"Ismael (exemplo)","papel":"revisor","hoje":"2026-10-26","hojeTexto":"segunda-feira, 26 de outubro",
  "pedidos":[
+  {"id":"p9","cod":451,"quando":"28/10 09:40","por":"Ismael (exemplo)","modo":"Automático (Máquina do Escritório)","clienteNome":"Dra. Helena (exemplo)","nome":"SITUAÇÃO COMPLETA","tipo":"Relatório","status":"Em revisão","escritorio":"Feito pela IA","prazo":"2026-10-29","resp":["Escritório"],"link":"https://drive.google.com/file/d/1AbCdEfGhIjKlMnOpQrStUvWxYz012345/view","quadro":"","quadroNome":"","falta":"","texto":"Situação completa do cliente Foco: ela reclamou dos shorts no grupo"},
   {"id":"f1","cod":433,"quando":"26/10 16:02","por":"Ismael (exemplo)","modo":"Automático (Máquina do Escritório)","clienteNome":"Paula Reis (exemplo)","nome":"THUMB","tipo":"Thumbnail","status":"A fazer","escritorio":"Falta informação","prazo":"2026-10-27","resp":["Ismael"],"link":"","quadro":"","quadroNome":"","falta":"só veio o link do vídeo. Mande o tema da thumb e qual foto da cliente usar.","texto":"Thumb do vídeo novo"},
   {"id":"p2","cod":440,"quando":"26/10 17:58","por":"Ismael (exemplo)","modo":"Automático (Máquina de Longos)","clienteNome":"Instituto Aurora (exemplo)","nome":"VÍDEO LONGO","tipo":"Vídeo longo","status":"A fazer","escritorio":"Foi para outra máquina","prazo":"2026-10-28","resp":["Escritório"],"link":"https://drive.google.com/","quadro":"https://www.notion.so/","quadroNome":"quadro de Vídeos Longos IA","falta":"","texto":"Corte da palestra de sábado no modelo Nova Acrópole"},
   {"id":"p3","cod":436,"quando":"26/10 15:10","por":"Ismael (exemplo)","modo":"Automático (Máquina do Escritório)","clienteNome":"Dra. Helena (exemplo)","nome":"APRESENTAÇÃO DE CALL","tipo":"Apresentação","status":"Em revisão","escritorio":"Feito pela IA","prazo":"2026-10-27","resp":["Escritório"],"link":"https://drive.google.com/","quadro":"","quadroNome":"","falta":"","texto":"Apresentação da call de quinta com os números do mês"},

@@ -41,13 +41,15 @@ const CAT = {
   call: ['Apresentação', 'APRESENTAÇÃO DE CALL', 'Máquina do Escritório'], relatorio: ['Relatório', 'RELATÓRIO', 'Máquina do Escritório'],
   recuperacao: ['Estratégia', 'ESTRATÉGIA DE RECUPERAÇÃO', 'Máquina do Escritório'], pautas: ['Roteiro', 'PAUTAS E ROTEIROS', 'Máquina do Escritório'],
   pagina: ['Página', 'PÁGINA', 'Máquina do Escritório'], funil: ['Funil', 'FUNIL', 'Máquina do Escritório'], insta: ['Insta-Blindado', 'INSTA-BLINDADO', 'Máquina do Escritório'],
-  copy: ['Copy', 'COPY', 'Máquina do Escritório'], outro: ['Outro', 'PEDIDO', 'Máquina do Escritório'] };
+  copy: ['Copy', 'COPY', 'Máquina do Escritório'], outro: ['Outro', 'PEDIDO', 'Máquina do Escritório'],
+  situacao: ['Relatório', 'SITUAÇÃO COMPLETA', 'Máquina do Escritório'], cronograma: ['Relatório', 'CRONOGRAMA', 'Máquina do Escritório'] };
 const c = CAT[p.tipo];
 const acessoOk = !!r.token && r.token === p.u && r.ativo === true && String(r.pin) === p.pin;
 const nome = txt(fp['Cliente']);
 const hoje = DateTime.now().setZone(Z);
 const teste = r.papel === 'teste';
-const manual = p.modo === 'mao' || !(c && c[2]);
+// Situação completa e cronograma são sempre da máquina (nunca à mão).
+const manual = !['situacao', 'cronograma'].includes(p.tipo) && (p.modo === 'mao' || !(c && c[2]));
 let erro = '';
 if (!acessoOk || r.papel === 'editor') erro = 'acesso';
 else if (!c) erro = 'tipo';
