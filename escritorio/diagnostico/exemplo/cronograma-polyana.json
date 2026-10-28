@@ -1,0 +1,446 @@
+{
+  "tipo": "cronograma",
+  "cliente": "Instituto Polyana Forlin",
+  "plano": "Assessoria EDL Semestral · contrato de 24/09/2026 (6 meses, até ~23/03/2027) · Faixa B",
+  "gerado_em": "28/10/2026 09h40",
+  "pedido_por": "Prévia do escritório (exemplo real)",
+  "semaforo": "amarelo",
+  "frase": "Fecha o contrato com 1 semana de folga, se ela gravar em 02/11 e o canal estrear em 09/11 com 2 vídeos.",
+  "numeros": [
+    {
+      "valor": "09/11",
+      "rotulo": "estreia sugerida"
+    },
+    {
+      "valor": "5 gravações",
+      "rotulo": "de 4 vídeos, sempre às segundas"
+    },
+    {
+      "valor": "19/03",
+      "rotulo": "última entrega do contrato"
+    },
+    {
+      "valor": "1 semana",
+      "rotulo": "de folga até o fim"
+    }
+  ],
+  "premissas": [
+    "Contrato (ficha do Notion): 20 longos, 60 shorts, 20 carrosséis, 20 roteiros, 20 thumbs, página, funil, copy, TikTok por 4 meses e calls de alinhamento. Fim em ~23/03/2027 (conferir no PDF do contrato).",
+    "Ritmo combinado na consultoria de 14/10: por semana 1 longo de 5 a 7 min com thumb, 3 shorts (seg, qua, sex, também no Reels) e 1 carrossel. TikTok 1 mês depois do canal no ar.",
+    "Ela grava só às segundas (sala do trabalho sem movimento). Gravação em lotes de 4 vídeos para criar estoque; a equipe recomenda no máximo 4 por dia por causa da energia.",
+    "Regra da casa: a peça fica pronta 3 dias antes de postar (D-3), para ela ver no grupo. Nada é postado nem prometido em domingo.",
+    "Dia do longo ainda não definido (pauta da call de hoje). Onde está \"semana\", trocar pelo dia combinado.",
+    "Datas para a cliente só depois de combinadas no grupo. Este cronograma é o plano interno."
+  ],
+  "contagem_sub": "Sem a estreia dupla, sobram 21 semanas para 20 vídeos: zero folga nos shorts (a última semana passa do fim do contrato).",
+  "contagem": [
+    {
+      "item": "Vídeos longos",
+      "contratado": "20",
+      "feito": "0",
+      "planejado": "20 (09/11 a 15/03)",
+      "sobra": "1 semana",
+      "status": "atencao"
+    },
+    {
+      "item": "Shorts",
+      "contratado": "60",
+      "feito": "0",
+      "planejado": "60 (até 19/03)",
+      "sobra": "1 semana",
+      "status": "atencao"
+    },
+    {
+      "item": "Carrosséis",
+      "contratado": "20",
+      "feito": "0",
+      "planejado": "20 (até 19/03)",
+      "sobra": "1 semana",
+      "status": "atencao"
+    },
+    {
+      "item": "Thumbs",
+      "contratado": "20",
+      "feito": "0",
+      "planejado": "20 (1 por longo)",
+      "sobra": "1 semana",
+      "status": "atencao"
+    },
+    {
+      "item": "Roteiros",
+      "contratado": "20",
+      "feito": "12 escritos",
+      "planejado": "20 (lote 2 até 21/12)",
+      "sobra": "—",
+      "status": "andamento"
+    },
+    {
+      "item": "TikTok (replicação)",
+      "contratado": "4 meses",
+      "feito": "—",
+      "planejado": "07/12 a 23/03 (≈ 3,5 meses)",
+      "sobra": "falta ≈ 2 semanas",
+      "status": "decidir"
+    }
+  ],
+  "marcos": [
+    {
+      "data": "28/10",
+      "o_que": "Call de lançamento do canal",
+      "quem": "Rômulo",
+      "status": "andamento"
+    },
+    {
+      "data": "30/10",
+      "o_que": "Direção decide: estreia dupla, início do TikTok, endereço da página",
+      "quem": "Direção",
+      "status": "decidir"
+    },
+    {
+      "data": "02/11",
+      "o_que": "1ª gravação: vídeos 00 a 03 (feriado, confirmar)",
+      "quem": "Cliente",
+      "status": "cliente"
+    },
+    {
+      "data": "06/11",
+      "o_que": "Peças da estreia prontas no grupo (D-3)",
+      "quem": "Ismael + máquinas",
+      "status": "nao_iniciado"
+    },
+    {
+      "data": "09/11",
+      "o_que": "Estreia do canal: vídeos 00 e 01",
+      "quem": "Ismael",
+      "status": "nao_iniciado"
+    },
+    {
+      "data": "até 16/11",
+      "o_que": "Página de vendas no ar (domínio dela ou lp.grupoeuforia.tech)",
+      "quem": "Escritório + Ismael",
+      "status": "cliente"
+    },
+    {
+      "data": "16/11",
+      "o_que": "2ª gravação: vídeos 04 a 07",
+      "quem": "Cliente",
+      "status": "nao_iniciado"
+    },
+    {
+      "data": "07/12",
+      "o_que": "TikTok começa (replicação dos shorts) e 1º relatório (só %)",
+      "quem": "Ismael + Escritório",
+      "status": "nao_iniciado"
+    },
+    {
+      "data": "07/12",
+      "o_que": "3ª gravação: vídeos 08 a 11 (estoque para as festas)",
+      "quem": "Cliente",
+      "status": "nao_iniciado"
+    },
+    {
+      "data": "21/12",
+      "o_que": "Roteiros 13 a 19 para aprovação",
+      "quem": "Escritório",
+      "status": "nao_iniciado"
+    },
+    {
+      "data": "11/01",
+      "o_que": "4ª gravação: vídeos 12 a 15",
+      "quem": "Cliente",
+      "status": "nao_iniciado"
+    },
+    {
+      "data": "01/02",
+      "o_que": "5ª gravação: vídeos 16 a 19 + conversa de renovação",
+      "quem": "Cliente, Direção",
+      "status": "nao_iniciado"
+    },
+    {
+      "data": "15/03",
+      "o_que": "Último longo do contrato",
+      "quem": "Ismael",
+      "status": "nao_iniciado"
+    },
+    {
+      "data": "~23/03",
+      "o_que": "Fim do contrato (conferir no PDF)",
+      "quem": "Direção",
+      "status": "nao_iniciado"
+    }
+  ],
+  "rotina_sub": "Exemplo com o longo na segunda. Se o dia combinado for outro, desloque tudo junto.",
+  "rotina": [
+    {
+      "quando": "Segunda (semana de gravação)",
+      "o_que": "Cliente grava o lote e sobe os brutos nas pastas 00, 01... do Drive",
+      "quem": "Cliente"
+    },
+    {
+      "quando": "Até 1 dia depois do bruto",
+      "o_que": "Pedidos às máquinas pelo painel: longo, shorts (3 por vídeo), carrossel e thumb",
+      "quem": "Ismael"
+    },
+    {
+      "quando": "Sexta (D-3)",
+      "o_que": "Peças da semana seguinte revisadas e mandadas no grupo para ela ver",
+      "quem": "Ismael"
+    },
+    {
+      "quando": "Segunda",
+      "o_que": "Longo no YouTube + 1º short",
+      "quem": "Ismael"
+    },
+    {
+      "quando": "Quarta e sexta",
+      "o_que": "2º e 3º shorts; carrossel da semana",
+      "quem": "Ismael"
+    },
+    {
+      "quando": "Seg, qua e sex",
+      "o_que": "Ela posta os mesmos shorts no Reels (confirmar quem posta)",
+      "quem": "Cliente"
+    },
+    {
+      "quando": "1ª semana do mês",
+      "o_que": "Relatório só em percentuais + call de alinhamento",
+      "quem": "Escritório, Rômulo"
+    }
+  ],
+  "semanas_sub": "Gravar = lote que a cliente grava naquela segunda. Vídeo longo = o que vai ao ar naquela semana.",
+  "semanas": [
+    {
+      "mes": "Novembro 2026",
+      "semana": "02/11 a 06/11",
+      "gravar": "Vídeos 00 a 03",
+      "longo": "— (gravação e edição)",
+      "shorts": "—",
+      "carrossel": "—",
+      "obs": "Gravação 00–03 seg 02/11 (feriado: confirmar). Peças da estreia prontas até sex 06/11 (D-3)."
+    },
+    {
+      "mes": "Novembro 2026",
+      "semana": "09/11 a 13/11",
+      "gravar": "",
+      "longo": "00 · Liderança começa em quem lidera + 01 · Solidão na liderança",
+      "shorts": "6 (seg/qua/sex)",
+      "carrossel": "2",
+      "obs": "Estreia com 2 vídeos (sugestão). Implementação de 45 dias vence 08/11."
+    },
+    {
+      "mes": "Novembro 2026",
+      "semana": "16/11 a 20/11",
+      "gravar": "Vídeos 04 a 07",
+      "longo": "02 · Líder nato existe?",
+      "shorts": "3 (seg/qua/sex)",
+      "carrossel": "1",
+      "obs": "Sem o caso real até aqui, gravar o 08 no lugar do 04."
+    },
+    {
+      "mes": "Novembro 2026",
+      "semana": "23/11 a 27/11",
+      "gravar": "",
+      "longo": "03 · 5 erros de comunicação",
+      "shorts": "3 (seg/qua/sex)",
+      "carrossel": "1",
+      "obs": "Pedir pautas do lote 2 (13 a 19). Sex 20/11 é feriado (Consciência Negra): short de sexta agendado antes."
+    },
+    {
+      "mes": "Novembro 2026",
+      "semana": "30/11 a 04/12",
+      "gravar": "",
+      "longo": "04 · Case real",
+      "shorts": "3 (seg/qua/sex)",
+      "carrossel": "1",
+      "obs": ""
+    },
+    {
+      "mes": "Dezembro 2026",
+      "semana": "07/12 a 11/12",
+      "gravar": "Vídeos 08 a 11",
+      "longo": "05 · O que é Business Partner",
+      "shorts": "3 (seg/qua/sex)",
+      "carrossel": "1",
+      "obs": "Começa a replicação no TikTok (1 mês após a estreia). 1º relatório (só %). Pautas lote 2 para aprovar."
+    },
+    {
+      "mes": "Dezembro 2026",
+      "semana": "14/12 a 18/12",
+      "gravar": "",
+      "longo": "06 · Pressão sem descontar no time",
+      "shorts": "3 (seg/qua/sex)",
+      "carrossel": "1",
+      "obs": "Call de alinhamento do mês (sugestão)."
+    },
+    {
+      "mes": "Dezembro 2026",
+      "semana": "21/12 a 25/12",
+      "gravar": "",
+      "longo": "07 · 3 hábitos de autoconhecimento",
+      "shorts": "3 (seg/qua/sex)",
+      "carrossel": "1",
+      "obs": "Roteiros 13 a 19 para aprovar. Sex 25/12 é Natal: agendar antes."
+    },
+    {
+      "mes": "Dezembro 2026",
+      "semana": "28/12 a 01/01",
+      "gravar": "",
+      "longo": "08 · O que 15 anos me ensinaram",
+      "shorts": "3 (seg/qua/sex)",
+      "carrossel": "1",
+      "obs": "Sex 01/01 é Ano Novo: agendar antes. Conferir férias da equipe."
+    },
+    {
+      "mes": "Janeiro 2027",
+      "semana": "04/01 a 08/01",
+      "gravar": "",
+      "longo": "09 · Comunicação afastando o time",
+      "shorts": "3 (seg/qua/sex)",
+      "carrossel": "1",
+      "obs": ""
+    },
+    {
+      "mes": "Janeiro 2027",
+      "semana": "11/01 a 15/01",
+      "gravar": "Vídeos 12 a 15",
+      "longo": "10 · Promover a líder: 3 perguntas",
+      "shorts": "3 (seg/qua/sex)",
+      "carrossel": "1",
+      "obs": "Call de alinhamento + relatório do mês."
+    },
+    {
+      "mes": "Janeiro 2027",
+      "semana": "18/01 a 22/01",
+      "gravar": "",
+      "longo": "11 · NR-1 e o papel do líder",
+      "shorts": "3 (seg/qua/sex)",
+      "carrossel": "1",
+      "obs": ""
+    },
+    {
+      "mes": "Janeiro 2027",
+      "semana": "25/01 a 29/01",
+      "gravar": "",
+      "longo": "12 · Mentoria funciona?",
+      "shorts": "3 (seg/qua/sex)",
+      "carrossel": "1",
+      "obs": ""
+    },
+    {
+      "mes": "Fevereiro 2027",
+      "semana": "01/02 a 05/02",
+      "gravar": "Vídeos 16 a 19",
+      "longo": "13 · lote 2 (pauta a criar)",
+      "shorts": "3 (seg/qua/sex)",
+      "carrossel": "1",
+      "obs": "Call de alinhamento + relatório. Conversar renovação (contrato acaba ~23/03)."
+    },
+    {
+      "mes": "Fevereiro 2027",
+      "semana": "08/02 a 12/02",
+      "gravar": "",
+      "longo": "14 · lote 2 (pauta a criar)",
+      "shorts": "3 (seg/qua/sex)",
+      "carrossel": "1",
+      "obs": "Carnaval (seg 08 e ter 09/02): sem gravação; deixar peças agendadas antes."
+    },
+    {
+      "mes": "Fevereiro 2027",
+      "semana": "15/02 a 19/02",
+      "gravar": "",
+      "longo": "15 · lote 2 (pauta a criar)",
+      "shorts": "3 (seg/qua/sex)",
+      "carrossel": "1",
+      "obs": ""
+    },
+    {
+      "mes": "Fevereiro 2027",
+      "semana": "22/02 a 26/02",
+      "gravar": "",
+      "longo": "16 · lote 2 (pauta a criar)",
+      "shorts": "3 (seg/qua/sex)",
+      "carrossel": "1",
+      "obs": ""
+    },
+    {
+      "mes": "Março 2027",
+      "semana": "01/03 a 05/03",
+      "gravar": "",
+      "longo": "17 · lote 2 (pauta a criar)",
+      "shorts": "3 (seg/qua/sex)",
+      "carrossel": "1",
+      "obs": ""
+    },
+    {
+      "mes": "Março 2027",
+      "semana": "08/03 a 12/03",
+      "gravar": "",
+      "longo": "18 · lote 2 (pauta a criar)",
+      "shorts": "3 (seg/qua/sex)",
+      "carrossel": "1",
+      "obs": "Última call de alinhamento e relatório do semestre."
+    },
+    {
+      "mes": "Março 2027",
+      "semana": "15/03 a 19/03",
+      "gravar": "",
+      "longo": "19 · lote 2 (pauta a criar)",
+      "shorts": "3 (seg/qua/sex)",
+      "carrossel": "1",
+      "obs": "Último longo do contrato (19)."
+    },
+    {
+      "mes": "Março 2027",
+      "semana": "22/03 a 26/03",
+      "gravar": "",
+      "longo": "folga",
+      "shorts": "folga",
+      "carrossel": "folga",
+      "obs": "Semana de folga: só entra o que atrasou. Contrato acaba ~23/03."
+    }
+  ],
+  "alertas": [
+    {
+      "nivel": "atr",
+      "titulo": "Tudo depende de 02/11",
+      "texto": "Se a gravação passar para 09/11, a estreia vai para 16/11 e a folga acaba: qualquer outra falha deixa vídeos para depois do fim do contrato."
+    },
+    {
+      "nivel": "ate",
+      "titulo": "Estreia com 2 vídeos é recomendação",
+      "texto": "É o que cria a semana de folga. Precisa do OK da Direção e da cliente."
+    },
+    {
+      "nivel": "ate",
+      "titulo": "Festas de fim de ano",
+      "texto": "A gravação de 07/12 cobre até 18/01. Natal (25/12) e Ano Novo (01/01) caem em sexta: deixar esses shorts agendados antes. Carnaval é 08 e 09/02: a 5ª gravação fica em 01/02."
+    },
+    {
+      "nivel": "ate",
+      "titulo": "TikTok de 4 meses não cabe",
+      "texto": "Começando 1 mês depois da estreia, sobram cerca de 3,5 meses. Direção decide se começa junto da estreia."
+    }
+  ],
+  "fontes": [
+    {
+      "fonte": "Notion · ficha Clientes",
+      "o_que": "Resumo do contrato e data de início."
+    },
+    {
+      "fonte": "Anotações do Gemini",
+      "o_que": "Consultoria audiovisual 14/10 (ritmo semanal, dias dos shorts, TikTok, gravar às segundas); venda 23/09 (45 dias de implementação)."
+    },
+    {
+      "fonte": "Notion · 🎬 Pautas e Roteiros",
+      "o_que": "Títulos dos roteiros 00 a 12."
+    },
+    {
+      "fonte": "WhatsApp do grupo",
+      "o_que": "Agenda da cliente (viagem 28–30/10, remarcações) até 28/10 09h34."
+    },
+    {
+      "fonte": "Calendário nacional",
+      "o_que": "Feriados de 02/11, 20/11, 25/12, 01/01 e Carnaval (08–09/02/2027)."
+    }
+  ]
+}
