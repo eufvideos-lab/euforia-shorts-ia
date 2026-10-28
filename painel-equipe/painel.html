@@ -355,7 +355,7 @@ const TIPOS = [
  {id:'outro',g:'Outro',nome:'Outro pedido',maq:'Máquina do Escritório',le:'O que você escrever aqui.',volta:'Depende do pedido.',link:'Link (opcional)',ex:'Descreva o que precisa.',mao:'Outro'}
 ];
 // Situação completa e cronograma só aparecem no Pedir ao escritório quando a máquina deles estiver no ar.
-const SITUACAO_NO_AR = false;
+const SITUACAO_NO_AR = true;
 if (!SITUACAO_NO_AR && !DEMO) for (let i = TIPOS.length - 1; i >= 0; i--) if (TIPOS[i].so) TIPOS.splice(i, 1);
 // Erros que a pessoa consegue resolver sozinha; o resto vira o aviso padrão.
 const MOTIVO = {acesso:'Seu acesso mudou. Entre de novo com o PIN.', permissao:'Esse card não está no seu nome.', etapa:'Esse card mudou de etapa. A fila foi atualizada.',
