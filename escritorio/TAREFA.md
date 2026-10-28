@@ -37,13 +37,20 @@ card tenha sido editado depois da última anotação da máquina (a equipe respo
 Cards para atender: os com "🏢 Escritório IA" **vazio**, **Na fila** ou **Fazendo (IA)**, mais os ignorados acima que
 foram editados depois. Um card **Na fila** é para fazer mesmo que o Obs tenha uma pergunta antiga da máquina:
 alguém o recolocou na fila de propósito. Leia o Obs inteiro e siga a instrução mais recente.
-Ordem:
-1. Pedidos do painel (Obs começa com "[Painel", título termina em "(painel)"), do mais antigo para o mais novo.
-2. Apresentações de call da agenda (título termina em "APRESENTAÇÃO DE CALL (agenda)"), a call mais próxima primeiro.
-3. Prioridade Urgente.
-4. Cliente com 🔴 atenção redobrada.
-5. Prazo mais antigo.
+Ordem (desde 28/10, pedido do Henrique: **sempre o que vence primeiro**):
+1. Atrasados e os que vencem hoje (Prazo ≤ hoje), do prazo mais antigo para o mais novo. Apresentação de call da
+   agenda conta pela data da call.
+2. Pedidos do painel (Obs começa com "[Painel", título termina em "(painel)"), do prazo mais próximo.
+3. Apresentações de call da agenda (título termina em "APRESENTAÇÃO DE CALL (agenda)"), a call mais próxima primeiro.
+4. Prioridade Urgente, depois cliente com 🔴 atenção redobrada.
+5. O resto pelo prazo mais próximo.
 **Atenda 3 cards por rodada; se a rodada ainda estiver abaixo de 30 minutos e houver fila, siga pegando (no máximo 6).** Sem nada a fazer, encerre sem avisar ninguém.
+Card que você só classificou (Direção, Falta do cliente, outra máquina, equipe) **não conta** nos 3: siga para o
+próximo até entregar. **Nunca pule um card por ser grande**: comece, entregue a parte que der, deixe "Fazendo (IA)" com
+a linha `[Escritório dd/MM HH:mm] Feito: <o quê>. Falta: <o quê>.` no topo do Obs e continue na próxima rodada.
+
+Nome das calls (vale para Obs, avisos e material): **Call 1 Onboarding + Oferta**, **Call de Estratégia**,
+**Call Audiovisual**, Call de Lançamento. Nunca "Call 2", "Call 3" nem "Call 1" sozinha.
 
 ## 2. Classificar cada card (antes de produzir)
 | Caso | O que fazer |
@@ -54,10 +61,14 @@ Ordem:
 | Depende de algo que o cliente não mandou (fotos, acesso, dados, aprovação), não está no Drive (passo 2a) e não dá para fazer versão com "a confirmar" | **Falta do cliente.** Obs: o que falta, desde quando, onde foi pedido. |
 | Pedido vago (só título) | Leia ficha, grupo e calls e faça o passo 2a. Se ainda não der para saber o que entregar: **Falta informação** com a dúvida em 1 linha. |
 | Já foi feito em outro lugar (link no grupo, no 🎬, na ficha, numa apresentação) | Ponha o link, Status Em revisão (ou Aprovado se já foi usado com o cliente), "Feito pela IA". |
+| **Setup**: card "CLIENTE \| SETUP (painel)" ou os cards que a Máquina de Setup cria: COPY DA PÁGINA, FUNIL DE VENDAS, ESTRATÉGIA + POSICIONAMENTO | **Produzir o setup** (passo 3, "Setup"). Ao pegar um deles, faça na mesma rodada os três do mesmo cliente que estiverem na fila (vale a rodada inteira). **Nunca espere outra call**: a base é a Call 1 Onboarding + Oferta. Card com só um deles (ex.: "COPY (painel)") = faça só aquele. |
+| Pacote grande de encerramento ou de muitas peças (título ou Obs com "PACOTE", "ENCERRAMENTO", ou várias páginas/peças de uma vez para fechar contrato) | **À mão (Flau).** O Henrique faz pelo chat. Não produza; uma linha no #ia-status com o card. |
+| SEO, otimização ou melhorias no canal do YouTube (títulos, descrições, tags, playlists, acervo) | **É da equipe.** Responsável = Ismael (`3ea98c0cdde0812d9cb4c41ce70df4ae`), "🏢 Escritório IA" vazio, linha no topo do Obs `[Escritório dd/MM HH:mm] SEO e otimização de canal são com a equipe.` e aviso no #dia-a-dia. |
+| APRESENTAÇÃO DA CALL DE CONSULTORIA AUDIOVISUAL (card do setup) | Só quando a Call Audiovisual estiver na agenda "Assessoria EDL" nas próximas 48 h; antes disso, **pule sem anotar nada**. Se já existir o card "(agenda)" dessa call, faça nele e ponha o mesmo link neste. |
 | Identidade do setup: ID DO CANAL, ANTES E DEPOIS DO CANAL, MODELO DE CARROSSEL, CALL DE CONSULTORIA AUDIOVISUAL / CALL DE APROVAÇÃO | **Produzir** seguindo `escritorio/identidade/IDENTIDADE.md` (kit em PNG, antes e depois, apresentação da call). |
 | Card "CLIENTE \| APRESENTAÇÃO DE CALL (agenda)" (criado pelo fluxo da agenda, Obs com "Evento da agenda: <id>") | **Produzir** como **Apresentação de call da agenda** (passo 3). |
 | Card "CLIENTE \| SITUAÇÃO COMPLETA (painel)" ou "CLIENTE \| CRONOGRAMA (painel)" | **Produzir** seguindo `escritorio/diagnostico/DIAGNOSTICO.md` (PDF pelo gerador `escritorio/diagnostico/gerar.py`). Não é "contrato/financeiro": é leitura do contrato para planejar; nunca escreva valores. Um card desses vale uma rodada inteira: faça só ele na rodada. |
-| O resto (relatório, apresentação de call, página de vendas, copy, funil, roteiros, pautas, SEO, bio, guia, estratégia, posicionamento, conferências) | **Produzir** (passo 3). |
+| O resto (relatório, apresentação de call, página de vendas, roteiros, pautas, bio, guia, conferências) | **Produzir** (passo 3). |
 
 ## 2a. Pedido com pouca informação: buscar antes de travar
 Desde 27/10 o painel manda na Obs as linhas "Tema da thumb: ...", "Foto ou pasta: ..." e "Vídeo ou tema: ...":
@@ -111,12 +122,16 @@ Se ainda faltar o essencial (nenhuma foto do cliente em lugar nenhum, tema impos
      Rômulo e o Ismael na aba Próximas calls):
      1. Leia a Obs (tipo da call, data, Meet, instruções), a ficha, o contrato, o grupo dos últimos 15–30 dias, a
         última call (Gemini) e a apresentação anterior desse cliente (siga o mesmo padrão).
-     2. Slides HTML num arquivo único, nas cores do cliente: abertura, entregas do mês (o que foi feito e o que falta,
-        conferido no Entregas), resultados do canal **só em percentual**, próximos passos, o slide de feedback
-        "O que vocês estão achando do Grupo Euforia até agora?" e o agradecimento. Navegação por setas/clique;
-        notas do apresentador escondidas (aparecem só ao apertar N), porque a tela é compartilhada com o cliente.
-        Coloque `<meta name="robots" content="noindex, nofollow">` no `<head>`. Nada de valores, nada inventado,
-        nunca o nome do Henrique.
+     2. **Nunca escreva o HTML à mão.** Escreva só o conteúdo em `pedidos/<id>/conteudo.json` e gere os slides com
+        o modelo fixo: `python3 escritorio/apresentacao/gerar.py pedidos/<id>/conteudo.json pedidos/<id>/apresentacao.html
+        --prints pedidos/<id>/prints` (formato e tipos de slide em `escritorio/apresentacao/LEIAME.md`). Roteiro:
+        capa (com recorte da foto do cliente, se houver), agenda, onde estamos/entregas do mês (conferido no
+        Entregas), um divisor por bloco da call, slides do tipo da call, resultados do canal **só em percentual**
+        (se houver dado), próximos passos, `feedback` e `obrigado`. Um assunto por slide, frases curtas: o que é
+        detalhe, pendência ou "a confirmar" vai nas `notas`, nunca no slide (o gerador recusa). Imagens: prévias de
+        identidade e thumbs do Drive do cliente (`PASTAS.md`), se existirem. Nada de valores, nada inventado, nunca
+        o nome do Henrique. Olhe os PNGs de `prints/` antes de publicar; se algo ficar cortado ou vazio, ajuste o
+        conteúdo e gere de novo.
      3. Slug: `apresentacao-<cliente>-<aaaammdd>-<8 letras minúsculas aleatórias>`, só letras, números e hífen,
         no máximo 60 caracteres (encurte o nome do cliente se precisar; aaaammdd = dia da call).
      4. Publique no n8n "Sites | Publicar LP" (`KyPEBbzbdL8pOklC`) com `test_workflow` e pinData no nó
@@ -131,6 +146,18 @@ Se ainda faltar o essencial (nenhuma foto do cliente em lugar nenhum, tema impos
      Nunca link do Claude para cliente.
    - **Situação completa / Cronograma do cliente** (cards "… \| SITUAÇÃO COMPLETA (painel)" e "… \| CRONOGRAMA (painel)"):
      siga `escritorio/diagnostico/DIAGNOSTICO.md` do começo ao fim (coleta, análise, JSON, PDF, Drive, card).
+   - **Setup (estratégia + copy/página + funil)**, como o Henrique faz pelo chat:
+     1. Base: Anotações do Gemini da Call 1 Onboarding + Oferta (e da call de venda "Framework de Crescimento"),
+        formulário de onboarding, dossiê, ficha (contrato e oferta) e grupo. Não espere a Call de Estratégia: ela
+        serve para **apresentar** o setup ao cliente.
+     2. **Estratégia + posicionamento**: público, promessa, diferencial, linha editorial, oferta e funil em resumo,
+        no corpo do card do setup (seção da entrega).
+     3. **Copy da página** = a **página de vendas pronta** (formato "Página de vendas" abaixo), não só o texto.
+     4. **Funil**: etapas (conteúdo → captura → página → oferta → pós-venda), com a isca, as mensagens e os links de
+        cada etapa, no corpo do card.
+     5. O que não estiver nas fontes vira "[a confirmar: ...]" e vai numa lista "Para confirmar na Call de
+        Estratégia" no Obs. Nunca invente preço, prazo, depoimento ou número.
+     6. Os três cards do cliente: Em revisão, Feito pela IA, cada um com o seu link; aviso único no #dia-a-dia.
    - **Página de vendas**: HTML único (imagens em base64), na paleta e fontes do cliente; sobe o .html no Drive do
      cliente (pasta PÁGINA) + prints desktop/celular. Dados que faltam viram "[a confirmar: ...]" bem visíveis.
    - **Arte** (capa de destaque, post fixado, thumb avulsa): PNG pelo mesmo esquema HTML → PNG do `carrossel/`.
