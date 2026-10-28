@@ -22,6 +22,10 @@ html,body{height:100%;background:#050506;overflow:hidden;font-family:Inter,Arial
 .slide th{font-weight:700}
 img[data-video]{cursor:pointer}
 .playwrap{position:relative;display:inline-block;flex:none}
+.playwrap.playing .playbtn{opacity:0}
+.playwrap .playbtn{transition:opacity .2s}
+.vbar{position:absolute;left:0;right:0;bottom:0;height:14px;cursor:pointer;background:linear-gradient(transparent,rgba(0,0,0,.35))}
+.vfill{position:absolute;left:0;bottom:0;height:5px;width:0;background:#FF5A00;pointer-events:none}
 .playbtn{position:absolute;left:50%;top:50%;width:132px;height:132px;margin:-66px 0 0 -66px;border-radius:50%;background:rgba(255,90,0,.92);box-shadow:0 18px 48px rgba(0,0,0,.45);pointer-events:none;display:flex;align-items:center;justify-content:center}
 .playbtn:after{content:"";margin-left:12px;border-style:solid;border-width:28px 0 28px 46px;border-color:transparent transparent transparent #fff}
 #ui{position:fixed;right:20px;top:18px;display:flex;align-items:center;gap:4px;z-index:10;transition:opacity .4s}
@@ -69,19 +73,32 @@ function go(i){
   img.parentNode.insertBefore(wrap,img); wrap.appendChild(img);
   if(img.style.position==='absolute'){wrap.style.position='absolute';wrap.style.left=img.style.left||0;wrap.style.top=img.style.top||0;wrap.style.width=img.style.width;wrap.style.height=img.style.height;}
   var b=document.createElement('span'); b.className='playbtn'; wrap.appendChild(b);
-  wrap.addEventListener('click',function(){
-    var v=document.createElement('video');
-    var src=img.getAttribute('data-video');
-    var alts=[src];
-    var m=src.match(/cdn\.jsdelivr\.net\/gh\/([^\/]+)\/([^@]+)@([^\/]+)\/(.*)$/);
-    if(m) alts.push('https://raw.githubusercontent.com/'+m[1]+'/'+m[2]+'/'+m[3]+'/'+m[4]);
-    alts.forEach(function(u){var so=document.createElement('source');so.src=u;so.type='video/mp4';v.appendChild(so);});
-    v.controls=true; v.autoplay=true; v.playsInline=true;
-    v.setAttribute('style',img.getAttribute('style')); v.poster=img.src;
-    if(!/object-fit/.test(v.getAttribute('style'))) v.style.objectFit='cover';
-    v.style.background='#000';
-    wrap.parentNode.replaceChild(v,wrap); v.play();
-  },{once:true});
+  var v=null;
+  function sync(){wrap.classList.toggle('playing',!!v&&!v.paused);}
+  wrap.addEventListener('click',function(e){
+    if(e.target.className==='vbar'||e.target.className==='vfill') return;
+    if(!v){
+      v=document.createElement('video');
+      var src=img.getAttribute('data-video');
+      var alts=[src];
+      var m=src.match(/cdn\.jsdelivr\.net\/gh\/([^\/]+)\/([^@]+)@([^\/]+)\/(.*)$/);
+      if(m) alts.push('https://raw.githubusercontent.com/'+m[1]+'/'+m[2]+'/'+m[3]+'/'+m[4]);
+      alts.forEach(function(u){var so=document.createElement('source');so.src=u;so.type='video/mp4';v.appendChild(so);});
+      v.playsInline=true; v.preload='auto';
+      v.setAttribute('style',img.getAttribute('style')); v.poster=img.src;
+      v.style.position='static'; v.style.display='block';
+      if(!/object-fit/.test(v.getAttribute('style'))) v.style.objectFit='cover';
+      v.style.background='#000';
+      wrap.replaceChild(v,img);
+      var bar=document.createElement('span'); bar.className='vbar';
+      var fill=document.createElement('span'); fill.className='vfill'; bar.appendChild(fill); wrap.appendChild(bar);
+      bar.addEventListener('click',function(ev){ev.stopPropagation();var r=bar.getBoundingClientRect();if(v.duration)v.currentTime=v.duration*(ev.clientX-r.left)/r.width;});
+      v.addEventListener('timeupdate',function(){if(v.duration)fill.style.width=(v.currentTime/v.duration*100)+'%';});
+      ['play','pause','ended'].forEach(function(ev){v.addEventListener(ev,sync);});
+      v.play(); return;
+    }
+    if(v.paused) v.play(); else v.pause();
+  });
 });
 document.getElementById('impl').onclick=function(){for(var i=0;i<n;i++){if(slides[i].id==='implementacao'){go(i);return;}}};
 document.getElementById('prev').onclick=function(){go(cur-1)};
@@ -90,7 +107,7 @@ document.getElementById('fs').onclick=function(){
   if(document.fullscreenElement) document.exitFullscreen(); else document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen();
 };
 addEventListener('keydown',function(e){
-  if(e.target.tagName==='VIDEO'&&(e.key===' '||e.key==='ArrowLeft'||e.key==='ArrowRight')) return;
+  if(e.key===' '||e.key==='k'||e.key==='K'){var vv=slides[cur].querySelector('video');if(vv){e.preventDefault();if(vv.paused)vv.play();else vv.pause();return;}}
   if(['ArrowRight','PageDown',' ','ArrowDown'].indexOf(e.key)>=0){e.preventDefault();go(cur+1);}
   else if(['ArrowLeft','PageUp','ArrowUp'].indexOf(e.key)>=0){e.preventDefault();go(cur-1);}
   else if(e.key==='Home') go(0);
