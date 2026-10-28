@@ -24,11 +24,12 @@ img[data-video]{cursor:pointer}
 .playwrap{position:relative;display:inline-block;flex:none}
 .playbtn{position:absolute;left:50%;top:50%;width:132px;height:132px;margin:-66px 0 0 -66px;border-radius:50%;background:rgba(255,90,0,.92);box-shadow:0 18px 48px rgba(0,0,0,.45);pointer-events:none;display:flex;align-items:center;justify-content:center}
 .playbtn:after{content:"";margin-left:12px;border-style:solid;border-width:28px 0 28px 46px;border-color:transparent transparent transparent #fff}
-#ui{position:fixed;right:18px;top:16px;display:flex;align-items:center;gap:8px;z-index:10;transition:opacity .3s}
+#ui{position:fixed;right:20px;top:18px;display:flex;align-items:center;gap:4px;z-index:10;transition:opacity .4s}
 #ui.hide{opacity:0}
-#ui button{width:44px;height:44px;border-radius:12px;border:1px solid rgba(255,255,255,.14);background:rgba(20,20,22,.82);color:#F4F2EE;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center}
-#ui button.jump{width:auto;padding:0 16px;font:600 14px Inter,Arial,sans-serif;letter-spacing:.3px}
-#ui button:hover{background:#FF5A00;border-color:#FF5A00}
+#ui button{width:28px;height:28px;border:0;border-radius:8px;background:transparent;color:rgba(244,242,238,.55);font-size:16px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:color .2s,background .2s}
+#ui button.jump{width:auto;height:28px;padding:0 10px;margin-right:6px;border:1px solid rgba(255,255,255,.12);border-radius:999px;font:500 11px Inter,Arial,sans-serif;letter-spacing:1.6px;text-transform:uppercase}
+#ui button:hover{color:#FF5A00;background:rgba(255,255,255,.04)}
+#ui button.jump:hover{border-color:#FF5A00}
 #bar{position:fixed;left:0;bottom:0;height:3px;background:linear-gradient(90deg,#FF7A1A,#FF4D00);z-index:10;transition:width .3s}
 </style>
 </head>
@@ -38,7 +39,7 @@ img[data-video]{cursor:pointer}
 </div>
 <div id="bar"></div>
 <div id="ui">
-<button id="impl" class="jump" aria-label="Ir para a Implementação">Implementação &#8594;</button>
+<button id="impl" class="jump" aria-label="Ir para a Implementação">Implementação</button>
 <button id="prev" aria-label="Slide anterior">&#8249;</button>
 <button id="next" aria-label="Próximo slide">&#8250;</button>
 <button id="fs" aria-label="Tela cheia">&#x26F6;</button>
