@@ -26,8 +26,8 @@ carrosséis de Instagram e entrega no Drive. Tudo em português do Brasil.
 
 ## 1. Ver se há trabalho
 Consulte o quadro: Status "Criar" ou "Ajustar". Se não houver, encerre. Use só o modo view (a visão acima), nunca SQL: a cota do Notion
-é dividida com todas as máquinas. Atenda 1 pedido por rodada, o mais antigo; se ele terminar com a rodada abaixo de
-30 minutos e houver fila, pegue o próximo (no máximo 3 por rodada).
+é dividida com todas as máquinas. Atenda 2 pedidos por rodada, os mais antigos; enquanto a rodada estiver abaixo de
+45 minutos e houver fila, pegue o próximo (no máximo 5 por rodada).
 
 ## 2. Preparar a máquina
 ```
