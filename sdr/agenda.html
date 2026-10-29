@@ -132,6 +132,8 @@ textarea{min-height:70px;resize:vertical}
 .plac.quadro th,.plac.quadro td{padding:9px 8px}
 .plac.quadro th.gr{color:var(--or);border-bottom:1px solid var(--line)}
 .plac.quadro .sep{border-left:1px solid var(--line)}
+.plac.quadro td.rg{color:#c9a7ff;font-weight:700}
+.plac.quadro tr.rgl td{color:#c9a7ff;font-weight:600;font-size:13px}
 .plac.quadro td.ag{font-weight:700;font-size:16px}
 .plac.quadro td.dd{white-space:nowrap}.plac.quadro td.dd small{display:inline;margin-left:6px}
 .plac.quadro tr.hj td{background:rgba(255,90,0,.07)}
@@ -481,32 +483,36 @@ function carregarPlacar(){
 }
 function mostrarPlacar(r){
   // igual ao quadro branco: uma linha por dia; ciclos (JH, JA, D), agendamentos (JH, JA, D, E) e a fonte/# dos agendamentos
-  var ini=new Date(plIni+'T00:00:00Z'), hoje=isoDia(recife(Date.now())), P=r.placar||{}, C=ciclosSem||{}, A=r.ags||[], dias=[];
+  var ini=new Date(plIni+'T00:00:00Z'), hoje=isoDia(recife(Date.now())), P=r.placar||{}, RG=r.reag||{}, FC=r.fech||{}, C=ciclosSem||{}, A=r.ags||[], dias=[];
   var nd=5;A.forEach(function(a){var k=Math.round((new Date(a.dia+'T00:00:00Z')-ini)/DIAMS);if(k>=5)nd=Math.max(nd,k+1);});
   Object.keys(C).forEach(function(q){Object.keys(C[q]).forEach(function(d){var k=Math.round((new Date(d+'T00:00:00Z')-ini)/DIAMS);if(k>=5&&k<7)nd=Math.max(nd,k+1);});});
   for(var i=0;i<nd;i++)dias.push(isoDia(new Date(ini.getTime()+i*DIAMS)));
   $('pTit').textContent=ini.toLocaleDateString('pt-BR',{day:'2-digit',month:'short',timeZone:'UTC'})+' a '+new Date(ini.getTime()+(nd-1)*DIAMS).toLocaleDateString('pt-BR',{day:'2-digit',month:'short',year:'numeric',timeZone:'UTC'});
   var CIC=[['Jhonatas','JH'],['Jailton','JA'],['Diogo','D']], AG=CIC.concat([['Érica','E']]);
   var outros=Object.keys(P).filter(function(q){return !AG.some(function(x){return x[0]===q})});
+  var rgd=function(M,d){return Object.keys(M).reduce(function(s,q){return s+((M[q]||{})[d]||0)},0)}, temF=Object.keys(FC).length>0;
+  var nomes=function(d,t){return A.filter(function(a){return a.dia===d&&a.tipo===t}).map(function(a){return a.nome+' ('+a.quem+')'}).join('\n')};
   var ag=function(q,d){return (P[q]||{})[d]||0}, ci=function(q,d){return (C[q]||{})[d]};
   var soma=function(f,q){return dias.reduce(function(s,d){return s+(f(q,d)||0)},0)};
   var cel=function(n,cls){return '<td class="'+(cls||'')+(n?'':' z')+'">'+(n==null?'–':n)+'</td>'};
   var curto=function(a){var x=a.hash||'';if(/^Google Maps · /.test(x))return '📍 '+x.replace(/^Google Maps · /,'').replace(/ em .*$/,'');if(x)return x.replace(/ \(Instagram\)$/,'');return a.fonte||'sem #';};
-  var th='<tr><th rowspan="2">Dia</th><th colspan="3" class="gr">Ciclos</th><th colspan="'+(4+(outros.length?1:0))+'" class="gr">Agendamentos</th><th rowspan="2" class="fx">Fonte / #</th></tr><tr>'
+  var th='<tr><th rowspan="2">Dia</th><th colspan="3" class="gr">Ciclos</th><th colspan="'+(4+(outros.length?1:0))+'" class="gr">Agendamentos</th><th rowspan="2" class="sep" title="Mesmo lead que já tinha call marcada antes">Reag.</th>'+(temF?'<th rowspan="2">2ª call</th>':'')+'<th rowspan="2" class="fx">Fonte / # (novos)</th></tr><tr>'
     +CIC.map(function(x){return '<th title="'+x[0]+'">'+x[1]+'</th>'}).join('')+AG.map(function(x){return '<th title="'+x[0]+'">'+x[1]+'</th>'}).join('')+(outros.length?'<th title="'+esc(outros.join(', '))+'">Outros</th>':'')+'</tr>';
   var corpo=dias.map(function(d){var x=new Date(d+'T00:00:00Z'),hj=d===hoje?'hj':'';
-    var g={};A.filter(function(a){return a.dia===d}).forEach(function(a){var k=curto(a);(g[k]=g[k]||[]).push(a.nome+' ('+a.quem+')');});
+    var g={};A.filter(function(a){return a.dia===d&&a.tipo==='novo'}).forEach(function(a){var k=curto(a);(g[k]=g[k]||[]).push(a.nome+' ('+a.quem+')');});
     var fx=Object.keys(g).sort(function(a,b){return g[b].length-g[a].length}).map(function(k){return '<span class="fxc" title="'+esc(g[k].join('\n'))+'">'+esc(k)+(g[k].length>1?' <b>×'+g[k].length+'</b>':'')+'</span>'}).join('');
     return '<tr class="'+hj+'"><td class="dd">'+esc(cap(x.toLocaleDateString('pt-BR',{weekday:'short',timeZone:'UTC'}).replace('.','')))+'<small>'+x.getUTCDate()+'/'+(x.getUTCMonth()+1)+'</small></td>'
       +CIC.map(function(q,j){return cel(ci(q[0],d),j===0?'sep':'')}).join('')
       +AG.map(function(q,j){return cel(ag(q[0],d),j===0?'sep ag':'ag')}).join('')+(outros.length?cel(outros.reduce(function(s,q){return s+ag(q,d)},0),'ag'):'')
-      +'<td class="fx sep">'+(fx||'<span class="z">—</span>')+'</td></tr>'}).join('');
+      +'<td class="sep rg'+(rgd(RG,d)?'':' z')+'" title="'+esc(nomes(d,'reag'))+'">'+rgd(RG,d)+'</td>'+(temF?'<td class="'+(rgd(FC,d)?'':'z')+'" title="'+esc(nomes(d,'fech'))+'">'+rgd(FC,d)+'</td>':'')+'<td class="fx sep">'+(fx||'<span class="z">—</span>')+'</td></tr>'}).join('');
   var tc=CIC.map(function(q){return soma(ci,q[0])}), ta=AG.map(function(q){return soma(ag,q[0])});
-  var foot='<tfoot><tr><td>Semana</td>'+tc.map(function(n,j){return '<td class="'+(j===0?'sep':'')+'">'+n+'</td>'}).join('')+ta.map(function(n,j){return '<td class="t'+(j===0?' sep':'')+'">'+n+'</td>'}).join('')+(outros.length?'<td class="t">'+outros.reduce(function(s,q){return s+soma(ag,q)},0)+'</td>':'')+'<td class="sep">'+(r.total||0)+' no total</td></tr></tfoot>';
+  var foot='<tfoot><tr><td>Semana</td>'+tc.map(function(n,j){return '<td class="'+(j===0?'sep':'')+'">'+n+'</td>'}).join('')+ta.map(function(n,j){return '<td class="t'+(j===0?' sep':'')+'">'+n+'</td>'}).join('')+(outros.length?'<td class="t">'+outros.reduce(function(s,q){return s+soma(ag,q)},0)+'</td>':'')+'<td class="sep rg">'+dias.reduce(function(s,d){return s+rgd(RG,d)},0)+'</td>'+(temF?'<td>'+dias.reduce(function(s,d){return s+rgd(FC,d)},0)+'</td>':'')+'<td class="sep">'+(r.total||0)+' agendamentos novos</td></tr>'
+    +'<tr class="rgl"><td>Reagend.</td><td class="sep" colspan="3"></td>'+AG.map(function(q,j){var n=soma(function(x,d){return (RG[x]||{})[d]},q[0]);return '<td class="'+(j===0?'sep':'')+(n?'':' z')+'">'+n+'</td>'}).join('')+(outros.length?'<td class="z">0</td>':'')+'<td class="sep" colspan="'+(temF?3:2)+'"></td></tr></tfoot>';
   // agendamentos por ciclo de cada um (só de quem lançou ciclos)
   var conv=CIC.map(function(q,j){var c=tc[j],a=ta[j];return '<div class="kpi"><small>'+q[0]+'</small><b>'+a+' agend.</b><span>'+(c?c+' ciclos · '+(a/c).toLocaleString('pt-BR',{maximumFractionDigits:2})+' por ciclo · '+(a?(c/a).toLocaleString('pt-BR',{maximumFractionDigits:1})+' ciclos por agend.':'nenhum agend.'):'ciclos não lançados')+'</span></div>'}).join('')
     +'<div class="kpi"><small>Érica (IA)</small><b>'+ta[3]+' agend.</b><span>disparo automático</span></div>';
-  $('placar').innerHTML='<div class="kpis">'+conv+'</div><div class="tblw"><table class="plac quadro"><thead>'+th+'</thead><tbody>'+corpo+'</tbody>'+foot+'</table></div><p class="hint">JH = Jhonatas · JA = Jailton · D = Diogo · E = Érica (IA). Passe o dedo/mouse na fonte para ver os leads.</p>';
+  var trg=dias.reduce(function(s,d){return s+rgd(RG,d)},0);
+  $('placar').innerHTML='<div class="kpis">'+conv+'</div><div class="tblw"><table class="plac quadro"><thead>'+th+'</thead><tbody>'+corpo+'</tbody>'+foot+'</table></div><p class="hint">JH = Jhonatas · JA = Jailton · D = Diogo · E = Érica (IA). Agendamentos contam só leads novos; reagendamento é quando o mesmo lead já tinha uma call marcada antes (fica na coluna e na linha Reagend.). Passe o dedo/mouse nos números de reagendamento e na fonte para ver os leads.</p>';
 }
 function preencheCiclo(){var s=$('cSdr').value,d=$('cDia').value,c=((ciclosSem||{})[s]||{})[d];$('cN').value=c==null?'':c;}
 function prepCiclos(){
