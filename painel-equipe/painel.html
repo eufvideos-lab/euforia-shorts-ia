@@ -290,6 +290,17 @@ td .sub{font-size:13px}
 .pessoas label{flex-direction:row;align-items:center;gap:6px;font-weight:500;border:1px solid var(--line);border-radius:99px;padding:5px 12px;cursor:pointer}
 .pessoas label:has(input:checked){background:var(--accent-soft);border-color:var(--accent)}
 .pessoas input{accent-color:var(--accent)}
+.ev-sem{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.ev-sem li{display:grid;grid-template-columns:120px minmax(0,1fr) auto;gap:10px;align-items:center;font-size:13px}
+.ev-sem .bar span{background:var(--accent)}
+.ev-dia{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+.ev-dia li{border:1px solid var(--line);border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:6px}
+.ev-dia .t{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between}
+.ev-dia .t b{font-size:15px}
+.ev-dia .meta{display:flex;flex-wrap:wrap;gap:6px}
+.ev-dia + h2 .count,.ev-dia ~ h2 .count,#main h2 .count{font-family:var(--f-mono);font-size:12px;color:var(--muted);font-weight:500}
+.ev-dia .val{font-family:var(--f-mono);font-variant-numeric:tabular-nums;font-weight:700;color:var(--ok)}
+@media (max-width:860px){.ev-sem li{grid-template-columns:90px minmax(0,1fr);}.ev-sem li > span:last-child{grid-column:1 / -1}}
 @media (max-width:860px){.stats.six{grid-template-columns:1fr 1fr}.msgs li{grid-template-columns:minmax(0,1fr);gap:4px}}
 </style>
 </head>
@@ -389,6 +400,7 @@ let MP = null, MPQ = '', CC = null;
 let CE = null, CEQ = '', CEF = '';
 let FO = null, FOQ = '', FOF = '';
 let CL = null, CLQ = '', CLF = '', CLO = 'atencao';
+let EV = null, EVJ = '', EVP = '30', EVT = '';
 let DD = null, MM = null, PF = 'abertos', PQ = '', TQ = '', TS = '', TP = '', TT = '', MQ = '', MW = '';
 try { PIN = localStorage.getItem(KEY) || ''; view = localStorage.getItem('painel-view') || ''; } catch (e) {}
 if (DEMO) PIN = '0000';
@@ -571,6 +583,43 @@ const VIEWS = {
         <label for="clo">Ordenar<select id="clo">${[['atencao', 'Quem precisa de atenção primeiro'], ['nome', 'Nome'], ['fim', 'Contrato acabando primeiro'], ['atrasados', 'Mais atrasados']].map(([v, t]) => `<option value="${v}" ${v === CLO ? 'selected' : ''}>${t}</option>`).join('')}</select></label>
       </div>
       <div id="clres">${tabelaClientes()}</div>`;
+    } },
+  evolucao: { nome: 'Evolução', pode: diretor,
+    html(){
+      const topo = `<div class="head"><div><p class="eyebrow">Diretoria · diário</p><h1>Evolução</h1></div><p class="sub">O que foi construído, resolvido e decidido em cada dia, nos 3 projetos. A rotina das 22h lança o dia.</p></div>`;
+      if (!EV) { carregarEvolucao(); return topo + '<p class="sub">Carregando o diário…</p>'; }
+      if (EV.erro) return topo + '<p class="empty">Não consegui ler o diário agora. Atualize a página em alguns minutos.</p>';
+      if (Date.now() - (EV.em || 0) > 600000) carregarEvolucao();
+      const h = dia(D.hoje), desde = EVP ? new Date(h.getTime() - (Number(EVP) - 1) * 864e5) : null;
+      const L = EV.itens.filter(i => (!desde || dia(i.dia) >= desde) && (!EVJ || i.projeto === EVJ) && (!EVT || i.tipo === EVT));
+      const dias = [...new Set(L.map(i => i.dia))];
+      const conta = t => L.filter(i => i.tipo === t).length;
+      const soma = t => L.filter(i => i.tipo === t && typeof i.valor === 'number').reduce((a, i) => a + i.valor, 0);
+      const feitos = L.filter(i => i.tipo !== 'pendente').length;
+      const projetos = [...new Set(EV.itens.map(i => i.projeto).filter(Boolean))].sort();
+      // Semanas começando na segunda, para ver a curva.
+      const seg = d => { const x = dia(d); const w = (x.getDay() + 6) % 7; return new Date(x.getTime() - w * 864e5); };
+      const sem = {};
+      for (const i of L) { const k = seg(i.dia).toISOString().slice(0, 10); sem[k] = sem[k] || { n: 0, r: 0 }; if (i.tipo !== 'pendente') sem[k].n++; if (i.tipo === 'dinheiro' && typeof i.valor === 'number') sem[k].r += i.valor; }
+      const ks = Object.keys(sem).sort(), max = Math.max(1, ...ks.map(k => sem[k].n));
+      const grafico = ks.length ? `<ul class="ev-sem">${ks.map(k => `<li><span>semana de ${fmtA(k)}</span><span class="bar"><span style="width:${Math.round(sem[k].n / max * 100)}%"></span></span><span><b>${sem[k].n}</b> feito${sem[k].n === 1 ? '' : 's'}${sem[k].r ? ' · ' + brl(sem[k].r) + ' entrou' : ''}</span></li>`).join('')}</ul>` : '<p class="empty">Nada no período.</p>';
+      let lista = '';
+      for (const d of dias) {
+        const itens = L.filter(i => i.dia === d);
+        lista += `<h2 style="margin-top:18px">${fmt(d)} <span class="count">${itens.filter(i => i.tipo !== 'pendente').length}</span></h2><ul class="ev-dia">${itens.map(i => { const t = EV_TIPO[i.tipo] || ['', i.tipo];
+          return `<li><div class="t"><span><span class="chip ${t[0]}">${esc(t[1])}</span> <b>${esc(i.titulo)}</b></span>${typeof i.valor === 'number' ? `<span class="val">${brl(i.valor)}</span>` : ''}</div>${i.detalhe ? `<span class="sub" style="font-size:13px">${esc(i.detalhe)}</span>` : ''}<span class="meta">${i.projeto ? `<span class="chip">${esc(i.projeto)}</span>` : ''}${i.area ? `<span class="chip">${esc(i.area)}</span>` : ''}${i.meta ? `<span class="chip info">Meta: ${esc(i.meta)}</span>` : ''}</span></li>`; }).join('')}</ul>`;
+      }
+      return topo + `<div class="stats six">
+        ${[[dias.length, 'dias com registro'], [feitos, 'coisas feitas'], [conta('construido'), 'construídas'], [conta('resolvido') + conta('decidido'), 'resolvidas ou decididas'], [brl(soma('dinheiro')), 'entrou no caixa'], [brl(soma('vendido')), 'vendido ou renovado']]
+          .map(([v, t]) => `<div class="stat"><span class="v" style="font-size:${String(v).length > 7 ? 22 : 32}px">${v}</span><span>${t}</span></div>`).join('')}
+      </div>
+      <div class="filtros">
+        <label for="evp">Período<select id="evp">${[['7', 'Últimos 7 dias'], ['30', 'Últimos 30 dias'], ['90', 'Últimos 90 dias'], ['', 'Tudo']].map(([v, t]) => `<option value="${v}" ${v === EVP ? 'selected' : ''}>${t}</option>`).join('')}</select></label>
+        <label for="evj">Projeto<select id="evj"><option value="">Todos</option>${projetos.map(p => `<option ${p === EVJ ? 'selected' : ''}>${esc(p)}</option>`).join('')}</select></label>
+        <label for="evt">Tipo<select id="evt"><option value="">Todos</option>${Object.entries(EV_TIPO).map(([k, t]) => `<option value="${k}" ${k === EVT ? 'selected' : ''}>${t[1]}</option>`).join('')}</select></label>
+      </div>
+      <section class="panel"><h2>Semana a semana</h2>${grafico}</section>
+      ${lista || '<p class="empty">Nenhum registro com esse filtro.</p>'}`;
     } },
   pessoas: { nome: 'Por pessoa', pode: diretor,
     html(){
@@ -1174,6 +1223,15 @@ function listaMensagens(){
   }
   return h + '</ul>';
 }
+// Aba Evolução (diretoria): lê o Diário da diretoria no n8n.
+const EV_TIPO = { construido: ['org', 'Construído'], resolvido: ['ok', 'Resolvido'], decidido: ['info', 'Decidido'], dinheiro: ['ok', 'Dinheiro'], vendido: ['ok', 'Vendido'], pendente: ['warn', 'Pendente'] };
+const brl = v => Number(v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 });
+async function carregarEvolucao(){
+  if (carregarEvolucao.indo) return; carregarEvolucao.indo = true;
+  try { const r = await api('diario-dir-be15dfdc0beccbd0'); EV = r && r.ok ? Object.assign(r, { em: Date.now() }) : (EV && EV.itens ? EV : { erro: true }); } catch (e) { EV = EV && EV.itens ? EV : { erro: true }; }
+  carregarEvolucao.indo = false;
+  if (view === 'evolucao' && !ocupado && !$('#layer').innerHTML) render();
+}
 async function carregarDiretor(){
   if (carregarDiretor.indo) return; carregarDiretor.indo = true;
   try { const r = await api('euforia-painel-diretor', { acao: 'visao' }); if (r && r.ok) { DD = r; if (!ocupado && !$('#layer').innerHTML && !document.activeElement.matches('#tq,#mq')) render(); } }
@@ -1741,6 +1799,7 @@ document.addEventListener('change', e => {
   if (e.target.id === 'pf-s' || e.target.id === 'pq-s') { if (e.target.id === 'pf-s') PF = e.target.value; else PQ = e.target.value; render(); return; }
   if (['ts', 'tp', 'tt'].includes(e.target.id)) { ({ ts: v => TS = v, tp: v => TP = v, tt: v => TT = v })[e.target.id](e.target.value); $('#dres').innerHTML = tabelaTodos(); return; }
   if (e.target.id === 'clf') { CLF = e.target.value; render(); return; }
+  if (['evp', 'evj', 'evt'].includes(e.target.id)) { ({ evp: v => EVP = v, evj: v => EVJ = v, evt: v => EVT = v })[e.target.id](e.target.value); render(); return; }
   if (e.target.id === 'cep') { CEF = e.target.value; render(); return; }
   if (e.target.id === 'clo') { CLO = e.target.value; $('#clres').innerHTML = tabelaClientes(); return; }
   if (e.target.id === 'mw') { MW = e.target.value; $('#dres').innerHTML = listaMensagens(); return; }
@@ -1834,6 +1893,10 @@ function demoApi(path, b){
     return wait({ ok: true });
   }
   if (path === 'euforia-painel-arquivo') return wait({ ok: true, link: 'https://drive.google.com/demo' });
+  if (path === 'diario-dir-be15dfdc0beccbd0') return wait({ ok: true, itens: [
+    { dia: DEMO_D.hoje, projeto: 'Direção e Finanças', area: 'Vendas', tipo: 'construido', titulo: 'Placar de agendamentos no painel', detalhe: 'Exemplo de item construído.', meta: 'Empresa organizada e automatizada', valor: null },
+    { dia: DEMO_D.hoje, projeto: 'Direção e Finanças', area: 'Caixa', tipo: 'dinheiro', titulo: 'Cliente pagou a parcela', detalhe: 'Exemplo.', meta: 'Caixa e reserva', valor: 1200 },
+    { dia: DEMO_D.hoje, projeto: 'Operação e Clientes', area: 'Clientes', tipo: 'pendente', titulo: 'Aprovar a proposta de renovação', detalhe: '', meta: 'Caixa e reserva', valor: null }] });
   if (path === 'euforia-painel-diretor') {
     if (b.acao === 'visao') return wait(JSON.parse(JSON.stringify(DEMO_DD)));
     if (b.acao === 'mensagens') return wait(DEMO_M);
