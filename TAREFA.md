@@ -20,8 +20,8 @@ no quadro 🎬 Pedidos de Shorts IA do Notion. Responda e registre tudo em portu
 ## 1. Ver se há trabalho (rápido, gasta pouco)
 Leia a visão "🤖 Fila da máquina" com notion-query-data-sources em modo view (nunca SQL nem filtro: a cota do
 Notion é dividida com todas as máquinas e o painel, e quando acaba tudo para). Se vier vazia, encerre sem fazer mais nada.
-Atenda 2 pedidos por rodada, mais antigo primeiro. Se os 2 terminarem com a rodada abaixo de 35 minutos e ainda
-houver fila, pegue mais 1 (no máximo 4 por rodada). O resto fica para a próxima.
+Atenda 3 pedidos por rodada, mais antigo primeiro. Enquanto a rodada estiver abaixo de 45 minutos e ainda
+houver fila, pegue mais 1 (no máximo 6 por rodada). O resto fica para a próxima.
 
 ## 2. Preparar a máquina (só se houver pedido)
 O código está no repositório público da Euforia: `git clone --depth 1 https://github.com/eufvideos-lab/euforia-shorts-ia.git`.
