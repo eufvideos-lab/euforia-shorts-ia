@@ -140,6 +140,10 @@ textarea{min-height:70px;resize:vertical}
 .plac.quadro .fx{text-align:left;min-width:180px}
 .plac.quadro tfoot td.t{font:800 20px/1 'Barlow Condensed',sans-serif;color:var(--or)}
 .ig{display:inline-block;padding:2px 8px;border-radius:999px;background:rgba(225,48,108,.15);color:#ff7aa8;font-size:12px;font-weight:600;text-decoration:none}
+.remar{margin-top:12px;padding:12px;border:1px dashed var(--line);border-radius:12px;background:rgba(255,255,255,.02)}
+.remar .rrow{display:flex;gap:8px;margin:8px 0}.remar .rrow input{width:auto}
+.rslots{display:flex;flex-wrap:wrap;gap:8px}.rslots .slot{width:auto;min-width:90px;padding:8px 14px;border-radius:10px;border:1px solid var(--or);background:transparent;color:var(--txt);font-weight:600}
+.sbtns .rmc{border-color:rgba(255,90,0,.5)}
 .fxc{display:inline-block;margin:2px 4px 2px 0;padding:3px 8px;border-radius:999px;background:rgba(255,255,255,.06);font-size:12px;white-space:nowrap}
 .fxc b{color:var(--or)}
 .cicbar{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:14px}
@@ -361,7 +365,7 @@ function cardHTML(c){
       return '<div class="call" style="--c:'+corCall(c)+'"><div class="l1"><span class="h">'+esc(hora)+'</span><span class="n">'+esc(c.nome)+'</span>'+(tl?'<span class="ph">'+esc(tl)+'</span><button class="cp" data-cp="'+esc(c.whats)+'">Copiar</button>':'<span class="ph sem">sem número</span>')+igHTML(c.insta)+(c.numero?'<span class="eb" title="Número que marcou">'+esc(c.numero.replace(/ \(.*$/,''))+'</span>':'')+'<span class="st '+esc(c.status)+'">'+esc(s[0])+'</span>'+(c.tipo?'<span class="tp '+esc(c.tipo)+'">'+(c.tipo==='fechamento'?'Fechamento':'Diagnóstico')+'</span>':'<span class="tp sem">Tipo não marcado</span>')+(c.sdr?'<span class="who'+(c.sdr.toLowerCase()===cred.usuario?' eu':'')+'">Marcou: <b>'+esc(c.sdr)+'</b></span>':'<span class="who sem">Marcada direto na agenda</span>')+'</div>'
         +(meta.length?'<div class="meta">'+meta.join(' · ')+'</div>':'')
         +'<div class="trow">Tipo da call:<button data-tid="'+esc(c.id)+'" data-tipo="diagnostico" class="'+(c.tipo==='diagnostico'?'cur':'')+'">Diagnóstico</button><button data-tid="'+esc(c.id)+'" data-tipo="fechamento" class="'+(c.tipo==='fechamento'?'cur':'')+'">Fechamento</button></div>'
-        +'<div class="sbtns"><button class="wa" data-wa="'+esc(c.id)+'">Mensagem de confirmação</button>'+bts+'</div></div>';
+        +'<div class="sbtns"><button class="wa" data-wa="'+esc(c.id)+'">Mensagem de confirmação</button><button class="rmc" data-rmc="'+esc(c.id)+'">Remarcar</button>'+bts+'</div><div class="remar" data-rbox="'+esc(c.id)+'" hidden></div></div>';
 }
 function mostrarCalls(){
   contaPend();
@@ -413,6 +417,22 @@ function cliqueCall(e){
     var p=String(c.nome).split(/[\s·]+/)[0];
     var t='Oi, '+p+'! Tudo bem? Passando para confirmar a nossa call com o Diogo, do Grupo Euforia, '+quandoTxt(c.inicio)+' (horário de Brasília).'+(c.meet?'\n\nO link é este: '+c.meet:'')+'\n\nPosso confirmar a sua presença?';
     window.open('https://wa.me/'+(c.whats||'')+'?text='+encodeURIComponent(t),'_blank','noopener');return;}
+  var rm=e.target.closest('[data-rmc]');
+  if(rm){var rid=rm.getAttribute('data-rmc'),box=rm.closest('.call').querySelector('[data-rbox]'),cr=achar(rid);if(!box||!cr)return;
+    if(!box.hidden){box.hidden=true;return;}
+    var hj=isoDia(recife(Date.now())),d0=isoDia(recife(new Date(cr.inicio).getTime()));
+    box.innerHTML='<b>Remarcar '+esc(cr.nome)+'</b><p class="hint">O lead recebe o convite com o novo horário. O bloqueio do Diogo e o CRM mudam junto.</p><div class="rrow"><input type="date" data-rdia min="'+hj+'" value="'+(d0<hj?hj:d0)+'"><button class="ghost" data-rfecha>Fechar</button></div><div class="rslots" data-rslots><p class="load">Escolha o dia.</p></div><p class="msg" data-rmsg></p>';
+    box.hidden=false;carregaSlots(box);return;}
+  if(e.target.closest('[data-rfecha]')){e.target.closest('.remar').hidden=true;return;}
+  var rs=e.target.closest('[data-rini]');
+  if(rs){var bx=rs.closest('.remar'),cid=bx.getAttribute('data-rbox'),c1=achar(cid);if(!c1)return;
+    var ini=rs.getAttribute('data-rini');
+    if(!confirm('Remarcar '+c1.nome+' para '+quandoTxt(ini)+'?'))return;
+    bx.querySelectorAll('[data-rini]').forEach(function(x){x.disabled=true});var m=bx.querySelector('[data-rmsg]');m.className='msg';m.textContent='Remarcando…';
+    api({acao:'remarcar',evento:cid,inicio:ini,antes:c1.inicio,nome:c1.nome,tipo:c1.tipo||''}).then(function(r){
+      if(!r.ok){m.className='msg err';m.textContent=r.erro||'Não consegui remarcar.';bx.querySelectorAll('[data-rini]').forEach(function(x){x.disabled=false});return;}
+      m.className='msg ok';m.textContent='Remarcada para '+(r.quando||quandoTxt(ini))+'.';
+      setTimeout(function(){if(aba==='cal')carregarSemana();else carregarCalls();},1200);});return;}
   var tb=e.target.closest('[data-tid]');
   if(tb){var tid=tb.getAttribute('data-tid'),tt=tb.getAttribute('data-tipo');tb.disabled=true;tb.textContent='Salvando…';
     var cc=achar(tid)||{};
@@ -428,6 +448,13 @@ function cliqueCall(e){
   });
 }
 $('calls').addEventListener('click',cliqueCall);
+function carregaSlots(box){var dia=box.querySelector('[data-rdia]').value,sl=box.querySelector('[data-rslots]');if(!dia){sl.innerHTML='';return;}
+  sl.innerHTML='<p class="load">Carregando horários…</p>';
+  api({acao:'horarios',dia:dia}).then(function(r){if(!r.ok){sl.innerHTML='<p class="msg err">'+esc(r.erro||'Não consegui ler a agenda.')+'</p>';return;}
+    var d=(r.dias||[])[0];if(!d||d.fechado){sl.innerHTML='<p class="hint">Fim de semana ou feriado.</p>';return;}
+    var hs=(d.horarios||[]).filter(function(x){return x.livre});
+    sl.innerHTML=hs.length?hs.map(function(x){return '<button class="slot" data-rini="'+esc(x.inicio)+'">'+esc(x.hora)+'</button>'}).join(''):'<p class="hint">Nenhum horário livre nesse dia.</p>';});}
+document.addEventListener('change',function(e){if(e.target.matches&&e.target.matches('[data-rdia]'))carregaSlots(e.target.closest('.remar'));});
 $('cDet').addEventListener('click',cliqueCall);
 // aba Agenda: semana em formato de calendário (horário de Recife, UTC-3)
 var DIAMS=864e5, OFF=3*3600e3;
