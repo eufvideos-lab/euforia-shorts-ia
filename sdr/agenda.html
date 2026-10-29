@@ -139,6 +139,7 @@ textarea{min-height:70px;resize:vertical}
 .plac.quadro tr.hj td{background:rgba(255,90,0,.07)}
 .plac.quadro .fx{text-align:left;min-width:180px}
 .plac.quadro tfoot td.t{font:800 20px/1 'Barlow Condensed',sans-serif;color:var(--or)}
+.ig{display:inline-block;padding:2px 8px;border-radius:999px;background:rgba(225,48,108,.15);color:#ff7aa8;font-size:12px;font-weight:600;text-decoration:none}
 .fxc{display:inline-block;margin:2px 4px 2px 0;padding:3px 8px;border-radius:999px;background:rgba(255,255,255,.06);font-size:12px;white-space:nowrap}
 .fxc b{color:var(--or)}
 .cicbar{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:14px}
@@ -261,7 +262,7 @@ textarea{min-height:70px;resize:vertical}
     <label for="email">E-mail do lead</label><input id="email" type="email" placeholder="para ele receber o convite com o link">
     <div class="row2">
       <div><label for="fonte">De onde veio *</label><select id="fonte" required></select></div>
-      <div><label for="emp">Instagram ou empresa</label><input id="emp" maxlength="120"></div>
+      <div><label for="emp">Instagram do lead (@)</label><input id="emp" maxlength="120" placeholder="@perfil ou nome da empresa"></div>
     </div>
     <label for="num">Número que marcou a call (E) *</label><select id="num" required></select>
     <label for="hash">Hashtag ou busca (#)</label><input id="hash" list="hashes" maxlength="95" placeholder="ex.: #mentoriaempresarial ou Google Maps · nicho em cidade"><datalist id="hashes"></datalist>
@@ -345,6 +346,8 @@ function quandoTxt(s){
   return d.toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'2-digit',timeZone:'America/Recife'})+' às '+h;
 }
 function rotDia(s){var d=new Date(s);var t=quandoTxt(s).replace(/ às .*/,'');return cap(t==='hoje'||t==='amanhã'?t+' · '+d.toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'2-digit',timeZone:'America/Recife'}):t)}
+function igHTML(v){v=String(v||'').trim();if(!v)return '';var m=v.match(/instagram\.com\/([A-Za-z0-9._]+)/i)||v.match(/^@?([A-Za-z0-9._]{2,30})$/);
+  return m?'<a class="ig" href="https://instagram.com/'+encodeURIComponent(m[1])+'" target="_blank" rel="noopener">@'+esc(m[1])+'</a>':'<span class="ig" title="Instagram/Empresa">'+esc(v)+'</span>';}
 function fmtTel(w){var d=String(w||'').replace(/\D/g,'');if(d.indexOf('55')===0&&d.length>=12)d=d.slice(2);if(d.length<10)return '';return '('+d.slice(0,2)+') '+d.slice(2,-4)+'-'+d.slice(-4);}
 function contaPend(){var n=calls.filter(function(c){return c.status==='pendente'&&new Date(c.inicio)>new Date()}).length;$('nPend').textContent=n||'';}
 function cardHTML(c){
@@ -355,7 +358,7 @@ function cardHTML(c){
       if(c.por)meta.push(esc(s[0])+' por '+esc(c.por)+(c.em?' em '+esc(new Date(c.em).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit',timeZone:'America/Recife'})):''));
       if(c.meet)meta.push('<a href="'+esc(c.meet)+'" target="_blank" rel="noopener">Link do Meet</a>');
       var bts=ORDEM.map(function(k){if(k==='pendente'&&c.status==='pendente')return '';return '<button data-id="'+esc(c.id)+'" data-s="'+k+'" style="--c:'+(k==='realizada'&&c.tipo==='fechamento'?VERDE:ST[k][1])+'" class="'+(c.status===k?'cur':'')+'">'+(k==='pendente'?'Voltar para pendente':ST[k][0])+'</button>'}).join('');
-      return '<div class="call" style="--c:'+corCall(c)+'"><div class="l1"><span class="h">'+esc(hora)+'</span><span class="n">'+esc(c.nome)+'</span>'+(tl?'<span class="ph">'+esc(tl)+'</span><button class="cp" data-cp="'+esc(c.whats)+'">Copiar</button>':'<span class="ph sem">sem número</span>')+(c.numero?'<span class="eb" title="Número que marcou">'+esc(c.numero.replace(/ \(.*$/,''))+'</span>':'')+'<span class="st '+esc(c.status)+'">'+esc(s[0])+'</span>'+(c.tipo?'<span class="tp '+esc(c.tipo)+'">'+(c.tipo==='fechamento'?'Fechamento':'Diagnóstico')+'</span>':'<span class="tp sem">Tipo não marcado</span>')+(c.sdr?'<span class="who'+(c.sdr.toLowerCase()===cred.usuario?' eu':'')+'">Marcou: <b>'+esc(c.sdr)+'</b></span>':'<span class="who sem">Marcada direto na agenda</span>')+'</div>'
+      return '<div class="call" style="--c:'+corCall(c)+'"><div class="l1"><span class="h">'+esc(hora)+'</span><span class="n">'+esc(c.nome)+'</span>'+(tl?'<span class="ph">'+esc(tl)+'</span><button class="cp" data-cp="'+esc(c.whats)+'">Copiar</button>':'<span class="ph sem">sem número</span>')+igHTML(c.insta)+(c.numero?'<span class="eb" title="Número que marcou">'+esc(c.numero.replace(/ \(.*$/,''))+'</span>':'')+'<span class="st '+esc(c.status)+'">'+esc(s[0])+'</span>'+(c.tipo?'<span class="tp '+esc(c.tipo)+'">'+(c.tipo==='fechamento'?'Fechamento':'Diagnóstico')+'</span>':'<span class="tp sem">Tipo não marcado</span>')+(c.sdr?'<span class="who'+(c.sdr.toLowerCase()===cred.usuario?' eu':'')+'">Marcou: <b>'+esc(c.sdr)+'</b></span>':'<span class="who sem">Marcada direto na agenda</span>')+'</div>'
         +(meta.length?'<div class="meta">'+meta.join(' · ')+'</div>':'')
         +'<div class="trow">Tipo da call:<button data-tid="'+esc(c.id)+'" data-tipo="diagnostico" class="'+(c.tipo==='diagnostico'?'cur':'')+'">Diagnóstico</button><button data-tid="'+esc(c.id)+'" data-tipo="fechamento" class="'+(c.tipo==='fechamento'?'cur':'')+'">Fechamento</button></div>'
         +'<div class="sbtns"><button class="wa" data-wa="'+esc(c.id)+'">Mensagem de confirmação</button>'+bts+'</div></div>';
