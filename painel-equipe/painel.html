@@ -233,6 +233,16 @@ button.slot:hover{border-color:var(--muted)}
 .cart .linha{display:grid;grid-template-columns:84px minmax(0,1fr) auto;gap:8px;align-items:center;font-size:13px}
 .cart .linha .bar{height:8px}
 .cart details summary{cursor:pointer;font-size:13px;color:var(--muted)}
+/* Formulários dos clientes */
+.fo-qa{display:flex;flex-direction:column;gap:12px}
+.fo-qa h3{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:6px 0 0}
+.fo-qa dl{margin:0;display:flex;flex-direction:column;gap:10px}
+.fo-qa dt{font-size:13px;color:var(--muted)}
+.fo-qa dd{margin:2px 0 0;font-size:15px;line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere}
+.fo-fotos{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px}
+.fo-fotos a{display:block;aspect-ratio:1;border-radius:10px;overflow:hidden;background:var(--surface-2)}
+.fo-fotos img{width:100%;height:100%;object-fit:cover;display:block}
+.fo-links{display:flex;flex-wrap:wrap;gap:8px}
 .cart details ul{margin:6px 0 0;padding-left:18px;font-size:13px;display:flex;flex-direction:column;gap:3px}
 .cl-prog .bar{height:6px}
 .drawer section{display:flex;flex-direction:column;gap:6px;flex-shrink:0}
@@ -377,6 +387,7 @@ let G = null, GC = '', GP = 'YouTube';
 const RASC = {};
 let MP = null, MPQ = '', CC = null;
 let CE = null, CEQ = '', CEF = '';
+let FO = null, FOQ = '', FOF = '';
 let CL = null, CLQ = '', CLF = '', CLO = 'atencao';
 let DD = null, MM = null, PF = 'abertos', PQ = '', TQ = '', TS = '', TP = '', TT = '', MQ = '', MW = '';
 try { PIN = localStorage.getItem(KEY) || ''; view = localStorage.getItem('painel-view') || ''; } catch (e) {}
@@ -689,6 +700,18 @@ const VIEWS = {
         <label for="cep">Plano<select id="cep"><option value="">Todos os planos</option>${planos.map(x => `<option ${CEF === 'p:' + x ? 'selected' : ''} value="p:${esc(x)}">${esc(x)}</option>`).join('')}</select></label>
       </div>
       <div id="ceres">${listaCarteira()}</div>`;
+    } },
+  formularios: { nome: 'Formulários', pode: () => (DEMO || FORMULARIOS_NO_AR) && ['revisor', 'calls', 'diretor', 'teste'].includes(papel()), badge: () => FO && FO.formularios ? FO.formularios.filter(f => f.dias <= 2).length : 0,
+    html(){
+      const topo = `<div class="head"><div><p class="eyebrow">Onboarding${FO && FO.formularios ? ' · ' + FO.formularios.length + ' respostas' : ''}</p><h1>Formulários dos clientes</h1></div><p class="sub">O que cada cliente novo respondeu no formulário de onboarding: canal, marca, gravação e o que quer na primeira reunião. Os links e as fotos abrem direto daqui. Leia antes da Call 1.</p></div>`;
+      if (!FO) { carregarFormularios(); return topo + '<p class="sub">Carregando as respostas…</p>'; }
+      if (FO.erro) return topo + '<p class="empty">Não consegui ler os formulários agora. Tente de novo em alguns minutos.</p>';
+      const L = FO.formularios, n = f => L.filter(f).length;
+      return topo + `<div class="stats">
+        ${[['', L.length, 'respostas'], ['novas', n(f => f.dias <= 2), 'chegaram nos últimos 3 dias'], ['semcli', n(f => !f.cliente), 'sem cliente ligado'], ['whats', n(f => /whatsapp/i.test(f.envio)), 'mandam fotos pelo WhatsApp']]
+          .map(([f, v, t]) => `<button class="stat ${f && v && f !== 'whats' ? 'hot' : ''}" data-fof="${f}" style="text-align:left;background:${FOF === f && f ? 'var(--accent-soft)' : 'var(--surface)'}"><span class="v">${v}</span><span>${t}</span></button>`).join('')}</div>
+      <div class="filtros"><label for="foq">Buscar<input type="text" id="foq" placeholder="Nome do cliente" value="${esc(FOQ)}"></label></div>
+      <div id="fores">${listaFormularios()}</div>`;
     } },
   responder: { nome: 'Responder', pode: () => ['revisor', 'calls', 'teste', 'diretor'].includes(papel()), badge: () => R ? R.itens.length : 0,
     html(){
@@ -1205,6 +1228,53 @@ async function carregarCarteira(){
   carregarCarteira.indo = false;
   if (!ocupado && !$('#layer').innerHTML && !document.activeElement.matches('#ceq')) render();
 }
+// Formulários de onboarding (banco 📝 Onboarding · Respostas). Só leitura; os links dos arquivos do Notion valem 1 hora, então a aba pede de novo a cada abertura.
+// A aba fica escondida até a diretoria aprovar a prévia (na demonstração ela aparece).
+const FORMULARIOS_NO_AR = false;
+function filtraFo(f){
+  const q = FOQ.trim().toLowerCase();
+  if (q && !(f.nome + ' ' + (f.cliente ? f.cliente.nome : '')).toLowerCase().includes(q)) return false;
+  return { '': true, novas: f.dias <= 2, semcli: !f.cliente, whats: /whatsapp/i.test(f.envio) }[FOF];
+}
+function cartaoFo(f){
+  const nome = f.cliente ? f.cliente.nome : f.nome;
+  const fotos = f.arquivos.filter(a => a.img).length, outros = f.arquivos.length - fotos;
+  return `<article class="ccard">
+    <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start"><h3>${esc(nome)}</h3><span class="meta" style="flex-shrink:0">${f.dias <= 2 ? '<span class="chip org">Nova</span>' : ''}${f.cliente && f.cliente.faixa ? `<span class="chip">Faixa ${esc(f.cliente.faixa)}</span>` : ''}</span></div>
+    <div class="meta">${f.cliente ? '' : '<span class="chip red">Sem cliente ligado</span>'}${f.canal ? `<span class="chip">${esc(f.canal)}</span>` : ''}${f.envio ? `<span class="chip ${/whatsapp/i.test(f.envio) ? 'warn' : ''}">Arquivos: ${esc(f.envio.replace(/ \(.*\)/, ''))}</span>` : ''}</div>
+    <span class="sub" style="font-size:13px">Respondido em ${esc(f.recebida)}${f.cliente && f.nome !== f.cliente.nome ? ' por ' + esc(f.nome) : ''} · ${[f.links.length ? f.links.length + ' link' + (f.links.length > 1 ? 's' : '') : '', fotos ? fotos + ' foto' + (fotos > 1 ? 's' : '') : '', outros ? outros + ' arquivo' + (outros > 1 ? 's' : '') : ''].filter(Boolean).join(', ') || 'sem links nem arquivos'}</span>
+    <div class="actions" style="margin-top:2px"><button class="btn primary" data-form="${f.id}">Ler respostas</button>${f.cliente && f.cliente.drive ? `<a class="btn" href="${esc(f.cliente.drive)}" target="_blank" rel="noopener">Pasta no Drive</a>` : ''}</div>
+  </article>`;
+}
+function listaFormularios(){
+  const l = FO.formularios.filter(filtraFo);
+  return l.length ? `<div class="cart">${l.map(cartaoFo).join('')}</div>` : '<p class="empty">Nenhum formulário com esse filtro.</p>';
+}
+function abrirFormulario(id){
+  const f = FO.formularios.find(x => x.id === id); if (!f) return;
+  const nome = f.cliente ? f.cliente.nome : f.nome;
+  const grupos = [...new Set(f.arquivos.map(a => a.grupo))];
+  const arq = grupos.map(g => { const l = f.arquivos.filter(a => a.grupo === g), im = l.filter(a => a.img), ou = l.filter(a => !a.img);
+    return `<h3>${esc(g)}</h3>${im.length ? `<div class="fo-fotos">${im.map(a => `<a href="${esc(a.url)}" target="_blank" rel="noopener" title="${esc(a.nome)}"><img src="${esc(a.url)}" alt="${esc(a.nome)}" loading="lazy"></a>`).join('')}</div>` : ''}${ou.length ? `<div class="fo-links">${ou.map(a => `<a class="btn" href="${esc(a.url)}" target="_blank" rel="noopener">${esc(a.nome)}</a>`).join('')}</div>` : ''}`; }).join('');
+  $('#layer').innerHTML = `<div class="scrim" data-x></div><aside class="drawer" role="dialog" aria-modal="true" aria-labelledby="fo-t"><div class="drawer-in">
+    <button class="close" data-x>Fechar</button>
+    <div><p class="eyebrow">Formulário de onboarding · ${esc(f.recebida)}</p><h2 id="fo-t" style="font-size:26px">${esc(nome)}</h2>${f.cliente && f.nome !== f.cliente.nome ? `<p class="sub" style="margin:4px 0 0">Respondido por ${esc(f.nome)}</p>` : ''}</div>
+    ${f.cliente ? '' : '<p class="note"><b>Sem cliente ligado.</b> O WhatsApp do formulário não bateu com nenhuma ficha. Avise a diretoria para ligar.</p>'}
+    ${f.links.length || (f.cliente && f.cliente.drive) ? `<section><h3 style="font-size:16px;margin:0">Links</h3><div class="fo-links">${f.links.map(l => `<a class="btn" href="${esc(l.url)}" target="_blank" rel="noopener">${esc(l.rot)} ↗</a>`).join('')}${f.cliente && f.cliente.drive ? `<a class="btn" href="${esc(f.cliente.drive)}" target="_blank" rel="noopener">Pasta no Drive ↗</a>` : ''}</div></section>` : ''}
+    <div class="fo-qa">${f.whatsapp ? `<dl><div><dt>WhatsApp informado</dt><dd>${esc(f.whatsapp)}</dd></div></dl>` : ''}
+      ${f.blocos.map(b => `<h3>${esc(b.titulo)}</h3><dl>${b.itens.map(i => `<div><dt>${esc(i.p)}</dt><dd>${esc(i.r)}</dd></div>`).join('')}</dl>`).join('')}
+      ${arq}
+      ${!f.blocos.length && !f.arquivos.length ? '<p class="empty">O cliente só preencheu o nome e o WhatsApp.</p>' : ''}</div>
+    ${f.arquivos.length ? '<p class="sub" style="font-size:12px">Os links das fotos expiram em 1 hora. Se não abrir, feche e abra a aba de novo.</p>' : ''}
+  </div></aside>`;
+  $('#layer').onclick = e => { if (e.target.closest('[data-x]')) fechar(); };
+}
+async function carregarFormularios(){
+  if (carregarFormularios.indo) return; carregarFormularios.indo = true;
+  try { const r = await api('euforia-painel-formularios'); FO = r && r.ok ? r : (FO && FO.formularios ? FO : { erro: true }); } catch (e) { FO = FO && FO.formularios ? FO : { erro: true }; }
+  carregarFormularios.indo = false; carregarFormularios.em = Date.now();
+  if (!ocupado && !$('#layer').innerHTML && !document.activeElement.matches('#foq')) render();
+}
 // Acessos que o cliente mandou (hospedagem, domínio, Instagram...). Ficam numa tabela do n8n, nunca no Notion; só Ismael, Rômulo e diretoria.
 const SERVICOS = ['Hostinger', 'Registro.br', 'GoDaddy', 'WordPress', 'Instagram', 'Facebook / Meta', 'YouTube', 'TikTok', 'Google / Gmail', 'Hotmart', 'Kiwify', 'Canva', 'Outro'];
 async function copiar(t){
@@ -1571,7 +1641,7 @@ document.addEventListener('dragleave', e => { const d = e.target.closest && e.ta
 document.addEventListener('drop', e => { const d = e.target.closest && e.target.closest('#pdrop'); if (d) { e.preventDefault(); d.classList.remove('over'); juntarAnexos([...e.dataTransfer.files]); } });
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && !ocupado) fechar(); });
 document.addEventListener('click', async e => {
-  const v = e.target.closest('[data-view]'); if (v) { view = v.dataset.view; try { localStorage.setItem('painel-view', view); } catch (x) {} $('#main').innerHTML = ''; render(); window.scrollTo({ top: 0 }); return; }
+  const v = e.target.closest('[data-view]'); if (v) { view = v.dataset.view; try { localStorage.setItem('painel-view', view); } catch (x) {} $('#main').innerHTML = ''; if (view === 'formularios' && FO && FO.formularios && Date.now() - (carregarFormularios.em || 0) > 1800000) carregarFormularios(); render(); window.scrollTo({ top: 0 }); return; }
   const g = e.target.closest('#main [data-go]');
   if (g) {
     const c = D.cards.find(x => x.id === g.dataset.go), p = c && proximo(c);
@@ -1593,6 +1663,8 @@ document.addEventListener('click', async e => {
   const ap = e.target.closest('#main [data-apagaped]'); if (ap) { apagarPedido(ap); return; }
   const ac = e.target.closest('#main [data-acessos]'); if (ac) { const k = CE.clientes.find(x => x.id === ac.dataset.acessos); if (k) abrirAcessos(k); return; }
   const ga = e.target.closest('#main [data-gaba]'); if (ga) { GP = ga.dataset.gaba; render(); return; }
+  const fo = e.target.closest('#main [data-form]'); if (fo) { abrirFormulario(fo.dataset.form); return; }
+  const ff = e.target.closest('#main [data-fof]'); if (ff) { FOF = FOF === ff.dataset.fof ? '' : ff.dataset.fof; render(); return; }
   const ef = e.target.closest('#main [data-cef]'); if (ef) { CEF = CEF === ef.dataset.cef ? '' : ef.dataset.cef; render(); return; }
   const dcl = e.target.closest('#main [data-cliente]'); if (dcl) { view = 'todos'; TS = ''; TP = ''; TT = ''; TQ = cliDD(dcl.dataset.cliente).nome; render(); window.scrollTo({ top: 0 }); return; }
   const o = e.target.closest('#main [data-open]'); if (o) { abrir(o.dataset.open); return; }
@@ -1653,6 +1725,7 @@ document.addEventListener('input', e => {
   if (e.target.id === 'tq') { TQ = e.target.value; $('#dres').innerHTML = tabelaTodos(); }
   if (e.target.id === 'clq') { CLQ = e.target.value; $('#clres').innerHTML = tabelaClientes(); }
   if (e.target.id === 'ceq') { CEQ = e.target.value; $('#ceres').innerHTML = listaCarteira(); }
+  if (e.target.id === 'foq') { FOQ = e.target.value; $('#fores').innerHTML = listaFormularios(); }
   if (e.target.id === 'mq') { MQ = e.target.value; $('#dres').innerHTML = listaMensagens(); }
   if (e.target.id === 'mpq') { MPQ = e.target.value; $('#dres').innerHTML = listaPedidos(); }
   if (e.target.dataset && e.target.dataset.rtxt) RASC[e.target.dataset.rtxt] = e.target.value;
@@ -1712,6 +1785,7 @@ function demoApi(path, b){
   if (path === 'euforia-painel-responder') return wait({ ok: true, pelo: 'seu número' });
   if (path === 'euforia-painel-calls') return wait(DEMO_C);
   if (path === 'euforia-painel-clientes') return wait(DEMO_CE);
+  if (path === 'euforia-painel-formularios') return wait(DEMO_FO);
   if (path === 'euforia-painel-acessos') {
     const l = DEMO_AC[b.cliente] = DEMO_AC[b.cliente] || [];
     if (b.acao === 'listar') return wait({ ok: true, acessos: JSON.parse(JSON.stringify(l)) });
@@ -1829,6 +1903,21 @@ const DEMO_M = {"ok":true,"itens":[
   {"quem":"Rômulo","grupo":"EUFORIA | Instituto Aurora","texto":"Bom dia, pessoal! Os shorts desta semana vão para revisão hoje.","quando":"2026-10-26T09:02"},
   {"quem":"Rômulo","grupo":"EUFORIA | Clínica Vida","texto":"Tudo certo para a reunião de amanhã às 11h?","quando":"2026-10-25T17:20"}]};
 const DEMO_QR = 'data:image/svg+xml;utf8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 21 21" shape-rendering="crispEdges"><rect width="21" height="21" fill="#fff"/><path d="M1 1h7v7H1zM13 1h7v7h-7zM1 13h7v7H1z" fill="#111"/><path d="M2 2h5v5H2zM14 2h5v5h-5zM2 14h5v5H2z" fill="#fff"/><path d="M3 3h3v3H3zM15 3h3v3h-3zM3 15h3v3H3zM10 2h1v3h-1zM9 9h3v3H9zM13 10h2v1h-2zM16 13h3v2h-3zM10 15h3v1h-3zM13 17h2v3h-2zM17 17h3v1h-3z" fill="#111"/></svg>');
+const DEMO_FO = {"ok": true, "hoje": "2026-10-29", "formularios": [
+ {"id": "f1", "nome": "Helena Duarte", "recebida": "28/10/2026 16:42", "dia": "2026-10-28", "dias": 0, "status": "🔗 Ligada ao cliente", "whatsapp": "+55 11 90000-0000", "canal": "Tenho um canal parado", "envio": "Por link (Google Drive / OneDrive / Dropbox)",
+  "cliente": {"id": "c1", "nome": "Dra. Helena (exemplo)", "faixa": "A", "drive": "https://drive.google.com/"},
+  "links": [{"rot": "YouTube atual", "url": "https://youtube.com/"}, {"rot": "Instagram", "url": "https://instagram.com/"}, {"rot": "Fotos e arquivos", "url": "https://drive.google.com/"}],
+  "arquivos": [{"grupo": "Logo e marca", "nome": "logo-helena.pdf", "url": "https://drive.google.com/", "img": false}],
+  "blocos": [{"titulo": "Canal", "itens": [{"p": "Você já tem canal no YouTube?", "r": "Tenho um canal parado"}, {"p": "Já tem uma ideia de nome para o canal?", "r": "Dra. Helena | NUTRIÇÃO"}, {"p": "O que você não quer no seu canal", "r": "Dancinha, trend e nada de expor paciente."}, {"p": "3 canais ou perfis que você admira e por quê", "r": "Canal A (didático), Canal B (cenário bonito), Canal C (vídeos curtos e diretos)."}]},
+   {"titulo": "Marca", "itens": [{"p": "Cores que você usa ou gostaria de usar", "r": "Verde-oliva e bege"}, {"p": "Seus produtos ou serviços atuais", "r": "Consultas online e um programa de 12 semanas."}]},
+   {"titulo": "Gravação", "itens": [{"p": "Equipamento que você tem hoje", "r": "Celular, Microfone de lapela, Tripé"}, {"p": "Onde vai gravar", "r": "No consultório, de manhã."}, {"p": "Já gravou vídeos antes? Como se sente gravando?", "r": "Já gravei stories. Fico travada quando é vídeo longo."}]},
+   {"titulo": "Reuniões", "itens": [{"p": "Melhores dias e horários para reuniões", "r": "Terça e quinta à tarde"}, {"p": "Dúvidas ou pedidos para a primeira reunião", "r": "Quero entender quantas vezes por semana vou gravar."}]}]},
+ {"id": "f2", "nome": "Marcos Lima", "recebida": "25/10/2026 09:10", "dia": "2026-10-25", "dias": 4, "status": "🔗 Ligada ao cliente", "whatsapp": "+55 83 90000-0000", "canal": "Não tenho canal", "envio": "Pelo WhatsApp",
+  "cliente": {"id": "c3", "nome": "Marcos Lima (exemplo)", "faixa": "B", "drive": ""}, "links": [], "arquivos": [],
+  "blocos": [{"titulo": "Gravação", "itens": [{"p": "Equipamento que você tem hoje", "r": "Celular"}]}, {"titulo": "Arquivos", "itens": [{"p": "Como prefere enviar fotos e arquivos?", "r": "Pelo WhatsApp"}]}]},
+ {"id": "f3", "nome": "Paula R. Souza", "recebida": "29/10/2026 08:05", "dia": "2026-10-29", "dias": 0, "status": "⚠️ Sem cliente", "whatsapp": "+55 21 90000-0000", "canal": "Tenho um canal ativo", "envio": "Aqui no formulário",
+  "cliente": null, "links": [{"rot": "YouTube atual", "url": "https://youtube.com/"}], "arquivos": [],
+  "blocos": [{"titulo": "Canal", "itens": [{"p": "Você já tem canal no YouTube?", "r": "Tenho um canal ativo"}]}]}]};
 const DEMO_AC = { c1: [{ id: 1, servico: 'Hostinger', login: 'helena@exemplo.com', senha: 'Exemplo#2026', link: 'https://hpanel.hostinger.com', obs: 'Código de 2 fatores vai para o WhatsApp dela.', por: 'Rômulo (exemplo)', quando: '24/10/2026 10:12' }] };
 const DEMO_CE = {"ok": true, "hoje": "2026-10-27", "clientes": [{"id": "c1", "nome": "Dra. Helena (exemplo)", "faixa": "A", "atencao": true, "situacao": "Ativo", "fase": "Produção", "plano": "Assessoria semestral", "tags": ["Relançamento do canal"], "semContrato": false, "contrato": {"inicio": "2026-05-10", "meses": 6, "fim": "2026-11-09", "mes": 6, "pct": 92, "faltamDias": 13}, "total": {"longos": 20, "shorts": 60, "carrosseis": 20, "thumbs": 20, "roteiros": 20}, "catalogo": false, "feito": {"longos": 12, "shorts": 31, "carrosseis": 9, "thumbs": 12, "roteiros": 16}, "mes": {}, "inclui": ["Setup e relançamento do canal", "1 funil, 1 página de vendas, 1 copy", "Replicação cortes TikTok (4 meses)", "Calls de alinhamento, ajustes e análises"], "diferencas": [], "extras": [{"tipo": "Página", "estado": "feito"}, {"tipo": "Copy", "estado": "feito"}, {"tipo": "Funil", "estado": "andando"}], "abertos": 4, "atrasados": 2, "dias": ["Ter", "Qui"], "alinhamento": "", "drive": ""}, {"id": "c2", "nome": "Instituto Aurora (exemplo)", "faixa": "A", "atencao": false, "situacao": "Ativo", "fase": "Produção", "plano": "Assessoria anual", "tags": [], "semContrato": false, "contrato": {"inicio": "2026-03-02", "meses": 12, "fim": "2027-03-02", "mes": 8, "pct": 65, "faltamDias": 126}, "total": {"longos": 44, "shorts": 132, "carrosseis": 44, "thumbs": 44, "roteiros": 44}, "catalogo": false, "feito": {"longos": 28, "shorts": 80, "carrosseis": 26, "thumbs": 28, "roteiros": 30}, "mes": {}, "inclui": ["1 Página de Vendas", "1 Copy da Página de Vendas", "1 Funil de Vendas", "ID do Canal (banner/capa)", "TikTok 1 mês"], "diferencas": ["Onboarding e Oferta em calls separadas"], "extras": [{"tipo": "Página", "estado": "feito"}, {"tipo": "Copy", "estado": "feito"}, {"tipo": "Funil", "estado": "feito"}, {"tipo": "ID visual", "estado": "feito"}], "abertos": 3, "atrasados": 0, "dias": ["Seg", "Qua", "Sex"], "alinhamento": "", "drive": ""}, {"id": "c3", "nome": "Marcos Lima (exemplo)", "faixa": "B", "atencao": false, "situacao": "Ativo", "fase": "Setup (aprovação criativa)", "plano": "Implementação EDL", "tags": ["Clone de voz e imagem"], "semContrato": false, "contrato": {"inicio": "2026-10-14", "meses": 1.5, "fim": "2026-11-29", "mes": 1, "pct": 28, "faltamDias": 33}, "total": {"longos": 2, "shorts": 4, "carrosseis": 2, "thumbs": 2, "roteiros": 2}, "catalogo": true, "feito": {"longos": 0, "shorts": 0, "carrosseis": 0, "thumbs": 0, "roteiros": 2}, "mes": {}, "inclui": [], "diferencas": ["Clone de Voz e Imagem incluído a mais", "Fase 3 (Análise e Ajustes) a mais, com calls de alinhamento"], "extras": [{"tipo": "ID visual", "estado": "andando"}], "abertos": 2, "atrasados": 0, "dias": [], "alinhamento": "", "drive": ""}, {"id": "c4", "nome": "Paula Reis (exemplo)", "faixa": "B", "atencao": false, "situacao": "Ativo", "fase": "Produção", "plano": "Assessoria trimestral", "tags": [], "semContrato": false, "contrato": {"inicio": "2026-07-01", "meses": 3, "fim": "2026-09-30", "mes": 4, "pct": 100, "faltamDias": -27}, "total": {"longos": 8, "shorts": 24, "carrosseis": 8, "thumbs": 8, "roteiros": 8}, "catalogo": false, "feito": {"longos": 7, "shorts": 21, "carrosseis": 6, "thumbs": 7, "roteiros": 8}, "mes": {}, "inclui": ["1 página de vendas, 1 copy, 1 funil"], "diferencas": ["Contrato congelado de 13/07 a 05/10/2026 a pedido da cliente"], "extras": [{"tipo": "Página", "estado": "falta"}, {"tipo": "Funil", "estado": "falta"}], "abertos": 1, "atrasados": 0, "dias": ["Qua"], "alinhamento": "", "drive": ""}, {"id": "c5", "nome": "Clínica Vida (exemplo)", "faixa": "C", "atencao": false, "situacao": "Ativo", "fase": "Produção", "plano": "", "tags": [], "semContrato": true, "contrato": null, "total": {"longos": null, "shorts": null, "carrosseis": null, "thumbs": null, "roteiros": null}, "catalogo": false, "feito": {"longos": 5, "shorts": 12, "carrosseis": 3, "thumbs": 5, "roteiros": 0}, "mes": {}, "inclui": [], "diferencas": [], "extras": [], "abertos": 1, "atrasados": 1, "dias": ["Sex"], "alinhamento": "", "drive": ""}]};
 const DEMO_C = {"ok":true,"hoje":"2026-10-26","agora":"10:20","calls":[

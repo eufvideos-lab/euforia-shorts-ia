@@ -14,6 +14,7 @@ Tela da equipe por cima do Notion. O Notion continua sendo o banco (Entregas, Cl
   - `acao.js` → "Painel | Botões da equipe (V1)": Comecei, Mandar para revisão, Aprovar, Pedir ajuste, Agendei, Postei. Cada botão só vale para quem pode e na etapa certa.
   - `arquivo.js` → "Painel | Envio de arquivo da equipe (V1)": abre o envio direto ao Drive (pasta do cliente › ENTREGAS DO PAINEL) e confere no fim.
   - `diretor.js` → "Painel | Diretor (V1)": só o papel diretor. Visão de todos os cards e da equipe, editar qualquer campo, criar card, ver as mensagens que a equipe mandou nos grupos de cliente, aba Clientes (`acao: 'clientes'`: ficha, contrato lido do "Resumo do contrato", feito x total desde o início do contrato, abertos, postados do último ano e última conversa no grupo) e mudar clima, risco, recuperação, atenção e próximo alinhamento da ficha (`acao: 'ficha'`).
+  - `formularios.js` → "Painel | Formulários dos clientes (V1)": aba Formulários do Ismael, do Rômulo e da diretoria. Lê o banco 📝 Onboarding · Respostas e devolve as respostas legíveis, com links (YouTube, Instagram, fotos) e arquivos. Só leitura; respostas de teste só aparecem para o usuário de teste. A aba fica escondida com `FORMULARIOS_NO_AR = false` até o OK da diretoria.
   - `pedido.js` → "Painel | Pedido ao escritório (V1)": cria card no Entregas para o Escritório (Flau + IA), automático ou à mão.
 
 Acesso: tabela do n8n "Painel equipe · acesso" (token, PIN, nome, ficha, papel, ativo). Token e PIN nunca vão para o Notion, Discord ou este repositório.
