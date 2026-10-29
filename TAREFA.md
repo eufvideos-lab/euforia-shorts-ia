@@ -5,6 +5,8 @@ no quadro 🎬 Pedidos de Shorts IA do Notion. Responda e registre tudo em portu
 
 ## Endereços fixos
 - Quadro de pedidos (Notion, data source): collection://ee1fefc1-6ee5-4751-92e3-22dab57f7356
+  (fila sem gastar cota: modo view em view://40698c0c-dde0-8109-8be7-000c3f588f28, "🤖 Fila da máquina", já filtrada
+  em Editar/Ajustar e do mais antigo para o mais novo)
 - Clientes (Notion, data source): collection://44f009f6-e49b-4b88-b155-3e73ee1ab79b (campo "Identidade shorts (IA)")
 - Ficha dos modelos: página "Modelos de Shorts" (3f298c0cdde0816ca611d7b844bf1c46)
 - Tabela de medição: collection://39d3d9d8-f32e-432f-ae98-9511c67fa53e
@@ -16,8 +18,10 @@ no quadro 🎬 Pedidos de Shorts IA do Notion. Responda e registre tudo em portu
     (mensagem exata, arquivo, tamanho, passo que falhou, sugestão de correção).
 
 ## 1. Ver se há trabalho (rápido, gasta pouco)
-Consulte o quadro: Status = "Editar" ou "Ajustar". Se não houver nenhum, encerre sem fazer mais nada.
-Atenda no máximo 2 pedidos por rodada (o resto fica para a próxima). Mais antigo primeiro.
+Leia a visão "🤖 Fila da máquina" com notion-query-data-sources em modo view (nunca SQL nem filtro: a cota do
+Notion é dividida com todas as máquinas e o painel, e quando acaba tudo para). Se vier vazia, encerre sem fazer mais nada.
+Atenda 2 pedidos por rodada, mais antigo primeiro. Se os 2 terminarem com a rodada abaixo de 35 minutos e ainda
+houver fila, pegue mais 1 (no máximo 4 por rodada). O resto fica para a próxima.
 
 ## 2. Preparar a máquina (só se houver pedido)
 O código está no repositório público da Euforia: `git clone --depth 1 https://github.com/eufvideos-lab/euforia-shorts-ia.git`.
@@ -28,7 +32,9 @@ bash instalar.sh   # instala Remotion e OpenCV (~15 s)
 ```
 
 ## 3. Para cada pedido
-1. Mude o Status para "Em edição" e escreva no "Log da máquina": "iniciado <data hora>".
+1. Abra a página do pedido e confira que o Status ainda é "Editar" ou "Ajustar" (outra rodada pode ter pegado).
+   Se não for, pule este pedido sem mexer nele. Se for, mude o Status para "Em edição" na hora e escreva no
+   "Log da máquina": "iniciado <data hora>".
 2. Pegue o ID do arquivo no link "Vídeo editado (link do Drive)" (o trecho depois de /d/ ou id=).
    Se o link for de pasta, liste a pasta com o Google Drive e use o vídeo editado mais recente (.mp4/.mov).
    Se não achar vídeo: Status "Erro" e siga para o próximo (veja "Como tratar erro").
@@ -54,7 +60,8 @@ bash instalar.sh   # instala Remotion e OpenCV (~15 s)
    produto de loja ou paisagem que não pareça Brasil sai do plano).
    Vídeo antigo com legenda/site gravados embaixo: em vez de marcar Erro, use `--cortar-baixo 0.22`.
 6. Identidade (só Institucional): leia "Identidade shorts (IA)" do cliente. Se estiver vazio, procure no Drive do
-   cliente (pasta MATERIAIS VISUAIS, tela final, carrosséis), tire as cores (fundo claro, texto escuro, destaque) e
+   cliente seguindo `PASTAS.md` (04 - IDENTIDADE VISUAL/LOGO E MANUAL e CAPAS DE SHORTS; reserva: MATERIAIS VISUAIS,
+   tela final, carrosséis), tire as cores (fundo claro, texto escuro, destaque) e
    grave no campo, no formato `fundo=#...; texto=#...; destaque=#...; fonte=...; logo=...`.
    Sem nada para tirar: fundo #FDFBF7, texto #1F2937, destaque #D45C78.
 7. Pasta de entrega: se "Pasta de entrega (opcional)" estiver preenchida, use ela. Senão, crie com o Google Drive

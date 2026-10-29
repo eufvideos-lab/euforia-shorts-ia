@@ -25,7 +25,9 @@ carrosséis de Instagram e entrega no Drive. Tudo em português do Brasil.
   - #ia-status (1559987978774777998): diretoria. Todo detalhe técnico de erro vai aqui.
 
 ## 1. Ver se há trabalho
-Consulte o quadro: Status "Criar" ou "Ajustar". Se não houver, encerre. Atenda 1 pedido por rodada, o mais antigo.
+Consulte o quadro: Status "Criar" ou "Ajustar". Se não houver, encerre. Use só o modo view (a visão acima), nunca SQL: a cota do Notion
+é dividida com todas as máquinas. Atenda 1 pedido por rodada, o mais antigo; se ele terminar com a rodada abaixo de
+30 minutos e houver fila, pegue o próximo (no máximo 3 por rodada).
 
 ## 2. Preparar a máquina
 ```
@@ -35,13 +37,15 @@ cd carrossel && npm ci --no-audit --no-fund --loglevel=error; cd ..
 O Chrome já vem no ambiente (/opt/pw-browsers). Se não achar, use `CHROME=<caminho>`.
 
 ## 3. Para o pedido
-1. Status "Em produção"; no "Log da máquina": "iniciado <data hora>".
+1. Abra a página do pedido e confira que o Status ainda é "Criar" ou "Ajustar" (outra rodada pode ter pegado). Se não
+   for, pule este pedido sem mexer nele. Se for, Status "Em produção" na hora; no "Log da máquina": "iniciado <data hora>".
 2. Pasta de trabalho: `pedidos/<id-curto>/` com `assets/fotos/`.
 3. **Identidade da cliente.**
    a. Se "Identidade carrossel (IA)" do cliente estiver preenchida (JSON), baixe o logo pelos IDs
       (`ponte.baixar`) para `assets/` e monte `identidade.json` (formato abaixo).
    b. Se estiver vazia, analise: abra a pasta "Fotos e identidade" do pedido ou, sem ela, o Drive do cliente (campo
-      "Drive"; procure MATERIAIS VISUAIS, manual da marca, logo, fotos, thumbs e carrosséis já postados).
+      "Drive"; siga `PASTAS.md`: 04 - IDENTIDADE VISUAL (LOGO E MANUAL, MODELOS DE CARROSSEL, MODELOS DE THUMB);
+      reserva: MATERIAIS VISUAIS, manual da marca, logo, fotos, thumbs e carrosséis já postados).
       Baixe as peças (até ~10), rode `python3 carrossel/analisar.py folha pedidos/<id>/ref.jpg <imagens>` e OLHE a folha.
       `python3 carrossel/analisar.py cores <logo/peças>` dá as cores dominantes. Defina:
       - cores: `claro` (fundo claro), `escuro` (fundo escuro), `destaque`, `texto_claro`, `texto_escuro`
@@ -58,6 +62,16 @@ O Chrome já vem no ambiente (/opt/pw-browsers). Se não achar, use `CHROME=<cam
    carrossel), as "Observações para a máquina" e a "Direção criativa" do cliente. Escreva
    `pedidos/<id-curto>/carrosseis.json` seguindo `carrossel/prompts/roteiro_carrossel.md`, com a quantidade do
    "Pacote" (1, 3, 6 ou 12).
+   **Sem roteiro não é erro.** Se o cliente não tiver roteiro disponível, busque o conteúdo nesta ordem:
+   a. Vídeos citados nas Observações (título ou data) ou, sem citação, os mais recentes do cliente: ache o vídeo no
+      Drive do cliente (campo "Drive": vídeos editados, ARQUIVOS BRUTOS) e transcreva com
+      `python3 -c "import sys,json; sys.path.insert(0,'pipeline'); import ponte; print(json.dumps(ponte.transcrever('<audio.mp3>')))"`
+      (extraia o áudio antes com ffmpeg, mono 16 kHz). O carrossel resume as ideias do vídeo.
+   b. Pautas do cliente no 🎬 (mesmo sem roteiro escrito).
+   c. Nicho, oferta e "Direção criativa" da ficha: carrossel educativo do nicho, sem inventar dado, número ou promessa.
+   Diga no log de onde veio o conteúdo (ex.: "conteúdo da transcrição do vídeo 19/10, sem roteiro"). Só é "Erro" se
+   não houver nem vídeo, nem pauta, nem nicho na ficha; aí o log diz exatamente o que falta e o aviso no
+   #carrosel-automático pode dizer isso (é coisa que a equipe resolve).
    **Fotos do Google** (padrão: nada de foto do cliente). Para cada carrossel, decida 1 ou 2 buscas (capa e, se
    ajudar, um slide interno), rode o fluxo de fotos com todas as buscas do pedido de uma vez e junte cada foto com
    `python3 carrossel/juntar_foto.py pedidos/<id-curto>/assets/fotos/<nome>.jpg <id_part01> [<id_part02>...]`.
