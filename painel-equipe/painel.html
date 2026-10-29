@@ -1230,7 +1230,7 @@ async function carregarCarteira(){
 }
 // Formulários de onboarding (banco 📝 Onboarding · Respostas). Só leitura; os links dos arquivos do Notion valem 1 hora, então a aba pede de novo a cada abertura.
 // A aba fica escondida até a diretoria aprovar a prévia (na demonstração ela aparece).
-const FORMULARIOS_NO_AR = false;
+const FORMULARIOS_NO_AR = true;
 function filtraFo(f){
   const q = FOQ.trim().toLowerCase();
   if (q && !(f.nome + ' ' + (f.cliente ? f.cliente.nome : '')).toLowerCase().includes(q)) return false;
