@@ -70,6 +70,10 @@ textarea{min-height:70px;resize:vertical}
 .call .n{font-weight:700;font-size:16px}
 .st{display:inline-block;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:700;color:#fff;background:var(--c,#7986cb)}
 .st.no_show{color:#111}
+.who{margin-left:auto;font-size:13px;font-weight:700;border:1px solid var(--line);border-radius:999px;padding:4px 12px}
+.who b{color:var(--or)}
+.who.eu{border-color:var(--or)}
+.who.sem{color:var(--mut);font-weight:500}
 .call .meta{color:var(--mut);font-size:13px;margin-top:6px}
 .call .meta a{color:var(--or)}
 .sbtns{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
@@ -223,11 +227,11 @@ function mostrarCalls(){
     return '<div class="dgroup"><h3>'+esc(g.r)+'</h3>'+g.l.map(function(c){
       var s=ST[c.status]||ST.pendente, hora=new Date(c.inicio).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit',timeZone:'America/Recife'});
       var meta=[];
-      if(c.sdr)meta.push('Marcada por '+esc(c.sdr)+(c.numero?' · '+esc(c.numero.replace(/ \(.*$/,'')):''));
+      if(c.numero)meta.push('Número '+esc(c.numero.replace(/ \(.*$/,'')));
       if(c.por)meta.push(esc(s[0])+' por '+esc(c.por)+(c.em?' em '+esc(new Date(c.em).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit',timeZone:'America/Recife'})):''));
       if(c.meet)meta.push('<a href="'+esc(c.meet)+'" target="_blank" rel="noopener">Link do Meet</a>');
       var bts=ORDEM.map(function(k){if(k==='pendente'&&c.status==='pendente')return '';return '<button data-id="'+esc(c.id)+'" data-s="'+k+'" style="--c:'+ST[k][1]+'" class="'+(c.status===k?'cur':'')+'">'+(k==='pendente'?'Voltar para pendente':ST[k][0])+'</button>'}).join('');
-      return '<div class="call" style="--c:'+s[1]+'"><div class="l1"><span class="h">'+esc(hora)+'</span><span class="n">'+esc(c.nome)+'</span><span class="st '+esc(c.status)+'">'+esc(s[0])+'</span></div>'
+      return '<div class="call" style="--c:'+s[1]+'"><div class="l1"><span class="h">'+esc(hora)+'</span><span class="n">'+esc(c.nome)+'</span><span class="st '+esc(c.status)+'">'+esc(s[0])+'</span>'+(c.sdr?'<span class="who'+(c.sdr.toLowerCase()===cred.usuario?' eu':'')+'">Marcou: <b>'+esc(c.sdr)+'</b></span>':'<span class="who sem">Marcada direto na agenda</span>')+'</div>'
         +(meta.length?'<div class="meta">'+meta.join(' · ')+'</div>':'')
         +'<div class="sbtns"><button class="wa" data-wa="'+esc(c.id)+'">Mensagem de confirmação</button>'+bts+'</div></div>';
     }).join('')+'</div>';
