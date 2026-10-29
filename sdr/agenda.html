@@ -144,6 +144,7 @@ textarea{min-height:70px;resize:vertical}
 .remar .rrow{display:flex;gap:8px;margin:8px 0}.remar .rrow input{width:auto}
 .rslots{display:flex;flex-wrap:wrap;gap:8px}.rslots .slot{width:auto;min-width:90px;padding:8px 14px;border-radius:10px;border:1px solid var(--or);background:transparent;color:var(--txt);font-weight:600}
 .sbtns .rmc{border-color:rgba(255,90,0,.5)}
+.sbtns .apg{border-color:rgba(213,0,0,.55);color:#ff8a80}
 .fxc{display:inline-block;margin:2px 4px 2px 0;padding:3px 8px;border-radius:999px;background:rgba(255,255,255,.06);font-size:12px;white-space:nowrap}
 .fxc b{color:var(--or)}
 .cicbar{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:14px}
@@ -365,7 +366,7 @@ function cardHTML(c){
       return '<div class="call" style="--c:'+corCall(c)+'"><div class="l1"><span class="h">'+esc(hora)+'</span><span class="n">'+esc(c.nome)+'</span>'+(tl?'<span class="ph">'+esc(tl)+'</span><button class="cp" data-cp="'+esc(c.whats)+'">Copiar</button>':'<span class="ph sem">sem número</span>')+igHTML(c.insta)+(c.numero?'<span class="eb" title="Número que marcou">'+esc(c.numero.replace(/ \(.*$/,''))+'</span>':'')+'<span class="st '+esc(c.status)+'">'+esc(s[0])+'</span>'+(c.tipo?'<span class="tp '+esc(c.tipo)+'">'+(c.tipo==='fechamento'?'Fechamento':'Diagnóstico')+'</span>':'<span class="tp sem">Tipo não marcado</span>')+(c.sdr?'<span class="who'+(c.sdr.toLowerCase()===cred.usuario?' eu':'')+'">Marcou: <b>'+esc(c.sdr)+'</b></span>':'<span class="who sem">Marcada direto na agenda</span>')+'</div>'
         +(meta.length?'<div class="meta">'+meta.join(' · ')+'</div>':'')
         +'<div class="trow">Tipo da call:<button data-tid="'+esc(c.id)+'" data-tipo="diagnostico" class="'+(c.tipo==='diagnostico'?'cur':'')+'">Diagnóstico</button><button data-tid="'+esc(c.id)+'" data-tipo="fechamento" class="'+(c.tipo==='fechamento'?'cur':'')+'">Fechamento</button></div>'
-        +'<div class="sbtns"><button class="wa" data-wa="'+esc(c.id)+'">Mensagem de confirmação</button><button class="rmc" data-rmc="'+esc(c.id)+'">Remarcar</button>'+bts+'</div><div class="remar" data-rbox="'+esc(c.id)+'" hidden></div></div>';
+        +'<div class="sbtns"><button class="wa" data-wa="'+esc(c.id)+'">Mensagem de confirmação</button><button class="rmc" data-rmc="'+esc(c.id)+'">Remarcar</button><button class="apg" data-apg="'+esc(c.id)+'">Apagar</button>'+bts+'</div><div class="remar" data-rbox="'+esc(c.id)+'" hidden></div></div>';
 }
 function mostrarCalls(){
   contaPend();
@@ -423,6 +424,13 @@ function cliqueCall(e){
     var hj=isoDia(recife(Date.now())),d0=isoDia(recife(new Date(cr.inicio).getTime()));
     box.innerHTML='<b>Remarcar '+esc(cr.nome)+'</b><p class="hint">O lead recebe o convite com o novo horário. O bloqueio do Diogo e o CRM mudam junto.</p><div class="rrow"><input type="date" data-rdia min="'+hj+'" value="'+(d0<hj?hj:d0)+'"><button class="ghost" data-rfecha>Fechar</button></div><div class="rslots" data-rslots><p class="load">Escolha o dia.</p></div><p class="msg" data-rmsg></p>';
     box.hidden=false;carregaSlots(box);return;}
+  var ap=e.target.closest('[data-apg]');
+  if(ap){var aid=ap.getAttribute('data-apg'),ca=achar(aid);if(!ca)return;
+    if(!confirm('Apagar a call de '+ca.nome+' ('+quandoTxt(ca.inicio)+')?\n\nO lead recebe o aviso de cancelamento e o bloqueio do Diogo sai junto. Não dá para desfazer.'))return;
+    ap.disabled=true;ap.textContent='Apagando…';
+    api({acao:'apagar',evento:aid,antes:ca.inicio,nome:ca.nome}).then(function(r){
+      if(!r.ok){$('mApp').textContent=r.erro||'Não consegui apagar.';ap.disabled=false;ap.textContent='Apagar';return;}
+      if(aba==='cal')carregarSemana();else carregarCalls();});return;}
   if(e.target.closest('[data-rfecha]')){e.target.closest('.remar').hidden=true;return;}
   var rs=e.target.closest('[data-rini]');
   if(rs){var bx=rs.closest('.remar'),cid=bx.getAttribute('data-rbox'),c1=achar(cid);if(!c1)return;
