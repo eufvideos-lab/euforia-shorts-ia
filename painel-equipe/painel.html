@@ -667,7 +667,7 @@ const VIEWS = {
     } },
   calls: { nome: 'Próximas calls', pode: () => ['revisor', 'calls', 'diretor', 'teste'].includes(papel()), badge: () => CC ? CC.calls.filter(c => c.dia === CC.hoje && c.fimHora > CC.agora).length : 0,
     html(){
-      const topo = `<div class="head"><div><p class="eyebrow">Agenda Assessoria EDL${CC ? ' · atualizada às ' + esc(CC.agora) : ''}</p><h1>Próximas calls</h1></div><p class="sub">Tudo o que está marcado na agenda das reuniões, inclusive o que o cliente marcou sozinho pela página. As marcadas nas últimas 24 horas aparecem com "Nova". A apresentação de cada call fica pronta na véspera e aparece aqui.</p></div>`;
+      const topo = `<div class="head"><div><p class="eyebrow">Agenda Assessoria EDL${CC ? ' · atualizada às ' + esc(CC.agora) : ''}</p><h1>Próximas calls</h1></div><p class="sub">Tudo o que está marcado na agenda das reuniões, inclusive o que o cliente marcou sozinho pela página. As marcadas nas últimas 24 horas aparecem com "Nova". A apresentação de cada call fica pronta na véspera e aparece aqui. Se ela foi feita por fora, use "Pôr link" para colar o link; "Trocar link" corrige ou tira.</p></div>`;
       if (!CC) return topo + '<p class="sub">Carregando…</p>';
       if (CC.erro) return topo + '<p class="empty">Não consegui ler a agenda agora. Tente de novo em alguns minutos.</p>';
       const dias = [...new Set(CC.calls.map(c => c.dia))];
@@ -675,7 +675,7 @@ const VIEWS = {
       const item = c => `<li class="item ${c.agora ? 'late' : c.novo ? 'today' : ''}"><span class="stripe"></span>
         <div class="main" style="cursor:default"><span class="t">${esc(c.hora)} · ${esc(c.cliente)}</span>
         <span class="meta">${c.agora ? '<span class="chip red">Acontecendo agora</span>' : ''}${c.novo ? '<span class="chip org">Nova</span>' : ''}${c.tipo ? `<span class="chip">${esc(c.tipo)}</span>` : ''}<span class="chip">${esc(c.hora)} às ${esc(c.fimHora)}</span>${c.convidados ? `<span class="chip">${c.convidados} convidado${c.convidados > 1 ? 's' : ''}</span>` : ''}</span></div>
-        <span class="act" style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">${/^https:/.test(c.apresentacao || '') ? `<a class="btn ${c.agora ? '' : 'primary'}" href="${esc(c.apresentacao)}" target="_blank" rel="noopener">Abrir apresentação</a>` : c.apresentacao === 'producao' ? '<span class="chip">Apresentação em produção</span>' : ''}${/onboarding/i.test(c.tipo || '') ? `<a class="btn" href="${TOUR_PORTAL}" target="_blank" rel="noopener">Tour do Portal</a>` : ''}${c.meet ? `<a class="btn ${c.agora ? 'primary' : ''}" href="${esc(c.meet)}" target="_blank" rel="noopener">Entrar no Meet</a>` : ''}</span></li>`;
+        <span class="act" style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">${/^https:/.test(c.apresentacao || '') ? `<a class="btn ${c.agora ? '' : 'primary'}" href="${esc(c.apresentacao)}" target="_blank" rel="noopener">Abrir apresentação</a>` : c.apresentacao === 'producao' ? '<span class="chip">Apresentação em produção</span>' : ''}${/onboarding/i.test(c.tipo || '') ? `<a class="btn" href="${TOUR_PORTAL}" target="_blank" rel="noopener">Tour do Portal</a>` : ''}<button class="btn" data-linkcall="${esc(c.id)}">${/^https:/.test(c.apresentacao || '') ? 'Trocar link' : 'Pôr link'}</button>${c.meet ? `<a class="btn ${c.agora ? 'primary' : ''}" href="${esc(c.meet)}" target="_blank" rel="noopener">Entrar no Meet</a>` : ''}</span></li>`;
       const passou = c => c.dia === CC.hoje && c.fimHora <= CC.agora;
       const novas = CC.calls.filter(c => c.novo && !passou(c)).length;
       return topo + `<div class="stats">
@@ -1281,6 +1281,33 @@ async function copiar(t){
   try { await navigator.clipboard.writeText(t); toast('Copiado.'); }
   catch (e) { const x = document.createElement('textarea'); x.value = t; document.body.appendChild(x); x.select(); let ok = false; try { ok = document.execCommand('copy'); } catch (er) {} x.remove(); toast(ok ? 'Copiado.' : 'Não deu para copiar. Selecione e copie à mão.'); }
 }
+// Link da apresentação posto à mão: grava no card do Entregas da call (achado pelo evento da agenda) ou cria um card novo.
+function abrirLinkCall(k){
+  const tem = /^https:/.test(k.apresentacao || '');
+  $('#layer').innerHTML = `<div class="scrim" data-x></div><aside class="drawer" role="dialog" aria-modal="true" aria-labelledby="lc-t"><div class="drawer-in">
+    <button class="close" data-x>Fechar</button>
+    <div><p class="eyebrow">Apresentação da call · ${esc(fmt(k.dia))} ${esc(k.hora)}</p><h2 id="lc-t" style="font-size:26px">${esc(k.cliente)}</h2>${k.tipo ? `<p class="sub">${esc(k.tipo)}</p>` : ''}</div>
+    <p class="note">Cole o link da apresentação (começa com https://). Ele aparece no botão "Abrir apresentação" para todo mundo que vê esta call.</p>
+    <form id="flink" style="display:flex;flex-direction:column;gap:12px">
+      <label for="lc-l">Link da apresentação<input type="url" id="lc-l" maxlength="500" placeholder="https://" value="${esc(tem ? k.apresentacao : '')}" autocomplete="off" spellcheck="false"></label>
+      <div class="actions"><button class="btn primary" type="submit">Salvar link</button>${tem ? '<button class="btn" type="button" data-tiralink>Tirar o link</button>' : ''}</div>
+    </form></div></aside>`;
+  const salvar = async link => {
+    if (ocupado) return;
+    if (link && !/^https:\/\/\S+$/.test(link)) { toast('O link tem que começar com https://'); return; }
+    ocupado = true;
+    try { const r = await api('euforia-painel-call-link', { evento: k.id, cliente: k.cliente, tipo: k.tipo, dia: k.dia, link }); if (!r || !r.ok) throw new Error((r && r.motivo) || 'erro'); toast(link ? 'Link salvo. Já aparece em "Abrir apresentação".' : 'Link tirado.'); }
+    catch (er) { ocupado = false; toast(er.message === 'campos' ? 'Esse link não parece certo. Confira e tente de novo.' : (MOTIVO[er.message] || ERRO)); return; }
+    ocupado = false; k.apresentacao = link; fechar(); render(); carregarCalls();
+  };
+  $('#flink').onsubmit = e => { e.preventDefault(); salvar($('#lc-l').value.trim()); };
+  $('#layer').onclick = e => {
+    if (e.target.closest('[data-x]')) { if (!ocupado) fechar(); return; }
+    const t = e.target.closest('[data-tiralink]'); if (t) { if (!t.dataset.certeza) { t.dataset.certeza = '1'; t.textContent = 'Confirmar: tirar o link'; t.classList.add('warn'); return; } salvar(''); }
+  };
+  setTimeout(() => $('#lc-l') && $('#lc-l').focus(), 50);
+}
+
 async function abrirAcessos(k, editar){
   let lista = abrirAcessos.cache && abrirAcessos.cache.id === k.id ? abrirAcessos.cache.l : null;
   const desenha = () => {
@@ -1661,6 +1688,7 @@ document.addEventListener('click', async e => {
   const kcl = e.target.closest('#main [data-cli]'); if (kcl) { abrirCliente(kcl.dataset.cli); return; }
   const kf = e.target.closest('#main [data-clf]'); if (kf) { CLF = CLF === kf.dataset.clf ? '' : kf.dataset.clf; render(); return; }
   const ap = e.target.closest('#main [data-apagaped]'); if (ap) { apagarPedido(ap); return; }
+  const lc = e.target.closest('#main [data-linkcall]'); if (lc) { const k = CC && CC.calls.find(x => x.id === lc.dataset.linkcall); if (k) abrirLinkCall(k); return; }
   const ac = e.target.closest('#main [data-acessos]'); if (ac) { const k = CE.clientes.find(x => x.id === ac.dataset.acessos); if (k) abrirAcessos(k); return; }
   const ga = e.target.closest('#main [data-gaba]'); if (ga) { GP = ga.dataset.gaba; render(); return; }
   const fo = e.target.closest('#main [data-form]'); if (fo) { abrirFormulario(fo.dataset.form); return; }
@@ -1784,6 +1812,7 @@ function demoApi(path, b){
   }
   if (path === 'euforia-painel-responder') return wait({ ok: true, pelo: 'seu número' });
   if (path === 'euforia-painel-calls') return wait(DEMO_C);
+  if (path === 'euforia-painel-call-link') { const c = DEMO_C.calls.find(x => x.id === b.evento); if (c) c.apresentacao = b.link; return wait({ ok: true }); }
   if (path === 'euforia-painel-clientes') return wait(DEMO_CE);
   if (path === 'euforia-painel-formularios') return wait(DEMO_FO);
   if (path === 'euforia-painel-acessos') {
