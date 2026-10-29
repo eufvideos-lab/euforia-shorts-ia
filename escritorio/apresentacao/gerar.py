@@ -56,6 +56,10 @@ def checar(d):
         ver(s.get('kicker'), f'slide {i} kicker', 60)
         ver(s.get('sub'), f'slide {i} sub', LIMITES['sub'])
         ver(s.get('rodape'), f'slide {i} rodapé', LIMITES['sub'])
+        for b in s.get('botoes', []):
+            ver(b.get('texto'), f'slide {i} botão', 40)
+            if not str(b.get('url', '')).startswith('https://'):
+                erros.append(f'slide {i}: botão sem link https.')
         for c in s.get('cards', []):
             ver(c.get('rotulo'), f'slide {i} card', 30)
             ver(c.get('titulo'), f'slide {i} card', 40)
@@ -79,6 +83,21 @@ def checar(d):
 def cabeca(s, cores):
     k = f'<p class="kicker">{esc(s.get("kicker"))}</p>' if s.get('kicker') else ''
     return f'<div class="cab">{k}<h2>{esc(s.get("titulo"))}</h2></div>'
+
+
+def _lum(cor):
+    r, g, b = (int(cor.lstrip('#')[k:k + 2], 16) / 255 for k in (0, 2, 4))
+    f = lambda v: v / 12.92 if v <= 0.03928 else ((v + 0.055) / 1.055) ** 2.4
+    return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b)
+
+
+def legivel(cor, fundo, opcoes):
+    # rótulo do card: usa a cor pedida se tiver contraste com o fundo; senão a primeira opção que tiver
+    contraste = lambda a, b: (max(_lum(a), _lum(b)) + 0.05) / (min(_lum(a), _lum(b)) + 0.05)
+    for c in [cor] + opcoes:
+        if contraste(c, fundo) >= 3:
+            return c
+    return opcoes[-1]
 
 
 def foto_cliente(arq, base):
@@ -124,7 +143,7 @@ def slide(s, d, n, base):
         cs = ''
         for j, card in enumerate(s['cards']):
             fundo = d['_fundos'][j % len(d['_fundos'])]
-            cor_r = d['_rotulos'][j % len(d['_rotulos'])]
+            cor_r = legivel(d['_rotulos'][j % len(d['_rotulos'])], fundo, d['_rotulos'] + [c['claro']])
             t = f'<h3>{esc(card["titulo"])}</h3>' if card.get('titulo') else ''
             cs += (f'<div class="card" style="background:{fundo}"><p class="rot" style="color:{cor_r}">'
                    f'{esc(card.get("rotulo"))}</p>{t}<p class="txt">{esc(card.get("texto"))}</p></div>')
@@ -132,7 +151,7 @@ def slide(s, d, n, base):
     if tipo == 'lista':
         its = ''.join(f'<div class="it"><span class="bola">{j + 1}</span><p>{esc(it)}</p></div>'
                       for j, it in enumerate(s['itens']))
-        return 'claro', cabeca(s, c) + f'<div class="lista">{its}</div>' + rod, nota
+        return 'claro', cabeca(s, c) + f'<div class="lista n{len(s["itens"])}">{its}</div>' + rod, nota
     if tipo == 'frase':
         corpo = (f'<div class="aro a3"></div><p class="kicker clara">{esc(s.get("kicker"))}</p>'
                  f'<h2 class="grande">{esc(s["titulo"])}</h2><p class="sub">{esc(s.get("sub"))}</p>')
@@ -203,12 +222,15 @@ h3{font-size:38px;font-weight:700;line-height:1.2}
 .lista{display:flex;flex-direction:column;gap:28px;flex:1;justify-content:center}
 .it{display:flex;gap:36px;align-items:center;padding:36px 48px;background:var(--cartao);border-radius:24px}
 .it p{font-size:48px;font-weight:600;line-height:1.25}
+.lista.n5{gap:20px}.lista.n5 .it{padding:22px 48px}.lista.n5 .it p{font-size:44px}
 .bola{flex:none;width:76px;height:76px;border-radius:50%;background:var(--forte);color:var(--claro);display:flex;align-items:center;justify-content:center;font-size:36px;font-weight:700}
 .rodape{font-size:36px;color:var(--texto-2)}
 .galeria{display:grid;gap:24px;flex:1;min-height:0}
 .galeria img{width:100%;height:100%;object-fit:contain;border-radius:16px;min-height:0;filter:drop-shadow(0 12px 28px rgba(0,0,0,.18))}
 .g1{grid-template-columns:1fr}.g2{grid-template-columns:repeat(2,1fr)}.g3{grid-template-columns:repeat(3,1fr)}
 .g4{grid-template-columns:repeat(2,1fr);grid-template-rows:repeat(2,1fr)}
+.botoes{display:flex;gap:28px;flex-wrap:wrap;position:relative;z-index:2}
+.botao{font-size:34px;font-weight:700;text-decoration:none;padding:24px 44px;border-radius:999px;background:var(--destaque);color:var(--escuro)}
 #pag{position:fixed;right:24px;bottom:16px;font:600 14px Inter,Arial;color:#9a97ab}
 #notas{display:none;position:fixed;left:0;right:0;bottom:0;max-height:40vh;overflow:auto;background:#fffdf8;color:#1d1b26;
  padding:18px 28px;font:18px/1.5 Inter,Arial;border-top:4px solid var(--destaque)}
@@ -224,7 +246,7 @@ addEventListener('resize',ajusta);
 addEventListener('keydown',function(e){if(['ArrowRight','PageDown',' '].indexOf(e.key)>=0)vai(1);
  if(['ArrowLeft','PageUp'].indexOf(e.key)>=0)vai(-1);if(e.key=='n'||e.key=='N')nt.classList.toggle('on');
  if(e.key=='f'||e.key=='F'){document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen()}});
-pl.addEventListener('click',function(e){vai(e.clientX<innerWidth/4?-1:1)});
+pl.addEventListener('click',function(e){if(e.target.closest('a'))return;vai(e.clientX<innerWidth/4?-1:1)});
 ajusta();i=Math.max(0,(parseInt(location.hash.slice(1))||1)-1);vai(0);
 """
 
@@ -253,6 +275,10 @@ def montar(d, base):
     secoes = ''
     for n, s in enumerate(d['slides'], 1):
         classe, corpo, nota = slide(s, d, n, base)
+        if s.get('botoes'):  # links clicáveis (página, simulação do funil) dentro do slide
+            corpo += '<div class="botoes">' + ''.join(
+                f'<a class="botao" href="{esc(b["url"])}" target="_blank" rel="noopener">{esc(b["texto"])} ↗</a>'
+                for b in s['botoes']) + '</div>'
         secoes += f'<section class="s {classe}" data-notas="{nota}">{corpo}</section>\n'
     return (f'<!doctype html><html lang="pt-BR"><head><meta charset="utf-8">'
             f'<meta name="robots" content="noindex, nofollow">'
