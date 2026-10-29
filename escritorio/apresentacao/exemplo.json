@@ -1,0 +1,25 @@
+{
+  "titulo": "Cliente Exemplo · Reunião de Estratégia",
+  "data": "28 de outubro de 2026",
+  "cores": {"escuro": "#24393C", "medio": "#2F4B4F", "forte": "#3E6469", "destaque": "#F3D191", "acento": "#8FC1B5"},
+  "slides": [
+    {"tipo": "capa", "kicker": "Grupo Euforia · Reunião de Estratégia", "titulo": "Nome do", "titulo_destaque": "Canal",
+     "sub": "Nome do cliente. O que esta reunião vai resolver, em uma frase.", "notas": "Agradecer e pedir para gravar."},
+    {"tipo": "agenda", "kicker": "Hoje", "titulo": "O que vamos resolver nesta reunião",
+     "itens": ["Onde estamos", "Linha editorial", "A cara do canal", "Próximos passos"]},
+    {"tipo": "cards", "kicker": "Onde estamos", "titulo": "Entregas do mês",
+     "cards": [{"rotulo": "Feito", "texto": "O que já foi entregue, conferido no Entregas."},
+               {"rotulo": "Em produção", "texto": "O que está sendo feito agora."},
+               {"rotulo": "Com você", "texto": "O que depende do cliente."}],
+     "notas": "Pendências e datas a confirmar ficam aqui nas notas, nunca no slide."},
+    {"tipo": "divisor", "numero": "01", "titulo": "Linha editorial", "citacao": "Frase real do cliente.", "fonte": "Cliente, no formulário"},
+    {"tipo": "lista", "kicker": "Na hora de gravar", "titulo": "Quatro hábitos",
+     "itens": ["Roteiro em tópicos, não lido", "Olhar para a lente", "Frases curtas, com pausas", "Gravar vários no mesmo dia"]},
+    {"tipo": "etapas", "kicker": "Próximos passos", "titulo": "Daqui para a primeira gravação",
+     "cards": [{"rotulo": "Hoje", "titulo": "Decisão", "texto": "O que decidimos nesta call."},
+               {"rotulo": "Com você", "titulo": "Material", "texto": "O que o cliente envia."},
+               {"rotulo": "Depois", "titulo": "Gravação", "texto": "O próximo marco."}]},
+    {"tipo": "feedback"},
+    {"tipo": "obrigado", "titulo": "Obrigado!", "sub": "O resumo e os combinados vão para o grupo hoje."}
+  ]
+}

@@ -1,0 +1,613 @@
+{
+  "tipo": "situacao",
+  "cliente": "Instituto Polyana Forlin",
+  "plano": "Assessoria EDL Semestral · contrato de 24/09/2026 (6 meses, até ~23/03/2027) · Faixa B",
+  "gerado_em": "28/10/2026 09h40",
+  "pedido_por": "Prévia do escritório (exemplo real)",
+  "semaforo": "amarelo",
+  "frase": "Setup quase pronto, mas nada foi gravado. A conta de 20 vídeos só fecha se ela gravar até 02/11 e o canal estrear em 09/11.",
+  "numeros": [
+    {
+      "valor": "Dia 34 de 180",
+      "rotulo": "do contrato (19%)"
+    },
+    {
+      "valor": "0 de 20",
+      "rotulo": "vídeos longos publicados"
+    },
+    {
+      "valor": "7",
+      "rotulo": "pendências da cliente"
+    },
+    {
+      "valor": "16",
+      "rotulo": "demandas neste documento"
+    }
+  ],
+  "leitura": [
+    "O setup andou bem: 4 das 5 calls feitas (onboarding, oferta, consultoria audiovisual, estratégia), identidade visual aprovada em 07/10, canal otimizado, 13 pautas aprovadas em 16/10, 12 roteiros escritos e a página de vendas v1 pronta (PDF mandado no grupo hoje às 9h21). A call de lançamento está acontecendo agora (28/10, 9h30), depois de ser remarcada duas vezes.",
+    "O problema é a produção: 0 de 20 longos, 0 de 60 shorts e 0 de 20 carrosséis, porque ainda não houve gravação. O gargalo é a agenda da cliente, não a equipe: ela trabalha numa empresa de terça a sábado, grava só às segundas e viaja de 28 a 30/10 (curso no G4 em SP).",
+    "Restam 21 semanas de contrato a partir de 09/11. Com 1 longo + 3 shorts + 1 carrossel por semana, a conta fecha só se a estreia for em 09/11 e nenhuma semana falhar. Cada semana perdida é 1 longo, 3 shorts e 1 carrossel a menos no fim. Por isso a primeira gravação (segunda 02/11) é a coisa mais importante desta semana.",
+    "Clima: cliente colaborativa e positiva (\"bora esse negócio funcionar\"), aprova o que vê e responde de forma objetiva quando recebe uma lista clara. Ainda não respondeu os roteiros de 20/10 (8 dias)."
+  ],
+  "alertas": [
+    {
+      "nivel": "atr",
+      "titulo": "Sem data da primeira gravação",
+      "texto": "Nada foi gravado em 34 dias. Ela grava às segundas; a próxima é 02/11, que é feriado (Finados). Confirmar hoje, por escrito, se ela grava os vídeos 00 a 03 nesse dia."
+    },
+    {
+      "nivel": "atr",
+      "titulo": "Roteiros sem OK há 8 dias",
+      "texto": "Os 12 roteiros foram mandados em 20/10 e não houve resposta. Para não travar a gravação, pedir o OK só dos 4 primeiros (00 a 03)."
+    },
+    {
+      "nivel": "ate",
+      "titulo": "Implementação de 45 dias vence em 08/11",
+      "texto": "Na venda foram ditos 45 dias de implementação (24/09 + 45 = 08/11). Estreia em 09/11 fica no limite; qualquer atraso passa do que foi dito."
+    },
+    {
+      "nivel": "ate",
+      "titulo": "Depoimentos só no WhatsApp",
+      "texto": "Ela mandou em 27/10 cerca de 15 prints e 5 vídeos de depoimento. Não estão no Drive nem na página de vendas."
+    },
+    {
+      "nivel": "ate",
+      "titulo": "Domínio e hospedagem pedidos desde 29/09",
+      "texto": "A página de vendas está pronta, mas sem domínio não vai ao ar. Alternativa: publicar no nosso endereço (lp.grupoeuforia.tech) até o domínio chegar."
+    }
+  ],
+  "contrato_sub": "Base: Resumo do contrato na ficha do Notion, conferido com as calls e o grupo. Contagem de publicados = registrada no Entregas.",
+  "contrato": [
+    {
+      "item": "Calls do setup",
+      "contratado": "Onboarding, oferta, consultoria audiovisual, apresentação",
+      "feito": "4 de 5 (29/09, 07/10, 14/10, 20/10)",
+      "status": "andamento",
+      "obs": "Lançamento acontecendo hoje 28/10 9h30. A de 20/10 não tem anotação do Gemini no Drive."
+    },
+    {
+      "item": "ID do canal",
+      "contratado": "Identidade + kit visual",
+      "feito": "Aprovado em 07/10; canal otimizado até 14/10",
+      "status": "ok",
+      "obs": "Azul petróleo + bronze, Playfair Display + Inter."
+    },
+    {
+      "item": "O.E.E.",
+      "contratado": "Incluso no setup",
+      "feito": "Sem registro",
+      "status": "atencao",
+      "obs": "Não achei entrega com esse nome no Notion, no Drive nem no grupo. Rômulo confirma o que foi feito."
+    },
+    {
+      "item": "Pautas",
+      "contratado": "Para 20 vídeos",
+      "feito": "13 aprovadas (16/10)",
+      "status": "andamento",
+      "obs": "Faltam as pautas 13 a 19 (lote 2)."
+    },
+    {
+      "item": "Roteiros",
+      "contratado": "20",
+      "feito": "12 escritos, 0 aprovados",
+      "status": "cliente",
+      "obs": "Mandados 20/10. O 04 espera o caso real dela."
+    },
+    {
+      "item": "Vídeos longos",
+      "contratado": "20 (5 a 7 min)",
+      "feito": "0",
+      "status": "atrasado",
+      "obs": "Nenhuma gravação recebida; ARQUIVOS BRUTOS vazio."
+    },
+    {
+      "item": "Shorts",
+      "contratado": "60",
+      "feito": "0",
+      "status": "nao_iniciado",
+      "obs": "3 por longo, 30 s a 1 min; seg, qua e sex."
+    },
+    {
+      "item": "Carrosséis",
+      "contratado": "20",
+      "feito": "0 (modelo aprovado 07/10)",
+      "status": "nao_iniciado",
+      "obs": "1 por longo."
+    },
+    {
+      "item": "Thumbs",
+      "contratado": "20",
+      "feito": "0 (modelos aprovados)",
+      "status": "nao_iniciado",
+      "obs": "Pode adiantar as dos vídeos 00 a 03 com as fotos profissionais."
+    },
+    {
+      "item": "Página de vendas + copy",
+      "contratado": "1 página, 1 copy",
+      "feito": "v1 com quiz; PDF no grupo 28/10",
+      "status": "andamento",
+      "obs": "Faltam formato da mentoria, depoimentos na página, domínio e hospedagem."
+    },
+    {
+      "item": "Funil",
+      "contratado": "1",
+      "feito": "Desenhado em 07/10 (quiz → WhatsApp comercial)",
+      "status": "andamento",
+      "obs": "WhatsApp comercial recebido em 20/10 (é uma assistente de IA). Checkout ainda não definido."
+    },
+    {
+      "item": "Relançamento do canal",
+      "contratado": "Incluso",
+      "feito": "Não aconteceu",
+      "status": "atrasado",
+      "obs": "Depende da 1ª gravação. Sugestão: estreia 09/11."
+    },
+    {
+      "item": "TikTok",
+      "contratado": "Replicação de cortes, 4 meses",
+      "feito": "Não começou",
+      "status": "decidir",
+      "obs": "Ver diferenças entre venda e contrato."
+    },
+    {
+      "item": "Calls de alinhamento e análises",
+      "contratado": "Incluso (sem número no resumo)",
+      "feito": "Nenhuma (ainda em setup)",
+      "status": "nao_iniciado",
+      "obs": "Sugestão: 1 por mês a partir de dezembro, com relatório em percentuais."
+    }
+  ],
+  "promessas": [
+    {
+      "quando": "29/09",
+      "onde": "Onboarding",
+      "quem": "Euforia",
+      "o_que": "Tutorial de acesso ao canal e qualificação",
+      "status": "ok"
+    },
+    {
+      "quando": "29/09",
+      "onde": "Onboarding",
+      "quem": "Euforia",
+      "o_que": "Cronograma de 4 semanas com otimização do Instagram na 2ª semana",
+      "status": "atencao"
+    },
+    {
+      "quando": "29/09",
+      "onde": "Onboarding",
+      "quem": "Cliente",
+      "o_que": "Manual de marca, fotos profissionais e acesso de Editor",
+      "status": "ok"
+    },
+    {
+      "quando": "29/09",
+      "onde": "Onboarding",
+      "quem": "Cliente",
+      "o_que": "Acesso a domínio e hospedagem (no privado)",
+      "status": "cliente"
+    },
+    {
+      "quando": "07/10",
+      "onde": "Oferta",
+      "quem": "Euforia",
+      "o_que": "Aplicar o visual novo no canal até a semana seguinte",
+      "status": "ok"
+    },
+    {
+      "quando": "07/10",
+      "onde": "Oferta",
+      "quem": "Euforia",
+      "o_que": "Apresentar estratégia com roteiros, página, checkout e funil",
+      "status": "andamento"
+    },
+    {
+      "quando": "14/10",
+      "onde": "Consultoria",
+      "quem": "Euforia",
+      "o_que": "Checklist de gravação (Guia de Equipamentos enviado 14/10)",
+      "status": "ok"
+    },
+    {
+      "quando": "14/10",
+      "onde": "Consultoria",
+      "quem": "Euforia",
+      "o_que": "Mandar link do Drive com pastas 00, 01, 02... para os brutos",
+      "status": "atencao"
+    },
+    {
+      "quando": "14/10",
+      "onde": "Consultoria",
+      "quem": "Cliente",
+      "o_que": "OK nas pautas, vídeo-teste e fotos do cômodo",
+      "status": "ok"
+    },
+    {
+      "quando": "14/10",
+      "onde": "Consultoria",
+      "quem": "Cliente",
+      "o_que": "Caso real escrito para o vídeo 04",
+      "status": "cliente"
+    },
+    {
+      "quando": "14/10",
+      "onde": "Consultoria",
+      "quem": "Cliente",
+      "o_que": "Microfone de lapela (o dela não funciona)",
+      "status": "atencao"
+    },
+    {
+      "quando": "14/10",
+      "onde": "Consultoria",
+      "quem": "Cliente",
+      "o_que": "Lista das perguntas que mais recebe (por escrito)",
+      "status": "atencao"
+    },
+    {
+      "quando": "14/10",
+      "onde": "Consultoria",
+      "quem": "Euforia",
+      "o_que": "Shorts também no Reels, seg/qua/sex; TikTok 1 mês após o canal no ar",
+      "status": "nao_iniciado"
+    },
+    {
+      "quando": "20/10",
+      "onde": "Grupo",
+      "quem": "Cliente",
+      "o_que": "WhatsApp comercial e CNPJ",
+      "status": "ok"
+    },
+    {
+      "quando": "20/10",
+      "onde": "Grupo",
+      "quem": "Cliente",
+      "o_que": "Formato da mentoria e caso real",
+      "status": "cliente"
+    },
+    {
+      "quando": "20/10",
+      "onde": "Grupo",
+      "quem": "Cliente",
+      "o_que": "Aprovar os 12 roteiros",
+      "status": "cliente"
+    },
+    {
+      "quando": "27/10",
+      "onde": "Grupo",
+      "quem": "Cliente",
+      "o_que": "Depoimentos (prints e vídeos)",
+      "status": "ok"
+    },
+    {
+      "quando": "28/10",
+      "onde": "Grupo",
+      "quem": "Euforia",
+      "o_que": "PDF da página de vendas mandado para ela ver",
+      "status": "cliente"
+    }
+  ],
+  "cliente_deve": [
+    {
+      "item": "OK nos roteiros 00 a 03",
+      "pedido_em": "20/10 (grupo)",
+      "obs": "Basta para gravar; o resto pode vir depois.",
+      "status": "cliente"
+    },
+    {
+      "item": "Data da 1ª gravação",
+      "pedido_em": "14/10 (call)",
+      "obs": "Segunda 02/11 é feriado; confirmar.",
+      "status": "cliente"
+    },
+    {
+      "item": "Caso real do vídeo 04",
+      "pedido_em": "14/10 e 20/10",
+      "obs": "Por escrito, sem nomes. Se não vier, gravar o 08 no lugar.",
+      "status": "cliente"
+    },
+    {
+      "item": "Formato da mentoria",
+      "pedido_em": "20/10 (call)",
+      "obs": "Trava a página de vendas e o roteiro 12.",
+      "status": "cliente"
+    },
+    {
+      "item": "Domínio e hospedagem",
+      "pedido_em": "29/09 e 14/10",
+      "obs": "No privado, nunca no grupo.",
+      "status": "cliente"
+    },
+    {
+      "item": "Microfone de lapela",
+      "pedido_em": "14/10 (call)",
+      "obs": "Sem confirmação; sem lapela o áudio fica ruim.",
+      "status": "cliente"
+    },
+    {
+      "item": "Dia de postagem do longo",
+      "pedido_em": "Pauta da call de hoje",
+      "obs": "Ficha do Notion está sem dia.",
+      "status": "cliente"
+    }
+  ],
+  "divergencias": [
+    {
+      "tema": "TikTok",
+      "venda": "Venda (23/09): gerenciamento do TikTok como bônus do semestral. Consultoria (14/10): começa 1 mês depois do canal no ar.",
+      "contrato": "Replicação de cortes no TikTok por 4 meses.",
+      "fazer": "Seguir o contrato (replicar os shorts). Com estreia em 09/11, 1 mês depois é 07/12 e 4 meses passariam do fim do contrato. Direção decide se começa junto da estreia."
+    },
+    {
+      "tema": "Instagram (Reels)",
+      "venda": "Consultoria: a Euforia disponibiliza os shorts para ela postar no Reels seg/qua/sex.",
+      "contrato": "Não fala de Instagram.",
+      "fazer": "Deixar escrito no grupo que ela posta os Reels, e onde pegar os arquivos."
+    },
+    {
+      "tema": "Prazo da implementação",
+      "venda": "Venda: implementação de 45 dias com os primeiros conteúdos publicados.",
+      "contrato": "Setup e relançamento, sem prazo no resumo.",
+      "fazer": "Estrear até 09/11 para não passar dos 45 dias ditos."
+    },
+    {
+      "tema": "Relatórios",
+      "venda": "Venda: relatórios de performance no grupo.",
+      "contrato": "Calls de alinhamento, ajustes e análises.",
+      "fazer": "1º relatório (só percentuais) 30 dias depois da estreia."
+    }
+  ],
+  "casa": [
+    {
+      "onde": "Notion · ficha do cliente",
+      "problema": "Obs importante diz \"Aguardando acesso de Editor\" e o checklist de 30/09 lista acesso e qualificação como pendentes.",
+      "fazer": "Feitos em 01/10 e 04/10. Atualizar."
+    },
+    {
+      "onde": "Notion · ficha do cliente",
+      "problema": "YouTube, Instagram, e-mail do canal, dia de postagem e grade vazios.",
+      "fazer": "Preencher depois da call de hoje."
+    },
+    {
+      "onde": "Notion · ficha do cliente",
+      "problema": "Direção criativa \"sem preferências\" e padrões de edição \"a definir\"; identidade de shorts e carrossel (IA) vazias.",
+      "fazer": "Já definidos em 07/10 e 14/10 (cores, fontes, 5–7 min, 3 cortes de 30 s a 1 min, alternar os 2 cenários). Sem isso as máquinas erram as cores."
+    },
+    {
+      "onde": "Drive · 71 - POLYANA FORLIN",
+      "problema": "Pastas 01 - ELEMENTOS ESSENCIAIS e 02 - PAUTAS E ROTEIROS duplicadas; doc de roteiros solto na raiz (\"Cópia de MODELO [EUFORIA]\").",
+      "fazer": "Juntar no padrão de pastas e renomear o doc."
+    },
+    {
+      "onde": "Entregas",
+      "problema": "Não há cards de página de vendas, funil, 1ª gravação nem dos vídeos 00 a 03.",
+      "fazer": "Criar pelas demandas abaixo."
+    },
+    {
+      "onde": "Entregas",
+      "problema": "Apresentação da call (ESTEIRA-707) em \"Em revisão\".",
+      "fazer": "Passar para Aprovado depois da call de hoje."
+    }
+  ],
+  "demandas_sub": "Prazos internos sugeridos pelo escritório. Nada aqui é promessa para o cliente: data para cliente só depois de combinada no grupo.",
+  "demandas": [
+    {
+      "n": 1,
+      "quem": "Rômulo",
+      "o_que": "Resumo da call de hoje no grupo",
+      "como": "Até 2 h depois da call. Fechar por escrito: OK dos roteiros 00–03, data da gravação (02/11 é feriado), dia do longo, quem posta os Reels, lapela.",
+      "prazo": "Hoje 28/10",
+      "prioridade": "alta"
+    },
+    {
+      "n": 2,
+      "quem": "Rômulo",
+      "o_que": "Mandar o link da pasta de brutos com as subpastas 00 a 03",
+      "como": "Combinado na consultoria de 14/10 e ainda não mandado. Pasta ARQUIVOS BRUTOS do Drive dela.",
+      "prazo": "Qui 29/10",
+      "prioridade": "alta"
+    },
+    {
+      "n": 3,
+      "quem": "Rômulo",
+      "o_que": "Uma mensagem só com o que falta dela",
+      "como": "Caso real do 04, formato da mentoria, domínio e hospedagem (no privado). Ela está no G4 até 30/10: lista curta e objetiva.",
+      "prazo": "Qui 29/10",
+      "prioridade": "media"
+    },
+    {
+      "n": 4,
+      "quem": "Rômulo",
+      "o_que": "Lembrete da gravação com o checklist",
+      "como": "Reenviar o Guia de Equipamentos de 14/10 e lembrar: celular deitado, lapela, 2 s de silêncio, mandar pelo Drive.",
+      "prazo": "Sex 30/10",
+      "prioridade": "media"
+    },
+    {
+      "n": 5,
+      "quem": "Rômulo",
+      "o_que": "Confirmar O.E.E. e otimização do Instagram",
+      "como": "Dizer no card se foram entregues e onde estão. Se não, passar ao Escritório.",
+      "prazo": "Sex 30/10",
+      "prioridade": "baixa"
+    },
+    {
+      "n": 6,
+      "quem": "Ismael",
+      "o_que": "Salvar os depoimentos de 27/10 no Drive",
+      "como": "01 - ELEMENTOS ESSENCIAIS › DEPOIMENTOS (prints e vídeos do grupo).",
+      "prazo": "Qui 29/10",
+      "prioridade": "media"
+    },
+    {
+      "n": 7,
+      "quem": "Ismael",
+      "o_que": "Arrumar as pastas duplicadas do Drive",
+      "como": "Seguir o padrão do mutirão de pastas.",
+      "prazo": "Qui 29/10",
+      "prioridade": "baixa"
+    },
+    {
+      "n": 8,
+      "quem": "Ismael",
+      "o_que": "Atualizar a ficha no Notion",
+      "como": "Itens da seção \"Notion e Drive desatualizados\". Dia de postagem e grade depois do resumo da call.",
+      "prazo": "Sex 30/10",
+      "prioridade": "media"
+    },
+    {
+      "n": 9,
+      "quem": "Ismael · pedir à máquina",
+      "o_que": "Thumbs dos 6 primeiros vídeos",
+      "como": "Painel › Pedir ao escritório › Thumb, Quantos = 6, Tema: \"vídeos 00 a 03, 05 e 06\" (o 04 espera o caso real). Fotos profissionais já estão no Drive.",
+      "prazo": "Pedir 29/10",
+      "prioridade": "media"
+    },
+    {
+      "n": 10,
+      "quem": "Ismael · pedir à máquina",
+      "o_que": "Vídeos longos 00 e 01 + 3 shorts de cada + 2 carrosséis",
+      "como": "No dia em que o bruto chegar: Pedir ao escritório › Vídeo longo / Shorts (3 por vídeo) / Carrossel, modo Automático.",
+      "prazo": "Ter 03/11",
+      "prioridade": "alta"
+    },
+    {
+      "n": 11,
+      "quem": "Ismael",
+      "o_que": "Revisar e deixar a estreia agendada",
+      "como": "Peças prontas no grupo até sexta (D-3). Estreia sugerida seg 09/11.",
+      "prazo": "Sex 06/11",
+      "prioridade": "alta"
+    },
+    {
+      "n": 12,
+      "quem": "Ismael · pedir à máquina",
+      "o_que": "Página de vendas v2 com os depoimentos",
+      "como": "Pedir ao escritório › Página. Anexar os depoimentos; dados que faltam ficam \"a confirmar\".",
+      "prazo": "Pedir 30/10",
+      "prioridade": "media"
+    },
+    {
+      "n": 13,
+      "quem": "Ismael · pedir à máquina",
+      "o_que": "Pautas do lote 2 (13 a 19)",
+      "como": "Pedir ao escritório › Pautas. Base: perguntas frequentes da call de 07/10 e o que performar na estreia.",
+      "prazo": "Pedir 23/11",
+      "prioridade": "baixa"
+    },
+    {
+      "n": 14,
+      "quem": "Direção",
+      "o_que": "TikTok: começa junto da estreia ou 1 mês depois?",
+      "como": "Contrato fala em 4 meses de replicação; começando 07/12 passa do fim do contrato.",
+      "prazo": "Sex 30/10",
+      "prioridade": "media"
+    },
+    {
+      "n": 15,
+      "quem": "Direção",
+      "o_que": "Estrear com 2 vídeos (00 e 01)?",
+      "como": "Recomendado: dá 1 semana de folga e fecha os 20 longos, 60 shorts e 20 carrosséis até 19/03.",
+      "prazo": "Sex 30/10",
+      "prioridade": "alta"
+    },
+    {
+      "n": 16,
+      "quem": "Direção",
+      "o_que": "Publicar a página no lp.grupoeuforia.tech até o domínio chegar?",
+      "como": "Destrava o funil sem depender do acesso dela.",
+      "prazo": "Seg 02/11",
+      "prioridade": "media"
+    }
+  ],
+  "semana": [
+    {
+      "dia": "Qua 28/10",
+      "o_que": "Call de lançamento (9h30). Resumo e combinados no grupo. Card ESTEIRA-707 para Aprovado.",
+      "quem": "Rômulo"
+    },
+    {
+      "dia": "Qui 29/10",
+      "o_que": "Link da pasta de brutos 00–03; mensagem única do que falta; depoimentos e pastas no Drive; pedido das thumbs 00–03.",
+      "quem": "Rômulo, Ismael"
+    },
+    {
+      "dia": "Sex 30/10",
+      "o_que": "Lembrete da gravação com checklist (ela volta do G4). Direção decide TikTok, estreia dupla e endereço da página. Ficha do Notion atualizada.",
+      "quem": "Rômulo, Ismael, Direção"
+    },
+    {
+      "dia": "Sáb 31/10",
+      "o_que": "Nada com a cliente.",
+      "quem": "—"
+    },
+    {
+      "dia": "Seg 02/11",
+      "o_que": "Gravação dos vídeos 00 a 03 (se confirmada; é feriado). Confirmar de manhã que está tudo certo.",
+      "quem": "Cliente, Rômulo"
+    },
+    {
+      "dia": "Ter 03/11",
+      "o_que": "Brutos no Drive. Pedidos de longos 00–01, shorts e carrosséis às máquinas.",
+      "quem": "Ismael"
+    },
+    {
+      "dia": "Qua 04/11",
+      "o_que": "Página v2 com depoimentos em revisão. Edição da estreia em andamento.",
+      "quem": "Máquina, Ismael"
+    }
+  ],
+  "riscos": [
+    {
+      "risco": "Gravação não acontecer em 02/11",
+      "sinal": "Remarcou a call 2 vezes; viaja até 30/10; 02/11 é feriado.",
+      "evitar": "Data fechada por escrito hoje; plano B: segunda 09/11 com estreia em 16/11 (perde 1 semana de folga)."
+    },
+    {
+      "risco": "Áudio ruim na 1ª gravação",
+      "sinal": "Lapela dela não funciona (14/10) e não há confirmação de outra.",
+      "evitar": "Perguntar na call de hoje; se não tiver, indicar o modelo do Guia de Equipamentos."
+    },
+    {
+      "risco": "Roteiros sem aprovação travarem tudo",
+      "sinal": "8 dias sem resposta aos 12 roteiros.",
+      "evitar": "Pedir OK só dos 4 primeiros; lembrar que pode falar com as próprias palavras."
+    },
+    {
+      "risco": "Página de vendas parada",
+      "sinal": "Domínio e hospedagem pedidos há 29 dias.",
+      "evitar": "Publicar no nosso endereço enquanto isso (decisão da Direção)."
+    },
+    {
+      "risco": "Máquinas errarem cor e estilo",
+      "sinal": "Identidade de shorts e carrossel (IA) vazia na ficha.",
+      "evitar": "Preencher a ficha antes do 1º pedido (demanda 8)."
+    }
+  ],
+  "fontes_sub": "A call de lançamento de hoje (28/10, 9h30) ainda não tinha anotação quando este documento foi gerado. Pedir de novo depois da call atualiza os itens marcados como \"Aguardando cliente\".",
+  "fontes": [
+    {
+      "fonte": "Notion · ficha Clientes",
+      "o_que": "Resumo do contrato, checklist de 30/09, campos de identidade e postagem (editada 27/10)."
+    },
+    {
+      "fonte": "Notion · Entregas",
+      "o_que": "6 cards ligados à cliente (ESTEIRA-81, 176, 185, 379, 435, 707)."
+    },
+    {
+      "fonte": "Notion · 🎬 Pautas e Roteiros",
+      "o_que": "Roteiros 00 a 12 do lote 1."
+    },
+    {
+      "fonte": "Anotações do Gemini (Drive)",
+      "o_que": "Venda 23/09, onboarding 29/09, oferta 07/10, consultoria audiovisual 14/10. Estratégia 20/10 sem anotação."
+    },
+    {
+      "fonte": "WhatsApp · EUFORIA | Instituto Polyana Forlin",
+      "o_que": "Grupo inteiro, de 24/09 a 28/10 09h34 (285 mensagens)."
+    },
+    {
+      "fonte": "Drive · 71 - POLYANA FORLIN",
+      "o_que": "Pastas e arquivos na raiz."
+    }
+  ]
+}
