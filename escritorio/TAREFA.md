@@ -37,9 +37,9 @@ este arquivo, mas **cada uma só pega os cards do seu tipo**. O prompt da rotina
 
 | Máquina | Cards dela | Por rodada |
 |---|---|---|
-| **Apresentações de call** | Título com "APRESENTAÇÃO DE CALL" ou "APRESENTAÇÃO DA CALL" (agenda, painel e a da Call Audiovisual do setup), ou Tipo = Apresentação ligado a uma call | até 3 (a call mais próxima primeiro) |
-| **Pautas e roteiros** | Tipo = Roteiro, ou título com "PAUTAS" ou "ROTEIROS" | 1 lote de pautas **ou** até 6 roteiros |
-| **Setup** | Cards de setup: "SETUP (painel)", COPY DA PÁGINA, FUNIL DE VENDAS, ESTRATÉGIA + POSICIONAMENTO, página de vendas, e a identidade do setup (ID DO CANAL, ANTES E DEPOIS, MODELO DE CARROSSEL) | 1 cliente (os cards dele que estiverem na fila) |
+| **Apresentações de call** | Título com "APRESENTAÇÃO DE CALL", "APRESENTAÇÃO DA CALL" ou "APRESENTAÇÃO DE ALINHAMENTO" (agenda, painel e a da Call Audiovisual do setup), ou Tipo = Apresentação ligado a uma call | até 3 (a call mais próxima primeiro) |
+| **Pautas e roteiros** | Tipo = Roteiro, ou título com "PAUTAS" ou "ROTEIRO" (inclui roteiro de tema quente) | 1 lote de pautas **ou** até 6 roteiros |
+| **Setup** | Cards de setup: "SETUP (painel)", COPY DA PÁGINA, FUNIL DE VENDAS, ESTRATÉGIA + POSICIONAMENTO, página de vendas, os pedidos do painel "ESTRATÉGIA (painel)", "PÁGINA (painel)" e "FUNIL (painel)", e a identidade do setup (ID DO CANAL, ANTES E DEPOIS, MODELO DE CARROSSEL) | 1 cliente (os cards dele que estiverem na fila) |
 | **Escritório** | Todo o resto (thumbs, artes, relatórios, Situação completa, Cronograma, bio, guias, conferências, classificações para outras máquinas, Direção, Falta informação) | 3 (até 6 se sobrar tempo) |
 
 - O aviso no #dia-a-dia leva o nome da máquina na primeira linha (ex.: "🎤 Apresentações de call: ...",
