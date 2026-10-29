@@ -69,7 +69,7 @@ textarea{min-height:70px;resize:vertical}
 .call .h{font:800 22px/1 'Barlow Condensed',sans-serif}
 .call .n{font-weight:700;font-size:16px}
 .st{display:inline-block;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:700;color:#fff;background:var(--c,#7986cb)}
-.st.no_show{color:#111}
+.st.no_show,.st.confirmado{color:#111}
 .who{margin-left:auto;font-size:13px;font-weight:700;border:1px solid var(--line);border-radius:999px;padding:4px 12px}
 .who b{color:var(--or)}
 .who.eu{border-color:var(--or)}
@@ -90,7 +90,7 @@ textarea{min-height:70px;resize:vertical}
 .sbtns{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
 .sbtns button{background:transparent;border:1px solid var(--line);color:var(--txt);border-radius:8px;padding:6px 10px;font-size:13px;font-weight:600}
 .sbtns button:hover{border-color:var(--c)}
-.sbtns button.cur{background:var(--c);border-color:var(--c);color:#fff}
+.sbtns button.cur{background:var(--c);border-color:var(--c);color:#fff}.sbtns button.cur[data-s=confirmado],.sbtns button.cur[data-s=no_show]{color:#111}
 .sbtns .wa{border-color:rgba(37,211,102,.5)}
 .legend{display:flex;gap:12px;flex-wrap:wrap;color:var(--mut);font-size:12px;margin-bottom:16px}
 .legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px}
@@ -174,7 +174,8 @@ textarea{min-height:70px;resize:vertical}
 (function(){
 var API='https://n8n.grupoeuforia.tech/webhook/sdr-agenda-painel';
 var tipoSel='', cred=null, escolhido=null, fontesOk=false, numsOk=false, diaSel='', aba='agenda', calls=[];
-var ST={pendente:['Falta confirmar','#7986cb'],confirmado:['Confirmado','#f4511e'],sem_resposta:['Não confirmou','#616161'],cancelou:['Cancelou / remarcar','#8e24aa'],no_show:['No-show','#f6bf26'],desqualificado:['Desqualificado','#d50000'],realizada:['Realizada','#039be5']};
+var ST={pendente:['Falta confirmar','#7986cb'],confirmado:['Confirmado','#c9c4bc'],sem_resposta:['Não confirmou','#616161'],cancelou:['Cancelou / remarcar','#8e24aa'],no_show:['No-show','#f6bf26'],desqualificado:['Desqualificado','#d50000'],realizada:['Realizada','#039be5']};
+var VERDE='#0b8043';function corCall(c){return c.status==='realizada'&&c.tipo==='fechamento'?VERDE:(ST[c.status]||ST.pendente)[1];}
 var ORDEM=['confirmado','sem_resposta','cancelou','no_show','desqualificado','realizada','pendente'];
 var $=function(id){return document.getElementById(id)};
 function guarda(c){try{if(c)sessionStorage.setItem('sdrAgenda',JSON.stringify(c));else sessionStorage.removeItem('sdrAgenda')}catch(e){}}
@@ -245,8 +246,8 @@ function mostrarCalls(){
       if(c.numero)meta.push('Número '+esc(c.numero.replace(/ \(.*$/,'')));
       if(c.por)meta.push(esc(s[0])+' por '+esc(c.por)+(c.em?' em '+esc(new Date(c.em).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit',timeZone:'America/Recife'})):''));
       if(c.meet)meta.push('<a href="'+esc(c.meet)+'" target="_blank" rel="noopener">Link do Meet</a>');
-      var bts=ORDEM.map(function(k){if(k==='pendente'&&c.status==='pendente')return '';return '<button data-id="'+esc(c.id)+'" data-s="'+k+'" style="--c:'+ST[k][1]+'" class="'+(c.status===k?'cur':'')+'">'+(k==='pendente'?'Voltar para pendente':ST[k][0])+'</button>'}).join('');
-      return '<div class="call" style="--c:'+s[1]+'"><div class="l1"><span class="h">'+esc(hora)+'</span><span class="n">'+esc(c.nome)+'</span><span class="st '+esc(c.status)+'">'+esc(s[0])+'</span>'+(c.tipo?'<span class="tp '+esc(c.tipo)+'">'+(c.tipo==='fechamento'?'Fechamento':'Diagnóstico')+'</span>':'<span class="tp sem">Tipo não marcado</span>')+(c.sdr?'<span class="who'+(c.sdr.toLowerCase()===cred.usuario?' eu':'')+'">Marcou: <b>'+esc(c.sdr)+'</b></span>':'<span class="who sem">Marcada direto na agenda</span>')+'</div>'
+      var bts=ORDEM.map(function(k){if(k==='pendente'&&c.status==='pendente')return '';return '<button data-id="'+esc(c.id)+'" data-s="'+k+'" style="--c:'+(k==='realizada'&&c.tipo==='fechamento'?VERDE:ST[k][1])+'" class="'+(c.status===k?'cur':'')+'">'+(k==='pendente'?'Voltar para pendente':ST[k][0])+'</button>'}).join('');
+      return '<div class="call" style="--c:'+corCall(c)+'"><div class="l1"><span class="h">'+esc(hora)+'</span><span class="n">'+esc(c.nome)+'</span><span class="st '+esc(c.status)+'">'+esc(s[0])+'</span>'+(c.tipo?'<span class="tp '+esc(c.tipo)+'">'+(c.tipo==='fechamento'?'Fechamento':'Diagnóstico')+'</span>':'<span class="tp sem">Tipo não marcado</span>')+(c.sdr?'<span class="who'+(c.sdr.toLowerCase()===cred.usuario?' eu':'')+'">Marcou: <b>'+esc(c.sdr)+'</b></span>':'<span class="who sem">Marcada direto na agenda</span>')+'</div>'
         +'<div class="tel">'+(tl?'WhatsApp do lead: <b>'+esc(tl)+'</b><button class="cp" data-cp="'+esc(c.whats)+'">Copiar número</button>':'<span class="sem">Sem número do lead na agenda</span>')+'</div>'
         +(meta.length?'<div class="meta">'+meta.join(' · ')+'</div>':'')
         +'<div class="trow">Tipo da call:<button data-tid="'+esc(c.id)+'" data-tipo="diagnostico" class="'+(c.tipo==='diagnostico'?'cur':'')+'">Diagnóstico</button><button data-tid="'+esc(c.id)+'" data-tipo="fechamento" class="'+(c.tipo==='fechamento'?'cur':'')+'">Fechamento</button></div>'
@@ -278,7 +279,7 @@ $('fLogin').addEventListener('submit',function(e){e.preventDefault();$('mLogin')
 $('dias').addEventListener('click',function(e){var b=e.target.closest('.slot');if(!b||b.disabled)return;abre(b.getAttribute('data-i'),b.getAttribute('data-r'));});
 $('bFechar').onclick=fecha;
 [].forEach.call(document.querySelectorAll('.tab'),function(b){b.onclick=function(){trocaAba(b.getAttribute('data-t'))}});
-$('legenda').innerHTML=['pendente','confirmado','sem_resposta','cancelou','no_show','desqualificado','realizada'].map(function(k){return '<span><i style="background:'+ST[k][1]+'"></i>'+ST[k][0]+'</span>'}).join('')+'<span>A mesma cor aparece na agenda do Diogo.</span>';
+$('legenda').innerHTML=[['Falta confirmar (azul clarinho)',ST.pendente[1]],['Confirmado (cor normal)',ST.confirmado[1]],['Não confirmou',ST.sem_resposta[1]],['Cancelou / remarcar',ST.cancelou[1]],['No-show',ST.no_show[1]],['Desqualificado',ST.desqualificado[1]],['Realizada · diagnóstico',ST.realizada[1]],['Realizada · venda',VERDE]].map(function(k){return '<span><i style="background:'+k[1]+'"></i>'+k[0]+'</span>'}).join('')+'<span>A mesma cor aparece na agenda do Diogo.</span>';
 $('dia').addEventListener('change',function(){diaSel=this.value;$('bProx').hidden=!diaSel;$('dias').innerHTML='<p class="load">Carregando…</p>';carregar();});
 $('bProx').onclick=function(){diaSel='';$('dia').value='';this.hidden=true;carregar();};
 $('calls').addEventListener('click',function(e){
@@ -293,11 +294,13 @@ $('calls').addEventListener('click',function(e){
     window.open('https://wa.me/'+(c.whats||'')+'?text='+encodeURIComponent(t),'_blank','noopener');return;}
   var tb=e.target.closest('[data-tid]');
   if(tb){var tid=tb.getAttribute('data-tid'),tt=tb.getAttribute('data-tipo');tb.disabled=true;tb.textContent='Salvando…';
-    api({acao:'tipo',evento:tid,tipo:tt}).then(function(r){if(!r.ok){$('mApp').textContent=r.erro||'Não consegui salvar.';}else calls.forEach(function(c){if(c.id===tid)c.tipo=tt;});mostrarCalls();});return;}
+    var cc=calls.filter(function(x){return x.id===tid})[0]||{};
+    api({acao:'tipo',evento:tid,tipo:tt,status:cc.status}).then(function(r){if(!r.ok){$('mApp').textContent=r.erro||'Não consegui salvar.';}else calls.forEach(function(c){if(c.id===tid)c.tipo=tt;});mostrarCalls();});return;}
   var b=e.target.closest('[data-s]');if(!b)return;
   var id=b.getAttribute('data-id'),s=b.getAttribute('data-s');
   b.disabled=true;b.textContent='Salvando…';
-  api({acao:'confirmar',evento:id,status:s}).then(function(r){
+  var c0=calls.filter(function(x){return x.id===id})[0]||{};
+  api({acao:'confirmar',evento:id,status:s,tipo:c0.tipo||''}).then(function(r){
     if(!r.ok){$('mApp').textContent=r.erro||'Não consegui salvar.';mostrarCalls();return;}
     calls.forEach(function(c){if(c.id===id){c.status=s;c.por=cred.usuario.charAt(0).toUpperCase()+cred.usuario.slice(1);c.em=new Date().toISOString();}});
     mostrarCalls();
