@@ -400,7 +400,7 @@ let MP = null, MPQ = '', CC = null;
 let CE = null, CEQ = '', CEF = '';
 let FO = null, FOQ = '', FOF = '';
 let CL = null, CLQ = '', CLF = '', CLO = 'atencao';
-let EV = null, EVJ = '', EVP = '30', EVT = '';
+let EV = null, EVJ = '', EVP = '1', EVT = '';
 let DD = null, MM = null, PF = 'abertos', PQ = '', TQ = '', TS = '', TP = '', TT = '', MQ = '', MW = '';
 try { PIN = localStorage.getItem(KEY) || ''; view = localStorage.getItem('painel-view') || ''; } catch (e) {}
 if (DEMO) PIN = '0000';
@@ -614,7 +614,7 @@ const VIEWS = {
           .map(([v, t]) => `<div class="stat"><span class="v" style="font-size:${String(v).length > 7 ? 22 : 32}px">${v}</span><span>${t}</span></div>`).join('')}
       </div>
       <div class="filtros">
-        <label for="evp">Período<select id="evp">${[['7', 'Últimos 7 dias'], ['30', 'Últimos 30 dias'], ['90', 'Últimos 90 dias'], ['', 'Tudo']].map(([v, t]) => `<option value="${v}" ${v === EVP ? 'selected' : ''}>${t}</option>`).join('')}</select></label>
+        <label for="evp">Período<select id="evp">${[['1', 'Hoje'], ['7', 'Últimos 7 dias'], ['30', 'Últimos 30 dias'], ['90', 'Últimos 90 dias'], ['', 'Tudo']].map(([v, t]) => `<option value="${v}" ${v === EVP ? 'selected' : ''}>${t}</option>`).join('')}</select></label>
         <label for="evj">Projeto<select id="evj"><option value="">Todos</option>${projetos.map(p => `<option ${p === EVJ ? 'selected' : ''}>${esc(p)}</option>`).join('')}</select></label>
         <label for="evt">Tipo<select id="evt"><option value="">Todos</option>${Object.entries(EV_TIPO).map(([k, t]) => `<option value="${k}" ${k === EVT ? 'selected' : ''}>${t[1]}</option>`).join('')}</select></label>
       </div>
