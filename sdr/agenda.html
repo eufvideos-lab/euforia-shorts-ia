@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
-<title>Agenda do Diogo · SDR</title>
+<title>Painel Comercial · Grupo Euforia</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -54,7 +54,10 @@ textarea{min-height:70px;resize:vertical}
 .acts{display:flex;gap:8px;flex-wrap:wrap}
 .hint{font-size:12px;color:var(--mut);margin-top:6px}
 .load{color:var(--mut);padding:30px 0}
-.tabs{display:flex;gap:6px;border-bottom:1px solid var(--line);margin-bottom:18px}
+.tabs{display:flex;gap:6px;border-bottom:1px solid var(--line);margin-bottom:18px;overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{white-space:nowrap}
+.tab.g{color:#e9c46a}.tab.g.on{color:var(--txt)}
 .tab{background:none;border:0;border-bottom:2px solid transparent;color:var(--mut);padding:10px 14px;font-weight:700;margin-bottom:-1px}
 .tab.on{color:var(--txt);border-bottom-color:var(--or)}
 .badge{display:inline-block;min-width:20px;padding:1px 7px;margin-left:6px;border-radius:999px;background:#7986cb;color:#fff;font-size:12px}
@@ -114,15 +117,65 @@ textarea{min-height:70px;resize:vertical}
 .ev.sel{outline:2px solid #fff;z-index:3}
 .nowl{position:absolute;left:0;right:0;height:2px;background:var(--or);z-index:2}
 #cDet{margin-top:14px}
+.plac{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.plac th,.plac td{padding:12px 10px;text-align:center;border-bottom:1px solid var(--line)}
+.plac th{font-size:12px;color:var(--mut);font-weight:600;text-transform:capitalize}
+.plac th.hj,.plac td.hj{background:rgba(255,90,0,.07)}
+.plac td:first-child,.plac th:first-child{text-align:left;font-weight:700}
+.plac td.t{font:800 22px/1 'Barlow Condensed',sans-serif;color:var(--or)}
+.plac td.z{color:rgba(244,242,238,.25)}
+.plac tr.sdr td:first-child{font-size:16px}
+.plac tr.lider td:first-child::after{content:' · na frente';color:var(--or);font-size:12px;font-weight:600}
+.plac tfoot td{font-weight:700;color:var(--mut)}
+.plac td small{display:block;font-size:11px;color:var(--mut);font-weight:500;margin-top:3px}
+.plac td.t small{font:500 11px Inter,sans-serif}
+.plac.quadro th,.plac.quadro td{padding:9px 8px}
+.plac.quadro th.gr{color:var(--or);border-bottom:1px solid var(--line)}
+.plac.quadro .sep{border-left:1px solid var(--line)}
+.plac.quadro td.ag{font-weight:700;font-size:16px}
+.plac.quadro td.dd{white-space:nowrap}.plac.quadro td.dd small{display:inline;margin-left:6px}
+.plac.quadro tr.hj td{background:rgba(255,90,0,.07)}
+.plac.quadro .fx{text-align:left;min-width:180px}
+.plac.quadro tfoot td.t{font:800 20px/1 'Barlow Condensed',sans-serif;color:var(--or)}
+.fxc{display:inline-block;margin:2px 4px 2px 0;padding:3px 8px;border-radius:999px;background:rgba(255,255,255,.06);font-size:12px;white-space:nowrap}
+.fxc b{color:var(--or)}
+.cicbar{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:14px}
+.cicbar label{margin-top:0}
+.cicrow{display:flex;gap:8px;flex-wrap:wrap}
+.cicrow select,.cicrow input{width:auto;flex:1;min-width:130px}
+.msg.ok{color:var(--ok)}
+.tblw{overflow-x:auto}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:16px}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px}
+.kpi small{display:block;color:var(--mut);font-size:12px;text-transform:uppercase;letter-spacing:1px}
+.kpi b{display:block;font:800 30px/1.1 'Barlow Condensed',sans-serif;margin-top:6px}
+.kpi span{display:block;color:var(--mut);font-size:12px;margin-top:4px}
+.kpi.ok b{color:var(--ok)}.kpi.c b{color:#7fb3ff}.kpi.q b{color:#e9c46a}.kpi.tot{border-color:var(--or)}.kpi.tot b{color:var(--or)}
+.op{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--c,#666);border-radius:12px;padding:14px;margin-bottom:10px}
+.op .l1{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.op .n{font-weight:700;font-size:16px}
+.op .v{margin-left:auto;font:800 22px/1 'Barlow Condensed',sans-serif}
+.op .meta{color:var(--mut);font-size:13px;margin-top:6px}
+.op .acts{margin-top:10px}
+.op .acts button{background:transparent;border:1px solid var(--line);color:var(--txt);border-radius:8px;padding:5px 10px;font-size:13px;font-weight:600}
+.op.atr{border-color:rgba(255,90,90,.6)}
+.tag{display:inline-block;padding:3px 9px;border-radius:999px;font-size:12px;font-weight:700;border:1px solid var(--line)}
+.tag.red{border-color:var(--err);color:var(--err)}.tag.or{border-color:var(--or);color:var(--or)}
+.opform{background:var(--card);border:1px solid var(--or);border-radius:14px;padding:16px;margin-bottom:16px}
+.row3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.gh{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:18px 0 10px}
+.gh h3{font:700 13px Inter,sans-serif;color:var(--mut);text-transform:uppercase;letter-spacing:1px}
+.gh b{color:var(--txt)}
+.sec{font:800 22px 'Barlow Condensed',sans-serif;text-transform:uppercase;margin:22px 0 10px}
 .legend{display:flex;gap:12px;flex-wrap:wrap;color:var(--mut);font-size:12px;margin-bottom:16px}
 .legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px}
-@media (max-width:560px){h1{font-size:28px}.row2{grid-template-columns:1fr}}
+@media (max-width:560px){h1{font-size:28px}.row2,.row3{grid-template-columns:1fr}.op .v{margin-left:0;width:100%}}
 </style>
 </head>
 <body>
 <div id="vLogin" class="login">
-  <h1>Agenda do <b>Diogo</b></h1>
-  <p class="sub">Painel dos SDRs para marcar calls.</p>
+  <h1>Painel <b>Comercial</b></h1>
+  <p class="sub">Calls do Diogo, placar e oportunidades.</p>
   <form id="fLogin">
     <label for="u">Usuário</label><input id="u" autocomplete="username" autocapitalize="none" required>
     <label for="p">Senha</label><input id="p" type="password" autocomplete="current-password" required>
@@ -133,7 +186,7 @@ textarea{min-height:70px;resize:vertical}
 
 <div id="vApp" class="wrap" hidden>
   <div class="top">
-    <div><h1>Agenda do <b>Diogo</b></h1><p class="sub" id="ola"></p></div>
+    <div><h1>Painel <b>Comercial</b></h1><p class="sub" id="ola"></p></div>
     <div class="chips">
       <span class="chip">Lead vê <b id="rLead">30 min</b></span>
       <span class="chip">Diogo fica com <b id="rBloq">1h</b> livre</span>
@@ -145,6 +198,10 @@ textarea{min-height:70px;resize:vertical}
     <button class="tab on" data-t="agenda">Marcar call</button>
     <button class="tab" data-t="calls">Próximas calls<span class="badge" id="nPend"></span></button>
     <button class="tab" data-t="cal">Agenda</button>
+    <button class="tab" data-t="placar">Placar</button>
+    <button class="tab g" data-t="ops" hidden>Oportunidades</button>
+    <button class="tab g" data-t="cobrar" hidden>A cobrar</button>
+    <button class="tab g" data-t="prev" hidden>Previsão</button>
   </div>
   <p class="msg err" id="mApp"></p>
   <div id="tAgenda">
@@ -158,6 +215,30 @@ textarea{min-height:70px;resize:vertical}
     <div class="legend" id="legenda"></div>
     <div id="calls"><p class="load">Carregando calls…</p></div>
   </div>
+  <div id="tPlacar" hidden>
+    <div class="calbar"><button class="ghost" id="pPrev" aria-label="Semana anterior">‹</button><button class="ghost" id="pHoje">Esta semana</button><button class="ghost" id="pNext" aria-label="Próxima semana">›</button><b id="pTit"></b></div>
+    <form class="cicbar" id="cicForm"><label for="cN">Lançar ciclos de disparo do dia (1 ciclo = 30 disparos)</label>
+      <div class="cicrow"><select id="cSdr"></select><input type="date" id="cDia"><input id="cN" inputmode="numeric" placeholder="Nº de ciclos"><button class="btn" id="cSalvar">Salvar</button></div>
+      <p class="msg" id="cMsg"></p></form>
+    <p class="hint" style="margin-bottom:12px">Agendamentos contam no dia em que a call foi marcada (não no dia da call).</p>
+    <div id="placar"><p class="load">Carregando placar…</p></div>
+  </div>
+  <div id="tOps" hidden>
+    <div class="acts" style="margin-bottom:14px"><button class="btn" id="opNova">+ Nova oportunidade</button></div>
+    <form id="opForm" class="opform" hidden>
+      <input type="hidden" id="opChave">
+      <div class="row2"><div><label for="opNome">Lead / empresa *</label><input id="opNome" required></div><div><label for="opWa">WhatsApp</label><input id="opWa" inputmode="tel" placeholder="81 99999-9999"></div></div>
+      <div class="row2"><div><label for="opProd">Produto *</label><select id="opProd" required></select></div><div><label for="opEt">Etapa *</label><select id="opEt" required></select></div></div>
+      <div class="row3"><div><label for="opVal">Valor bruto (R$)</label><input id="opVal" inputmode="decimal" placeholder="9200"></div><div><label for="opForma">Forma de pagamento</label><select id="opForma"></select></div><div><label for="opData">Data prevista do pagamento</label><input type="date" id="opData"></div></div>
+      <div class="row2"><div><label for="opEnt">Entrada ou 1º pagamento (R$)</label><input id="opEnt" inputmode="decimal" placeholder="opcional"></div><div><label for="opParc">Nº de parcelas ou meses</label><input id="opParc" inputmode="numeric" placeholder="opcional"></div></div>
+      <label for="opObs">Observação</label><textarea id="opObs" placeholder="Ex.: ficou de responder sexta; paga entrada no cartão e o resto em 70 dias"></textarea>
+      <div class="acts" style="margin-top:14px"><button class="btn" id="opSalvar">Salvar</button><button type="button" class="ghost" id="opCancelar">Cancelar</button></div>
+      <p class="msg err" id="opMsg"></p>
+    </form>
+    <div id="opsLista"><p class="load">Carregando oportunidades…</p></div>
+  </div>
+  <div id="tCobrar" hidden><div id="cobrarLista"><p class="load">Carregando…</p></div></div>
+  <div id="tPrev" hidden><div id="prevBox"><p class="load">Carregando…</p></div></div>
   <div id="tCal" hidden>
     <div class="calbar"><button class="ghost" id="cPrev" aria-label="Semana anterior">‹</button><button class="ghost" id="cHoje">Hoje</button><button class="ghost" id="cNext" aria-label="Próxima semana">›</button><b id="cTit"></b></div>
     <div class="legend" id="legenda2"></div>
@@ -202,7 +283,8 @@ textarea{min-height:70px;resize:vertical}
 <script>
 (function(){
 var API='https://n8n.grupoeuforia.tech/webhook/sdr-agenda-painel';
-var tipoSel='', cred=null, escolhido=null, fontesOk=false, numsOk=false, diaSel='', aba='agenda', calls=[], semana=[], semIni='', evSel='';
+var tipoSel='', cred=null, escolhido=null, fontesOk=false, numsOk=false, diaSel='', aba='agenda', calls=[], semana=[], semIni='', evSel='', gestor=false, plIni='', ciclosSem={}, ultPlacar=null, ops=[], opsOk=false;
+var API2='https://n8n.grupoeuforia.tech/webhook/sdr-oportunidades';
 var ST={pendente:['Falta confirmar','#7986cb'],confirmado:['Confirmado','#c9c4bc'],sem_resposta:['Não confirmou','#616161'],cancelou:['Cancelou / remarcar','#8e24aa'],no_show:['No-show','#f6bf26'],desqualificado:['Desqualificado','#d50000'],realizada:['Realizada','#039be5']};
 var VERDE='#0b8043';function corCall(c){return c.status==='realizada'&&c.tipo==='fechamento'?VERDE:(ST[c.status]||ST.pendente)[1];}
 var ORDEM=['confirmado','sem_resposta','cancelou','no_show','desqualificado','realizada','pendente'];
@@ -249,6 +331,7 @@ function entrar(c,msgEl){
     if(!r.ok){cred=null;guarda(null);if(msgEl)msgEl.textContent=r.erro||'Não foi possível entrar.';return;}
     guarda(c);$('vLogin').hidden=true;$('vApp').hidden=false;
     $('ola').textContent='Olá, '+r.sdr+'. Toque num horário livre para marcar.';
+    gestor=!!r.gestor;[].forEach.call(document.querySelectorAll('.tab.g'),function(b){b.hidden=!gestor});
     mostrarDias(r);
     trocaAba(c.usuario==='diogo'?'calls':'agenda');
   });
@@ -294,9 +377,9 @@ function carregarCalls(){
 }
 function trocaAba(t){
   aba=t;[].forEach.call(document.querySelectorAll('.tab'),function(b){b.classList.toggle('on',b.getAttribute('data-t')===t)});
-  $('tAgenda').hidden=t!=='agenda';$('tCalls').hidden=t!=='calls';$('tCal').hidden=t!=='cal';
-  $('ola').textContent='Olá, '+cred.usuario.charAt(0).toUpperCase()+cred.usuario.slice(1)+'. '+(t==='calls'?'Confirme as calls com os leads e marque o resultado.':t==='cal'?'A semana do Diogo, com a cor de cada call.':'Toque num horário livre para marcar.');
-  if(t==='calls')carregarCalls();else if(t==='cal')carregarSemana();else contaPend();
+  $('tAgenda').hidden=t!=='agenda';$('tCalls').hidden=t!=='calls';$('tCal').hidden=t!=='cal';$('tPlacar').hidden=t!=='placar';$('tOps').hidden=t!=='ops';$('tCobrar').hidden=t!=='cobrar';$('tPrev').hidden=t!=='prev';
+  $('ola').textContent='Olá, '+cred.usuario.charAt(0).toUpperCase()+cred.usuario.slice(1)+'. '+(t==='calls'?'Confirme as calls com os leads e marque o resultado.':t==='cal'?'A semana do Diogo, com a cor de cada call.':t==='placar'?'Quem marcou mais calls em cada dia da semana.':t==='ops'?'Oportunidades abertas (só você e o Diogo veem).':t==='cobrar'?'Quem disse que vai pagar: fique de olho na data.':t==='prev'?'Quanto dinheiro tem na mesa na semana e no mês.':'Toque num horário livre para marcar.');
+  if(t==='calls')carregarCalls();else if(t==='cal')carregarSemana();else if(t==='placar'){prepCiclos();carregarPlacar();}else if(t==='ops'||t==='cobrar'||t==='prev')carregarOps();else contaPend();
 }
 function sair(m){cred=null;guarda(null);$('vApp').hidden=true;$('vLogin').hidden=false;$('mLogin').textContent=m||'';fecha();}
 function abre(i,rot){
@@ -383,7 +466,175 @@ $('cal').addEventListener('click',function(e){var b=e.target.closest('[data-ev]'
 function mudaSemana(n){var d=new Date(semIni+'T00:00:00Z');semIni=isoDia(new Date(d.getTime()+n*7*DIAMS));evSel='';carregarSemana();}
 $('cPrev').onclick=function(){mudaSemana(-1)};$('cNext').onclick=function(){mudaSemana(1)};
 $('cHoje').onclick=function(){semIni='';evSel='';carregarSemana();};
-$('bAtualizar').onclick=function(){if(aba==='cal'){carregarSemana();return;}carregar();if(aba==='agenda')api({acao:'calls'}).then(function(r){if(r.ok){calls=r.calls||[];contaPend();}});};
+$('bAtualizar').onclick=function(){if(aba==='cal'){carregarSemana();return;}if(aba==='placar'){carregarPlacar();return;}if(aba==='ops'||aba==='cobrar'||aba==='prev'){carregarOps();return;}carregar();if(aba==='agenda')api({acao:'calls'}).then(function(r){if(r.ok){calls=r.calls||[];contaPend();}});};
+
+// placar de agendamentos por dia (todos veem)
+function carregarPlacar(){
+  if(!plIni)plIni=isoDia(segundaDe(Date.now()));
+  $('pTit').textContent='Carregando…';
+  return Promise.all([api({acao:'placar',de:plIni}),api2({acao:'ciclos',de:plIni})]).then(function(rr){
+    var r=rr[0];
+    if(!r.ok){$('mApp').textContent=r.erro||'Erro ao carregar o placar.';$('pTit').textContent='';return;}
+    ciclosSem=(rr[1]&&rr[1].ok&&rr[1].ciclos)||{};ultPlacar=r;
+    mostrarPlacar(r);preencheCiclo();
+  });
+}
+function mostrarPlacar(r){
+  // igual ao quadro branco: uma linha por dia; ciclos (JH, JA, D), agendamentos (JH, JA, D, E) e a fonte/# dos agendamentos
+  var ini=new Date(plIni+'T00:00:00Z'), hoje=isoDia(recife(Date.now())), P=r.placar||{}, C=ciclosSem||{}, A=r.ags||[], dias=[];
+  var nd=5;A.forEach(function(a){var k=Math.round((new Date(a.dia+'T00:00:00Z')-ini)/DIAMS);if(k>=5)nd=Math.max(nd,k+1);});
+  Object.keys(C).forEach(function(q){Object.keys(C[q]).forEach(function(d){var k=Math.round((new Date(d+'T00:00:00Z')-ini)/DIAMS);if(k>=5&&k<7)nd=Math.max(nd,k+1);});});
+  for(var i=0;i<nd;i++)dias.push(isoDia(new Date(ini.getTime()+i*DIAMS)));
+  $('pTit').textContent=ini.toLocaleDateString('pt-BR',{day:'2-digit',month:'short',timeZone:'UTC'})+' a '+new Date(ini.getTime()+(nd-1)*DIAMS).toLocaleDateString('pt-BR',{day:'2-digit',month:'short',year:'numeric',timeZone:'UTC'});
+  var CIC=[['Jhonatas','JH'],['Jailton','JA'],['Diogo','D']], AG=CIC.concat([['Érica','E']]);
+  var outros=Object.keys(P).filter(function(q){return !AG.some(function(x){return x[0]===q})});
+  var ag=function(q,d){return (P[q]||{})[d]||0}, ci=function(q,d){return (C[q]||{})[d]};
+  var soma=function(f,q){return dias.reduce(function(s,d){return s+(f(q,d)||0)},0)};
+  var cel=function(n,cls){return '<td class="'+(cls||'')+(n?'':' z')+'">'+(n==null?'–':n)+'</td>'};
+  var curto=function(a){var x=a.hash||'';if(/^Google Maps · /.test(x))return '📍 '+x.replace(/^Google Maps · /,'').replace(/ em .*$/,'');if(x)return x.replace(/ \(Instagram\)$/,'');return a.fonte||'sem #';};
+  var th='<tr><th rowspan="2">Dia</th><th colspan="3" class="gr">Ciclos</th><th colspan="'+(4+(outros.length?1:0))+'" class="gr">Agendamentos</th><th rowspan="2" class="fx">Fonte / #</th></tr><tr>'
+    +CIC.map(function(x){return '<th title="'+x[0]+'">'+x[1]+'</th>'}).join('')+AG.map(function(x){return '<th title="'+x[0]+'">'+x[1]+'</th>'}).join('')+(outros.length?'<th title="'+esc(outros.join(', '))+'">Outros</th>':'')+'</tr>';
+  var corpo=dias.map(function(d){var x=new Date(d+'T00:00:00Z'),hj=d===hoje?'hj':'';
+    var g={};A.filter(function(a){return a.dia===d}).forEach(function(a){var k=curto(a);(g[k]=g[k]||[]).push(a.nome+' ('+a.quem+')');});
+    var fx=Object.keys(g).sort(function(a,b){return g[b].length-g[a].length}).map(function(k){return '<span class="fxc" title="'+esc(g[k].join('\n'))+'">'+esc(k)+(g[k].length>1?' <b>×'+g[k].length+'</b>':'')+'</span>'}).join('');
+    return '<tr class="'+hj+'"><td class="dd">'+esc(cap(x.toLocaleDateString('pt-BR',{weekday:'short',timeZone:'UTC'}).replace('.','')))+'<small>'+x.getUTCDate()+'/'+(x.getUTCMonth()+1)+'</small></td>'
+      +CIC.map(function(q,j){return cel(ci(q[0],d),j===0?'sep':'')}).join('')
+      +AG.map(function(q,j){return cel(ag(q[0],d),j===0?'sep ag':'ag')}).join('')+(outros.length?cel(outros.reduce(function(s,q){return s+ag(q,d)},0),'ag'):'')
+      +'<td class="fx sep">'+(fx||'<span class="z">—</span>')+'</td></tr>'}).join('');
+  var tc=CIC.map(function(q){return soma(ci,q[0])}), ta=AG.map(function(q){return soma(ag,q[0])});
+  var foot='<tfoot><tr><td>Semana</td>'+tc.map(function(n,j){return '<td class="'+(j===0?'sep':'')+'">'+n+'</td>'}).join('')+ta.map(function(n,j){return '<td class="t'+(j===0?' sep':'')+'">'+n+'</td>'}).join('')+(outros.length?'<td class="t">'+outros.reduce(function(s,q){return s+soma(ag,q)},0)+'</td>':'')+'<td class="sep">'+(r.total||0)+' no total</td></tr></tfoot>';
+  // agendamentos por ciclo de cada um (só de quem lançou ciclos)
+  var conv=CIC.map(function(q,j){var c=tc[j],a=ta[j];return '<div class="kpi"><small>'+q[0]+'</small><b>'+a+' agend.</b><span>'+(c?c+' ciclos · '+(a/c).toLocaleString('pt-BR',{maximumFractionDigits:2})+' por ciclo · '+(a?(c/a).toLocaleString('pt-BR',{maximumFractionDigits:1})+' ciclos por agend.':'nenhum agend.'):'ciclos não lançados')+'</span></div>'}).join('')
+    +'<div class="kpi"><small>Érica (IA)</small><b>'+ta[3]+' agend.</b><span>disparo automático</span></div>';
+  $('placar').innerHTML='<div class="kpis">'+conv+'</div><div class="tblw"><table class="plac quadro"><thead>'+th+'</thead><tbody>'+corpo+'</tbody>'+foot+'</table></div><p class="hint">JH = Jhonatas · JA = Jailton · D = Diogo · E = Érica (IA). Passe o dedo/mouse na fonte para ver os leads.</p>';
+}
+function preencheCiclo(){var s=$('cSdr').value,d=$('cDia').value,c=((ciclosSem||{})[s]||{})[d];$('cN').value=c==null?'':c;}
+function prepCiclos(){
+  var eu=cap(cred.usuario), sdrs=gestor?(eu==='Diogo'?['Diogo','Jhonatas','Jailton']:['Jhonatas','Jailton','Diogo']):[eu];
+  $('cicForm').hidden=!gestor&&['Jailton','Jhonatas'].indexOf(eu)<0;
+  $('cSdr').innerHTML=sdrs.map(function(s){return '<option>'+esc(s)+'</option>'}).join('');$('cSdr').disabled=!gestor;
+  if(!$('cDia').value)$('cDia').value=isoDia(recife(Date.now()));
+  $('cDia').max=isoDia(recife(Date.now()));
+}
+$('cSdr').addEventListener('change',preencheCiclo);
+$('cDia').addEventListener('change',function(){var d=this.value;if(!d)return;var s=isoDia(segundaDe(new Date(d+'T15:00:00Z')));if(s!==plIni){plIni=s;carregarPlacar();}else preencheCiclo();});
+$('cicForm').addEventListener('submit',function(e){e.preventDefault();var n=$('cN').value.trim();
+  if(n===''||!/^\d+$/.test(n)){$('cMsg').className='msg err';$('cMsg').textContent='Coloque o número de ciclos.';return;}
+  $('cSalvar').disabled=true;$('cMsg').className='msg';$('cMsg').textContent='Salvando…';
+  api2({acao:'salvarCiclos',sdr:$('cSdr').value,dia:$('cDia').value,ciclos:n,de:plIni}).then(function(r){$('cSalvar').disabled=false;
+    if(!r.ok){$('cMsg').className='msg err';$('cMsg').textContent=r.erro||'Não consegui salvar.';return;}
+    ciclosSem=r.ciclos||{};$('cMsg').className='msg ok';$('cMsg').textContent='Ciclos salvos.';if(ultPlacar)mostrarPlacar(ultPlacar);});
+});
+function mudaPlacar(n){var d=new Date(plIni+'T00:00:00Z');plIni=isoDia(new Date(d.getTime()+n*7*DIAMS));carregarPlacar();}
+$('pPrev').onclick=function(){mudaPlacar(-1)};$('pNext').onclick=function(){mudaPlacar(1)};$('pHoje').onclick=function(){plIni='';carregarPlacar();};
+// oportunidades (só Henrique e Diogo; o servidor recusa os outros)
+var ETAPAS=[['quente','Lead quente (vai dar resposta)','#e9c46a'],['dados','Aguardando dados do contrato','#7fb3ff'],['vai_pagar','Disse que vai pagar','#f4a261'],['assinado','Contrato assinado (falta pagar)','#FF5A00'],['pago','Pago','#2ecc71'],['perdido','Perdido','#555']];
+var PRODS=['Assessoria semestral','Assessoria anual','Assessoria mensal','Implementação','Manutenção','Outro'];
+var FORMAS=['Pix à vista','Cartão à vista','Cartão parcelado','Entrada + parcelas','Mensalidade','Boleto','A definir'];
+var COBRAR=['dados','vai_pagar','assinado'];
+function et(k){return ETAPAS.filter(function(e){return e[0]===k})[0]||['','—','#666']}
+function brl(n){n=Number(n||0);return 'R$ '+n.toLocaleString('pt-BR',{minimumFractionDigits:n%1?2:0,maximumFractionDigits:2})}
+function dbr(s){return s?s.split('-').reverse().slice(0,2).join('/'):'sem data'}
+function naData(o){return o.entrada>0?o.entrada:o.valor}
+$('opProd').innerHTML='<option value="">Escolha</option>'+PRODS.map(function(p){return '<option>'+esc(p)+'</option>'}).join('');
+$('opEt').innerHTML=ETAPAS.map(function(e){return '<option value="'+e[0]+'">'+esc(e[1])+'</option>'}).join('');
+$('opForma').innerHTML=FORMAS.map(function(p){return '<option>'+esc(p)+'</option>'}).join('');
+function api2(body){
+  return fetch(API2,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.assign({},cred,body))})
+    .then(function(r){return r.json()}).catch(function(){return {ok:false,erro:'Sem conexão com o sistema. Tente de novo.'}});
+}
+function carregarOps(){
+  $('mApp').textContent='';
+  return api2({acao:'listar'}).then(function(r){
+    if(!r.ok){$('mApp').textContent=r.erro||'Erro ao carregar as oportunidades.';return;}
+    ops=r.ops||[];opsOk=true;mostrarOps();
+  });
+}
+function mostrarOps(){
+  if(aba==='ops')mostrarLista();else if(aba==='cobrar')mostrarCobrar();else if(aba==='prev')mostrarPrev();
+}
+function opCard(o,extra){
+  var e=et(o.etapa),tl=fmtTel(o.whatsapp);
+  var meta=[esc(o.forma||'A definir')];
+  if(o.entrada>0)meta.push('entrada/1º pagamento '+brl(o.entrada));
+  if(o.parcelas>0)meta.push(o.parcelas+(o.forma==='Mensalidade'?' meses':' parcelas'));
+  meta.push('pagamento previsto: <b>'+esc(dbr(o.dataPrevista))+'</b>');
+  return '<div class="op'+(extra&&extra.atr?' atr':'')+'" style="--c:'+e[2]+'"><div class="l1"><span class="n">'+esc(o.nome)+'</span><span class="tag">'+esc(o.produto)+'</span><span class="tag" style="border-color:'+e[2]+';color:'+e[2]+'">'+esc(e[1])+'</span>'+(extra&&extra.tag||'')+(tl?'<span class="ph">'+esc(tl)+'</span><button class="cp" data-cp="'+esc(o.whatsapp)+'">Copiar</button>':'')+'<span class="v">'+brl(o.valor)+'</span></div>'
+    +'<div class="meta">'+meta.join(' · ')+'</div>'+(o.obs?'<div class="meta">'+esc(o.obs)+'</div>':'')
+    +'<div class="meta">Atualizado por '+esc(o.atualizadoPor||'—')+(o.atualizadoEm?' em '+esc(new Date(o.atualizadoEm).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit',timeZone:'America/Recife'})):'')+'</div>'
+    +'<div class="acts"><button data-ed="'+esc(o.chave)+'">Editar</button>'+(o.etapa!=='pago'?'<button data-pg="'+esc(o.chave)+'" style="border-color:rgba(46,204,113,.5)">Pagou</button>':'')+(o.etapa!=='perdido'&&o.etapa!=='pago'?'<button data-pd="'+esc(o.chave)+'">Perdido</button>':'')+'<button data-rm="'+esc(o.chave)+'">Apagar</button></div></div>';
+}
+function mostrarLista(){
+  if(!ops.length){$('opsLista').innerHTML='<p class="load">Nenhuma oportunidade ainda. Toque em "+ Nova oportunidade".</p>';return;}
+  $('opsLista').innerHTML=ETAPAS.map(function(e){
+    var l=ops.filter(function(o){return o.etapa===e[0]}).sort(function(a,b){return (a.dataPrevista||'9')<(b.dataPrevista||'9')?-1:1});
+    if(!l.length)return '';
+    var s=l.reduce(function(t,o){return t+o.valor},0);
+    return '<div class="gh"><h3>'+esc(e[1])+' · '+l.length+'</h3><b>'+brl(s)+'</b></div>'+l.map(function(o){return opCard(o)}).join('');
+  }).join('');
+}
+function mostrarCobrar(){
+  var hoje=isoDia(recife(Date.now()));
+  var l=ops.filter(function(o){return COBRAR.indexOf(o.etapa)>=0}).sort(function(a,b){return (a.dataPrevista||'9')<(b.dataPrevista||'9')?-1:1});
+  if(!l.length){$('cobrarLista').innerHTML='<p class="load">Ninguém para cobrar agora. Aqui aparecem as etapas "Aguardando dados", "Disse que vai pagar" e "Contrato assinado".</p>';return;}
+  var atr=l.filter(function(o){return o.dataPrevista&&o.dataPrevista<hoje});
+  var tot=l.reduce(function(t,o){return t+naData(o)},0);
+  $('cobrarLista').innerHTML='<div class="kpis"><div class="kpi tot"><small>A receber</small><b>'+brl(tot)+'</b><span>'+l.length+' lead(s), contando a entrada ou o valor à vista</span></div><div class="kpi"><small>Atrasados</small><b style="color:var(--err)">'+atr.length+'</b><span>'+brl(atr.reduce(function(t,o){return t+naData(o)},0))+'</span></div></div>'
+    +l.map(function(o){var tag='',a=false;if(o.dataPrevista){var dd=Math.round((new Date(o.dataPrevista+'T00:00:00Z')-new Date(hoje+'T00:00:00Z'))/DIAMS);if(dd<0){a=true;tag='<span class="tag red">Atrasado '+(-dd)+' dia'+(dd<-1?'s':'')+'</span>';}else if(dd===0)tag='<span class="tag or">Paga hoje</span>';else if(dd<=7)tag='<span class="tag">Em '+dd+' dia'+(dd>1?'s':'')+'</span>';}else tag='<span class="tag red">Sem data</span>';return opCard(o,{tag:tag,atr:a});}).join('');
+}
+function mostrarPrev(){
+  var hojeD=recife(Date.now()), seg=segundaDe(Date.now()), dom=new Date(seg.getTime()+6*DIAMS);
+  var mIni=isoDia(hojeD).slice(0,7);
+  var periodo=function(nome,fil,rot){
+    var l=ops.filter(function(o){return o.dataPrevista&&fil(o.dataPrevista)&&o.etapa!=='perdido'});
+    var soma=function(ets,f){return l.filter(function(o){return ets.indexOf(o.etapa)>=0}).reduce(function(t,o){return t+f(o)},0)};
+    var pago=soma(['pago'],function(o){return o.valor}),conf=soma(COBRAR,function(o){return o.valor}),quen=soma(['quente'],function(o){return o.valor});
+    var cx=function(ets){return brl(soma(ets,naData))};
+    var porProd={};l.forEach(function(o){porProd[o.produto]=(porProd[o.produto]||0)+o.valor});
+    var porForma={};l.forEach(function(o){porForma[o.forma||'A definir']=(porForma[o.forma||'A definir']||0)+o.valor});
+    var lista=function(m){var k=Object.keys(m).sort(function(a,b){return m[b]-m[a]});return k.length?k.map(function(x){return esc(x)+' <b>'+brl(m[x])+'</b>'}).join(' · '):'—'};
+    return '<h2 class="sec">'+esc(nome)+' <span class="hint" style="text-transform:none;font:500 13px Inter">'+esc(rot)+'</span></h2>'
+      +'<div class="kpis"><div class="kpi tot"><small>Na mesa (total)</small><b>'+brl(pago+conf+quen)+'</b><span>'+l.length+' oportunidade(s) com data no período</span></div>'
+      +'<div class="kpi ok"><small>Já pago</small><b>'+brl(pago)+'</b><span>entrou na data: '+cx(['pago'])+'</span></div>'
+      +'<div class="kpi c"><small>Confirmados</small><b>'+brl(conf)+'</b><span>dados, vai pagar e assinado · entra na data: '+cx(COBRAR)+'</span></div>'
+      +'<div class="kpi q"><small>Para confirmar</small><b>'+brl(quen)+'</b><span>leads quentes · entra na data: '+cx(['quente'])+'</span></div></div>'
+      +'<p class="hint">Por produto: '+lista(porProd)+'</p><p class="hint" style="margin-top:4px">Por forma de pagamento: '+lista(porForma)+'</p>';
+  };
+  var semData=ops.filter(function(o){return !o.dataPrevista&&o.etapa!=='perdido'&&o.etapa!=='pago'});
+  $('prevBox').innerHTML=periodo('Semana',function(d){return d>=isoDia(seg)&&d<=isoDia(dom)},dbr(isoDia(seg))+' a '+dbr(isoDia(dom)))
+    +periodo('Mês',function(d){return d.slice(0,7)===mIni},hojeD.toLocaleDateString('pt-BR',{month:'long',year:'numeric',timeZone:'UTC'}))
+    +'<p class="hint" style="margin-top:18px">Valores brutos, sem taxas. "Entra na data" usa a entrada (ou o valor à vista quando não tem entrada).'+(semData.length?' <b style="color:var(--err)">'+semData.length+' oportunidade(s) sem data prevista</b> ('+brl(semData.reduce(function(t,o){return t+o.valor},0))+') ficam fora da conta: coloque a data em Oportunidades.':'')+'</p>';
+}
+function abreForm(o){
+  o=o||{};$('opForm').hidden=false;$('opMsg').textContent='';
+  $('opChave').value=o.chave||'';$('opNome').value=o.nome||'';$('opWa').value=o.whatsapp||'';$('opProd').value=o.produto||'';$('opEt').value=o.etapa||'quente';
+  $('opVal').value=o.valor||'';$('opForma').value=o.forma||'A definir';$('opData').value=o.dataPrevista||'';$('opEnt').value=o.entrada||'';$('opParc').value=o.parcelas||'';$('opObs').value=o.obs||'';
+  $('opForm').scrollIntoView({behavior:'smooth',block:'start'});setTimeout(function(){$('opNome').focus()},300);
+}
+$('opNova').onclick=function(){if(aba!=='ops')trocaAba('ops');abreForm()};
+$('opCancelar').onclick=function(){$('opForm').hidden=true};
+$('opForm').addEventListener('submit',function(e){e.preventDefault();
+  var b=$('opSalvar');b.disabled=true;$('opMsg').textContent='Salvando…';
+  api2({acao:'salvar',chave:$('opChave').value,nome:$('opNome').value,whatsapp:$('opWa').value,produto:$('opProd').value,etapa:$('opEt').value,valor:$('opVal').value.replace(/\./g,'').replace(',','.'),forma:$('opForma').value,dataPrevista:$('opData').value,entrada:$('opEnt').value.replace(/\./g,'').replace(',','.'),parcelas:$('opParc').value,obs:$('opObs').value}).then(function(r){
+    b.disabled=false;
+    if(!r.ok){$('opMsg').textContent=r.erro||'Não consegui salvar.';return;}
+    $('opMsg').textContent='';$('opForm').hidden=true;ops=r.ops||[];mostrarOps();
+  });
+});
+function achaOp(k){return ops.filter(function(o){return o.chave===k})[0]}
+function cliqueOp(e){
+  var k=e.target.closest('[data-cp]');if(k){cliqueCall(e);return;}
+  var ed=e.target.closest('[data-ed]');if(ed){var o=achaOp(ed.getAttribute('data-ed'));if(aba!=='ops')trocaAba('ops');abreForm(o);return;}
+  var mv=e.target.closest('[data-pg],[data-pd]');
+  if(mv){var o2=achaOp(mv.getAttribute('data-pg')||mv.getAttribute('data-pd'));if(!o2)return;var novo=Object.assign({},o2,{etapa:mv.hasAttribute('data-pg')?'pago':'perdido'});
+    if(novo.etapa==='pago'&&!o2.dataPrevista)novo.dataPrevista=isoDia(recife(Date.now()));
+    mv.disabled=true;mv.textContent='Salvando…';
+    api2(Object.assign({acao:'salvar'},novo)).then(function(r){if(!r.ok){$('mApp').textContent=r.erro||'Não consegui salvar.';}else ops=r.ops||[];mostrarOps();});return;}
+  var rm=e.target.closest('[data-rm]');
+  if(rm){var o3=achaOp(rm.getAttribute('data-rm'));if(!o3||!confirm('Apagar a oportunidade de '+o3.nome+'?'))return;rm.disabled=true;
+    api2({acao:'apagar',chave:o3.chave}).then(function(r){if(!r.ok){$('mApp').textContent=r.erro||'Não consegui apagar.';}else ops=r.ops||[];mostrarOps();});}
+}
+$('opsLista').addEventListener('click',cliqueOp);$('cobrarLista').addEventListener('click',cliqueOp);
 $('bSair').onclick=function(){sair('')};
 $('fonte').addEventListener('change',function(){$('boxInd').hidden=this.value!=='Indicação'});
 [].forEach.call(document.querySelectorAll('#segTipo button'),function(b){b.onclick=function(){tipoSel=b.getAttribute('data-tipo');[].forEach.call(document.querySelectorAll('#segTipo button'),function(x){x.classList.toggle('on',x===b)});}});
