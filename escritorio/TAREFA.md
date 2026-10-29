@@ -69,6 +69,7 @@ Nome das calls (vale para Obs, avisos e material): **Call 1 Onboarding + Oferta*
 | Identidade do setup: ID DO CANAL, ANTES E DEPOIS DO CANAL, MODELO DE CARROSSEL, CALL DE CONSULTORIA AUDIOVISUAL / CALL DE APROVAÇÃO | **Produzir** seguindo `escritorio/identidade/IDENTIDADE.md` (kit em PNG, antes e depois, apresentação da call). |
 | Card "CLIENTE \| APRESENTAÇÃO DE CALL (agenda)" (criado pelo fluxo da agenda, Obs com "Evento da agenda: <id>") | **Produzir** como **Apresentação de call da agenda** (passo 3). |
 | Card "CLIENTE \| SITUAÇÃO COMPLETA (painel)" ou "CLIENTE \| CRONOGRAMA (painel)" | **Produzir** seguindo `escritorio/diagnostico/DIAGNOSTICO.md` (PDF pelo gerador `escritorio/diagnostico/gerar.py`). Não é "contrato/financeiro": é leitura do contrato para planejar; nunca escreva valores. Um card desses vale uma rodada inteira: faça só ele na rodada. |
+| Card "CLIENTE \| ROTEIRO TEMA QUENTE \| <título>" (o cliente escolheu um tema na aba Temas quentes do portal; Obs começa com "[Portal") | **Produzir** como **Roteiro de tema quente** (passo 3). Conta como 1 dos roteiros do pacote do mês do cliente, nunca como extra. |
 | O resto (relatório, apresentação de call, página de vendas, roteiros, pautas, bio, guia, conferências) | **Produzir** (passo 3). |
 
 ## 2a. Pedido com pouca informação: buscar antes de travar
@@ -116,6 +117,18 @@ Se ainda faltar o essencial (nenhuma foto do cliente em lugar nenhum, tema impos
    - **Texto** (copy, bio, SEO, guia, funil, estratégia, pautas): direto no corpo do card, numa seção
      "## 🏢 Entrega do escritório (Máquina do Escritório, dd/mm)". Roteiros e pautas vão no banco 🎬 Pautas e
      Roteiros, ligados ao cliente, Status Em revisão, e o card leva os links.
+   - **Roteiro de tema quente** (card "… \| ROTEIRO TEMA QUENTE \| …"): o corpo do card traz o tema, por que está quente,
+     como entra no conteúdo, o título sugerido e a história que o cliente contou no portal; a linha "Tema:" do Obs leva
+     à linha do banco 🔥 Temas quentes (`collection://c5ddc519-a9b3-4186-a9d2-46d619b80929`).
+     1. Escreva **1 roteiro** no padrão da skill de pautas e roteiros (4 a 7 min, com as marcações de corte dos 3
+        shorts), usando o tema como gancho e puxando dossiê, histórias pessoais, empresa e a história do pedido.
+        Nada inventado sobre a vida ou os números do cliente; o que não estiver na ficha, no dossiê ou no grupo fica
+        de fora.
+     2. Salve no 🎬 Pautas e Roteiros: Tipo Roteiro, ligado ao cliente, **Nº = o próximo número de roteiro do
+        cliente**, Status 👀 Em revisão, Obs "Tema quente pedido pelo cliente no portal (conta como roteiro do pacote)".
+     3. Na linha do tema, ligue o roteiro no campo **Roteiro** (o portal mostra "Roteiro pronto" quando a equipe
+        mudar o roteiro para 📤 Enviado ao cliente).
+     4. Card Em revisão + aviso de sempre no #dia-a-dia, lembrando que conta como 1 dos roteiros do mês.
    - **Apresentação de call** (o Rômulo usa na call): slides HTML com notas do apresentador. Padrão das calls
      anteriores do cliente; termina com o slide de feedback "O que vocês estão achando do Grupo Euforia até agora?"
      antes do agradecimento.

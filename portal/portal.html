@@ -209,6 +209,17 @@ a.btn{text-decoration:none;color:inherit;display:inline-block}
 .card[disabled]{cursor:default}
 .small{font-size:13px;color:var(--muted)}
 .msg .t{white-space:pre-wrap;word-wrap:break-word}
+/* Temas quentes */
+.temas{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px}
+.tema{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:20px;display:flex;flex-direction:column;gap:10px;text-align:left;box-shadow:0 1px 2px rgba(20,20,20,.04)}
+.tema.hot{border-color:var(--accent)}
+.tema .top{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.tema h2{font-size:22px}
+.tema .lbl{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.tema .gancho{background:var(--accent-soft);border-radius:10px;padding:10px 12px;font-size:14px}
+.tema .tit{font-family:var(--f-display);font-size:18px;font-weight:700}
+.tema .fim{margin-top:auto;display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between}
+.fogo{color:var(--accent-text);font-weight:700;font-size:13px;white-space:nowrap}
 </style>
 </head>
 <body>
@@ -223,6 +234,7 @@ a.btn{text-decoration:none;color:inherit;display:inline-block}
       <button data-view="inicio" aria-current="page">Início</button>
       <button data-view="entregas">Entregas <span class="badge" id="badge-aprovar" hidden>0</span></button>
       <button data-view="gravacoes">Gravações <span class="badge" id="badge-gravar" hidden>0</span></button>
+      <button data-view="temas">Temas quentes <span class="badge" id="badge-temas" hidden>0</span></button>
       <button data-view="mensagens">Mensagens</button>
     </nav>
     <div class="who"><div class="avatar" id="avatar"></div><div><div style="color:var(--side-active);font-weight:600" id="who-nome"></div><div id="who-fase"></div></div></div>
@@ -273,6 +285,13 @@ a.btn{text-decoration:none;color:inherit;display:inline-block}
           <ul class="check"><li>Celular na horizontal, na altura dos olhos</li><li>Luz de frente (janela ou ring light)</li><li>Se errar uma frase, repita: a edição aproveita a melhor</li></ul>
         </div>
       </div>
+    </section>
+
+    <!-- TEMAS QUENTES -->
+    <section class="view" id="v-temas" hidden>
+      <div class="head"><div><p class="eyebrow">Ideias da semana</p><h1>Temas quentes</h1></div><p class="sub" id="temas-sub">Assuntos que estão em alta agora, já com o jeito de levar para o seu conteúdo.</p></div>
+      <div class="rule" id="temas-regra">Gostou de um tema? Toque em <b>Quero esse roteiro</b>. A equipe escreve o roteiro com as suas histórias e o seu negócio, e ele aparece em <b>Gravações</b> pronto para gravar. Você pode pedir 1 tema por mês, e ele entra como um dos roteiros do seu pacote.</div>
+      <div class="temas" id="temas"></div>
     </section>
 
     <!-- MENSAGENS -->
@@ -355,7 +374,7 @@ function render(){
   if (d.resumo.proxPub) { $('#tile-pub').textContent = d.resumo.proxPub.quando; $('#tile-pub-sub').textContent = d.resumo.proxPub.t; }
   if (d.proximaCall) $('#call-box').innerHTML = 'Próxima call com a equipe: <b>' + esc(d.proximaCall) + '</b>. Dúvidas antes disso? Escreva em <b>Mensagens</b>.';
   $('#feed').innerHTML = d.feed.length ? d.feed.map(f => `<li><time class="mono">${esc(f.em)}</time><span><b>${esc(f.t)}</b> ${FEED[f.col] || ''}.</span></li>`).join('') : '<li><span></span><span class="sub">As novidades das suas entregas aparecem aqui.</span></li>';
-  renderBoard(); renderRoteiros(); renderChat();
+  renderBoard(); renderRoteiros(); renderTemas(); renderChat();
 }
 
 function renderBoard(){
@@ -429,6 +448,55 @@ function renderRoteiros(){
   const sel = $('#rot'), atual = sel.value;
   sel.innerHTML = rs.filter(r => r.status === 'gravar').map(r => `<option value="${esc(nomeRot(r))}">${esc(nomeRot(r))}</option>`).join('') + '<option value="">Outro vídeo</option>';
   if (atual && [...sel.options].some(o => o.value === atual)) sel.value = atual;
+}
+
+// Temas quentes: assuntos em alta (gerais ou do nicho) com o gancho para o conteúdo do cliente. Pedir vira pedido de roteiro para a equipe.
+const TEMA_ST = { livre: ['', ''], pedido: ['warn', 'Roteiro em preparo'], pronto: ['ok', 'Roteiro pronto'] };
+function fogo(n){ return ['', 'Em alta', 'Muito em alta', 'Bombando'][n] || 'Em alta'; }
+function renderTemas(){
+  const ts = D.temas || [];
+  const novos = D.temaDisponivel === false ? 0 : ts.filter(t => t.status === 'livre' && t.novo).length;
+  const b = $('#badge-temas'); b.textContent = novos; b.hidden = !novos;
+  if (D.temasSemana) $('#temas-sub').textContent = 'Atualizado ' + D.temasSemana + '. Assuntos em alta agora, já com o jeito de levar para o seu conteúdo.';
+  $('#temas').innerHTML = ts.length ? ts.map(t => {
+    const st = TEMA_ST[t.status] || TEMA_ST.livre;
+    const btn = t.status === 'livre' ? (D.temaDisponivel === false ? '<span class="small">Você já usou o pedido deste mês. No mês que vem pode escolher de novo.</span>' : `<button class="btn primary" data-tema="${esc(t.id)}">Quero esse roteiro</button>`)
+      : t.status === 'pronto' ? '<button class="btn" data-go="gravacoes">Ver em Gravações</button>' : '<span class="small">A equipe já está escrevendo.</span>';
+    return `<article class="tema${t.quente >= 3 && t.status === 'livre' ? ' hot' : ''}">
+      <div class="top"><span class="chip">${esc(t.origem || 'Em alta')}</span>${st[1] ? `<span class="chip ${st[0]}">${st[1]}</span>` : `<span class="fogo">${fogo(t.quente)}</span>`}</div>
+      <h2>${esc(t.t)}</h2>
+      <p class="sub">${esc(t.porque)}</p>
+      <div><p class="lbl">Como entra no seu conteúdo</p><p class="gancho">${esc(t.gancho)}</p></div>
+      <div><p class="lbl">Título sugerido</p><p class="tit">${esc(t.titulo)}</p></div>
+      <div class="fim">${btn}</div>
+    </article>`;
+  }).join('') : '<p class="sub">Toda semana a equipe separa novos temas em alta para você. Eles aparecem aqui.</p>';
+  document.querySelectorAll('[data-tema]').forEach(x => x.addEventListener('click', () => pedirTema(x.dataset.tema)));
+  document.querySelectorAll('#temas [data-go]').forEach(x => x.addEventListener('click', () => go(x.dataset.go)));
+}
+function pedirTema(id){
+  const t = (D.temas || []).find(x => x.id === id); if (!t) return;
+  const pode = D.podeAprovar !== false;
+  abrirGaveta(`<div class="row" style="justify-content:space-between"><p class="eyebrow">Tema quente</p><button class="btn ghost" id="close">Fechar</button></div>
+    <h2 id="d-title" style="font-size:26px">${esc(t.titulo)}</h2>
+    <p class="sub">${esc(t.porque)}</p>
+    <p class="gancho" style="background:var(--accent-soft);border-radius:10px;padding:10px 12px">${esc(t.gancho)}</p>
+    ${pode ? `<label>Tem alguma história sua que combina com esse tema? (opcional)<textarea id="tema-obs" maxlength="1500" placeholder="Ex.: um caso de cliente, algo que aconteceu com você, um número do seu negócio…"></textarea></label>
+    <p class="small">A equipe já usa o que sabe de você: sua trajetória, suas histórias e o seu negócio. Se quiser, conte algo a mais aqui.</p>
+    <p class="small">É o seu pedido do mês: este roteiro entra como um dos roteiros do seu pacote.</p>
+    <div class="actions"><button class="btn primary" id="tema-ok">Pedir roteiro</button></div>`
+    : '<div class="rule">Quem pede roteiros é o dono ou sócio da conta. Se gostou deste tema, avise em Mensagens.</div>'}`);
+  const ok = $('#tema-ok'); if (!ok) return;
+  ok.onclick = async () => {
+    ok.disabled = true; ok.textContent = 'Enviando…';
+    try {
+      const r = await api('euforia-portal-tema', { method: 'POST', body: JSON.stringify({ a: C, tema: t.id, obs: ($('#tema-obs').value || '').trim() }) });
+      if (r && r.ok) { t.status = 'pedido'; D.temaDisponivel = false; fechar(); render(); toast('Pedido enviado. O roteiro aparece em Gravações assim que ficar pronto.'); return; }
+      toast(r && r.motivo === 'papel' ? 'Quem pede roteiros é o dono ou sócio da conta.' : r && r.motivo === 'limite' ? 'Você já usou o pedido deste mês. No mês que vem pode escolher de novo.' : r && r.motivo === 'status' ? 'Este tema já foi pedido. Atualizamos a lista para você.' : 'Não deu certo agora. Tente de novo em instantes.');
+      if (r && (r.motivo === 'status' || r.motivo === 'limite')) { fechar(); carregar(false); return; }
+    } catch (e) { toast('Não deu certo agora. Tente de novo em instantes.'); }
+    ok.disabled = false; ok.textContent = 'Pedir roteiro';
+  };
 }
 
 // Teleprompter: só a fala (sem títulos, dicas e notas de gravação). Arquivo e PDF levam o roteiro inteiro.
@@ -556,6 +624,11 @@ const DEMO_DADOS = {"ok":true,"nome":"Camila Rocha","primeiro":"Camila","fase":"
   {"id":"7","t":"Longo 04 · Lanche da tarde","tipo":"Longo","qtd":1,"col":"publicado","info":"Publicado sex, 23/10","link":"#"}],
  "roteiros":[{"id":"r8","n":8,"t":"Lanche que sacia","status":"gravar"},{"id":"r7","n":7,"t":"Jejum funciona?","status":"gravado"}],
  "mensagens":[{"eu":false,"t":"Oi, Camila! O Longo 05 já está no portal para você aprovar.","quem":"Érica · suporte","em":"26/10 09:15"},{"eu":true,"t":"Oba! Vou ver no almoço.","quem":"você","em":"26/10 09:31"}],
+ "temasSemana":"segunda-feira, 26/10","temaDisponivel":true,"temas":[
+  {"id":"t1","origem":"Em alta no Brasil","quente":3,"novo":true,"status":"livre","t":"Canetas para emagrecer na boca do povo","porque":"Todo mundo está falando das canetas para perder peso: notícia, meme, conversa de almoço.","gancho":"Você atende quem chega querendo atalho. Mostre o que acontece com a alimentação de quem usa a caneta sem acompanhamento.","titulo":"Usei a caneta e parei de comer: e agora?"},
+  {"id":"t2","origem":"Data que vem aí","quente":2,"novo":true,"status":"livre","t":"Festas de fim de ano chegando","porque":"Começa a contagem para confraternizações e ceias. As buscas por \"como não engordar nas festas\" sobem todo ano nesta época.","gancho":"Conte como você mesma faz nas festas da sua família e dê um plano simples de 3 passos.","titulo":"Como eu como na ceia sem culpa (e sem dieta)"},
+  {"id":"t3","origem":"Trend nas redes","quente":2,"novo":true,"status":"livre","t":"Receitas virais de doce de 3 ingredientes","porque":"Vídeos de receitas rápidas estão entre os mais vistos da semana.","gancho":"Teste uma receita viral e diga, como nutricionista, o que realmente tem nela. Funciona muito bem em short.","titulo":"Testei a receita viral: nutricionista reage"},
+  {"id":"t4","origem":"Do seu nicho","quente":1,"novo":false,"status":"pronto","t":"Proteína em tudo: café, pão, sorvete","porque":"Produtos \"proteicos\" tomaram o mercado e geram muita dúvida.","gancho":"Compare rótulos de produtos do mercado com uma refeição comum.","titulo":"Vale pagar mais caro no \"proteico\"?"}],
  "feed":[{"em":"26/10 09:14","t":"Longo 05 · Os 3 erros do café da manhã","col":"aprovar"},{"em":"25/10 18:02","t":"Carrossel · Água ao longo do dia","col":"ajuste"},{"em":"23/10 17:02","t":"Longo 04 · Lanche da tarde","col":"publicado"}]};
 
 if (!C && !DEMO) { falhou(); return; }

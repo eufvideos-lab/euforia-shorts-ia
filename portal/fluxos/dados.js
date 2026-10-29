@@ -35,12 +35,25 @@ const ficha = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, config: {
 const entregas = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, config: { name: 'Entregas do cliente', credentials: NOTION, onError: 'continueRegularOutput', alwaysOutputData: true, executeOnce: true, parameters: {
   method: 'POST', url: 'https://api.notion.com/v1/databases/74b3076a325749e3bac4ba6659215e48/query', authentication: 'genericCredentialType', genericAuthType: 'httpHeaderAuth',
   sendHeaders: true, headerParameters: NOTION_HDR, sendBody: true, specifyBody: 'json',
-  jsonBody: '={{ JSON.stringify({ filter: { and: [ { property: "Cliente", relation: { contains: $("Conferir acesso").first().json.id } }, { property: "Status", select: { does_not_equal: "Cancelado" } } ] }, sorts: [{ timestamp: "last_edited_time", direction: "descending" }], page_size: 100 }) }}', options: {} } } });
+  jsonBody: '={{ JSON.stringify({ filter: { and: [ { property: "Cliente", relation: { contains: $("Conferir acesso").first().json.id } }, { property: "Status", select: { does_not_equal: "Cancelado" } } ] }, sorts: [{ timestamp: "last_edited_time", direction: "descending" }], page_size: 100 }) }}',
+  options: { pagination: { pagination: { paginationMode: 'updateAParameterInEachRequest',
+    parameters: { parameters: [{ type: 'body', name: 'start_cursor', value: '={{ $response.body.next_cursor }}' }] },
+    paginationCompleteWhen: 'other', completeExpression: '={{ !$response.body.has_more }}', limitPagesFetched: true, maxRequests: 10 } } } } } });
 
 const roteiros = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, config: { name: 'Roteiros do cliente', credentials: NOTION, onError: 'continueRegularOutput', alwaysOutputData: true, executeOnce: true, parameters: {
   method: 'POST', url: 'https://api.notion.com/v1/databases/076dd702dd1844bab3ca03a536d4a21e/query', authentication: 'genericCredentialType', genericAuthType: 'httpHeaderAuth',
   sendHeaders: true, headerParameters: NOTION_HDR, sendBody: true, specifyBody: 'json',
-  jsonBody: '={{ JSON.stringify({ filter: { and: [ { property: "Cliente", relation: { contains: $("Conferir acesso").first().json.id } }, { property: "Tipo", select: { equals: "Roteiro" } } ] }, sorts: [{ property: "Nº", direction: "ascending" }], page_size: 100 }) }}', options: {} } } });
+  jsonBody: '={{ JSON.stringify({ filter: { and: [ { property: "Cliente", relation: { contains: $("Conferir acesso").first().json.id } }, { property: "Tipo", select: { equals: "Roteiro" } } ] }, sorts: [{ property: "Nº", direction: "ascending" }], page_size: 100 }) }}',
+  options: { pagination: { pagination: { paginationMode: 'updateAParameterInEachRequest',
+    parameters: { parameters: [{ type: 'body', name: 'start_cursor', value: '={{ $response.body.next_cursor }}' }] },
+    paginationCompleteWhen: 'other', completeExpression: '={{ !$response.body.has_more }}', limitPagesFetched: true, maxRequests: 10 } } } } } });
+
+// Temas quentes: os da semana mais recente (Sugerido) e os pedidos dos últimos 60 dias.
+const temas = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, config: { name: 'Temas quentes do cliente', credentials: NOTION, onError: 'continueRegularOutput', alwaysOutputData: true, executeOnce: true, parameters: {
+  method: 'POST', url: 'https://api.notion.com/v1/databases/c963e3f9e0064f1ca7be64cdc55e868d/query', authentication: 'genericCredentialType', genericAuthType: 'httpHeaderAuth',
+  sendHeaders: true, headerParameters: NOTION_HDR, sendBody: true, specifyBody: 'json',
+  jsonBody: '={{ JSON.stringify({ filter: { and: [ { property: "Cliente", relation: { contains: $("Conferir acesso").first().json.id } }, { property: "Status", select: { does_not_equal: "Expirado" } }, { or: [ { property: "Semana", date: { on_or_after: $now.setZone("America/Recife").minus({ days: 21 }).toISODate() } }, { property: "Pedido em", date: { on_or_after: $now.setZone("America/Recife").minus({ days: 60 }).toISODate() } } ] } ] }, sorts: [{ property: "Semana", direction: "descending" }], page_size: 50 }) }}',
+  options: {} } } });
 
 const mensagens = node({ type: 'n8n-nodes-base.postgres', version: 2.6, config: { name: 'Mensagens do grupo', credentials: PG, onError: 'continueRegularOutput', alwaysOutputData: true, executeOnce: true, parameters: {
   operation: 'executeQuery',
@@ -64,7 +77,7 @@ const fmtData = iso => iso ? DateTime.fromISO(iso, { zone: Z }).setLocale('pt-BR
 const limparTitulo = t => { const partes = String(t).split('|').map(s => s.trim()).filter(Boolean); return partes.length > 1 ? partes.slice(1).join(' · ') : String(t).trim(); };
 
 const cards = [];
-for (const p of ($('Entregas do cliente').first().json.results || [])) {
+for (const it of $('Entregas do cliente').all()) for (const p of (it.json.results || [])) {
   const pr = p.properties || {};
   const status = txt(pr['Status']);
   const tipo = txt(pr['Tipo']);
@@ -88,13 +101,39 @@ for (const p of ($('Entregas do cliente').first().json.results || [])) {
 
 const ROT = { '📤 Enviado ao cliente': 'gravar', '👍 Aprovado pelo cliente': 'gravar', '🎬 Gravado': 'gravado' };
 const rots = [];
-for (const p of ($('Roteiros do cliente').first().json.results || [])) {
+for (const it of $('Roteiros do cliente').all()) for (const p of (it.json.results || [])) {
   const pr = p.properties || {};
   const st = ROT[txt(pr['Status'])];
   if (!st) continue;
   const n = (pr['Nº'] || {}).number;
   rots.push({ id: p.id, n: n == null ? null : n, t: txt(pr['Título']), status: st });
 }
+
+// Temas quentes (aba do portal). Pedido: 1 por mês. Pronto: o roteiro ligado já foi enviado ao cliente.
+const QUENTE = { 'Em alta': 1, 'Muito em alta': 2, 'Bombando': 3 };
+const rotSt = {}; for (const r of rots) rotSt[String(r.id).replace(/-/g, '')] = r.status;
+const inicioMes = agora.startOf('month').toISODate();
+const brutos = [];
+for (const it of $('Temas quentes do cliente').all()) for (const p of (it.json.results || [])) brutos.push(p);
+const semanas = brutos.filter(p => txt((p.properties || {})['Status']) === 'Sugerido').map(p => txt((p.properties || {})['Semana'])).filter(Boolean).sort();
+const ultimaSemana = semanas[semanas.length - 1] || '';
+let pediuMes = false;
+const temasOut = [];
+for (const p of brutos) {
+  const pr = p.properties || {};
+  const st = txt(pr['Status']);
+  const semana = txt(pr['Semana']);
+  const pedidoEm = txt(pr['Pedido em']);
+  if (pedidoEm && pedidoEm >= inicioMes) pediuMes = true;
+  const ligados = ((pr['Roteiro'] || {}).relation || []).map(r => r.id.replace(/-/g, ''));
+  const pronto = st === 'Roteiro pronto' || ligados.some(id => rotSt[id]);
+  const status = pronto ? 'pronto' : (st === 'Pedido pelo cliente' ? 'pedido' : (st === 'Sugerido' && semana === ultimaSemana ? 'livre' : ''));
+  if (!status) continue;
+  temasOut.push({ id: p.id.replace(/-/g, ''), t: txt(pr['Tema']).replace(/^TESTE\\s*·\\s*/, ''), porque: txt(pr['Por que está quente']), gancho: txt(pr['Como entra no conteúdo']),
+    titulo: txt(pr['Título sugerido']), origem: txt(pr['Origem']) || 'Em alta', quente: QUENTE[txt(pr['Calor'])] || 1, status,
+    novo: status === 'livre' && semana >= agora.minus({ days: 7 }).toISODate() });
+}
+temasOut.sort((a, b) => ({ livre: 0, pedido: 1, pronto: 2 }[a.status] - { livre: 0, pedido: 1, pronto: 2 }[b.status]) || b.quente - a.quente);
 
 const acc = $('Conferir acesso').first().json;
 const fone = acc.fone8 || (acc.papel === 'Dono' ? String(txt(props['WhatsApp do cliente'])).replace(/[^0-9]/g, '').slice(-8) : '');
@@ -128,15 +167,16 @@ const resposta = { ok: true, nome, primeiro: (acc.pessoa || nome).split(' ')[0],
   proximaCall: alinh && alinh >= hoje ? DateTime.fromISO(alinh, { zone: Z }).setLocale('pt-BR').toFormat(alinh.length > 10 ? "cccc, dd/MM 'às' HH'h'mm" : 'cccc, dd/MM') : '',
   temGrupo: !!txt(props['Grupo WhatsApp (ID)']), temDrive: !!txt(props['Drive']),
   resumo: { aprovar: aprovar.length, proxPub: proxPub ? { t: proxPub.t, quando: fmtData(proxPub.postarEm) } : null, proxGravar },
-  cards: cards.map(({ editado, ...c }) => c), roteiros: rots, mensagens: msgs, feed };
+  cards: cards.map(({ editado, ...c }) => c), roteiros: rots, mensagens: msgs, feed,
+  temas: temasOut, temasSemana: ultimaSemana ? DateTime.fromISO(ultimaSemana, { zone: Z }).setLocale('pt-BR').toFormat('cccc, dd/MM') : '', temaDisponivel: !pediuMes };
 return [{ json: { resposta } }];
 ` } } });
 
 const devolver = node({ type: 'n8n-nodes-base.respondToWebhook', version: 1.5, config: { name: 'Devolver dados', parameters: {
   respondWith: 'json', responseBody: '={{ JSON.stringify($json.resposta) }}', options: {} } } });
 
-const nota = sticky('## Portal do cliente · dados (V1)\nA página do portal (grupoeuforia.com.br/portal?a=<id da pessoa no 🔑 Acessos do portal>) pede aqui tudo o que mostra: entregas do Entregas (sem Obs, sem Roteiro/Copy/Outro/Limpeza, sem fila reserva), roteiros do 🎬 enviados ao cliente e as mensagens do grupo do WhatsApp (últimos 45 dias). Só leitura. Nada de número do canal: relatórios só em percentual (V2).', [], { color: 4 });
+const nota = sticky('## Portal do cliente · dados (V1)\nA página do portal (grupoeuforia.com.br/portal?a=<id da pessoa no 🔑 Acessos do portal>) pede aqui tudo o que mostra: entregas do Entregas (sem Obs, sem Roteiro/Copy/Outro/Limpeza, sem fila reserva), roteiros do 🎬 enviados ao cliente, os temas quentes da semana (🔥 Temas quentes) e as mensagens do grupo do WhatsApp (últimos 45 dias). Só leitura. Nada de número do canal: relatórios só em percentual (V2).', [], { color: 4 });
 
 export default workflow('portal-dados', 'Portal | Dados do cliente (V1)')
-  .add(pedir).to(lerLink).to(acessoNode).to(conferir).to(ficha).to(entregas).to(roteiros).to(mensagens).to(montar).to(devolver)
+  .add(pedir).to(lerLink).to(acessoNode).to(conferir).to(ficha).to(entregas).to(roteiros).to(temas).to(mensagens).to(montar).to(devolver)
   .add(nota);
