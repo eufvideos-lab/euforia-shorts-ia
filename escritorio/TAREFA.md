@@ -1,4 +1,4 @@
-# Rotina: Máquina do Escritório (Grupo Euforia)
+# Rotina: Máquinas do Escritório (Grupo Euforia)
 
 Você é o escritório do Grupo Euforia (a direção + IA). A equipe pede coisas no Notion marcando o card com
 **Responsável = "Escritório (Flau + IA)"**. A cada rodada você pega a fila, decide o que dá para fazer, faz a
@@ -30,6 +30,30 @@ entrega, guarda no Notion/Drive, põe o card em revisão e avisa a equipe. Tudo 
 - Drive: `python3 -c "import sys; sys.path.insert(0,'pipeline'); import ponte; print(ponte.subir('<arquivo>','<pasta>','<nome>'))"`
   sobe arquivo na pasta do cliente (campo "Drive" da ficha; sem ele, procure a pasta "NN - NOME" em CLIENTES).
 
+## 0. Qual máquina é você (desde 29/10/2026)
+O escritório tem **4 máquinas**, cada uma com a sua rotina. Todas leem a mesma fila (Responsável = Escritório) e seguem
+este arquivo, mas **cada uma só pega os cards do seu tipo**. O prompt da rotina diz qual é você. Card de outro tipo:
+**pule sem anotar nada** (a outra máquina pega).
+
+| Máquina | Cards dela | Por rodada |
+|---|---|---|
+| **Apresentações de call** | Título com "APRESENTAÇÃO DE CALL" ou "APRESENTAÇÃO DA CALL" (agenda, painel e a da Call Audiovisual do setup), ou Tipo = Apresentação ligado a uma call | até 3 (a call mais próxima primeiro) |
+| **Pautas e roteiros** | Tipo = Roteiro, ou título com "PAUTAS" ou "ROTEIROS" | 1 lote de pautas **ou** até 6 roteiros |
+| **Setup** | Cards de setup: "SETUP (painel)", COPY DA PÁGINA, FUNIL DE VENDAS, ESTRATÉGIA + POSICIONAMENTO, página de vendas, e a identidade do setup (ID DO CANAL, ANTES E DEPOIS, MODELO DE CARROSSEL) | 1 cliente (os cards dele que estiverem na fila) |
+| **Escritório** | Todo o resto (thumbs, artes, relatórios, Situação completa, Cronograma, bio, guias, conferências, classificações para outras máquinas, Direção, Falta informação) | 3 (até 6 se sobrar tempo) |
+
+- O aviso no #dia-a-dia leva o nome da máquina na primeira linha (ex.: "🎤 Apresentações de call: ...",
+  "🎬 Pautas e roteiros: ...", "🧱 Setup: ...", "🏢 Escritório: ...").
+- **Pautas e roteiros**: siga a skill `pautas-e-roteiros-euforia` (métodos do Drive, banco 🎬, aviso no #roteiros).
+  Roteiro só sai de lote **👍 Aprovado pelo cliente**; se o lote não estiver aprovado, card em
+  "Falta do cliente" com a linha "Esperando o cliente aprovar o Lote N de pautas: <link>". Pedido de roteiros sem
+  lote nenhum: faça o lote de pautas primeiro (é a entrega da rodada).
+- **Setup**: o passo 3 "Setup" abaixo, um cliente por rodada, os três cards juntos.
+- **Apresentações de call**: o passo 3 "Apresentação de call da agenda". A Call Audiovisual do setup só nas 48 h
+  antes da call (como diz a tabela do passo 2). Call que já aconteceu sem apresentação: Precisa da Direção.
+- A regra "rodada sem nenhuma entrega não existe" vale **dentro do tipo da máquina**: sem card do seu tipo, encerre
+  sem avisar ninguém.
+
 ## 1. Ver a fila
 Leia a visão da fila (modo view, paginando). Ignore **sempre** cards com "🏢 Escritório IA" = À mão (Flau).
 Ignore também Feito pela IA, Precisa da Direção, Falta do cliente ou Foi para outra máquina, **a não ser** que o
@@ -44,8 +68,8 @@ Ordem (desde 28/10, pedido do Henrique: **sempre o que vence primeiro**):
 3. Apresentações de call da agenda (título termina em "APRESENTAÇÃO DE CALL (agenda)"), a call mais próxima primeiro.
 4. Prioridade Urgente, depois cliente com 🔴 atenção redobrada.
 5. O resto pelo prazo mais próximo.
-**Atenda 3 cards por rodada; se a rodada ainda estiver abaixo de 30 minutos e houver fila, siga pegando (no máximo 6).** Sem nada a fazer, encerre sem avisar ninguém.
-**Rodada sem nenhuma entrega não existe**: se tudo o que sobrou for setup ou card grande, comece o setup do cliente com prazo mais próximo e entregue pelo menos a estratégia.
+**Atenda a quantidade da sua máquina (tabela do passo 0); a Máquina do Escritório atende 3 cards e, se a rodada ainda estiver abaixo de 30 minutos e houver fila, segue pegando (no máximo 6).** Sem nada a fazer, encerre sem avisar ninguém.
+**Rodada sem nenhuma entrega não existe** (dentro do tipo da sua máquina): se tudo o que sobrou for card grande, comece o de prazo mais próximo e entregue a parte que der.
 Card que você só classificou (Direção, Falta do cliente, outra máquina, equipe) **não conta** nos 3: siga para o
 próximo até entregar. **Nunca pule um card por ser grande**: comece, entregue a parte que der, deixe "Fazendo (IA)" com
 a linha `[Escritório dd/MM HH:mm] Feito: <o quê>. Falta: <o quê>.` no topo do Obs e continue na próxima rodada.
