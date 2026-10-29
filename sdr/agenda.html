@@ -237,7 +237,7 @@ textarea{min-height:70px;resize:vertical}
       <input type="hidden" id="opChave">
       <div class="row2"><div><label for="opNome">Lead / empresa *</label><input id="opNome" required></div><div><label for="opWa">WhatsApp</label><input id="opWa" inputmode="tel" placeholder="81 99999-9999"></div></div>
       <div class="row2"><div><label for="opProd">Produto *</label><select id="opProd" required></select></div><div><label for="opEt">Etapa *</label><select id="opEt" required></select></div></div>
-      <div class="row3"><div><label for="opVal">Valor bruto (R$)</label><input id="opVal" inputmode="decimal" placeholder="9200"></div><div><label for="opForma">Forma de pagamento</label><select id="opForma"></select></div><div><label for="opData">Data prevista do pagamento</label><input type="date" id="opData"></div></div>
+      <div class="row3"><div><label for="opVal">Valor bruto (R$)</label><input id="opVal" inputmode="decimal" placeholder="9200"></div><div><label for="opForma">Forma de pagamento</label><select id="opForma"></select></div><div><label for="opData" id="opDataL">Data prevista do pagamento</label><input type="date" id="opData"></div></div>
       <div class="row2"><div><label for="opEnt">Entrada ou 1º pagamento (R$)</label><input id="opEnt" inputmode="decimal" placeholder="opcional"></div><div><label for="opParc">Nº de parcelas ou meses</label><input id="opParc" inputmode="numeric" placeholder="opcional"></div></div>
       <label for="opObs">Observação</label><textarea id="opObs" placeholder="Ex.: ficou de responder sexta; paga entrada no cartão e o resto em 70 dias"></textarea>
       <div class="acts" style="margin-top:14px"><button class="btn" id="opSalvar">Salvar</button><button type="button" class="ghost" id="opCancelar">Cancelar</button></div>
@@ -572,7 +572,7 @@ $('cicForm').addEventListener('submit',function(e){e.preventDefault();var n=$('c
 function mudaPlacar(n){var d=new Date(plIni+'T00:00:00Z');plIni=isoDia(new Date(d.getTime()+n*7*DIAMS));carregarPlacar();}
 $('pPrev').onclick=function(){mudaPlacar(-1)};$('pNext').onclick=function(){mudaPlacar(1)};$('pHoje').onclick=function(){plIni='';carregarPlacar();};
 // oportunidades (só Henrique e Diogo; o servidor recusa os outros)
-var ETAPAS=[['quente','Lead quente (vai dar resposta)','#e9c46a'],['dados','Aguardando dados do contrato','#7fb3ff'],['vai_pagar','Disse que vai pagar','#f4a261'],['assinado','Contrato assinado (falta pagar)','#FF5A00'],['pago','Pago','#2ecc71'],['perdido','Perdido','#555']];
+var ETAPAS=[['quente','Lead quente (vai dar resposta)','#e9c46a'],['morno','Lead morno (sumiu, fazer follow-up)','#9b8bd6'],['dados','Aguardando dados do contrato','#7fb3ff'],['vai_pagar','Disse que vai pagar','#f4a261'],['assinado','Contrato assinado (falta pagar)','#FF5A00'],['pago','Pago','#2ecc71'],['perdido','Perdido','#555']];
 var PRODS=['Assessoria semestral','Assessoria anual','Assessoria mensal','Implementação','Manutenção','Outro'];
 var FORMAS=['Pix à vista','Cartão à vista','Cartão parcelado','Entrada + parcelas','Mensalidade','Boleto','A definir'];
 var COBRAR=['dados','vai_pagar','assinado'];
@@ -582,6 +582,8 @@ function dbr(s){return s?s.split('-').reverse().slice(0,2).join('/'):'sem data'}
 function naData(o){return o.entrada>0?o.entrada:o.valor}
 $('opProd').innerHTML='<option value="">Escolha</option>'+PRODS.map(function(p){return '<option>'+esc(p)+'</option>'}).join('');
 $('opEt').innerHTML=ETAPAS.map(function(e){return '<option value="'+e[0]+'">'+esc(e[1])+'</option>'}).join('');
+function rotData(){$('opDataL').textContent=$('opEt').value==='morno'?'Próximo follow-up':'Data prevista do pagamento';}
+$('opEt').addEventListener('change',rotData);
 $('opForma').innerHTML=FORMAS.map(function(p){return '<option>'+esc(p)+'</option>'}).join('');
 function api2(body){
   return fetch(API2,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.assign({},cred,body))})
@@ -602,11 +604,12 @@ function opCard(o,extra){
   var meta=[esc(o.forma||'A definir')];
   if(o.entrada>0)meta.push('entrada/1º pagamento '+brl(o.entrada));
   if(o.parcelas>0)meta.push(o.parcelas+(o.forma==='Mensalidade'?' meses':' parcelas'));
-  meta.push('pagamento previsto: <b>'+esc(dbr(o.dataPrevista))+'</b>');
+  if(o.etapa==='morno'){meta=[];var dz=o.atualizadoEm?Math.floor((Date.now()-new Date(o.atualizadoEm).getTime())/DIAMS):-1;if(dz>=0)meta.push('sem novidade há <b>'+dz+' dia'+(dz===1?'':'s')+'</b>');meta.push('próximo follow-up: <b>'+esc(dbr(o.dataPrevista))+'</b>');}
+  else meta.push('pagamento previsto: <b>'+esc(dbr(o.dataPrevista))+'</b>');
   return '<div class="op'+(extra&&extra.atr?' atr':'')+'" style="--c:'+e[2]+'"><div class="l1"><span class="n">'+esc(o.nome)+'</span><span class="tag">'+esc(o.produto)+'</span><span class="tag" style="border-color:'+e[2]+';color:'+e[2]+'">'+esc(e[1])+'</span>'+(extra&&extra.tag||'')+(tl?'<span class="ph">'+esc(tl)+'</span><button class="cp" data-cp="'+esc(o.whatsapp)+'">Copiar</button>':'')+'<span class="v">'+brl(o.valor)+'</span></div>'
     +'<div class="meta">'+meta.join(' · ')+'</div>'+(o.obs?'<div class="meta">'+esc(o.obs)+'</div>':'')
     +'<div class="meta">Atualizado por '+esc(o.atualizadoPor||'—')+(o.atualizadoEm?' em '+esc(new Date(o.atualizadoEm).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit',timeZone:'America/Recife'})):'')+'</div>'
-    +'<div class="acts"><button data-ed="'+esc(o.chave)+'">Editar</button>'+(o.etapa!=='pago'?'<button data-pg="'+esc(o.chave)+'" style="border-color:rgba(46,204,113,.5)">Pagou</button>':'')+(o.etapa!=='perdido'&&o.etapa!=='pago'?'<button data-pd="'+esc(o.chave)+'">Perdido</button>':'')+'<button data-rm="'+esc(o.chave)+'">Apagar</button></div></div>';
+    +'<div class="acts"><button data-ed="'+esc(o.chave)+'">Editar</button>'+(o.etapa==='morno'?'<button data-vq="'+esc(o.chave)+'" style="border-color:rgba(233,196,106,.6)">Voltou a falar</button>':'')+(o.etapa==='quente'?'<button data-mo="'+esc(o.chave)+'" style="border-color:rgba(155,139,214,.6)">Sumiu (morno)</button>':'')+(o.etapa!=='pago'?'<button data-pg="'+esc(o.chave)+'" style="border-color:rgba(46,204,113,.5)">Pagou</button>':'')+(o.etapa!=='perdido'&&o.etapa!=='pago'?'<button data-pd="'+esc(o.chave)+'">Perdido</button>':'')+'<button data-rm="'+esc(o.chave)+'">Apagar</button></div></div>';
 }
 function mostrarLista(){
   if(!ops.length){$('opsLista').innerHTML='<p class="load">Nenhuma oportunidade ainda. Toque em "+ Nova oportunidade".</p>';return;}
@@ -614,7 +617,7 @@ function mostrarLista(){
     var l=ops.filter(function(o){return o.etapa===e[0]}).sort(function(a,b){return (a.dataPrevista||'9')<(b.dataPrevista||'9')?-1:1});
     if(!l.length)return '';
     var s=l.reduce(function(t,o){return t+o.valor},0);
-    return '<div class="gh"><h3>'+esc(e[1])+' · '+l.length+'</h3><b>'+brl(s)+'</b></div>'+l.map(function(o){return opCard(o)}).join('');
+    return '<div class="gh"><h3>'+esc(e[1])+' · '+l.length+'</h3><b>'+brl(s)+'</b></div>'+l.map(function(o){var hj=isoDia(recife(Date.now()));return opCard(o,o.etapa==='morno'&&(!o.dataPrevista||o.dataPrevista<=hj)?{tag:'<span class="tag or">Follow-up hoje</span>'}:null)}).join('');
   }).join('');
 }
 function mostrarCobrar(){
@@ -630,7 +633,7 @@ function mostrarPrev(){
   var hojeD=recife(Date.now()), seg=segundaDe(Date.now()), dom=new Date(seg.getTime()+6*DIAMS);
   var mIni=isoDia(hojeD).slice(0,7);
   var periodo=function(nome,fil,rot){
-    var l=ops.filter(function(o){return o.dataPrevista&&fil(o.dataPrevista)&&o.etapa!=='perdido'});
+    var l=ops.filter(function(o){return o.dataPrevista&&fil(o.dataPrevista)&&o.etapa!=='perdido'&&o.etapa!=='morno'});
     var soma=function(ets,f){return l.filter(function(o){return ets.indexOf(o.etapa)>=0}).reduce(function(t,o){return t+f(o)},0)};
     var pago=soma(['pago'],function(o){return o.valor}),conf=soma(COBRAR,function(o){return o.valor}),quen=soma(['quente'],function(o){return o.valor});
     var cx=function(ets){return brl(soma(ets,naData))};
@@ -644,15 +647,17 @@ function mostrarPrev(){
       +'<div class="kpi q"><small>Para confirmar</small><b>'+brl(quen)+'</b><span>leads quentes · entra na data: '+cx(['quente'])+'</span></div></div>'
       +'<p class="hint">Por produto: '+lista(porProd)+'</p><p class="hint" style="margin-top:4px">Por forma de pagamento: '+lista(porForma)+'</p>';
   };
-  var semData=ops.filter(function(o){return !o.dataPrevista&&o.etapa!=='perdido'&&o.etapa!=='pago'});
+  var semData=ops.filter(function(o){return !o.dataPrevista&&o.etapa!=='perdido'&&o.etapa!=='pago'&&o.etapa!=='morno'});
+  var mornos=ops.filter(function(o){return o.etapa==='morno'}),hj=isoDia(hojeD),fu=mornos.filter(function(o){return !o.dataPrevista||o.dataPrevista<=hj});
   $('prevBox').innerHTML=periodo('Semana',function(d){return d>=isoDia(seg)&&d<=isoDia(dom)},dbr(isoDia(seg))+' a '+dbr(isoDia(dom)))
     +periodo('Mês',function(d){return d.slice(0,7)===mIni},hojeD.toLocaleDateString('pt-BR',{month:'long',year:'numeric',timeZone:'UTC'}))
+    +(mornos.length?'<h2 class="sec">Mornos <span class="hint" style="text-transform:none;font:500 13px Inter">fora da previsão até voltarem a falar</span></h2><div class="kpis"><div class="kpi"><small>Leads mornos</small><b>'+mornos.length+'</b><span>'+brl(mornos.reduce(function(t,o){return t+o.valor},0))+' em jogo</span></div><div class="kpi q"><small>Follow-up para hoje</small><b>'+fu.length+'</b><span>'+(fu.length?esc(fu.slice(0,4).map(function(o){return o.nome}).join(', '))+(fu.length>4?'…':''):'nenhum atrasado')+'</span></div></div>':'')
     +'<p class="hint" style="margin-top:18px">Valores brutos, sem taxas. "Entra na data" usa a entrada (ou o valor à vista quando não tem entrada).'+(semData.length?' <b style="color:var(--err)">'+semData.length+' oportunidade(s) sem data prevista</b> ('+brl(semData.reduce(function(t,o){return t+o.valor},0))+') ficam fora da conta: coloque a data em Oportunidades.':'')+'</p>';
 }
 function abreForm(o){
   o=o||{};$('opForm').hidden=false;$('opMsg').textContent='';
   $('opChave').value=o.chave||'';$('opNome').value=o.nome||'';$('opWa').value=o.whatsapp||'';$('opProd').value=o.produto||'';$('opEt').value=o.etapa||'quente';
-  $('opVal').value=o.valor||'';$('opForma').value=o.forma||'A definir';$('opData').value=o.dataPrevista||'';$('opEnt').value=o.entrada||'';$('opParc').value=o.parcelas||'';$('opObs').value=o.obs||'';
+  $('opVal').value=o.valor||'';$('opForma').value=o.forma||'A definir';$('opData').value=o.dataPrevista||'';$('opEnt').value=o.entrada||'';$('opParc').value=o.parcelas||'';$('opObs').value=o.obs||'';rotData();
   $('opForm').scrollIntoView({behavior:'smooth',block:'start'});setTimeout(function(){$('opNome').focus()},300);
 }
 $('opNova').onclick=function(){if(aba!=='ops')trocaAba('ops');abreForm()};
@@ -669,8 +674,8 @@ function achaOp(k){return ops.filter(function(o){return o.chave===k})[0]}
 function cliqueOp(e){
   var k=e.target.closest('[data-cp]');if(k){cliqueCall(e);return;}
   var ed=e.target.closest('[data-ed]');if(ed){var o=achaOp(ed.getAttribute('data-ed'));if(aba!=='ops')trocaAba('ops');abreForm(o);return;}
-  var mv=e.target.closest('[data-pg],[data-pd]');
-  if(mv){var o2=achaOp(mv.getAttribute('data-pg')||mv.getAttribute('data-pd'));if(!o2)return;var novo=Object.assign({},o2,{etapa:mv.hasAttribute('data-pg')?'pago':'perdido'});
+  var mv=e.target.closest('[data-pg],[data-pd],[data-vq],[data-mo]');
+  if(mv){var o2=achaOp(mv.getAttribute('data-pg')||mv.getAttribute('data-pd')||mv.getAttribute('data-vq')||mv.getAttribute('data-mo'));if(!o2)return;var novo=Object.assign({},o2,{etapa:mv.hasAttribute('data-pg')?'pago':mv.hasAttribute('data-vq')?'quente':mv.hasAttribute('data-mo')?'morno':'perdido'});
     if(novo.etapa==='pago'&&!o2.dataPrevista)novo.dataPrevista=isoDia(recife(Date.now()));
     mv.disabled=true;mv.textContent='Salvando…';
     api2(Object.assign({acao:'salvar'},novo)).then(function(r){if(!r.ok){$('mApp').textContent=r.erro||'Não consegui salvar.';}else ops=r.ops||[];mostrarOps();});return;}
