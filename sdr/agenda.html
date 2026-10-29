@@ -74,6 +74,16 @@ textarea{min-height:70px;resize:vertical}
 .who b{color:var(--or)}
 .who.eu{border-color:var(--or)}
 .who.sem{color:var(--mut);font-weight:500}
+.seg{display:flex;gap:8px}
+.seg button{flex:1;background:var(--card2);border:1px solid var(--line);color:var(--txt);border-radius:10px;padding:11px 8px;font-weight:600}
+.seg button.on{background:var(--or);border-color:var(--or);color:#fff}
+.tp{display:inline-block;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:700;border:1px solid var(--line)}
+.tp.fechamento{border-color:#FF5A00;color:#FF5A00}
+.tp.diagnostico{border-color:#7fb3ff;color:#7fb3ff}
+.tp.sem{color:var(--mut)}
+.trow{display:flex;gap:6px;align-items:center;margin-top:8px;font-size:12px;color:var(--mut)}
+.trow button{background:transparent;border:1px solid var(--line);color:var(--txt);border-radius:8px;padding:4px 9px;font-size:12px;font-weight:600}
+.trow button.cur{background:var(--card2);border-color:var(--or)}
 .call .meta{color:var(--mut);font-size:13px;margin-top:6px}
 .call .meta a{color:var(--or)}
 .sbtns{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
@@ -131,6 +141,8 @@ textarea{min-height:70px;resize:vertical}
   <h2>Marcar call</h2>
   <p class="when" id="quando"></p>
   <form id="fMarcar">
+    <label>Tipo de call *</label>
+    <div class="seg" id="segTipo"><button type="button" data-tipo="diagnostico">Diagnóstico (1ª call)</button><button type="button" data-tipo="fechamento">Fechamento (2ª call)</button></div>
     <label for="nome">Nome do lead *</label><input id="nome" required maxlength="80">
     <label for="whats">WhatsApp com DDD *</label><input id="whats" required inputmode="tel" placeholder="81 99999-9999">
     <label for="email">E-mail do lead</label><input id="email" type="email" placeholder="para ele receber o convite com o link">
@@ -160,7 +172,7 @@ textarea{min-height:70px;resize:vertical}
 <script>
 (function(){
 var API='https://n8n.grupoeuforia.tech/webhook/sdr-agenda-painel';
-var cred=null, escolhido=null, fontesOk=false, numsOk=false, diaSel='', aba='agenda', calls=[];
+var tipoSel='', cred=null, escolhido=null, fontesOk=false, numsOk=false, diaSel='', aba='agenda', calls=[];
 var ST={pendente:['Falta confirmar','#7986cb'],confirmado:['Confirmado','#f4511e'],sem_resposta:['Não confirmou','#616161'],cancelou:['Cancelou / remarcar','#8e24aa'],no_show:['No-show','#f6bf26'],desqualificado:['Desqualificado','#d50000'],realizada:['Realizada','#039be5']};
 var ORDEM=['confirmado','sem_resposta','cancelou','no_show','desqualificado','realizada','pendente'];
 var $=function(id){return document.getElementById(id)};
@@ -231,8 +243,9 @@ function mostrarCalls(){
       if(c.por)meta.push(esc(s[0])+' por '+esc(c.por)+(c.em?' em '+esc(new Date(c.em).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit',timeZone:'America/Recife'})):''));
       if(c.meet)meta.push('<a href="'+esc(c.meet)+'" target="_blank" rel="noopener">Link do Meet</a>');
       var bts=ORDEM.map(function(k){if(k==='pendente'&&c.status==='pendente')return '';return '<button data-id="'+esc(c.id)+'" data-s="'+k+'" style="--c:'+ST[k][1]+'" class="'+(c.status===k?'cur':'')+'">'+(k==='pendente'?'Voltar para pendente':ST[k][0])+'</button>'}).join('');
-      return '<div class="call" style="--c:'+s[1]+'"><div class="l1"><span class="h">'+esc(hora)+'</span><span class="n">'+esc(c.nome)+'</span><span class="st '+esc(c.status)+'">'+esc(s[0])+'</span>'+(c.sdr?'<span class="who'+(c.sdr.toLowerCase()===cred.usuario?' eu':'')+'">Marcou: <b>'+esc(c.sdr)+'</b></span>':'<span class="who sem">Marcada direto na agenda</span>')+'</div>'
+      return '<div class="call" style="--c:'+s[1]+'"><div class="l1"><span class="h">'+esc(hora)+'</span><span class="n">'+esc(c.nome)+'</span><span class="st '+esc(c.status)+'">'+esc(s[0])+'</span>'+(c.tipo?'<span class="tp '+esc(c.tipo)+'">'+(c.tipo==='fechamento'?'Fechamento':'Diagnóstico')+'</span>':'<span class="tp sem">Tipo não marcado</span>')+(c.sdr?'<span class="who'+(c.sdr.toLowerCase()===cred.usuario?' eu':'')+'">Marcou: <b>'+esc(c.sdr)+'</b></span>':'<span class="who sem">Marcada direto na agenda</span>')+'</div>'
         +(meta.length?'<div class="meta">'+meta.join(' · ')+'</div>':'')
+        +'<div class="trow">Tipo da call:<button data-tid="'+esc(c.id)+'" data-tipo="diagnostico" class="'+(c.tipo==='diagnostico'?'cur':'')+'">Diagnóstico</button><button data-tid="'+esc(c.id)+'" data-tipo="fechamento" class="'+(c.tipo==='fechamento'?'cur':'')+'">Fechamento</button></div>'
         +'<div class="sbtns"><button class="wa" data-wa="'+esc(c.id)+'">Mensagem de confirmação</button>'+bts+'</div></div>';
     }).join('')+'</div>';
   }).join('');
@@ -270,6 +283,9 @@ $('calls').addEventListener('click',function(e){
     var p=String(c.nome).split(/[\s·]+/)[0];
     var t='Oi, '+p+'! Tudo bem? Passando para confirmar a nossa call com o Diogo, do Grupo Euforia, '+quandoTxt(c.inicio)+' (horário de Brasília).'+(c.meet?'\n\nO link é este: '+c.meet:'')+'\n\nPosso confirmar a sua presença?';
     window.open('https://wa.me/'+(c.whats||'')+'?text='+encodeURIComponent(t),'_blank','noopener');return;}
+  var tb=e.target.closest('[data-tid]');
+  if(tb){var tid=tb.getAttribute('data-tid'),tt=tb.getAttribute('data-tipo');tb.disabled=true;tb.textContent='Salvando…';
+    api({acao:'tipo',evento:tid,tipo:tt}).then(function(r){if(!r.ok){$('mApp').textContent=r.erro||'Não consegui salvar.';}else calls.forEach(function(c){if(c.id===tid)c.tipo=tt;});mostrarCalls();});return;}
   var b=e.target.closest('[data-s]');if(!b)return;
   var id=b.getAttribute('data-id'),s=b.getAttribute('data-s');
   b.disabled=true;b.textContent='Salvando…';
@@ -282,10 +298,12 @@ $('calls').addEventListener('click',function(e){
 $('bAtualizar').onclick=function(){carregar();if(aba==='agenda')api({acao:'calls'}).then(function(r){if(r.ok){calls=r.calls||[];contaPend();}});};
 $('bSair').onclick=function(){sair('')};
 $('fonte').addEventListener('change',function(){$('boxInd').hidden=this.value!=='Indicação'});
+[].forEach.call(document.querySelectorAll('#segTipo button'),function(b){b.onclick=function(){tipoSel=b.getAttribute('data-tipo');[].forEach.call(document.querySelectorAll('#segTipo button'),function(x){x.classList.toggle('on',x===b)});}});
 $('fMarcar').addEventListener('submit',function(e){
-  e.preventDefault();var bt=$('bMarcar');bt.disabled=true;bt.textContent='Marcando…';$('mMarcar').textContent='';
+  e.preventDefault();
+  if(!tipoSel){$('mMarcar').textContent='Escolha se é call de diagnóstico ou de fechamento.';return;}var bt=$('bMarcar');bt.disabled=true;bt.textContent='Marcando…';$('mMarcar').textContent='';
   var nome=$('nome').value.trim(), whats=$('whats').value;
-  api({acao:'marcar',inicio:escolhido,nome:nome,whatsapp:whats,email:$('email').value.trim(),fonte:$('fonte').value,numero:$('num').value,empresa:$('emp').value.trim(),indicou:$('ind').value.trim(),hashtag:$('hash').value.trim(),obs:$('obs').value.trim()})
+  api({acao:'marcar',inicio:escolhido,nome:nome,whatsapp:whats,email:$('email').value.trim(),fonte:$('fonte').value,tipo:tipoSel,numero:$('num').value,empresa:$('emp').value.trim(),indicou:$('ind').value.trim(),hashtag:$('hash').value.trim(),obs:$('obs').value.trim()})
   .then(function(r){
     bt.disabled=false;bt.textContent='Marcar call';
     if(!r.ok||!r.marcado){$('mMarcar').textContent=r.erro||'Não foi possível marcar.';if(r.dias)mostrarDias(r);return;}
@@ -295,7 +313,7 @@ $('fMarcar').addEventListener('submit',function(e){
     $('doneMsg').textContent=txt;
     var d=whats.replace(/\D/g,'');if(d.length<=11)d='55'+d;
     $('bWhats').href='https://wa.me/'+d+'?text='+encodeURIComponent(txt);
-    $('fMarcar').hidden=true;$('done').hidden=false;$('fMarcar').reset();$('boxInd').hidden=true;calls=[];
+    $('fMarcar').hidden=true;$('done').hidden=false;$('fMarcar').reset();$('boxInd').hidden=true;tipoSel='';[].forEach.call(document.querySelectorAll('#segTipo button'),function(x){x.classList.remove('on')});calls=[];
     carregar();
   });
 });
