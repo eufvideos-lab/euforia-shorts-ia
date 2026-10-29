@@ -482,13 +482,13 @@ function carregarPlacar(){
   });
 }
 function mostrarPlacar(r){
-  // igual ao quadro branco: uma linha por dia; ciclos (JH, JA, D), agendamentos (JH, JA, D, E) e a fonte/# dos agendamentos
+  // igual ao quadro branco: uma linha por dia; ciclos (Jhonatas, Jailton, Diogo), agendamentos (+ Érica, a IA) e a fonte/# dos agendamentos
   var ini=new Date(plIni+'T00:00:00Z'), hoje=isoDia(recife(Date.now())), P=r.placar||{}, RG=r.reag||{}, FC=r.fech||{}, C=ciclosSem||{}, A=r.ags||[], dias=[];
   var nd=5;A.forEach(function(a){var k=Math.round((new Date(a.dia+'T00:00:00Z')-ini)/DIAMS);if(k>=5)nd=Math.max(nd,k+1);});
   Object.keys(C).forEach(function(q){Object.keys(C[q]).forEach(function(d){var k=Math.round((new Date(d+'T00:00:00Z')-ini)/DIAMS);if(k>=5&&k<7)nd=Math.max(nd,k+1);});});
   for(var i=0;i<nd;i++)dias.push(isoDia(new Date(ini.getTime()+i*DIAMS)));
   $('pTit').textContent=ini.toLocaleDateString('pt-BR',{day:'2-digit',month:'short',timeZone:'UTC'})+' a '+new Date(ini.getTime()+(nd-1)*DIAMS).toLocaleDateString('pt-BR',{day:'2-digit',month:'short',year:'numeric',timeZone:'UTC'});
-  var CIC=[['Jhonatas','JH'],['Jailton','JA'],['Diogo','D']], AG=CIC.concat([['Érica','E']]);
+  var CIC=[['Jhonatas','Jhonatas'],['Jailton','Jailton'],['Diogo','Diogo']], AG=CIC.concat([['Érica','Érica (IA)']]);
   var outros=Object.keys(P).filter(function(q){return !AG.some(function(x){return x[0]===q})});
   var rgd=function(M,d){return Object.keys(M).reduce(function(s,q){return s+((M[q]||{})[d]||0)},0)}, temF=Object.keys(FC).length>0;
   var nomes=function(d,t){return A.filter(function(a){return a.dia===d&&a.tipo===t}).map(function(a){return a.nome+' ('+a.quem+')'}).join('\n')};
@@ -512,7 +512,7 @@ function mostrarPlacar(r){
   var conv=CIC.map(function(q,j){var c=tc[j],a=ta[j];return '<div class="kpi"><small>'+q[0]+'</small><b>'+a+' agend.</b><span>'+(c?c+' ciclos · '+(a/c).toLocaleString('pt-BR',{maximumFractionDigits:2})+' por ciclo · '+(a?(c/a).toLocaleString('pt-BR',{maximumFractionDigits:1})+' ciclos por agend.':'nenhum agend.'):'ciclos não lançados')+'</span></div>'}).join('')
     +'<div class="kpi"><small>Érica (IA)</small><b>'+ta[3]+' agend.</b><span>disparo automático</span></div>';
   var trg=dias.reduce(function(s,d){return s+rgd(RG,d)},0);
-  $('placar').innerHTML='<div class="kpis">'+conv+'</div><div class="tblw"><table class="plac quadro"><thead>'+th+'</thead><tbody>'+corpo+'</tbody>'+foot+'</table></div><p class="hint">JH = Jhonatas · JA = Jailton · D = Diogo · E = Érica (IA). Agendamentos contam só leads novos; reagendamento é quando o mesmo lead já tinha uma call marcada antes (fica na coluna e na linha Reagend.). Passe o dedo/mouse nos números de reagendamento e na fonte para ver os leads.</p>';
+  $('placar').innerHTML='<div class="kpis">'+conv+'</div><div class="tblw"><table class="plac quadro"><thead>'+th+'</thead><tbody>'+corpo+'</tbody>'+foot+'</table></div><p class="hint">Agendamentos contam só leads novos; reagendamento é quando o mesmo lead já tinha uma call marcada antes (fica na coluna e na linha Reagend.). Passe o dedo/mouse nos números de reagendamento e na fonte para ver os leads.</p>';
 }
 function preencheCiclo(){var s=$('cSdr').value,d=$('cDia').value,c=((ciclosSem||{})[s]||{})[d];$('cN').value=c==null?'':c;}
 function prepCiclos(){
