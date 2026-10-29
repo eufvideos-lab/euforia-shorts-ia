@@ -84,6 +84,7 @@ textarea{min-height:70px;resize:vertical}
 .trow{display:flex;gap:6px;align-items:center;margin-top:8px;font-size:12px;color:var(--mut)}
 .trow button{background:transparent;border:1px solid var(--line);color:var(--txt);border-radius:8px;padding:4px 9px;font-size:12px;font-weight:600}
 .trow button.cur{background:var(--card2);border-color:var(--or)}
+.call .tel{margin-top:8px;font-size:15px}.call .tel b{font-size:17px;letter-spacing:.3px;user-select:all}.call .tel .cp{margin-left:10px;padding:4px 10px;border-radius:8px;border:1px solid var(--or);background:transparent;color:var(--or);cursor:pointer;font-size:13px}.call .tel .sem{color:var(--mut);font-size:13px}
 .call .meta{color:var(--mut);font-size:13px;margin-top:6px}
 .call .meta a{color:var(--or)}
 .sbtns{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
@@ -229,6 +230,7 @@ function quandoTxt(s){
   return d.toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'2-digit',timeZone:'America/Recife'})+' às '+h;
 }
 function rotDia(s){var d=new Date(s);var t=quandoTxt(s).replace(/ às .*/,'');return cap(t==='hoje'||t==='amanhã'?t+' · '+d.toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'2-digit',timeZone:'America/Recife'}):t)}
+function fmtTel(w){var d=String(w||'').replace(/\D/g,'');if(d.indexOf('55')===0&&d.length>=12)d=d.slice(2);if(d.length<10)return '';return '('+d.slice(0,2)+') '+d.slice(2,-4)+'-'+d.slice(-4);}
 function contaPend(){var n=calls.filter(function(c){return c.status==='pendente'&&new Date(c.inicio)>new Date()}).length;$('nPend').textContent=n||'';}
 function mostrarCalls(){
   contaPend();
@@ -239,11 +241,13 @@ function mostrarCalls(){
     return '<div class="dgroup"><h3>'+esc(g.r)+'</h3>'+g.l.map(function(c){
       var s=ST[c.status]||ST.pendente, hora=new Date(c.inicio).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit',timeZone:'America/Recife'});
       var meta=[];
+      var tl=fmtTel(c.whats);
       if(c.numero)meta.push('Número '+esc(c.numero.replace(/ \(.*$/,'')));
       if(c.por)meta.push(esc(s[0])+' por '+esc(c.por)+(c.em?' em '+esc(new Date(c.em).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit',timeZone:'America/Recife'})):''));
       if(c.meet)meta.push('<a href="'+esc(c.meet)+'" target="_blank" rel="noopener">Link do Meet</a>');
       var bts=ORDEM.map(function(k){if(k==='pendente'&&c.status==='pendente')return '';return '<button data-id="'+esc(c.id)+'" data-s="'+k+'" style="--c:'+ST[k][1]+'" class="'+(c.status===k?'cur':'')+'">'+(k==='pendente'?'Voltar para pendente':ST[k][0])+'</button>'}).join('');
       return '<div class="call" style="--c:'+s[1]+'"><div class="l1"><span class="h">'+esc(hora)+'</span><span class="n">'+esc(c.nome)+'</span><span class="st '+esc(c.status)+'">'+esc(s[0])+'</span>'+(c.tipo?'<span class="tp '+esc(c.tipo)+'">'+(c.tipo==='fechamento'?'Fechamento':'Diagnóstico')+'</span>':'<span class="tp sem">Tipo não marcado</span>')+(c.sdr?'<span class="who'+(c.sdr.toLowerCase()===cred.usuario?' eu':'')+'">Marcou: <b>'+esc(c.sdr)+'</b></span>':'<span class="who sem">Marcada direto na agenda</span>')+'</div>'
+        +'<div class="tel">'+(tl?'WhatsApp do lead: <b>'+esc(tl)+'</b><button class="cp" data-cp="'+esc(c.whats)+'">Copiar número</button>':'<span class="sem">Sem número do lead na agenda</span>')+'</div>'
         +(meta.length?'<div class="meta">'+meta.join(' · ')+'</div>':'')
         +'<div class="trow">Tipo da call:<button data-tid="'+esc(c.id)+'" data-tipo="diagnostico" class="'+(c.tipo==='diagnostico'?'cur':'')+'">Diagnóstico</button><button data-tid="'+esc(c.id)+'" data-tipo="fechamento" class="'+(c.tipo==='fechamento'?'cur':'')+'">Fechamento</button></div>'
         +'<div class="sbtns"><button class="wa" data-wa="'+esc(c.id)+'">Mensagem de confirmação</button>'+bts+'</div></div>';
@@ -278,6 +282,10 @@ $('legenda').innerHTML=['pendente','confirmado','sem_resposta','cancelou','no_sh
 $('dia').addEventListener('change',function(){diaSel=this.value;$('bProx').hidden=!diaSel;$('dias').innerHTML='<p class="load">Carregando…</p>';carregar();});
 $('bProx').onclick=function(){diaSel='';$('dia').value='';this.hidden=true;carregar();};
 $('calls').addEventListener('click',function(e){
+  var k=e.target.closest('[data-cp]');
+  if(k){var n=k.getAttribute('data-cp').replace(/\D/g,'');if(n.indexOf('55')===0&&n.length>=12)n=n.slice(2);
+    var ok=function(){k.textContent='Copiado!';setTimeout(function(){k.textContent='Copiar número'},1500)};
+    if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(n).then(ok,function(){prompt('Copie o número:',n)})}else{prompt('Copie o número:',n)}return;}
   var w=e.target.closest('[data-wa]');
   if(w){var c=calls.filter(function(x){return x.id===w.getAttribute('data-wa')})[0];if(!c)return;
     var p=String(c.nome).split(/[\s·]+/)[0];
