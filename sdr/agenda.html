@@ -1,0 +1,307 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Agenda do Diogo · SDR</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#050506;--card:#0f0f12;--card2:#16161b;--line:rgba(255,255,255,.08);--txt:#F4F2EE;--mut:rgba(244,242,238,.55);--or:#FF5A00;--ok:#2ecc71;--err:#ff5a5a}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--txt);font:15px/1.45 Inter,Arial,sans-serif;min-height:100vh}
+.wrap{max-width:1180px;margin:0 auto;padding:28px 16px 60px}
+h1{font:800 34px/1 'Barlow Condensed',sans-serif;letter-spacing:.5px;text-transform:uppercase}
+h1 b{color:var(--or)}
+.sub{color:var(--mut);margin-top:6px}
+.top{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;margin-bottom:22px}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{border:1px solid var(--line);border-radius:999px;padding:6px 12px;font-size:12px;color:var(--mut)}
+.chip b{color:var(--txt)}
+button{font:inherit;cursor:pointer}
+.btn{background:var(--or);color:#fff;border:0;border-radius:10px;padding:12px 18px;font-weight:700}
+.btn:disabled{opacity:.5;cursor:default}
+.ghost{background:transparent;border:1px solid var(--line);color:var(--txt);border-radius:10px;padding:9px 14px;font-weight:600}
+.ghost:hover{border-color:var(--or)}
+.login{max-width:380px;margin:12vh auto 0;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:30px}
+.login h1{font-size:30px}
+label{display:block;font-size:12px;color:var(--mut);margin:14px 0 6px;text-transform:uppercase;letter-spacing:1px}
+input,select,textarea{width:100%;background:var(--card2);border:1px solid var(--line);color:var(--txt);border-radius:10px;padding:11px 12px;font:inherit}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--or)}
+textarea{min-height:70px;resize:vertical}
+.msg{margin-top:12px;font-size:14px;min-height:20px}
+.msg.err{color:var(--err)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px}
+.day{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px}
+.day h3{font:700 13px Inter,sans-serif;margin-bottom:10px}
+.slot{display:block;width:100%;margin-bottom:8px;padding:10px;border-radius:9px;border:1px solid rgba(255,90,0,.55);background:transparent;color:var(--txt);font-weight:600}
+.slot:hover{background:rgba(255,90,0,.12)}
+.slot.sel{background:var(--or);border-color:var(--or)}
+.slot.busy{border-color:var(--line);color:rgba(244,242,238,.25);text-decoration:line-through;cursor:default}
+.slot.busy:hover{background:transparent}
+.none{color:var(--mut);font-size:13px}
+.panel{position:fixed;right:0;top:0;bottom:0;width:min(440px,100%);background:#0b0b0e;border-left:1px solid var(--line);padding:26px 22px;overflow:auto;transform:translateX(100%);transition:transform .25s;z-index:5}
+.panel.on{transform:none}
+.panel h2{font:800 26px/1.05 'Barlow Condensed',sans-serif;text-transform:uppercase}
+.panel .when{color:var(--or);font-weight:700;margin-top:6px}
+.x{position:absolute;right:16px;top:14px;background:none;border:0;color:var(--mut);font-size:26px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.done{background:var(--card);border:1px solid rgba(46,204,113,.35);border-radius:14px;padding:16px;margin-top:16px}
+.done h3{color:var(--ok);margin-bottom:6px}
+.done pre{white-space:pre-wrap;font:14px/1.45 Inter,sans-serif;background:var(--card2);border-radius:10px;padding:12px;margin:10px 0}
+.acts{display:flex;gap:8px;flex-wrap:wrap}
+.hint{font-size:12px;color:var(--mut);margin-top:6px}
+.load{color:var(--mut);padding:30px 0}
+.tabs{display:flex;gap:6px;border-bottom:1px solid var(--line);margin-bottom:18px}
+.tab{background:none;border:0;border-bottom:2px solid transparent;color:var(--mut);padding:10px 14px;font-weight:700;margin-bottom:-1px}
+.tab.on{color:var(--txt);border-bottom-color:var(--or)}
+.badge{display:inline-block;min-width:20px;padding:1px 7px;margin-left:6px;border-radius:999px;background:#7986cb;color:#fff;font-size:12px}
+.badge:empty{display:none}
+.datebar{display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap;margin-bottom:16px}
+.datebar label{margin:0 0 6px}
+.datebar input{width:auto;min-width:180px}
+.dgroup{margin-bottom:22px}
+.dgroup h3{font:700 13px Inter,sans-serif;color:var(--mut);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px}
+.call{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--c,#7986cb);border-radius:12px;padding:14px;margin-bottom:10px}
+.call .l1{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.call .h{font:800 22px/1 'Barlow Condensed',sans-serif}
+.call .n{font-weight:700;font-size:16px}
+.st{display:inline-block;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:700;color:#fff;background:var(--c,#7986cb)}
+.st.no_show{color:#111}
+.call .meta{color:var(--mut);font-size:13px;margin-top:6px}
+.call .meta a{color:var(--or)}
+.sbtns{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.sbtns button{background:transparent;border:1px solid var(--line);color:var(--txt);border-radius:8px;padding:6px 10px;font-size:13px;font-weight:600}
+.sbtns button:hover{border-color:var(--c)}
+.sbtns button.cur{background:var(--c);border-color:var(--c);color:#fff}
+.sbtns .wa{border-color:rgba(37,211,102,.5)}
+.legend{display:flex;gap:12px;flex-wrap:wrap;color:var(--mut);font-size:12px;margin-bottom:16px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+@media (max-width:560px){h1{font-size:28px}.row2{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div id="vLogin" class="login">
+  <h1>Agenda do <b>Diogo</b></h1>
+  <p class="sub">Painel dos SDRs para marcar calls.</p>
+  <form id="fLogin">
+    <label for="u">Usuário</label><input id="u" autocomplete="username" autocapitalize="none" required>
+    <label for="p">Senha</label><input id="p" type="password" autocomplete="current-password" required>
+    <button class="btn" style="width:100%;margin-top:18px">Entrar</button>
+    <p id="mLogin" class="msg err"></p>
+  </form>
+</div>
+
+<div id="vApp" class="wrap" hidden>
+  <div class="top">
+    <div><h1>Agenda do <b>Diogo</b></h1><p class="sub" id="ola"></p></div>
+    <div class="chips">
+      <span class="chip">Lead vê <b id="rLead">30 min</b></span>
+      <span class="chip">Diogo fica com <b id="rBloq">1h</b> livre</span>
+      <button class="ghost" id="bAtualizar">Atualizar</button>
+      <button class="ghost" id="bSair">Sair</button>
+    </div>
+  </div>
+  <div class="tabs">
+    <button class="tab on" data-t="agenda">Marcar call</button>
+    <button class="tab" data-t="calls">Próximas calls<span class="badge" id="nPend"></span></button>
+  </div>
+  <p class="msg err" id="mApp"></p>
+  <div id="tAgenda">
+    <div class="datebar">
+      <div><label for="dia">Ver um dia específico</label><input type="date" id="dia"></div>
+      <button class="ghost" id="bProx" hidden>Voltar para os próximos dias</button>
+    </div>
+    <div id="dias" class="grid"><p class="load">Carregando horários…</p></div>
+  </div>
+  <div id="tCalls" hidden>
+    <div class="legend" id="legenda"></div>
+    <div id="calls"><p class="load">Carregando calls…</p></div>
+  </div>
+</div>
+
+<div id="panel" class="panel" aria-hidden="true">
+  <button class="x" id="bFechar" aria-label="Fechar">×</button>
+  <h2>Marcar call</h2>
+  <p class="when" id="quando"></p>
+  <form id="fMarcar">
+    <label for="nome">Nome do lead *</label><input id="nome" required maxlength="80">
+    <label for="whats">WhatsApp com DDD *</label><input id="whats" required inputmode="tel" placeholder="81 99999-9999">
+    <label for="email">E-mail do lead</label><input id="email" type="email" placeholder="para ele receber o convite com o link">
+    <div class="row2">
+      <div><label for="fonte">De onde veio *</label><select id="fonte" required></select></div>
+      <div><label for="emp">Instagram ou empresa</label><input id="emp" maxlength="120"></div>
+    </div>
+    <label for="num">Número que marcou a call (E) *</label><select id="num" required></select>
+    <label for="hash">Hashtag ou busca (#)</label><input id="hash" list="hashes" maxlength="95" placeholder="ex.: #mentoriaempresarial ou Google Maps · nicho em cidade"><datalist id="hashes"></datalist>
+    <div id="boxInd" hidden><label for="ind">Quem indicou</label><input id="ind" maxlength="80"></div>
+    <label for="obs">Observações para o Diogo</label><textarea id="obs" maxlength="600" placeholder="nicho, dor, decisor, o que já conversaram…"></textarea>
+    <button class="btn" id="bMarcar" style="width:100%;margin-top:18px">Marcar call</button>
+    <p class="hint">A call entra na agenda do Diogo com link do Meet e o card vai para o CRM sozinho.</p>
+    <p id="mMarcar" class="msg err"></p>
+  </form>
+  <div id="done" class="done" hidden>
+    <h3>Call marcada</h3>
+    <div id="doneTxt"></div>
+    <pre id="doneMsg"></pre>
+    <div class="acts">
+      <button class="btn" id="bCopiar">Copiar mensagem</button>
+      <a class="ghost" id="bWhats" target="_blank" rel="noopener" style="text-decoration:none">Abrir WhatsApp do lead</a>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+var API='https://n8n.grupoeuforia.tech/webhook/sdr-agenda-painel';
+var cred=null, escolhido=null, fontesOk=false, numsOk=false, diaSel='', aba='agenda', calls=[];
+var ST={pendente:['Falta confirmar','#7986cb'],confirmado:['Confirmado','#f4511e'],sem_resposta:['Não confirmou','#616161'],cancelou:['Cancelou / remarcar','#8e24aa'],no_show:['No-show','#f6bf26'],desqualificado:['Desqualificado','#d50000'],realizada:['Realizada','#039be5']};
+var ORDEM=['confirmado','sem_resposta','cancelou','no_show','desqualificado','realizada','pendente'];
+var $=function(id){return document.getElementById(id)};
+function guarda(c){try{if(c)sessionStorage.setItem('sdrAgenda',JSON.stringify(c));else sessionStorage.removeItem('sdrAgenda')}catch(e){}}
+function lida(){try{return JSON.parse(sessionStorage.getItem('sdrAgenda')||'null')}catch(e){return null}}
+function api(body){
+  return fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.assign({},cred,body))})
+    .then(function(r){return r.json()}).catch(function(){return {ok:false,erro:'Sem conexão com o sistema. Tente de novo.'}});
+}
+function cap(s){s=String(s||'');return s.charAt(0).toUpperCase()+s.slice(1)}
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+function mostrarDias(r){
+  if(r.regras){$('rLead').textContent=r.regras.lead+' min';$('rBloq').textContent=(r.regras.bloqueio%60?r.regras.bloqueio+' min':(r.regras.bloqueio/60)+'h');}
+  if(r.fontes&&!fontesOk){$('fonte').innerHTML='<option value="">Escolha</option>'+r.fontes.map(function(f){return '<option>'+esc(f)+'</option>'}).join('');fontesOk=true;}
+  if(r.numeros&&!numsOk){$('num').innerHTML='<option value="">Escolha</option>'+r.numeros.map(function(n){return '<option value="'+esc(n)+'">'+esc(n.replace(/^(E\d+) \((.*?)\)?$/,'$1 · $2'))+'</option>'}).join('')+'<option value="nenhum">Não foi por um número E</option>';numsOk=true;}
+  if(r.diasMax){var hoje=new Date(),fim=new Date(Date.now()+r.diasMax*864e5);$('dia').min=iso(hoje);$('dia').max=iso(fim);}
+  var dias=r.dias||[];
+  if(!dias.length){$('dias').innerHTML='<p class="load">Nenhum horário nos próximos dias.</p>';return;}
+  $('dias').innerHTML=dias.map(function(d){
+    var hs=d.horarios.map(function(h){
+      return h.livre?'<button class="slot" data-i="'+esc(h.inicio)+'" data-r="'+esc(cap(d.rotulo)+' às '+h.hora)+'">'+esc(h.hora)+'</button>'
+        :'<button class="slot busy" disabled>'+esc(h.hora)+'</button>';
+    }).join('');
+    return '<div class="day"><h3>'+esc(cap(d.rotulo))+'</h3>'+(hs||'<p class="none">'+(d.fechado?'Fim de semana ou feriado':'Sem horários')+'</p>')+'</div>';
+  }).join('');
+}
+function iso(d){var z=new Date(d.getTime()-d.getTimezoneOffset()*6e4);return z.toISOString().slice(0,10)}
+function carregar(){
+  $('mApp').textContent='';
+  if(aba==='calls')return carregarCalls();
+  return api({acao:'horarios',dia:diaSel}).then(function(r){
+    if(!r.ok){
+      if(/senha|tentativas/i.test(r.erro||'')){sair(r.erro);return;}
+      $('mApp').textContent=r.erro||'Erro ao carregar.';return;
+    }
+    $('ola').textContent='Olá, '+r.sdr+'. Toque num horário livre para marcar.';
+    mostrarDias(r);
+  });
+}
+function entrar(c,msgEl){
+  cred=c;
+  return api({acao:'horarios'}).then(function(r){
+    if(!r.ok){cred=null;guarda(null);if(msgEl)msgEl.textContent=r.erro||'Não foi possível entrar.';return;}
+    guarda(c);$('vLogin').hidden=true;$('vApp').hidden=false;
+    $('ola').textContent='Olá, '+r.sdr+'. Toque num horário livre para marcar.';
+    mostrarDias(r);
+    trocaAba(c.usuario==='diogo'?'calls':'agenda');
+  });
+}
+function quandoTxt(s){
+  var d=new Date(s), h=d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit',timeZone:'America/Recife'}).replace(':00','h').replace(':','h');
+  var dia=d.toLocaleDateString('pt-BR',{timeZone:'America/Recife'}), hj=new Date().toLocaleDateString('pt-BR',{timeZone:'America/Recife'}), am=new Date(Date.now()+864e5).toLocaleDateString('pt-BR',{timeZone:'America/Recife'});
+  if(dia===hj)return 'hoje às '+h; if(dia===am)return 'amanhã às '+h;
+  return d.toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'2-digit',timeZone:'America/Recife'})+' às '+h;
+}
+function rotDia(s){var d=new Date(s);var t=quandoTxt(s).replace(/ às .*/,'');return cap(t==='hoje'||t==='amanhã'?t+' · '+d.toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'2-digit',timeZone:'America/Recife'}):t)}
+function contaPend(){var n=calls.filter(function(c){return c.status==='pendente'&&new Date(c.inicio)>new Date()}).length;$('nPend').textContent=n||'';}
+function mostrarCalls(){
+  contaPend();
+  if(!calls.length){$('calls').innerHTML='<p class="load">Nenhuma call nos próximos 10 dias.</p>';return;}
+  var grupos=[],ult='';
+  calls.forEach(function(c){var r=rotDia(c.inicio);if(r!==ult){grupos.push({r:r,l:[]});ult=r;}grupos[grupos.length-1].l.push(c);});
+  $('calls').innerHTML=grupos.map(function(g){
+    return '<div class="dgroup"><h3>'+esc(g.r)+'</h3>'+g.l.map(function(c){
+      var s=ST[c.status]||ST.pendente, hora=new Date(c.inicio).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit',timeZone:'America/Recife'});
+      var meta=[];
+      if(c.sdr)meta.push('Marcada por '+esc(c.sdr)+(c.numero?' · '+esc(c.numero.replace(/ \(.*$/,'')):''));
+      if(c.por)meta.push(esc(s[0])+' por '+esc(c.por)+(c.em?' em '+esc(new Date(c.em).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit',timeZone:'America/Recife'})):''));
+      if(c.meet)meta.push('<a href="'+esc(c.meet)+'" target="_blank" rel="noopener">Link do Meet</a>');
+      var bts=ORDEM.map(function(k){if(k==='pendente'&&c.status==='pendente')return '';return '<button data-id="'+esc(c.id)+'" data-s="'+k+'" style="--c:'+ST[k][1]+'" class="'+(c.status===k?'cur':'')+'">'+(k==='pendente'?'Voltar para pendente':ST[k][0])+'</button>'}).join('');
+      return '<div class="call" style="--c:'+s[1]+'"><div class="l1"><span class="h">'+esc(hora)+'</span><span class="n">'+esc(c.nome)+'</span><span class="st '+esc(c.status)+'">'+esc(s[0])+'</span></div>'
+        +(meta.length?'<div class="meta">'+meta.join(' · ')+'</div>':'')
+        +'<div class="sbtns"><button class="wa" data-wa="'+esc(c.id)+'">Mensagem de confirmação</button>'+bts+'</div></div>';
+    }).join('')+'</div>';
+  }).join('');
+}
+function carregarCalls(){
+  $('mApp').textContent='';
+  return api({acao:'calls'}).then(function(r){
+    if(!r.ok){if(/senha|tentativas/i.test(r.erro||'')){sair(r.erro);return;}$('mApp').textContent=r.erro||'Erro ao carregar.';return;}
+    calls=r.calls||[];mostrarCalls();
+  });
+}
+function trocaAba(t){
+  aba=t;[].forEach.call(document.querySelectorAll('.tab'),function(b){b.classList.toggle('on',b.getAttribute('data-t')===t)});
+  $('tAgenda').hidden=t!=='agenda';$('tCalls').hidden=t!=='calls';
+  $('ola').textContent='Olá, '+cred.usuario.charAt(0).toUpperCase()+cred.usuario.slice(1)+'. '+(t==='calls'?'Confirme as calls com os leads e marque o resultado.':'Toque num horário livre para marcar.');
+  if(t==='calls')carregarCalls();else contaPend();
+}
+function sair(m){cred=null;guarda(null);$('vApp').hidden=true;$('vLogin').hidden=false;$('mLogin').textContent=m||'';fecha();}
+function abre(i,rot){
+  escolhido=i;$('quando').textContent=rot;$('fMarcar').hidden=false;$('done').hidden=true;$('mMarcar').textContent='';
+  $('panel').classList.add('on');$('panel').setAttribute('aria-hidden','false');setTimeout(function(){$('nome').focus()},250);
+}
+function fecha(){$('panel').classList.remove('on');$('panel').setAttribute('aria-hidden','true');}
+$('fLogin').addEventListener('submit',function(e){e.preventDefault();$('mLogin').textContent='Entrando…';
+  entrar({usuario:$('u').value.trim().toLowerCase(),senha:$('p').value},$('mLogin')).then(function(){if(cred)$('mLogin').textContent='';});});
+$('dias').addEventListener('click',function(e){var b=e.target.closest('.slot');if(!b||b.disabled)return;abre(b.getAttribute('data-i'),b.getAttribute('data-r'));});
+$('bFechar').onclick=fecha;
+[].forEach.call(document.querySelectorAll('.tab'),function(b){b.onclick=function(){trocaAba(b.getAttribute('data-t'))}});
+$('legenda').innerHTML=['pendente','confirmado','sem_resposta','cancelou','no_show','desqualificado','realizada'].map(function(k){return '<span><i style="background:'+ST[k][1]+'"></i>'+ST[k][0]+'</span>'}).join('')+'<span>A mesma cor aparece na agenda do Diogo.</span>';
+$('dia').addEventListener('change',function(){diaSel=this.value;$('bProx').hidden=!diaSel;$('dias').innerHTML='<p class="load">Carregando…</p>';carregar();});
+$('bProx').onclick=function(){diaSel='';$('dia').value='';this.hidden=true;carregar();};
+$('calls').addEventListener('click',function(e){
+  var w=e.target.closest('[data-wa]');
+  if(w){var c=calls.filter(function(x){return x.id===w.getAttribute('data-wa')})[0];if(!c)return;
+    var p=String(c.nome).split(/[\s·]+/)[0];
+    var t='Oi, '+p+'! Tudo bem? Passando para confirmar a nossa call com o Diogo, do Grupo Euforia, '+quandoTxt(c.inicio)+' (horário de Brasília).'+(c.meet?'\n\nO link é este: '+c.meet:'')+'\n\nPosso confirmar a sua presença?';
+    window.open('https://wa.me/'+(c.whats||'')+'?text='+encodeURIComponent(t),'_blank','noopener');return;}
+  var b=e.target.closest('[data-s]');if(!b)return;
+  var id=b.getAttribute('data-id'),s=b.getAttribute('data-s');
+  b.disabled=true;b.textContent='Salvando…';
+  api({acao:'confirmar',evento:id,status:s}).then(function(r){
+    if(!r.ok){$('mApp').textContent=r.erro||'Não consegui salvar.';mostrarCalls();return;}
+    calls.forEach(function(c){if(c.id===id){c.status=s;c.por=cred.usuario.charAt(0).toUpperCase()+cred.usuario.slice(1);c.em=new Date().toISOString();}});
+    mostrarCalls();
+  });
+});
+$('bAtualizar').onclick=function(){carregar();if(aba==='agenda')api({acao:'calls'}).then(function(r){if(r.ok){calls=r.calls||[];contaPend();}});};
+$('bSair').onclick=function(){sair('')};
+$('fonte').addEventListener('change',function(){$('boxInd').hidden=this.value!=='Indicação'});
+$('fMarcar').addEventListener('submit',function(e){
+  e.preventDefault();var bt=$('bMarcar');bt.disabled=true;bt.textContent='Marcando…';$('mMarcar').textContent='';
+  var nome=$('nome').value.trim(), whats=$('whats').value;
+  api({acao:'marcar',inicio:escolhido,nome:nome,whatsapp:whats,email:$('email').value.trim(),fonte:$('fonte').value,numero:$('num').value,empresa:$('emp').value.trim(),indicou:$('ind').value.trim(),hashtag:$('hash').value.trim(),obs:$('obs').value.trim()})
+  .then(function(r){
+    bt.disabled=false;bt.textContent='Marcar call';
+    if(!r.ok||!r.marcado){$('mMarcar').textContent=r.erro||'Não foi possível marcar.';if(r.dias)mostrarDias(r);return;}
+    var primeiro=nome.split(/\s+/)[0];
+    var txt='Oi, '+primeiro+'! Sua call com o Diogo, do Grupo Euforia, está confirmada para '+r.quando+' (horário de Brasília).'+(r.meet?'\n\nO link da call é este: '+r.meet:'')+'\n\nSão 30 minutinhos. Até lá!';
+    $('doneTxt').innerHTML='<b>'+esc(cap(r.quando))+'</b>'+(r.meet?'<br><a href="'+esc(r.meet)+'" target="_blank" rel="noopener" style="color:#FF5A00">'+esc(r.meet)+'</a>':'');
+    $('doneMsg').textContent=txt;
+    var d=whats.replace(/\D/g,'');if(d.length<=11)d='55'+d;
+    $('bWhats').href='https://wa.me/'+d+'?text='+encodeURIComponent(txt);
+    $('fMarcar').hidden=true;$('done').hidden=false;$('fMarcar').reset();$('boxInd').hidden=true;calls=[];
+    carregar();
+  });
+});
+$('bCopiar').onclick=function(){var t=$('doneMsg').textContent,b=this;
+  (navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(function(){b.textContent='Copiado';setTimeout(function(){b.textContent='Copiar mensagem'},1500)})
+  .catch(function(){var r=document.createRange();r.selectNodeContents($('doneMsg'));var s=getSelection();s.removeAllRanges();s.addRange(r);});};
+var HASH=["#aconselhamentodecarreira", "#altagestão", "#altaperformance", "#altaperformanceprofissional", "#analisecomportamental", "#autoconhecimento", "#autoliderança", "#autoridade", "#carreira", "#carreiracomproposito", "#carreirafeminina", "#cirurgiãoplástico", "#clevel", "#climaorganizacional", "#coachdeliderança", "#coachdenegocios", "#coachexecutivo", "#coachingdeliderança", "#coachingderelacionamento", "#coachingfinanceiro", "#coachinglevadoaserio", "#coachpalestrante", "#coachprofissional", "#comoliderar", "#comunicacaoassertiva", "#comunicacaointerna", "#comunicacaonaoviolenta", "#comunicaçãoassertiva", "#comunicaçãocorporativa", "#comunicaçãoempresarial", "#comunicaçãoestratégica", "#comunicaçãointerpessoal", "#comunicaçãonãoviolenta", "#conexõesquetransformam", "#conselheiro", "#conselheiroconsultivo", "#constelacaoorganizacional", "#constelaçãoempresarial", "#consultoria360", "#consultoriaambiental", "#consultoriacontabil", "#consultoriacorporativa", "#consultoriadeimagem", "#consultoriaderh", "#consultoriadevendas", "#consultoriaempresarial", "#consultoriaestrategica", "#consultoriaexecutiva", "#consultoriafinanceira", "#consultoriafiscal", "#consultoriagratuita", "#consultoriaorganizacional", "#consultoriarh", "#consultorias", "#consultóriodesucesso", "#contabilidade", "#contabilidadeconsultiva", "#contabilidadeestrategica", "#contabilidadeestratégica", "#costelaçãofamiliar", "#crescimentodenegócios", "#crescimentoempresarial", "#crescimentoprofissional", "#crescimentosustentável", "#culturacorporativa", "#culturaorganizacional", "#cursooratoria", "#desenvolvimentodeequipe", "#desenvolvimentodeliderança", "#desenvolvimentodelíderes", "#desenvolvimentohumano", "#desenvolvimentopessoaleprofissional", "#educacaocorporativa", "#educacaofinanceira", "#empoderamentofeminino", "#empreendedoradesucesso", "#empreendedorismoconsciente", "#empreendedorismofeminino", "#empreenderfeminino", "#empresaautogerenciavel", "#empresaria", "#empresariosbrasileiros", "#empresasquecrescem", "#empresasquecrescem (Instagram)", "#empresário", "#empresáriointeligente", "#equipeengajada", "#escritorianacional", "#esg", "#especialistaemvendas", "#estrategiaempresarial", "#estratégiaempresarial", "#eventopresencial", "#executivos", "#falarempublico", "#falarempúblico", "#faturamento", "#felicidadenotrabalho", "#formacaoemcoaching", "#genteegestao", "#genteegestao (Instagram)", "#genteegestão", "#gestaocomercial", "#gestaodecrise", "#gestaodeempresas", "#gestaodeescritorio", "#gestaodegente", "#gestaodenegocios", "#gestaodeprocessos", "#gestaodotempo", "#gestaodotempo (Instagram)", "#gestaoeficiente", "#gestaofinanceiraempresarial", "#gestaohumanizada", "#gestaomedica", "#gestãocompropósito", "#gestãocorporativa", "#gestãodeequipes", "#gestãodeprocessos", "#gestãoderiscos", "#gestãodetalentos", "#gestãoempresarial", "#gestãofinanceira", "#gestãoporcompetências", "#governançaempresarial", "#grandesempresas", "#ibccoaching", "#imersao8ps", "#imersãopresencial", "#indicação", "#influencia", "#inteligenciacomercial", "#inteligenciacomportamental", "#inteligenciaemocionalfeminina", "#inteligenciaespiritual", "#inteligênciademercado", "#inteligênciaemocional", "#inteligênciaestratégica", "#investimentoseguro", "#investimentosinteligentes", "#investimentosinteligentes (Instagram)", "#issodaumasorte", "#lançamentodigital", "#lançamentodolivro", "#liderancaconsciente", "#liderancafeminina", "#liderancahumanizada", "#liderancainspiradora", "#liderançacomvalores", "#liderançaconsciente", "#liderançadesucesso", "#liderançaempresarial", "#liderançaempática", "#liderançaestratégica", "#liderançafeminina", "#liderançainspiradora", "#liderançaisituacional", "#liderançanaprática", "#liderançapositiva", "#liderançatransformacional", "#liderdeequipe", "#liderdesimesmo", "#liderençaeducacional", "#longevidadesaudavel", "#maquinadevendas", "#medicoempreendedor", "#medodefalarempúblico", "#menopausa", "#mentalidadedesucesso", "#mentalidadeempresarial", "#mentor", "#mentoradecarreira", "#mentoradeemprendedoras", "#mentorademulheres", "#mentoradenegocios", "#mentordenegocios", "#mentoria", "#mentoriacomercial", "#mentoriacomportamental", "#mentoriacompropósito", "#mentoriaconsultiva", "#mentoriacristã", "#mentoriadecarreira", "#mentoriadeliderança", "#mentoriadenegócios", "#mentoriadesucesso", "#mentoriadevendas", "#mentoriaempreendedora", "#mentoriaempresarial", "#mentoriaempresarial (Instagram)", "#mentoriaexecutiva", "#mentoriafeminina", "#mentoriafinanceira", "#mentoriahighticket", "#mentoriaindividual", "#mentoriajuridica", "#mentoriajurídica", "#mentoriamédica", "#mentoriaonline", "#mentoriaparaempreendedoras", "#mentoriaparamulheres", "#mentoriasistêmica", "#mentoriatransformadora", "#mentoriavip", "#metodocis", "#mindsetágil", "#modaquetransforma", "#mundocorporativo", "#negocioscomproposito", "#negociosdesucesso", "#negóciosinteligentes", "#negóciosquecrescem#negóciosquecrescem", "#neurodiversidade", "#neurogestao", "#neurolinguistica", "#nr1", "#nutriconsultora", "#oratória", "#orientacaovocacional", "#otrabalhodevolve", "#palestramotivacional", "#palestrante", "#palestrantedevendas", "#palestranteexecutivo", "#palestranteinternacional", "#palestrantemotivacional", "#palestrascorporativas", "#palestrashow", "#palestrasmotivacionais", "#paulovieira", "#pedagogiaempresarial", "#planejamentoestratégico", "#planejamentofinanceiro", "#planejamentofinanceiropessoal", "#pnlnaprática", "#podcastbr", "#podcastbrasil", "#posturaprofissional", "#processos", "#produtividade", "#produtividadeempresarial", "#produtividadefeminina", "#profissionaisderh", "#propriedadeintelectual", "#protagonismo", "#psicanalista", "#psicologiadotrabalho", "#recolocacaoprofissional", "#registrodemarca", "#responsabilidadeemocional", "#retencaodetalentos", "#rhestrategico", "#riscospsicossociais", "#saudementalnotrabalho", "#saúdementalnotrabalho", "#segurançapsicológica", "#simplesnacional", "#sucessocompartilhado", "#sucessoempresarial", "#sucessonacarreira", "#sucessonosnegócios", "#sucessoprofissional", "#sucessosustentavel (Instagram)", "#sucessosustentável", "#sustentabilidadeempresarial", "#terapeuta", "#terapeutadecasal", "#terapeutasistemica", "#terapiacognitivocomportamental", "#trabalhocompropósito", "#transformaçãodevidas", "#transformaçãoempresarial", "#treinadoracomportamental", "#treinamentocomportamental", "#treinamentocorporativo", "#treinamentodeeqipe", "#treinamentodeequipe", "#treinamentodeequipes", "#treinamentodeliderança", "#treinamentodevendas", "#treinamentoedesenvolvimento", "#treinamentoempresarial", "#treinamentomental", "#treinamentomédico", "#treinamentoscorporativos", "#universidadecorporativa", "#valores", "#vendas2b2", "#vidadeempreendedor", "#vistoamericanoaprovado", "contador", "daniellefcaires", "fininhomentor", "Google Maps · coach em Ipatinga MG", "Google Maps · coach em Piracicaba SP", "Google Maps · coach em São Carlos SP", "Google Maps · constelação familiar em Birigui SP", "Google Maps · constelação familiar em Blumenau SC", "Google Maps · constelação familiar em Divinópolis MG", "Google Maps · constelação familiar em Ipatinga MG", "Google Maps · constelação familiar em Jaraguá do Sul SC", "Google Maps · constelação familiar em Presidente Prudente SP", "Google Maps · consultoria de gestão", "Google Maps · consultoria empresarial em Anápolis GO", "Google Maps · consultoria empresarial em Caraguatatuba SP", "Google Maps · consultoria empresarial em Dourados MS", "Google Maps · consultoria empresarial em Guarapuava PR", "Google Maps · consultoria empresarial em Guaratinguetá SP", "Google Maps · consultoria empresarial em Itu SP", "Google Maps · consultoria empresarial em Jacareí SP", "Google Maps · consultoria empresarial em Marília SP", "Google Maps · consultoria empresarial em São Carlos SP", "Google Maps · consultoria empresarial em Valinhos SP", "Google Maps · consultoria financeira em Taubaté SP", "Google Maps · contabilidade em Blumenau SC", "Google Maps · contabilidade em Guaratinguetá SP", "Google Maps · contabilidade em Ponta Grossa PR", "Google Maps · contabilidade em São José do Rio Preto SP", "Google Maps · contabilidade em Toledo PR", "Google Maps · contabilidade em Uberaba MG", "Google Maps · mentor de negócios em Divinópolis MG", "Google Maps · mentoria de negócios em Araçatuba SP", "Google Maps · mentoria empresarial em Chapecó SC", "Google Maps · mentoria empresarial em Nova Friburgo RJ", "Google Maps · mentoria empresarial em Pindamonhangaba SP", "Google Maps · mentoria empresarial em Santa Maria RS", "Google Maps · palestrante em Mogi Guaçu SP", "Google Maps · palestrante em Ribeirão Preto SP", "Google Maps · psicólogo em Anápolis GO", "Google Maps · psicólogo em Assis SP", "Google Maps · psicólogo em Montes Claros MG", "Google Maps · psicólogo em Piracicaba SP", "Google Maps · psicólogo em Poços de Caldas MG", "Google Maps · psicólogo em Varginha MG", "Google Maps · terapeuta em Americana SP", "Google Maps · terapeuta em Criciúma SC", "Google Maps · terapeuta em Divinópolis MG", "Google Maps · terapeuta em Franca SP", "Google Maps · terapeuta em Jundiaí SP", "Google Maps · terapeuta em Marília SP", "Google Maps · terapeuta em Patos de Minas MG", "Google Maps · terapeuta em Piracicaba SP", "Google Maps · terapeuta em Sete Lagoas MG", "Google Maps · terapeuta em Taubaté SP", "Thomaz Consultoria e Assessoria"];
+$('hashes').innerHTML=HASH.map(function(x){return '<option value="'+esc(x)+'">'}).join('');
+var salvo=lida(); if(salvo&&salvo.usuario) entrar(salvo,$('mLogin'));
+})();
+</script>
+</body>
+</html>
