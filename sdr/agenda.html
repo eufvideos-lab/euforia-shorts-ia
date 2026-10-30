@@ -167,6 +167,11 @@ textarea{min-height:70px;resize:vertical}
 .op .acts{margin-top:10px}
 .op .acts button{background:transparent;border:1px solid var(--line);color:var(--txt);border-radius:8px;padding:5px 10px;font-size:13px;font-weight:600}
 .op.atr{border-color:rgba(255,90,90,.6)}
+.lks{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:8px;font-size:13px}
+.lk{background:transparent;border:1px dashed var(--line);color:var(--txt);border-radius:999px;padding:4px 10px;font-size:12px;font-weight:700}
+.lk.ok{border:1px solid var(--ok);color:var(--ok)}.lk:not(.ok){border-color:#e9c46a;color:#e9c46a}
+.lkrow{display:flex;gap:8px;align-items:center;margin-bottom:8px}.lkrow input[type=text]{flex:1}.lkrow label{margin:0;display:flex;gap:6px;align-items:center;text-transform:none;letter-spacing:0;font-size:14px;color:var(--txt)}
+.lkrow button{background:transparent;border:1px solid var(--line);color:var(--mut);border-radius:8px;padding:6px 10px}
 .gbar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}.gbar input{flex:1;min-width:200px}.gbar select{width:auto}
 .gc{cursor:pointer}.gc .nota{margin-left:auto;font:800 22px/1 'Barlow Condensed',sans-serif}
 .gc .det{display:none;margin-top:12px;border-top:1px solid var(--line);padding-top:12px}.gc.on .det{display:block}
@@ -246,6 +251,10 @@ textarea{min-height:70px;resize:vertical}
       <div class="row2"><div><label for="opProd">Produto *</label><select id="opProd" required></select></div><div><label for="opEt">Etapa *</label><select id="opEt" required></select></div></div>
       <div class="row3"><div><label for="opVal">Valor bruto (R$)</label><input id="opVal" inputmode="decimal" placeholder="9200"></div><div><label for="opForma">Forma de pagamento</label><select id="opForma"></select></div><div><label for="opData" id="opDataL">Data prevista do pagamento</label><input type="date" id="opData"></div></div>
       <div class="row2"><div><label for="opEnt">Entrada ou 1º pagamento (R$)</label><input id="opEnt" inputmode="decimal" placeholder="opcional"></div><div><label for="opParc">Nº de parcelas ou meses</label><input id="opParc" inputmode="numeric" placeholder="opcional"></div></div>
+      <label>Links de pagamento <span style="text-transform:none;letter-spacing:0">(quando o valor é dividido em mais de um link)</span></label>
+      <div id="opLinks"></div>
+      <button type="button" class="ghost" id="opAddLink">+ Link de pagamento</button>
+      <p class="hint" id="opLinksSoma" style="margin-top:6px"></p>
       <label for="opObs">Observação</label><textarea id="opObs" placeholder="Ex.: ficou de responder sexta; paga entrada no cartão e o resto em 70 dias"></textarea>
       <div class="acts" style="margin-top:14px"><button class="btn" id="opSalvar">Salvar</button><button type="button" class="ghost" id="opCancelar">Cancelar</button></div>
       <p class="msg err" id="opMsg"></p>
@@ -591,7 +600,10 @@ var COBRAR=['dados','vai_pagar','assinado'];
 function et(k){return ETAPAS.filter(function(e){return e[0]===k})[0]||['','—','#666']}
 function brl(n){n=Number(n||0);return 'R$ '+n.toLocaleString('pt-BR',{minimumFractionDigits:n%1?2:0,maximumFractionDigits:2})}
 function dbr(s){return s?s.split('-').reverse().slice(0,2).join('/'):'sem data'}
-function naData(o){return o.entrada>0?o.entrada:o.valor}
+function naData(o){if(o.links&&o.links.length)return falta(o);return o.entrada>0?o.entrada:o.valor}
+// links de pagamento: ex. 9.200 dividido em um link de 5.000 e outro de 4.200 (pedido do Henrique, 30/10)
+function pagoLinks(o){return (o.links||[]).reduce(function(t,l){return t+(l.pago?Number(l.valor)||0:0)},0)}
+function falta(o){return (o.links||[]).reduce(function(t,l){return t+(l.pago?0:Number(l.valor)||0)},0)}
 $('opProd').innerHTML='<option value="">Escolha</option>'+PRODS.map(function(p){return '<option>'+esc(p)+'</option>'}).join('');
 $('opEt').innerHTML=ETAPAS.map(function(e){return '<option value="'+e[0]+'">'+esc(e[1])+'</option>'}).join('');
 function rotData(){$('opDataL').textContent=$('opEt').value==='morno'?'Próximo follow-up':'Data prevista do pagamento';}
@@ -653,7 +665,9 @@ function opCard(o,extra){
   if(o.etapa==='morno'){meta=[];var dz=o.atualizadoEm?Math.floor((Date.now()-new Date(o.atualizadoEm).getTime())/DIAMS):-1;if(dz>=0)meta.push('sem novidade há <b>'+dz+' dia'+(dz===1?'':'s')+'</b>');meta.push('próximo follow-up: <b>'+esc(dbr(o.dataPrevista))+'</b>');}
   else meta.push('pagamento previsto: <b>'+esc(dbr(o.dataPrevista))+'</b>');
   return '<div class="op'+(extra&&extra.atr?' atr':'')+'" style="--c:'+e[2]+'"><div class="l1"><span class="n">'+esc(o.nome)+'</span><span class="tag">'+esc(o.produto)+'</span><span class="tag" style="border-color:'+e[2]+';color:'+e[2]+'">'+esc(e[1])+'</span>'+(extra&&extra.tag||'')+(tl?'<span class="ph">'+esc(tl)+'</span><button class="cp" data-cp="'+esc(o.whatsapp)+'">Copiar</button>':'')+'<span class="v">'+brl(o.valor)+'</span></div>'
-    +'<div class="meta">'+meta.join(' · ')+'</div>'+(o.obs?'<div class="meta">'+esc(o.obs)+'</div>':'')
+    +'<div class="meta">'+meta.join(' · ')+'</div>'
+    +(o.links&&o.links.length?'<div class="lks">'+o.links.map(function(l,i){return '<button class="lk'+(l.pago?' ok':'')+'" data-lk="'+esc(o.chave)+'" data-i="'+i+'" title="'+(l.pago?'Toque para desmarcar':'Toque quando o lead pagar este link')+'">'+(l.pago?'✓ ':'')+brl(l.valor)+(l.pago?' pago':' falta')+'</button>'}).join('')+'<span class="hint">pago <b>'+brl(pagoLinks(o))+'</b>'+(falta(o)>0?' · falta <b style="color:#e9c46a">'+brl(falta(o))+'</b>':' · tudo pago')+'</span></div>':'')
+    +(o.obs?'<div class="meta">'+esc(o.obs)+'</div>':'')
     +'<div class="meta">Atualizado por '+esc(o.atualizadoPor||'—')+(o.atualizadoEm?' em '+esc(new Date(o.atualizadoEm).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit',timeZone:'America/Recife'})):'')+'</div>'
     +'<div class="acts"><button data-ed="'+esc(o.chave)+'">Editar</button>'+(o.etapa==='morno'?'<button data-vq="'+esc(o.chave)+'" style="border-color:rgba(233,196,106,.6)">Voltou a falar</button>':'')+(o.etapa==='quente'?'<button data-mo="'+esc(o.chave)+'" style="border-color:rgba(155,139,214,.6)">Sumiu (morno)</button>':'')+(o.etapa!=='pago'?'<button data-pg="'+esc(o.chave)+'" style="border-color:rgba(46,204,113,.5)">Pagou</button>':'')+(o.etapa!=='perdido'&&o.etapa!=='pago'?'<button data-pd="'+esc(o.chave)+'">Perdido</button>':'')+'<button data-rm="'+esc(o.chave)+'">Apagar</button></div></div>';
 }
@@ -700,8 +714,24 @@ function mostrarPrev(){
     +(mornos.length?'<h2 class="sec">Mornos <span class="hint" style="text-transform:none;font:500 13px Inter">fora da previsão até voltarem a falar</span></h2><div class="kpis"><div class="kpi"><small>Leads mornos</small><b>'+mornos.length+'</b><span>'+brl(mornos.reduce(function(t,o){return t+o.valor},0))+' em jogo</span></div><div class="kpi q"><small>Follow-up para hoje</small><b>'+fu.length+'</b><span>'+(fu.length?esc(fu.slice(0,4).map(function(o){return o.nome}).join(', '))+(fu.length>4?'…':''):'nenhum atrasado')+'</span></div></div>':'')
     +'<p class="hint" style="margin-top:18px">Valores brutos, sem taxas. "Entra na data" usa a entrada (ou o valor à vista quando não tem entrada).'+(semData.length?' <b style="color:var(--err)">'+semData.length+' oportunidade(s) sem data prevista</b> ('+brl(semData.reduce(function(t,o){return t+o.valor},0))+') ficam fora da conta: coloque a data em Oportunidades.':'')+'</p>';
 }
+var linksEd=[];
+function desenhaLinks(){
+  $('opLinks').innerHTML=linksEd.map(function(l,i){return '<div class="lkrow"><input type="text" inputmode="decimal" data-lv="'+i+'" placeholder="Valor do link (R$)" value="'+esc(l.valor||'')+'"><label><input type="checkbox" data-lp="'+i+'"'+(l.pago?' checked':'')+'> Pago</label><button type="button" data-lr="'+i+'" aria-label="Tirar link">×</button></div>'}).join('');
+  somaLinks();
+}
+function numBR(v){return Number(String(v==null?'':v).replace(/\./g,'').replace(',','.'))||0}
+function somaLinks(){
+  if(!linksEd.length){$('opLinksSoma').textContent='';return;}
+  var t=linksEd.reduce(function(a,l){return a+numBR(l.valor)},0),pg=linksEd.reduce(function(a,l){return a+(l.pago?numBR(l.valor):0)},0),v=numBR($('opVal').value);
+  $('opLinksSoma').innerHTML='Links somam <b>'+brl(t)+'</b>'+(v&&Math.abs(v-t)>0.009?' <b style="color:var(--err)">(valor da venda: '+brl(v)+')</b>':'')+' · pago '+brl(pg)+' · falta '+brl(t-pg);
+}
+$('opAddLink').onclick=function(){linksEd.push({valor:'',pago:false});desenhaLinks();var q=document.querySelectorAll('#opLinks input[type=text]');if(q.length)q[q.length-1].focus();};
+$('opLinks').addEventListener('input',function(e){var i=e.target.getAttribute('data-lv');if(i!=null){linksEd[i].valor=e.target.value;somaLinks();}});
+$('opLinks').addEventListener('change',function(e){var i=e.target.getAttribute('data-lp');if(i!=null){linksEd[i].pago=e.target.checked;if(!e.target.checked)linksEd[i].pagoEm='';somaLinks();}});
+$('opLinks').addEventListener('click',function(e){var i=e.target.getAttribute('data-lr');if(i!=null){linksEd.splice(Number(i),1);desenhaLinks();}});
+$('opVal').addEventListener('input',somaLinks);
 function abreForm(o){
-  o=o||{};$('opForm').hidden=false;$('opMsg').textContent='';
+  o=o||{};linksEd=(o.links||[]).map(function(l){return {valor:String(l.valor).replace('.',','),pago:!!l.pago,pagoEm:l.pagoEm||''}});desenhaLinks();$('opForm').hidden=false;$('opMsg').textContent='';
   $('opChave').value=o.chave||'';$('opNome').value=o.nome||'';$('opWa').value=o.whatsapp||'';$('opProd').value=o.produto||'';$('opEt').value=o.etapa||'quente';
   $('opVal').value=o.valor||'';$('opForma').value=o.forma||'A definir';$('opData').value=o.dataPrevista||'';$('opEnt').value=o.entrada||'';$('opParc').value=o.parcelas||'';$('opObs').value=o.obs||'';rotData();
   $('opForm').scrollIntoView({behavior:'smooth',block:'start'});setTimeout(function(){$('opNome').focus()},300);
@@ -710,7 +740,7 @@ $('opNova').onclick=function(){if(aba!=='ops')trocaAba('ops');abreForm()};
 $('opCancelar').onclick=function(){$('opForm').hidden=true};
 $('opForm').addEventListener('submit',function(e){e.preventDefault();
   var b=$('opSalvar');b.disabled=true;$('opMsg').textContent='Salvando…';
-  api2({acao:'salvar',chave:$('opChave').value,nome:$('opNome').value,whatsapp:$('opWa').value,produto:$('opProd').value,etapa:$('opEt').value,valor:$('opVal').value.replace(/\./g,'').replace(',','.'),forma:$('opForma').value,dataPrevista:$('opData').value,entrada:$('opEnt').value.replace(/\./g,'').replace(',','.'),parcelas:$('opParc').value,obs:$('opObs').value}).then(function(r){
+  api2({acao:'salvar',chave:$('opChave').value,nome:$('opNome').value,whatsapp:$('opWa').value,produto:$('opProd').value,etapa:$('opEt').value,valor:$('opVal').value.replace(/\./g,'').replace(',','.'),forma:$('opForma').value,dataPrevista:$('opData').value,entrada:$('opEnt').value.replace(/\./g,'').replace(',','.'),parcelas:$('opParc').value,obs:$('opObs').value,links:linksEd.map(function(l){return {valor:numBR(l.valor),pago:l.pago,pagoEm:l.pagoEm||''}}).filter(function(l){return l.valor>0})}).then(function(r){
     b.disabled=false;
     if(!r.ok){$('opMsg').textContent=r.erro||'Não consegui salvar.';return;}
     $('opMsg').textContent='';$('opForm').hidden=true;ops=r.ops||[];mostrarOps();
@@ -719,6 +749,14 @@ $('opForm').addEventListener('submit',function(e){e.preventDefault();
 function achaOp(k){return ops.filter(function(o){return o.chave===k})[0]}
 function cliqueOp(e){
   var k=e.target.closest('[data-cp]');if(k){cliqueCall(e);return;}
+  var lk=e.target.closest('[data-lk]');
+  if(lk){var o4=achaOp(lk.getAttribute('data-lk'));if(!o4)return;var ls=(o4.links||[]).map(function(l){return Object.assign({},l)}),li=ls[Number(lk.getAttribute('data-i'))];if(!li)return;
+    li.pago=!li.pago;li.pagoEm=li.pago?isoDia(recife(Date.now())):'';
+    var nv=Object.assign({},o4,{links:ls});
+    // todos os links pagos e somando o valor da venda: a oportunidade vira "Pago"
+    if(ls.every(function(l){return l.pago})&&pagoLinks(nv)>=o4.valor-0.009&&o4.etapa!=='pago'){nv.etapa='pago';if(!nv.dataPrevista)nv.dataPrevista=isoDia(recife(Date.now()));}
+    lk.disabled=true;lk.textContent='Salvando…';
+    api2(Object.assign({acao:'salvar'},nv)).then(function(r){if(!r.ok){$('mApp').textContent=r.erro||'Não consegui salvar.';}else ops=r.ops||[];mostrarOps();});return;}
   var ed=e.target.closest('[data-ed]');if(ed){var o=achaOp(ed.getAttribute('data-ed'));if(aba!=='ops')trocaAba('ops');abreForm(o);return;}
   var mv=e.target.closest('[data-pg],[data-pd],[data-vq],[data-mo]');
   if(mv){var o2=achaOp(mv.getAttribute('data-pg')||mv.getAttribute('data-pd')||mv.getAttribute('data-vq')||mv.getAttribute('data-mo'));if(!o2)return;var novo=Object.assign({},o2,{etapa:mv.hasAttribute('data-pg')?'pago':mv.hasAttribute('data-vq')?'quente':mv.hasAttribute('data-mo')?'morno':'perdido'});
