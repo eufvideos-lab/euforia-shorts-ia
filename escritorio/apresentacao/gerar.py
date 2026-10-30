@@ -246,7 +246,7 @@ addEventListener('resize',ajusta);
 addEventListener('keydown',function(e){if(['ArrowRight','PageDown',' '].indexOf(e.key)>=0)vai(1);
  if(['ArrowLeft','PageUp'].indexOf(e.key)>=0)vai(-1);if(e.key=='n'||e.key=='N')nt.classList.toggle('on');
  if(e.key=='f'||e.key=='F'){document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen()}});
-pl.addEventListener('click',function(e){if(e.target.closest('a'))return;vai(e.clientX<innerWidth/4?-1:1)});
+pl.addEventListener('click',function(e){if(e.target.closest('a,button,audio,input'))return;vai(e.clientX<innerWidth/4?-1:1)});
 ajusta();i=Math.max(0,(parseInt(location.hash.slice(1))||1)-1);vai(0);
 """
 
