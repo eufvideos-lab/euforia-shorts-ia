@@ -167,6 +167,12 @@ textarea{min-height:70px;resize:vertical}
 .op .acts{margin-top:10px}
 .op .acts button{background:transparent;border:1px solid var(--line);color:var(--txt);border-radius:8px;padding:5px 10px;font-size:13px;font-weight:600}
 .op.atr{border-color:rgba(255,90,90,.6)}
+.gbar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}.gbar input{flex:1;min-width:200px}.gbar select{width:auto}
+.gc{cursor:pointer}.gc .nota{margin-left:auto;font:800 22px/1 'Barlow Condensed',sans-serif}
+.gc .det{display:none;margin-top:12px;border-top:1px solid var(--line);padding-top:12px}.gc.on .det{display:block}
+.gc .det h4{font:700 12px Inter,sans-serif;color:var(--mut);text-transform:uppercase;letter-spacing:1px;margin:12px 0 6px}
+.gc .det li{margin:0 0 8px 18px;font-size:14px}.gc .det .fz{color:var(--ok);display:block;margin-top:3px}
+.gc .det a{color:var(--or);margin-right:14px;font-weight:600}
 .tag{display:inline-block;padding:3px 9px;border-radius:999px;font-size:12px;font-weight:700;border:1px solid var(--line)}
 .tag.red{border-color:var(--err);color:var(--err)}.tag.or{border-color:var(--or);color:var(--or)}
 .opform{background:var(--card);border:1px solid var(--or);border-radius:14px;padding:16px;margin-bottom:16px}
@@ -210,6 +216,7 @@ textarea{min-height:70px;resize:vertical}
     <button class="tab g" data-t="ops" hidden>Oportunidades</button>
     <button class="tab g" data-t="cobrar" hidden>A cobrar</button>
     <button class="tab g" data-t="prev" hidden>Previsão</button>
+    <button class="tab g" data-t="grav" hidden>Calls gravadas</button>
   </div>
   <p class="msg err" id="mApp"></p>
   <div id="tAgenda">
@@ -244,6 +251,10 @@ textarea{min-height:70px;resize:vertical}
       <p class="msg err" id="opMsg"></p>
     </form>
     <div id="opsLista"><p class="load">Carregando oportunidades…</p></div>
+  </div>
+  <div id="tGrav" hidden>
+    <div class="gbar"><input id="gBusca" placeholder="Buscar por nome, produto, objeção, palavra…"><select id="gRes"><option value="">Todos os resultados</option></select></div>
+    <div id="gravLista"><p class="load">Carregando calls…</p></div>
   </div>
   <div id="tCobrar" hidden><div id="cobrarLista"><p class="load">Carregando…</p></div></div>
   <div id="tPrev" hidden><div id="prevBox"><p class="load">Carregando…</p></div></div>
@@ -293,6 +304,7 @@ textarea{min-height:70px;resize:vertical}
 var API='https://n8n.grupoeuforia.tech/webhook/sdr-agenda-painel';
 var tipoSel='', cred=null, escolhido=null, fontesOk=false, numsOk=false, diaSel='', aba='agenda', calls=[], semana=[], semIni='', evSel='', gestor=false, plIni='', ciclosSem={}, ultPlacar=null, ops=[], opsOk=false;
 var API2='https://n8n.grupoeuforia.tech/webhook/sdr-oportunidades';
+var API3='https://n8n.grupoeuforia.tech/webhook/sdr-calls-gravadas', grav=[];
 var ST={pendente:['Falta confirmar','#7986cb'],confirmado:['Confirmado','#c9c4bc'],sem_resposta:['Não confirmou','#616161'],cancelou:['Cancelou / remarcar','#8e24aa'],no_show:['No-show','#f6bf26'],desqualificado:['Desqualificado','#d50000'],realizada:['Realizada','#039be5']};
 var VERDE='#0b8043';function corCall(c){return c.status==='realizada'&&c.tipo==='fechamento'?VERDE:(ST[c.status]||ST.pendente)[1];}
 var ORDEM=['confirmado','sem_resposta','cancelou','no_show','desqualificado','realizada','pendente'];
@@ -387,9 +399,9 @@ function carregarCalls(){
 }
 function trocaAba(t){
   aba=t;[].forEach.call(document.querySelectorAll('.tab'),function(b){b.classList.toggle('on',b.getAttribute('data-t')===t)});
-  $('tAgenda').hidden=t!=='agenda';$('tCalls').hidden=t!=='calls';$('tCal').hidden=t!=='cal';$('tPlacar').hidden=t!=='placar';$('tOps').hidden=t!=='ops';$('tCobrar').hidden=t!=='cobrar';$('tPrev').hidden=t!=='prev';
-  $('ola').textContent='Olá, '+cred.usuario.charAt(0).toUpperCase()+cred.usuario.slice(1)+'. '+(t==='calls'?'Confirme as calls com os leads e marque o resultado.':t==='cal'?'A semana do Diogo, com a cor de cada call.':t==='placar'?'Quem marcou mais calls em cada dia da semana.':t==='ops'?'Oportunidades abertas (só você e o Diogo veem).':t==='cobrar'?'Quem disse que vai pagar: fique de olho na data.':t==='prev'?'Quanto dinheiro tem na mesa na semana e no mês.':'Toque num horário livre para marcar.');
-  if(t==='calls')carregarCalls();else if(t==='cal')carregarSemana();else if(t==='placar'){prepCiclos();carregarPlacar();}else if(t==='ops'||t==='cobrar'||t==='prev')carregarOps();else contaPend();
+  $('tAgenda').hidden=t!=='agenda';$('tCalls').hidden=t!=='calls';$('tCal').hidden=t!=='cal';$('tPlacar').hidden=t!=='placar';$('tOps').hidden=t!=='ops';$('tCobrar').hidden=t!=='cobrar';$('tPrev').hidden=t!=='prev';$('tGrav').hidden=t!=='grav';
+  $('ola').textContent='Olá, '+cred.usuario.charAt(0).toUpperCase()+cred.usuario.slice(1)+'. '+(t==='calls'?'Confirme as calls com os leads e marque o resultado.':t==='cal'?'A semana do Diogo, com a cor de cada call.':t==='placar'?'Quem marcou mais calls em cada dia da semana.':t==='ops'?'Oportunidades abertas (só você e o Diogo veem).':t==='cobrar'?'Quem disse que vai pagar: fique de olho na data.':t==='prev'?'Quanto dinheiro tem na mesa na semana e no mês.':t==='grav'?'Calls do Diogo analisadas contra o roteiro (só você e o Diogo veem). Toque numa call para abrir.':'Toque num horário livre para marcar.');
+  if(t==='calls')carregarCalls();else if(t==='cal')carregarSemana();else if(t==='placar'){prepCiclos();carregarPlacar();}else if(t==='ops'||t==='cobrar'||t==='prev')carregarOps();else if(t==='grav')carregarGrav();else contaPend();
 }
 function sair(m){cred=null;guarda(null);$('vApp').hidden=true;$('vLogin').hidden=false;$('mLogin').textContent=m||'';fecha();}
 function abre(i,rot){
@@ -506,7 +518,7 @@ $('cal').addEventListener('click',function(e){var b=e.target.closest('[data-ev]'
 function mudaSemana(n){var d=new Date(semIni+'T00:00:00Z');semIni=isoDia(new Date(d.getTime()+n*7*DIAMS));evSel='';carregarSemana();}
 $('cPrev').onclick=function(){mudaSemana(-1)};$('cNext').onclick=function(){mudaSemana(1)};
 $('cHoje').onclick=function(){semIni='';evSel='';carregarSemana();};
-$('bAtualizar').onclick=function(){if(aba==='cal'){carregarSemana();return;}if(aba==='placar'){carregarPlacar();return;}if(aba==='ops'||aba==='cobrar'||aba==='prev'){carregarOps();return;}carregar();if(aba==='agenda')api({acao:'calls'}).then(function(r){if(r.ok){calls=r.calls||[];contaPend();}});};
+$('bAtualizar').onclick=function(){if(aba==='cal'){carregarSemana();return;}if(aba==='placar'){carregarPlacar();return;}if(aba==='ops'||aba==='cobrar'||aba==='prev'){carregarOps();return;}if(aba==='grav'){carregarGrav();return;}carregar();if(aba==='agenda')api({acao:'calls'}).then(function(r){if(r.ok){calls=r.calls||[];contaPend();}});};
 
 // placar de agendamentos por dia (todos veem)
 function carregarPlacar(){
@@ -589,6 +601,40 @@ function api2(body){
   return fetch(API2,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.assign({},cred,body))})
     .then(function(r){return r.json()}).catch(function(){return {ok:false,erro:'Sem conexão com o sistema. Tente de novo.'}});
 }
+// aba Calls gravadas: análises da rotina noturna (tabela Calls gravadas no n8n)
+function carregarGrav(){
+  $('mApp').textContent='';
+  return fetch(API3,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(cred)})
+    .then(function(r){return r.json()}).catch(function(){return {ok:false,erro:'Sem conexão com o sistema. Tente de novo.'}})
+    .then(function(r){
+      if(!r.ok){$('gravLista').innerHTML='';$('mApp').textContent=r.erro||'Erro ao carregar as calls.';return;}
+      grav=r.calls||[];var rs={};grav.forEach(function(c){if(c.resultado)rs[c.resultado]=1});var sel=$('gRes').value;
+      $('gRes').innerHTML='<option value="">Todos os resultados</option>'+Object.keys(rs).sort().map(function(x){return '<option'+(x===sel?' selected':'')+'>'+esc(x)+'</option>'}).join('');
+      mostrarGrav();
+    });
+}
+function gTxt(v){return typeof v==='string'?v:v&&typeof v==='object'?Object.keys(v).map(function(k){return v[k]}).join(' '):String(v==null?'':v)}
+function mostrarGrav(){
+  var q=$('gBusca').value.trim().toLowerCase(),res=$('gRes').value;
+  var l=grav.filter(function(c){if(res&&c.resultado!==res)return false;if(!q)return true;
+    return JSON.stringify(c).toLowerCase().indexOf(q)>=0;});
+  if(!grav.length){$('gravLista').innerHTML='<p class="hint">Nenhuma call analisada ainda. A rotina analisa as calls novas toda noite.</p>';return;}
+  if(!l.length){$('gravLista').innerHTML='<p class="hint">Nada encontrado com esse filtro.</p>';return;}
+  $('gravLista').innerHTML=l.map(function(c){
+    var cor=c.nota>=7?'var(--ok)':c.nota>=5?'#e9c46a':'var(--err)';
+    var d=c.data?c.data.slice(8,10)+'/'+c.data.slice(5,7)+' '+c.data.slice(11,16):'';
+    var ac=(c.acertos||[]).map(function(a){return '<li>'+esc(gTxt(a))+'</li>'}).join('');
+    var me=(c.melhorias||[]).map(function(m){return '<li>'+esc(m.o_que_aconteceu||gTxt(m))+(m.fazer_assim?'<span class="fz">Fazer assim: '+esc(m.fazer_assim)+'</span>':'')+'</li>'}).join('');
+    var ob=(c.objecoes||[]).map(function(o){return '<li>'+esc(o.objecao||gTxt(o))+(o.resposta?'<span class="fz" style="color:'+(o.bem_tratada?'var(--ok)':'var(--err)')+'">'+(o.bem_tratada?'Bem tratada: ':'Faltou: ')+esc(o.resposta)+'</span>':'')+'</li>'}).join('');
+    return '<div class="op gc" style="--c:'+cor+'"><div class="l1"><span class="n">'+esc(c.lead)+'</span><span class="tag">'+esc(d)+'</span>'+(c.produto?'<span class="tag">'+esc(c.produto)+'</span>':'')+(c.resultado?'<span class="tag or">'+esc(c.resultado)+'</span>':'')+'<span class="nota" style="color:'+cor+'">'+(isFinite(c.nota)?c.nota:'–')+'/10</span></div>'
+      +'<div class="meta">'+esc(c.resumo)+'</div>'
+      +'<div class="det">'+(ac?'<h4>Acertos</h4><ul>'+ac+'</ul>':'')+(me?'<h4>Melhorias</h4><ul>'+me+'</ul>':'')+(ob?'<h4>Objeções</h4><ul>'+ob+'</ul>':'')
+      +(c.proximo?'<h4>Próximo passo</h4><p class="meta">'+esc(c.proximo)+'</p>':'')
+      +'<h4>Arquivos</h4>'+(c.transcricao?'<a href="'+esc(c.transcricao)+'" target="_blank" rel="noopener">Transcrição</a>':'')+(c.gravacao?'<a href="'+esc(c.gravacao)+'" target="_blank" rel="noopener">Gravação</a>':'')+'</div></div>';
+  }).join('');
+}
+$('gBusca').addEventListener('input',mostrarGrav);$('gRes').addEventListener('change',mostrarGrav);
+$('gravLista').addEventListener('click',function(e){if(e.target.closest('a'))return;var c=e.target.closest('.gc');if(c)c.classList.toggle('on');});
 function carregarOps(){
   $('mApp').textContent='';
   return api2({acao:'listar'}).then(function(r){
