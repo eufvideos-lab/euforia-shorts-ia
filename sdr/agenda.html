@@ -145,6 +145,8 @@ textarea{min-height:70px;resize:vertical}
 .rslots{display:flex;flex-wrap:wrap;gap:8px}.rslots .slot{width:auto;min-width:90px;padding:8px 14px;border-radius:10px;border:1px solid var(--or);background:transparent;color:var(--txt);font-weight:600}
 .sbtns .rmc{border-color:rgba(255,90,0,.5)}
 .sbtns .apg{border-color:rgba(213,0,0,.55);color:#ff8a80}
+.sbtns .edc{border-color:rgba(127,179,255,.55)}
+.remar .row2{margin-top:4px}
 .fxc{display:inline-block;margin:2px 4px 2px 0;padding:3px 8px;border-radius:999px;background:rgba(255,255,255,.06);font-size:12px;white-space:nowrap}
 .fxc b{color:var(--or)}
 .cicbar{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:14px}
@@ -313,6 +315,7 @@ textarea{min-height:70px;resize:vertical}
 var API='https://n8n.grupoeuforia.tech/webhook/sdr-agenda-painel';
 var tipoSel='', cred=null, escolhido=null, fontesOk=false, numsOk=false, diaSel='', aba='agenda', calls=[], semana=[], semIni='', evSel='', gestor=false, plIni='', ciclosSem={}, ultPlacar=null, ops=[], opsOk=false;
 var API2='https://n8n.grupoeuforia.tech/webhook/sdr-oportunidades';
+var API4='https://n8n.grupoeuforia.tech/webhook/sdr-editar-call';
 var API3='https://n8n.grupoeuforia.tech/webhook/sdr-calls-gravadas', grav=[];
 var ST={pendente:['Falta confirmar','#7986cb'],confirmado:['Confirmado','#c9c4bc'],sem_resposta:['Não confirmou','#616161'],cancelou:['Cancelou / remarcar','#8e24aa'],no_show:['No-show','#f6bf26'],desqualificado:['Desqualificado','#d50000'],realizada:['Realizada','#039be5']};
 var VERDE='#0b8043';function corCall(c){return c.status==='realizada'&&c.tipo==='fechamento'?VERDE:(ST[c.status]||ST.pendente)[1];}
@@ -387,7 +390,7 @@ function cardHTML(c){
       return '<div class="call" style="--c:'+corCall(c)+'"><div class="l1"><span class="h">'+esc(hora)+'</span><span class="n">'+esc(c.nome)+'</span>'+(tl?'<span class="ph">'+esc(tl)+'</span><button class="cp" data-cp="'+esc(c.whats)+'">Copiar</button>':'<span class="ph sem">sem número</span>')+igHTML(c.insta)+(c.numero?'<span class="eb" title="Número que marcou">'+esc(c.numero.replace(/ \(.*$/,''))+'</span>':'')+'<span class="st '+esc(c.status)+'">'+esc(s[0])+'</span>'+(c.tipo?'<span class="tp '+esc(c.tipo)+'">'+(c.tipo==='fechamento'?'Fechamento':'Diagnóstico')+'</span>':'<span class="tp sem">Tipo não marcado</span>')+(c.sdr?'<span class="who'+(c.sdr.toLowerCase()===cred.usuario?' eu':'')+'">Marcou: <b>'+esc(c.sdr)+'</b></span>':'<span class="who sem">Marcada direto na agenda</span>')+'</div>'
         +(meta.length?'<div class="meta">'+meta.join(' · ')+'</div>':'')
         +'<div class="trow">Tipo da call:<button data-tid="'+esc(c.id)+'" data-tipo="diagnostico" class="'+(c.tipo==='diagnostico'?'cur':'')+'">Diagnóstico</button><button data-tid="'+esc(c.id)+'" data-tipo="fechamento" class="'+(c.tipo==='fechamento'?'cur':'')+'">Fechamento</button></div>'
-        +'<div class="sbtns"><button class="wa" data-wa="'+esc(c.id)+'">Mensagem de confirmação</button><button class="rmc" data-rmc="'+esc(c.id)+'">Remarcar</button><button class="apg" data-apg="'+esc(c.id)+'">Apagar</button>'+bts+'</div><div class="remar" data-rbox="'+esc(c.id)+'" hidden></div></div>';
+        +'<div class="sbtns"><button class="wa" data-wa="'+esc(c.id)+'">Mensagem de confirmação</button><button class="edc" data-edc="'+esc(c.id)+'">Editar dados</button><button class="rmc" data-rmc="'+esc(c.id)+'">Remarcar</button><button class="apg" data-apg="'+esc(c.id)+'">Apagar</button>'+bts+'</div><div class="remar" data-rbox="'+esc(c.id)+'" hidden></div></div>';
 }
 function mostrarCalls(){
   contaPend();
@@ -439,9 +442,31 @@ function cliqueCall(e){
     var p=String(c.nome).split(/[\s·]+/)[0];
     var t='Oi, '+p+'! Tudo bem? Passando para confirmar a nossa call com o Diogo, do Grupo Euforia, '+quandoTxt(c.inicio)+' (horário de Brasília).'+(c.meet?'\n\nO link é este: '+c.meet:'')+'\n\nPosso confirmar a sua presença?';
     window.open('https://wa.me/'+(c.whats||'')+'?text='+encodeURIComponent(t),'_blank','noopener');return;}
+  // editar dados da call (pedido do Henrique, 30/10): e-mail que o lead mandou depois, nome ou número errado
+  var ed=e.target.closest('[data-edc]');
+  if(ed){var eid=ed.getAttribute('data-edc'),ebx=ed.closest('.call').querySelector('[data-rbox]');if(!ebx)return;
+    if(!ebx.hidden&&ebx.getAttribute('data-modo')==='ed'){ebx.hidden=true;return;}
+    ebx.setAttribute('data-modo','ed');ebx.hidden=false;ebx.innerHTML='<p class="load">Carregando dados…</p>';
+    api4({acao:'ler',evento:eid}).then(function(r){
+      if(!r.ok){ebx.innerHTML='<p class="msg err">'+esc(r.erro||'Não consegui abrir.')+'</p>';return;}
+      var d=r.call||{},cl=achar(eid)||{};
+      // número e Instagram que vieram do CRM (call marcada direto na agenda) também entram no formulário
+      var w0=String(d.whats||cl.whats||'').replace(/\D/g,'');if(w0.indexOf('55')===0&&w0.length>=12)w0=w0.slice(2);d.whats=w0;d.insta=d.insta||cl.insta||'';
+      ebx.innerHTML='<b>Editar dados da call</b><p class="hint">Se colocar um e-mail novo, o lead recebe o convite com o link do Meet. O card do CRM muda junto.</p>'
+        +'<div class="row2"><div><label>Nome do lead *</label><input data-en value="'+esc(d.nome)+'" maxlength="80"></div><div><label>WhatsApp com DDD *</label><input data-ew inputmode="tel" value="'+esc(d.whats)+'"></div></div>'
+        +'<div class="row2"><div><label>E-mail do lead</label><input data-ee type="email" value="'+esc(d.email)+'" placeholder="para receber o convite"></div><div><label>Instagram / empresa</label><input data-ei value="'+esc(d.insta)+'"></div></div>'
+        +'<div class="rrow"><button class="btn" data-esalva="'+esc(eid)+'">Salvar</button><button class="ghost" data-rfecha>Fechar</button></div><p class="msg" data-emsg></p>';
+    });return;}
+  var es=e.target.closest('[data-esalva]');
+  if(es){var bx2=es.closest('.remar'),m2=bx2.querySelector('[data-emsg]');es.disabled=true;m2.className='msg';m2.textContent='Salvando…';
+    api4({acao:'salvar',evento:es.getAttribute('data-esalva'),nome:bx2.querySelector('[data-en]').value,whatsapp:bx2.querySelector('[data-ew]').value,email:bx2.querySelector('[data-ee]').value,insta:bx2.querySelector('[data-ei]').value}).then(function(r){
+      es.disabled=false;
+      if(!r.ok){m2.className='msg err';m2.textContent=r.erro||'Não consegui salvar.';return;}
+      m2.className='msg ok';m2.textContent='Salvo.'+(r.convite?' O convite foi para o e-mail novo.':'');
+      setTimeout(function(){if(aba==='cal')carregarSemana();else carregarCalls();},1200);});return;}
   var rm=e.target.closest('[data-rmc]');
   if(rm){var rid=rm.getAttribute('data-rmc'),box=rm.closest('.call').querySelector('[data-rbox]'),cr=achar(rid);if(!box||!cr)return;
-    if(!box.hidden){box.hidden=true;return;}
+    if(!box.hidden&&box.getAttribute('data-modo')!=='ed'){box.hidden=true;return;}box.setAttribute('data-modo','rm');
     var hj=isoDia(recife(Date.now())),d0=isoDia(recife(new Date(cr.inicio).getTime()));
     box.innerHTML='<b>Remarcar '+esc(cr.nome)+'</b><p class="hint">O lead recebe o convite com o novo horário. O bloqueio do Diogo e o CRM mudam junto.</p><div class="rrow"><input type="date" data-rdia min="'+hj+'" value="'+(d0<hj?hj:d0)+'"><button class="ghost" data-rfecha>Fechar</button></div><div class="rslots" data-rslots><p class="load">Escolha o dia.</p></div><p class="msg" data-rmsg></p>';
     box.hidden=false;carregaSlots(box);return;}
@@ -609,6 +634,10 @@ $('opEt').innerHTML=ETAPAS.map(function(e){return '<option value="'+e[0]+'">'+es
 function rotData(){$('opDataL').textContent=$('opEt').value==='morno'?'Próximo follow-up':'Data prevista do pagamento';}
 $('opEt').addEventListener('change',rotData);
 $('opForma').innerHTML=FORMAS.map(function(p){return '<option>'+esc(p)+'</option>'}).join('');
+function api4(body){
+  return fetch(API4,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.assign({},cred,body))})
+    .then(function(r){return r.json()}).catch(function(){return {ok:false,erro:'Sem conexão com o sistema. Tente de novo.'}});
+}
 function api2(body){
   return fetch(API2,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.assign({},cred,body))})
     .then(function(r){return r.json()}).catch(function(){return {ok:false,erro:'Sem conexão com o sistema. Tente de novo.'}});
