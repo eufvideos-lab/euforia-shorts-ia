@@ -9,7 +9,7 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap">
 <style>
 /* Layout: mesmo "app de estúdio" do Portal do Cliente (barra lateral + área de trabalho), mas a tela inicial é uma fila única ordenada pela regra de ouro, com um botão de próximo passo por card. */
-/* Identidade Grupo Euforia, versão white igual ao portal: tema único, sempre claro. */
+/* Identidade Grupo Euforia, versão white igual ao portal; modo escuro logo abaixo. */
 :root{
   --bg:#FFFFFF; --surface:#FFFFFF; --surface-2:#F5F4F1; --line:#E6E3DE;
   --ink:#141414; --muted:#5E5A54; --accent:#FF5A00; --accent-text:#C24100; --accent-soft:#FFE6D6; --on-accent:#FFFFFF;
@@ -20,7 +20,7 @@
   --f-mono:'JetBrains Mono',ui-monospace,Consolas,monospace;
   color-scheme:light;
 }
-/* Modo escuro: só a diretoria tem o botão; a escolha fica guardada neste navegador. */
+/* Modo escuro: toda a equipe tem o botão; segue o tema do aparelho até a pessoa escolher, e a escolha fica guardada neste navegador. */
 :root[data-theme="dark"]{
   --bg:#121212; --surface:#1B1A19; --surface-2:#262422; --line:#36332F;
   --ink:#F2F0EC; --muted:#A9A39A; --accent:#FF6A1A; --accent-text:#FF9A5C; --accent-soft:#3B2416; --on-accent:#FFFFFF;
@@ -405,7 +405,9 @@ let DD = null, MM = null, PF = 'abertos', PQ = '', TQ = '', TS = '', TP = '', TT
 try { PIN = localStorage.getItem(KEY) || ''; view = localStorage.getItem('painel-view') || ''; } catch (e) {}
 if (DEMO) PIN = '0000';
 let TEMA = ''; try { TEMA = localStorage.getItem('painel-tema') || ''; } catch (e) {}
-function aplicarTema(){ const escuro = TEMA === 'dark' && D && diretor(); if (escuro) document.documentElement.dataset.theme = 'dark'; else delete document.documentElement.dataset.theme; const b = $('#tema'); if (b) { b.hidden = !(D && diretor()); b.textContent = escuro ? 'Modo claro' : 'Modo escuro'; } }
+const TEMA_SO = window.matchMedia ? matchMedia('(prefers-color-scheme: dark)') : null;
+function aplicarTema(){ const escuro = TEMA === 'dark' || (TEMA !== 'light' && !!(TEMA_SO && TEMA_SO.matches)); if (escuro) document.documentElement.dataset.theme = 'dark'; else delete document.documentElement.dataset.theme; const b = $('#tema'); if (b) { b.hidden = false; b.textContent = escuro ? 'Modo claro' : 'Modo escuro'; } }
+aplicarTema(); if (TEMA_SO && TEMA_SO.addEventListener) TEMA_SO.addEventListener('change', aplicarTema);
 
 function toast(t){ const el = $('#toast'); el.textContent = t; el.hidden = false; clearTimeout(toast.h); toast.h = setTimeout(() => el.hidden = true, 3600); }
 function tela(id){ ['tela-pin','tela-aviso','tela-carregando','app'].forEach(x => document.getElementById(x).hidden = x !== id); }
@@ -1791,7 +1793,7 @@ document.addEventListener('click', async e => {
     catch (err) { e.target.disabled = false; toast(ERRO); }
     return;
   }
-  if (e.target.id === 'tema') { TEMA = TEMA === 'dark' ? '' : 'dark'; try { localStorage.setItem('painel-tema', TEMA); } catch (x) {} aplicarTema(); return; }
+  if (e.target.id === 'tema') { TEMA = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'; try { localStorage.setItem('painel-tema', TEMA); } catch (x) {} aplicarTema(); return; }
   if (e.target.id === 'sair') { try { localStorage.removeItem(KEY); } catch (x) {} PIN = ''; D = null; aplicarTema(); $('#pin-err').textContent = ''; carregar(); }
 });
 document.addEventListener('change', e => {
