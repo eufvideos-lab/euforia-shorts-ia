@@ -159,10 +159,7 @@ Se ainda faltar o essencial (nenhuma foto do cliente em lugar nenhum, tema impos
         conteúdo e gere de novo.
      3. Slug: `apresentacao-<cliente>-<aaaammdd>-<8 letras minúsculas aleatórias>`, só letras, números e hífen,
         no máximo 60 caracteres (encurte o nome do cliente se precisar; aaaammdd = dia da call).
-     4. Publique no n8n "Sites | Publicar LP" (`KyPEBbzbdL8pOklC`) com `test_workflow` e pinData no nó
-        "Receber página": `[{"json":{"body":{"slug":"<slug>","html":"<html>"}}}]`. Se o HTML passar de ~1 MB,
-        suba o .html no Drive do cliente (ponte) e mande `{"slug":"<slug>","drive_id":"<id do arquivo>"}`.
-        O resultado precisa trazer `ok: true`.
+     4. Publique no site seguindo **"Publicar página no site"** (fim desta seção 3).
      5. Card: "Link do arquivo" = `https://grupoeuforia.com.br/<slug>`, Status Em revisão, "🏢 Escritório IA" =
         Feito pela IA. Na Obs, acrescente sua linha **sem mexer** no texto "Evento da agenda: <id>" (o painel casa a
         call pela Obs). Se a publicação falhar: deixe o "Link do arquivo" vazio, Obs com "Deu erro ao publicar",
@@ -185,6 +182,25 @@ Se ainda faltar o essencial (nenhuma foto do cliente em lugar nenhum, tema impos
      6. Os três cards do cliente: Em revisão, Feito pela IA, cada um com o seu link; aviso único no #dia-a-dia.
    - **Página de vendas**: HTML único (imagens em base64), na paleta e fontes do cliente; sobe o .html no Drive do
      cliente (pasta PÁGINA) + prints desktop/celular. Dados que faltam viram "[a confirmar: ...]" bem visíveis.
+     Se o pedido diz para subir/publicar ("nossa estrutura", site), publique também em
+     `https://grupoeuforia.com.br/<slug>` seguindo **"Publicar página no site"** abaixo e ponha esse link no card.
+     Página que vai ao ar não pode ter "[a confirmar]" visível: o que faltar fica de fora e vai para o Obs.
+   - **Publicar página no site** (vale para toda página e apresentação que vai ao ar):
+     1. Endereço: **sempre** `https://grupoeuforia.com.br/<slug>` (regra do Henrique, 30/10/2026). Nunca
+        lp.grupoeuforia.tech, Netlify ou link do Claude como endereço final. Slug de página de cliente = nome do
+        cliente (`saul-sastre`); só letras minúsculas, números e hífen, até 60 caracteres.
+     2. O HTML precisa começar com `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8">` (com aspas;
+        sem isso os acentos quebram e o fluxo recusa). HTML feito como artifact vem sem isso: embrulhe antes.
+     3. Caminho padrão (qualquer tamanho, não depende do Drive nem do PC): grave em `paginas/<slug>.html`
+        do repositório, faça commit e `git push` no seu branch, e rode o n8n **"Sites | Publicar LP do GitHub"**
+        (`qbnUy9PFVOEocCDq`) com `test_workflow`, pinData
+        `{"Rodar":[{"json":{"slug":"<slug>","branch":"<sha do commit>","caminho":"paginas/<slug>.html"}}]}`.
+        Use o **sha** do commit (não o nome do branch), para não pegar cópia antiga em cache.
+     4. Só para HTML pequeno (até ~50 KB) dá para usar o "Sites | Publicar LP" (`KyPEBbzbdL8pOklC`) com o HTML
+        inline no nó "Receber página". **Nunca** mande HTML grande inline: estoura a chamada e a página não sobe
+        (foi o que travou a página do Saul Sastre em 30/10/2026: a publicação nem chegou ao n8n).
+     5. O resultado precisa trazer `ok: true`. Se falhar: "Link do arquivo" fica no que havia, Obs com
+        "Deu erro ao publicar", detalhe técnico só no #ia-status, e o card vai para "Precisa da Direção".
    - **Arte** (capa de destaque, post fixado, thumb avulsa): PNG pelo mesmo esquema HTML → PNG do `carrossel/`.
 4. Confira antes de entregar: português, nada inventado (datas, números, valores, promessas, depoimentos),
    dados do canal **só em percentual** (nunca views, horas ou inscritos absolutos em material para cliente),
