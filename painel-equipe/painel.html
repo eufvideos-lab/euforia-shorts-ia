@@ -13,6 +13,7 @@
 :root{
   --bg:#FFFFFF; --surface:#FFFFFF; --surface-2:#F5F4F1; --line:#E6E3DE;
   --ink:#141414; --muted:#5E5A54; --accent:#FF5A00; --accent-text:#C24100; --accent-soft:#FFE6D6; --on-accent:#FFFFFF;
+  --cinza:#6E6A64; --cinza-soft:#ECEAE6;
   --grad:linear-gradient(90deg,#FF7A1A,#FF4D00);
   --ok:#1F7A4F; --ok-soft:#DDF0E6; --warn:#9A6200; --warn-soft:#FAEED5; --info:#2F55C0; --info-soft:#E2E8F8; --bad:#B42318; --bad-soft:#FDE4E1;
   --f-display:'Barlow Condensed','Arial Narrow',Arial,sans-serif;
@@ -24,6 +25,7 @@
 :root[data-theme="dark"]{
   --bg:#121212; --surface:#1B1A19; --surface-2:#262422; --line:#36332F;
   --ink:#F2F0EC; --muted:#A9A39A; --accent:#FF6A1A; --accent-text:#FF9A5C; --accent-soft:#3B2416; --on-accent:#FFFFFF;
+  --cinza:#8F8A83; --cinza-soft:#3A3835;
   --ok:#4CC38A; --ok-soft:#163326; --warn:#E3A83E; --warn-soft:#3A2D12; --info:#93AAF2; --info-soft:#1C2541; --bad:#FF7B6F; --bad-soft:#3E1A16;
   color-scheme:dark;
 }
@@ -198,7 +200,28 @@ textarea{min-height:90px;resize:vertical}
 .slot.Blog{border-left-color:var(--info)}
 .slot.pausado{opacity:.5;border-style:dashed}
 .slot.confirmar{background:var(--warn-soft)}
-button.slot:hover{border-color:var(--muted)}
+button.slot:hover,.slot .abre:hover b{border-color:var(--muted)}
+/* Programado (cinza) e Postado (laranja): marcados direto na grade, valem para aquela data. */
+.slot .abre{all:unset;display:flex;flex-direction:column;gap:3px;cursor:pointer;min-width:0;border-radius:6px}
+.slot .abre:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.slot .abre:hover b{text-decoration:underline}
+.slot .marcar{display:grid;grid-template-columns:1fr;gap:4px;margin-top:4px}
+@container (min-width:170px){.slot .marcar{grid-template-columns:1fr 1fr}}
+.semana .col{container-type:inline-size}
+.stats.s5{grid-template-columns:repeat(5,minmax(0,1fr))}
+@media (max-width:1100px){.stats.s5{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:640px){.stats.s5{grid-template-columns:1fr 1fr}}
+.slot .marcar button{min-width:0;font:inherit;font-size:11px;font-weight:600;padding:4px 4px;border-radius:6px;border:1px solid var(--line);background:var(--surface);color:var(--muted);cursor:pointer;white-space:nowrap}
+.slot .marcar button:hover{border-color:var(--muted);color:var(--ink)}
+.slot .marcar button[aria-pressed="true"].m-prog{background:var(--cinza);border-color:var(--cinza);color:#fff}
+.slot .marcar button[aria-pressed="true"].m-post{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.slot .marcar button:disabled{opacity:.6;cursor:wait}
+.slot.prog{background:var(--cinza-soft);border-color:var(--cinza);border-left-color:var(--cinza)}
+.slot.post{background:var(--accent-soft);border-color:var(--accent);border-left-color:var(--accent)}
+.slot.prog.confirmar,.slot.post.confirmar{background-image:none}
+.slot .quem{font-size:11px;color:var(--muted)}
+.semnav{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.semnav .rot{font-weight:600;margin:0 4px}
 .acs{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
 .acs li{border:1px solid var(--line);border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:8px;min-width:0}
 .acs .campo{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:14px;min-width:0}
@@ -394,7 +417,7 @@ const PASSAR = [['victor', 'Victor'], ['lorena', 'Lorena'], ['daniel', 'Daniel']
 const $ = s => document.querySelector(s);
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let D = null, R = null, W = null, WQR = '', PIN = '', view = '', ocupado = false;
-let G = null, GC = '', GP = 'YouTube';
+let G = null, GC = '', GP = 'YouTube', GW = 0;
 const RASC = {};
 let MP = null, MPQ = '', CC = null;
 let CE = null, CEQ = '', CEF = '';
@@ -786,20 +809,29 @@ const VIEWS = {
     html(){
       if (!G) { carregarGrade(); return `<div class="head"><div><p class="eyebrow">Quando cada cliente posta</p><h1>Grade de postagem</h1></div></div><p class="sub">Carregando…</p>`; }
       const nome = id => (G.clientes.find(c => c.id === id) || {}).nome || '';
-      const base = dia(D.hoje), hj = (base.getDay() + 6) % 7, seg = new Date(base.getTime() - hj * 864e5);
+      const base = dia(D.hoje), hj0 = (base.getDay() + 6) % 7, seg = new Date(base.getFullYear(), base.getMonth(), base.getDate() - hj0 + GW * 7), hj = GW === 0 ? hj0 : -1;
+      const iso = i => { const t = new Date(seg.getFullYear(), seg.getMonth(), seg.getDate() + i); return t.getFullYear() + '-' + String(t.getMonth() + 1).padStart(2, '0') + '-' + String(t.getDate()).padStart(2, '0'); };
+      const MK = G.marcas || {};
+      const marcaDe = h => MK[h.id + '|' + iso(GDIAS.indexOf(h.dia))] || null;
       // Uma grade por plataforma: YouTube e TikTok separados; Instagram e Blog só aparecem se tiverem horário.
       const abas = ['YouTube', 'TikTok', ...['Instagram', 'Blog'].filter(x => G.horarios.some(h => h.plataforma === x))];
       if (!abas.includes(GP)) GP = 'YouTube';
       const daPlat = G.horarios.filter(h => h.plataforma === GP);
       const hs = daPlat.filter(h => !GC || h.cliente === GC)
         .sort((a, b) => (a.horario || '99').localeCompare(b.horario || '99') || nome(a.cliente).localeCompare(nome(b.cliente)));
-      const cartao = h => `<button class="slot ${esc(h.plataforma)} ${h.status.includes('Pausado') ? 'pausado' : ''} ${h.status.includes('Confirmar') ? 'confirmar' : ''}" data-slot="${h.id}">
-        <b>${esc(nome(h.cliente))}</b><span class="sub">${esc(h.plataforma)} · ${esc(h.formato)}${h.qtd > 1 ? ' ×' + h.qtd : ''}</span>
-        <span class="sub">${h.horario ? esc(h.horario) : 'sem horário'}${h.status.includes('Pausado') ? ' · pausado' : h.status.includes('Confirmar') ? ' · ❓ confirmar' : ''}</span></button>`;
+      const cartao = h => { const m = marcaDe(h), dt = iso(GDIAS.indexOf(h.dia)), st = m ? m.status : '';
+        const bt = (k, t) => `<button type="button" class="m-${k === 'programado' ? 'prog' : 'post'}" data-marca="${k}" data-ms="${h.id}" data-md="${dt}" aria-pressed="${st === k}" title="${st === k ? 'Clique de novo para desmarcar' : 'Marcar como ' + t.toLowerCase()}">${t}</button>`;
+        return `<div class="slot ${esc(h.plataforma)} ${h.status.includes('Pausado') ? 'pausado' : ''} ${h.status.includes('Confirmar') ? 'confirmar' : ''} ${st === 'postado' ? 'post' : st === 'programado' ? 'prog' : ''}">
+        <button type="button" class="abre" data-slot="${h.id}"><b>${esc(nome(h.cliente))}</b><span class="sub">${esc(h.plataforma)} · ${esc(h.formato)}${h.qtd > 1 ? ' ×' + h.qtd : ''}</span>
+        <span class="sub">${h.horario ? esc(h.horario) : 'sem horário'}${h.status.includes('Pausado') ? ' · pausado' : h.status.includes('Confirmar') ? ' · ❓ confirmar' : ''}</span></button>
+        ${m ? `<span class="quem">${st === 'postado' ? '✓ Postado' : '🕒 Programado'} · ${esc(m.por)} ${esc(m.quando)}</span>` : ''}
+        ${G.podeMarcar !== false ? `<div class="marcar">${bt('programado', 'Programado')}${bt('postado', 'Postado')}</div>` : ''}</div>`; };
       const cols = GDIAS.map((d, i) => { const l = hs.filter(h => h.dia === d), dt = new Date(seg.getTime() + i * 864e5);
         return `<div class="col ${i === hj ? 'hoje' : ''} ${l.length ? '' : 'vazio'}"><h3>${d.slice(2)}${i === hj ? ' · hoje' : ''} <span class="mono">${String(dt.getDate()).padStart(2, '0')}/${String(dt.getMonth() + 1).padStart(2, '0')}</span></h3>
           ${l.length ? l.map(cartao).join('') : '<span class="sub" style="font-size:12px">Nada</span>'}</div>`; }).join('');
-      const hoje = hs.filter(h => h.dia === GDIAS[hj] && h.status.includes('Publicar'));
+      const hoje = hs.filter(h => h.dia === GDIAS[hj0] && h.status.includes('Publicar'));
+      const daSemana = hs.filter(h => h.status.includes('Publicar')), nPost = daSemana.filter(h => (marcaDe(h) || {}).status === 'postado').length, nProg = daSemana.filter(h => (marcaDe(h) || {}).status === 'programado').length;
+      const fmt = i => { const t = new Date(seg.getFullYear(), seg.getMonth(), seg.getDate() + i); return String(t.getDate()).padStart(2, '0') + '/' + String(t.getMonth() + 1).padStart(2, '0'); };
       const com = new Set(daPlat.map(h => h.cliente));
       // Sem dia no YouTube: todo cliente ativo. No TikTok (e nas outras): só quem tem a plataforma na ficha.
       const deve = c => GP === 'YouTube' || (GP === 'TikTok' && c.tt);
@@ -808,8 +840,9 @@ const VIEWS = {
       const nomes = G.clientes.slice().sort((a, b) => a.nome.localeCompare(b.nome));
       return `<div class="head"><div><p class="eyebrow">Quando cada cliente posta</p><h1>Grade de postagem</h1></div><p class="sub">${G.podeMudar ? 'Clique num horário para ajustar ou pausar.' : 'Clique num horário para ver os detalhes.'}</p></div>
       <div class="gabas" role="tablist">${abas.map(x => `<button class="btn ${x === GP ? 'primary' : ''}" role="tab" aria-selected="${x === GP}" data-gaba="${x}">Grade ${x} <span class="count">${G.horarios.filter(h => h.plataforma === x && h.status.includes('Publicar')).length}</span></button>`).join('')}</div>
-      <div class="stats">
+      <div class="stats s5">
         <div class="stat"><span class="v">${hoje.length}</span><span>postagens hoje</span></div>
+        <div class="stat"><span class="v">${nPost}/${daSemana.length}</span><span>postados ${GW === 0 ? 'nesta semana' : 'na semana ' + fmt(0)}${nProg ? ' · ' + nProg + ' programado' + (nProg > 1 ? 's' : '') : ''}</span></div>
         <div class="stat"><span class="v">${daPlat.filter(h => h.status.includes('Publicar')).length}</span><span>horários ${esc(GP)} na semana</span></div>
         <div class="stat ${sem.length ? 'hot' : ''}"><span class="v">${semTodos.length}</span><span>clientes sem dia no ${esc(GP)}</span></div>
         <div class="stat"><span class="v">${daPlat.filter(h => h.status.includes('Confirmar')).length}</span><span>a confirmar</span></div>
@@ -818,12 +851,13 @@ const VIEWS = {
         <label for="gc">Cliente<select id="gc"><option value="">Todos</option>${nomes.map(c => `<option value="${c.id}" ${c.id === GC ? 'selected' : ''}>${esc(c.nome)}</option>`).join('')}</select></label>
         ${G.podeMudar ? '<button class="btn primary" id="g-novo">+ Adicionar dia</button>' : ''}
       </div>
-      <div class="legenda"><span><i style="background:var(--warn-soft);border:1px solid var(--warn)"></i>❓ confirmar com a diretoria</span><span><i style="border:1px dashed var(--muted)"></i>pausado</span></div>
+      <div class="semnav"><button class="btn" data-gw="-1" ${GW <= -2 ? 'disabled' : ''}>← Semana anterior</button><span class="rot">${GW === 0 ? 'Esta semana' : GW === 1 ? 'Próxima semana' : GW === -1 ? 'Semana passada' : 'Há 2 semanas'} · ${fmt(0)} a ${fmt(6)}</span>${GW !== 0 ? '<button class="btn" data-gw="0">Esta semana</button>' : ''}<button class="btn" data-gw="1" ${GW >= 1 ? 'disabled' : ''}>Próxima semana →</button></div>
+      <div class="legenda"><span><i style="background:var(--cinza)"></i>programado</span><span><i style="background:var(--accent)"></i>postado</span><span><i style="background:var(--warn-soft);border:1px solid var(--warn)"></i>❓ confirmar com a diretoria</span><span><i style="border:1px dashed var(--muted)"></i>pausado</span></div>
       <div class="semana">${cols}</div>
       ${sem.length ? `<section class="group"><h2>${GP === 'YouTube' ? 'Clientes ativos sem dia no YouTube' : 'Com ' + esc(GP) + ' na ficha e sem dia na grade'} <span class="count">${sem.length}</span></h2><ul class="rows">${sem.map(c => `<li class="item"><span class="stripe"></span>
         <div class="main" style="cursor:default"><span class="t">${esc(c.nome)}</span><span class="meta">${c.faixa ? `<span class="chip">Faixa ${esc(c.faixa)}</span>` : ''}${c.atencao ? '<span class="chip red">🔴 Atenção</span>' : ''}${c.yt ? `<span class="chip">Ficha: YouTube ${esc(c.yt)}</span>` : ''}${c.tt ? `<span class="chip">Ficha: TikTok ${esc(c.tt)}</span>` : ''}</span></div>
         <span class="act">${G.podeMudar ? `<button class="btn" data-definir="${c.id}">Definir dia</button>` : ''}</span></li>`).join('')}</ul></section>` : ''}
-      <p class="note">A grade é o combinado fixo de cada cliente. A data de cada peça continua no card ("Vai ao ar"). ${G.podeMudar ? 'Toda mudança fica registrada com seu nome e a hora.' : 'Quem ajusta a grade é o Ismael ou o Rômulo.'}</p>`;
+      <p class="note">Agendou ou postou? Aperte "Programado" ou "Postado" no horário: fica cinza ou laranja para todo mundo. Apertou errado? Clique de novo e volta ao normal. A grade é o combinado fixo de cada cliente. A data de cada peça continua no card ("Vai ao ar"). ${G.podeMudar ? 'Toda mudança fica registrada com seu nome e a hora.' : 'Quem ajusta a grade é o Ismael ou o Rômulo.'}</p>`;
     } },
   pedir: { nome: 'Pedir ao escritório', pode: () => papel() !== 'editor',
     html(){
@@ -1596,6 +1630,25 @@ async function carregarGrade(){
   catch (e) { if (view === 'grade' && !G) $('#main').innerHTML = `<div class="view"><h1>Grade de postagem</h1><p class="sub">${ERRO}</p></div>`; }
   carregarGrade.indo = false;
 }
+// Programado / Postado: muda na tela na hora e grava; se der erro, volta como estava.
+async function marcarSlot(b){
+  if (b.disabled) return;
+  const chave = b.dataset.ms + '|' + b.dataset.md, antes = (G.marcas || {})[chave];
+  const nova = antes && antes.status === b.dataset.marca ? '' : b.dataset.marca;
+  const agora = new Date(), q = String(agora.getDate()).padStart(2, '0') + '/' + String(agora.getMonth() + 1).padStart(2, '0') + ' ' + agora.toTimeString().slice(0, 5);
+  G.marcas = G.marcas || {};
+  if (nova) G.marcas[chave] = { status: nova, por: (D && D.nome) || '', quando: q }; else delete G.marcas[chave];
+  marcarSlot.n = (marcarSlot.n || 0) + 1; render();
+  try {
+    const r = await api('euforia-painel-grade', { acao: 'marcar', marca: nova, data: b.dataset.md, slot: { id: b.dataset.ms } });
+    if (!r || !r.ok) throw new Error((r && r.motivo) || 'erro');
+    if (r.marca && nova) G.marcas[chave] = { status: r.marca.status, por: r.marca.por, quando: r.marca.quando };
+  } catch (err) {
+    if (antes) G.marcas[chave] = antes; else delete G.marcas[chave];
+    toast(err.message === 'data' ? 'Essa data não bate com o dia do horário.' : GMOTIVO[err.message] || ERRO);
+  }
+  marcarSlot.n--; if (view === 'grade' && !$('#layer').innerHTML) render();
+}
 function abrirSlot(id, novoCliente){
   const h = id ? G.horarios.find(x => x.id === id) : null;
   if (id && !h) return;
@@ -1751,6 +1804,8 @@ document.addEventListener('click', async e => {
   const lc = e.target.closest('#main [data-linkcall]'); if (lc) { const k = CC && CC.calls.find(x => x.id === lc.dataset.linkcall); if (k) abrirLinkCall(k); return; }
   const ac = e.target.closest('#main [data-acessos]'); if (ac) { const k = CE.clientes.find(x => x.id === ac.dataset.acessos); if (k) abrirAcessos(k); return; }
   const ga = e.target.closest('#main [data-gaba]'); if (ga) { GP = ga.dataset.gaba; render(); return; }
+  const gw = e.target.closest('#main [data-gw]'); if (gw) { const n = Number(gw.dataset.gw); GW = n === 0 ? 0 : Math.max(-2, Math.min(1, GW + n)); render(); return; }
+  const mk = e.target.closest('#main [data-marca]'); if (mk) { marcarSlot(mk); return; }
   const fo = e.target.closest('#main [data-form]'); if (fo) { abrirFormulario(fo.dataset.form); return; }
   const ff = e.target.closest('#main [data-fof]'); if (ff) { FOF = FOF === ff.dataset.fof ? '' : ff.dataset.fof; render(); return; }
   const ef = e.target.closest('#main [data-cef]'); if (ef) { CEF = CEF === ef.dataset.cef ? '' : ef.dataset.cef; render(); return; }
@@ -1887,6 +1942,7 @@ function demoApi(path, b){
   if (path === 'euforia-painel-respostas') { if (b && b.acao === 'dispensar') return wait({ ok: true }); return wait(DEMO_R); }
   if (path === 'euforia-painel-grade') {
     if (b.acao === 'listar') return wait(JSON.parse(JSON.stringify(DEMO_G)));
+    if (b.acao === 'marcar') { const k = b.slot.id + '|' + b.data, m = { status: b.marca, por: DEMO_D.nome, quando: '26/10 ' + new Date().toTimeString().slice(0, 5) }; if (b.marca) DEMO_G.marcas[k] = m; else delete DEMO_G.marcas[k]; return wait({ ok: true, marca: Object.assign({ chave: k, slot: b.slot.id, dia: b.data }, m) }); }
     const s = b.slot, h = DEMO_G.horarios.find(x => x.id === s.id);
     if (b.acao === 'pausar') h.status = '⏸️ Pausado';
     else if (b.acao === 'reativar') h.status = '✅ Publicar';
@@ -1950,7 +2006,8 @@ const DEMO_D = {"ok":true,"nome":"Ismael (exemplo)","papel":"revisor","hoje":"20
   {"id":"k6","cod":405,"titulo":"","nome":"THUMB 03","cliente":"c4","clienteNome":"Paula Reis (exemplo)","tipo":"Thumbnail","qtd":1,"status":"Aprovado","prazo":"2026-10-23","postar":"2026-10-26","link":"https://drive.google.com/demo","linkPost":"","obs":"[Portal 25/10 10:06] Cliente aprovou","resp":["Lorena"],"meu":false,"voltas":0},
   {"id":"k7","cod":407,"titulo":"","nome":"CARROSSEL 08","cliente":"c1","clienteNome":"Dra. Helena (exemplo)","tipo":"Carrossel","qtd":1,"status":"Aguardando cliente","prazo":"2026-10-24","postar":"2026-10-27","link":"https://drive.google.com/demo","linkPost":"","obs":"","resp":["Lorena"],"meu":false,"voltas":0}]};
 
-const DEMO_G = {"ok":true,"podeMudar":true,
+const DEMO_G = {"ok":true,"podeMudar":true,"podeMarcar":true,
+ "marcas":{"g7|2026-10-26":{"status":"postado","por":"Ismael (exemplo)","quando":"26/10 17:04"},"g1|2026-10-27":{"status":"programado","por":"Daniel (exemplo)","quando":"25/10 21:30"},"g3|2026-10-28":{"status":"programado","por":"Daniel (exemplo)","quando":"25/10 21:41"}},
  "clientes":[{"id":"c1","nome":"Dra. Helena (exemplo)","faixa":"A","atencao":true,"ativo":true,"pausado":false,"yt":"Ter, Qui","tt":""},
   {"id":"c2","nome":"Instituto Aurora (exemplo)","faixa":"A","atencao":false,"ativo":true,"pausado":false,"yt":"Qua","tt":"Seg, Qua, Sex"},
   {"id":"c3","nome":"Marcos Lima (exemplo)","faixa":"B","atencao":false,"ativo":true,"pausado":false,"yt":"Seg","tt":""},

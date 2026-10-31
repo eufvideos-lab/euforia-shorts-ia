@@ -4,6 +4,7 @@ const NOTION = { httpHeaderAuth: { id: 'VYOze6gUMvjy3QXF', name: 'Notion Euforia
 const ORIGENS = 'https://lp.grupoeuforia.tech,https://grupoeuforia.com.br,https://www.grupoeuforia.com.br';
 const NOTION_HDR = { parameters: [{ name: 'Notion-Version', value: '2022-06-28' }] };
 const ACESSO = { __rl: true, mode: 'id', value: 'ilXDZWGAcOjoajx7', cachedResultName: 'Painel equipe · acesso' };
+const MARCAS = { __rl: true, mode: 'id', value: 'eyJ8FrBneYnl3Htu', cachedResultName: 'Painel · grade marcações' };
 
 const pedir = trigger({ type: 'n8n-nodes-base.webhook', version: 2.1, config: { name: 'Grade do painel', parameters: {
   httpMethod: 'POST', path: 'euforia-painel-grade', responseMode: 'responseNode', options: { allowedOrigins: ORIGENS } } } });
@@ -17,7 +18,8 @@ const FORM = ['Vídeo padrão', 'Podcast', 'Corte horizontal', 'Shorts', 'Blog',
 const DIAS = ['1 Seg', '2 Ter', '3 Qua', '4 Qui', '5 Sex', '6 Sáb', '7 Dom'];
 const hora = String(s.horario || '').trim();
 return [{ json: { u: /^[0-9a-f]{24}$/.test(u) ? u : 'x', pin: String(b.pin || '').replace(/[^0-9]/g, '').slice(0, 6),
-  acao: ['salvar', 'pausar', 'reativar'].includes(b.acao) ? b.acao : 'listar',
+  acao: ['salvar', 'pausar', 'reativar', 'marcar'].includes(b.acao) ? b.acao : 'listar',
+  marca: ['programado', 'postado'].includes(b.marca) ? b.marca : '', data: /^\\d{4}-\\d{2}-\\d{2}$/.test(String(b.data || '')) ? String(b.data) : '',
   slot: { id: id(s.id), cliente: id(s.cliente), plataforma: PLAT.includes(s.plataforma) ? s.plataforma : '', formato: FORM.includes(s.formato) ? s.formato : '',
     dia: DIAS.includes(s.dia) ? s.dia : '', horario: (m => m && Number(m[1]) < 24 && Number(m[2] || 0) < 60 ? m[1].padStart(2, '0') + ':' + (m[2] || '00') : '')(hora.toLowerCase().match(/^(\\d{1,2})(?:[:h](\\d{2})?)?$/)),
     qtd: Math.max(1, Math.min(10, parseInt(s.qtd, 10) || 1)), obs: String(s.obs || '').trim().slice(0, 300) } } }];
@@ -54,13 +56,21 @@ const cliAtual = sem((((ap['Cliente'] || {}).relation || [])[0] || {}).id);
 const s = p.slot;
 let erro = '';
 if (!acessoOk) erro = 'acesso';
-else if (p.acao !== 'listar' && !muda) erro = 'permissao';
+else if (p.acao !== 'listar' && p.acao !== 'marcar' && !muda) erro = 'permissao';
 else if (p.acao !== 'listar' && s.id && !daGrade) erro = 'horario';
 else if (p.acao === 'salvar' && (!s.cliente || sem((cli.parent || {}).database_id) !== '3ddc91b406be49e98e630c298d9162d8')) erro = 'cliente';
 else if (p.acao === 'salvar' && (!s.plataforma || !s.formato || !s.dia)) erro = 'campos';
 else if (teste && p.acao !== 'listar' && ((s.cliente && s.cliente !== TESTE) || (s.id && cliAtual !== TESTE))) erro = 'permissao';
-else if ((p.acao === 'pausar' || p.acao === 'reativar') && !s.id) erro = 'horario';
+else if ((p.acao === 'pausar' || p.acao === 'reativar' || p.acao === 'marcar') && !s.id) erro = 'horario';
 const agora = DateTime.now().setZone(Z);
+// Marcar Programado / Postado: vale para o dia daquele horário, de 3 semanas atrás até 2 semanas à frente.
+if (!erro && p.acao === 'marcar') {
+  const d = DateTime.fromISO(p.data, { zone: Z });
+  const diaSlot = txt(ap['Dia']);
+  const dif = d.isValid ? Math.round(d.startOf('day').diff(agora.startOf('day'), 'days').days) : 99;
+  if (!d.isValid || !diaSlot || Number(diaSlot[0]) !== d.weekday || dif < -21 || dif > 14) erro = 'data';
+}
+const desde = agora.startOf('day').minus({ days: (agora.weekday - 1) + 14 }).toISODate();
 const nomeCli = txt((cli.properties || {})['Cliente']);
 const curto = { 'Vídeo padrão': 'VÍDEO PADRÃO', 'Corte horizontal': 'CORTE HORIZONTAL' };
 const verbo = p.acao === 'pausar' ? 'pausou' : p.acao === 'reativar' ? 'reativou' : s.id ? 'ajustou' : 'criou';
@@ -78,7 +88,8 @@ if (p.acao === 'salvar') {
 if (p.acao === 'pausar') props['Status do slot'] = { select: { name: '⏸️ Pausado' } };
 if (p.acao === 'reativar') props['Status do slot'] = { select: { name: '✅ Publicar' } };
 const cria = p.acao === 'salvar' && !s.id;
-return [{ json: { ok: !erro, listar: p.acao === 'listar', podeMudar: muda, teste,
+return [{ json: { ok: !erro, listar: p.acao === 'listar', marcar: p.acao === 'marcar', podeMudar: muda, podeMarcar: true, teste, desde,
+  marca: { chave: s.id + '|' + p.data, slot: s.id, dia: p.data, status: p.marca, por: r.nome || '', quando: agora.toFormat('dd/MM HH:mm') },
   metodo: cria ? 'POST' : 'PATCH', url: cria ? 'https://api.notion.com/v1/pages' : 'https://api.notion.com/v1/pages/' + s.id,
   body: JSON.stringify(cria ? { parent: { database_id: '2d21b7a7166240f5afaa4d697c3d1ae8' }, properties: props } : { properties: props }),
   resposta: { ok: false, motivo: erro } } }];
@@ -151,8 +162,37 @@ for (const it of $('Horários da grade').all()) for (const p of (it.json.results
     qtd: (pr['Quantidade'] || {}).number || 1, status: txt(pr['Status do slot']), nota: obs.split('\\n').filter(l => !/^\\[Painel /.test(l)).join(' ').slice(0, 200) });
 }
 const lista = Object.values(cli).map(c => ({ id: c.id, nome: c.nome, faixa: c.faixa, atencao: c.atencao, ativo: c.situacao === 'Ativo', pausado: c.situacao === 'Pausado', yt: c.yt, tt: c.tt }));
-return [{ json: { ok: true, podeMudar: v.podeMudar, clientes: lista, horarios } }];
+const ids = new Set(horarios.map(h => h.id));
+const marcas = {};
+for (const it of $('Marcações da grade').all()) { const m = it.json || {}; if (m.chave && m.status && ids.has(m.slot)) marcas[m.chave] = { status: m.status, por: m.por || '', quando: m.quando || '' }; }
+return [{ json: { ok: true, podeMudar: v.podeMudar, podeMarcar: v.podeMarcar, clientes: lista, horarios, marcas } }];
 ` } } });
+
+// Programado (cinza) e Postado (laranja) de cada horário em cada data. Uma linha por horário+data; desmarcar grava status vazio.
+const marcacoes = node({ type: 'n8n-nodes-base.dataTable', version: 1.1, config: { name: 'Marcações da grade', executeOnce: true, alwaysOutputData: true, parameters: {
+  resource: 'row', operation: 'get', dataTableId: MARCAS, matchType: 'allConditions',
+  filters: { conditions: [{ keyName: 'dia', condition: 'gte', keyValue: '={{ $("Validar pedido").first().json.desde }}' }] }, returnAll: true } } });
+
+const ehMarcar = ifElse({ version: 2.2, config: { name: 'Marcar ou ajustar?', parameters: { conditions: {
+  options: { caseSensitive: true, leftValue: '', typeValidation: 'loose' },
+  conditions: [{ leftValue: '={{ $json.marcar }}', rightValue: '', operator: { type: 'boolean', operation: 'true', singleValue: true } }],
+  combinator: 'and' } } } });
+
+const gravarMarca = node({ type: 'n8n-nodes-base.dataTable', version: 1.1, config: { name: 'Gravar marcação', parameters: {
+  resource: 'row', operation: 'upsert', dataTableId: MARCAS, matchType: 'allConditions',
+  filters: { conditions: [{ keyName: 'chave', condition: 'eq', keyValue: '={{ $json.marca.chave }}' }] },
+  columns: { mappingMode: 'defineBelow', value: {
+    chave: '={{ $json.marca.chave }}', slot: '={{ $json.marca.slot }}', dia: '={{ $json.marca.dia }}', status: '={{ $json.marca.status }}',
+    por: '={{ $json.marca.por }}', quando: '={{ $json.marca.quando }}' }, matchingColumns: [], schema: [
+    { id: 'chave', displayName: 'chave', type: 'string', display: true, required: false, defaultMatch: false },
+    { id: 'slot', displayName: 'slot', type: 'string', display: true, required: false, defaultMatch: false },
+    { id: 'dia', displayName: 'dia', type: 'string', display: true, required: false, defaultMatch: false },
+    { id: 'status', displayName: 'status', type: 'string', display: true, required: false, defaultMatch: false },
+    { id: 'por', displayName: 'por', type: 'string', display: true, required: false, defaultMatch: false },
+    { id: 'quando', displayName: 'quando', type: 'string', display: true, required: false, defaultMatch: false }] }, options: {} } } });
+
+const confirmarMarca = node({ type: 'n8n-nodes-base.respondToWebhook', version: 1.5, config: { name: 'Confirmar marcação', parameters: {
+  respondWith: 'json', responseBody: '={{ JSON.stringify({ ok: true, marca: $("Validar pedido").first().json.marca }) }}', options: {} } } });
 
 const devolver = node({ type: 'n8n-nodes-base.respondToWebhook', version: 1.5, config: { name: 'Devolver grade', parameters: {
   respondWith: 'json', responseBody: '={{ JSON.stringify($json) }}', options: {} } } });
@@ -160,13 +200,14 @@ const devolver = node({ type: 'n8n-nodes-base.respondToWebhook', version: 1.5, c
 const recusar = node({ type: 'n8n-nodes-base.respondToWebhook', version: 1.5, config: { name: 'Recusar', parameters: {
   respondWith: 'json', responseBody: '={{ JSON.stringify($json.resposta) }}', options: {} } } });
 
-const nota = sticky('## Painel da equipe · grade de postagem (V1)\nLê o banco Grade de Postagem (horários fixos de cada cliente: plataforma, formato, dia, horário, quantidade) e devolve a semana para a aba Grade.\nTodos veem. Ismael (revisor), Rômulo (calls) e o teste podem criar, ajustar, pausar e reativar um horário. Toda mudança vira uma linha [Painel dd/mm] no topo da Obs do horário. Nunca encerra nem apaga.', [], { color: 4 });
+const nota = sticky('## Painel da equipe · grade de postagem (V1)\nLê o banco Grade de Postagem (horários fixos de cada cliente: plataforma, formato, dia, horário, quantidade) e devolve a semana para a aba Grade.\nTodos veem. Ismael (revisor), Rômulo (calls) e o teste podem criar, ajustar, pausar e reativar um horário. Toda mudança vira uma linha [Painel dd/mm] no topo da Obs do horário. Nunca encerra nem apaga.\nTodos marcam Programado ou Postado em cada data (tabela Painel · grade marcações; desmarcar grava status vazio).', [], { color: 4 });
 
 export default workflow('painel-grade', 'Painel | Grade de postagem (V1)')
   .add(pedir).to(ler).to(acesso).to(slotAtual).to(clienteNode).to(validar)
   .to(podeSeguir
     .onTrue(ehListar
-      .onTrue(grade.to(clientes).to(montar).to(devolver))
-      .onFalse(ehNovo.onTrue(criar.to(confirmar)).onFalse(ajustar.to(confirmarAjuste))))
+      .onTrue(grade.to(clientes).to(marcacoes).to(montar).to(devolver))
+      .onFalse(ehMarcar.onTrue(gravarMarca.to(confirmarMarca))
+        .onFalse(ehNovo.onTrue(criar.to(confirmar)).onFalse(ajustar.to(confirmarAjuste)))))
     .onFalse(recusar))
   .add(nota);
