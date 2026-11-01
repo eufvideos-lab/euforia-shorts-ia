@@ -1957,7 +1957,7 @@ setInterval(() => { if (D && VIEWS.calls.pode() && !ocupado && !document.hidden)
 setInterval(() => { if (D && view === 'responder' && !ocupado && !document.hidden && !(document.activeElement && document.activeElement.dataset && document.activeElement.dataset.rtxt)) carregarRespostas(); }, 60000);
 
 // ---------- Central de Demandas ----------
-const CENTRAL_NO_AR = false;
+const CENTRAL_NO_AR = true;
 const CT_PESSOAS = [['victor', 'Victor'], ['lorena', 'Lorena'], ['daniel', 'Daniel'], ['ismael', 'Ismael'], ['romulo', 'Rômulo']];
 const CT_MAQ = { 'Vídeo longo': 'longos', 'Shorts': 'shorts', 'Carrossel': 'carrosseis', 'Outro': 'escritorio' };
 ['Thumbnail', 'Arte', 'Banner', 'ID visual', 'Página', 'Funil', 'Blog', 'Roteiro', 'Copy', 'Apresentação', 'Relatório', 'Estratégia', 'Insta-Blindado'].forEach(t => CT_MAQ[t] = 'escritorio');
