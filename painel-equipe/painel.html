@@ -422,6 +422,7 @@ const RASC = {};
 let MP = null, MPQ = '', CC = null;
 let CE = null, CEQ = '', CEF = '';
 let FO = null, FOQ = '', FOF = '';
+let CT = null, CTQ = '', CTT = '', CTO = '', CTN = 40;
 let CL = null, CLQ = '', CLF = '', CLO = 'atencao';
 let EV = null, EVJ = '', EVP = '1', EVT = '';
 let DD = null, MM = null, PF = 'abertos', PQ = '', TQ = '', TS = '', TP = '', TT = '', MQ = '', MW = '';
@@ -590,6 +591,23 @@ const VIEWS = {
         ${vermelhos.length ? `<div class="tbl"><table><thead><tr><th>Cliente</th><th>Faixa</th><th>Abertos</th><th>Atrasados</th><th>Próximo prazo</th></tr></thead><tbody>${vermelhos.map(v => { const prox = v.ab.slice().sort((a, b) => dd(a.prazo) - dd(b.prazo))[0];
           return `<tr class="click" data-cliente="${v.c.id}"><td><b>${esc(v.c.nome)}</b></td><td>${esc(v.c.faixa || '—')}</td><td>${v.ab.length}</td><td>${v.atr.length ? `<span class="chip red">${v.atr.length}</span>` : '0'}</td><td>${prox ? esc(prox.nome) + ' · ' + fmt(prox.prazo) : '—'}</td></tr>`; }).join('')}</tbody></table></div>` : '<p class="empty">Nenhum cliente marcado em atenção.</p>'}
       </section>`;
+    } },
+  central: { nome: 'Central de Demandas', pode: () => (DEMO || CENTRAL_NO_AR) && ['revisor', 'calls', 'diretor', 'teste'].includes(papel()), badge: () => CT && CT.demandas ? CT.demandas.filter(x => !x.velho && ['ninguem', 'travado'].includes(x.onde)).length : 0,
+    html(){
+      const topo = `<div class="head"><div><p class="eyebrow">${CT && CT.ok ? esc(CT.hojeTexto) + ' · atualizada às ' + esc(CT.agora) : 'Esteira de demandas'}</p><h1>Central de Demandas</h1></div><p class="sub">Tudo o que precisa ser feito, em ordem de prioridade (prazo, dia de ir ao ar, cliente em atenção ou sensível, faixa e urgência), com a sugestão de quem faz. Mande para a máquina ou para uma pessoa com um clique. Em cima, quanto cada máquina e cada pessoa aguenta agora.</p></div>`;
+      if (!CT) { carregarCentral(); return topo + '<p class="sub">Carregando as demandas e as filas das máquinas… (leva uns segundos)</p>'; }
+      if (CT.erro) return topo + '<p class="empty">Não consegui montar a Central agora. Tente de novo em alguns minutos.</p>';
+      const L = CT.demandas.filter(x => !x.velho), n = f => L.filter(f).length;
+      const tipos = [...new Set(CT.demandas.map(x => x.tipo).filter(Boolean))].sort();
+      return topo + capacidadeCt() + `<div class="stats s5">
+        ${[['', L.length, 'demandas abertas'], ['ninguem', n(x => x.onde === 'ninguem'), 'sem ninguém'], ['travado', n(x => x.onde === 'travado'), 'máquina parou (precisa de alguém)'], ['quente', n(x => x.score >= 100), 'prioridade alta (100+)'], ['prev', CT.previstas.length, 'previstas na semana sem card']]
+          .map(([f, v, t]) => `<button class="stat ${f && v && f !== 'prev' ? 'hot' : ''}" data-ctf="${f}" style="text-align:left;background:${CTO === f && f ? 'var(--accent-soft)' : 'var(--surface)'}"><span class="v">${v}</span><span>${t}</span></button>`).join('')}</div>
+      <div class="filtros">
+        <label for="ctq">Buscar<input type="text" id="ctq" placeholder="Cliente ou demanda" value="${esc(CTQ)}"></label>
+        <label for="ctt">Tipo<select id="ctt"><option value="">Todos os tipos</option>${tipos.map(t => `<option ${CTT === t ? 'selected' : ''}>${esc(t)}</option>`).join('')}</select></label>
+        <label for="cto">Onde está<select id="cto">${[['', 'Em qualquer lugar'], ['ninguem', 'Sem ninguém'], ['pessoa', 'Com uma pessoa'], ['maquina', 'Na máquina'], ['travado', 'Máquina parou'], ['flau', 'Com a diretoria'], ['quente', 'Prioridade alta'], ['prev', 'Só as previstas']].map(([v, t]) => `<option value="${v}" ${CTO === v ? 'selected' : ''}>${t}</option>`).join('')}</select></label>
+      </div>
+      <div id="ctres">${listaCentral()}</div>`;
     } },
   clientes: { nome: 'Clientes', pode: diretor, badge: () => CL ? CL.clientes.filter(k => k.clima === 'Em rescisão' || k.recuperacao === '🚨 SOS').length : 0,
     html(){
@@ -1782,6 +1800,24 @@ document.addEventListener('drop', e => { const d = e.target.closest && e.target.
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && !ocupado) fechar(); });
 document.addEventListener('click', async e => {
   const v = e.target.closest('[data-view]'); if (v) { view = v.dataset.view; try { localStorage.setItem('painel-view', view); } catch (x) {} $('#main').innerHTML = ''; if (view === 'formularios' && FO && FO.formularios && Date.now() - (carregarFormularios.em || 0) > 1800000) carregarFormularios(); render(); window.scrollTo({ top: 0 }); return; }
+  const ctf = e.target.closest('#main [data-ctf]'); if (ctf) { CTO = CTO === ctf.dataset.ctf ? '' : ctf.dataset.ctf; CTN = 40; render(); return; }
+  if (e.target.closest('#main [data-ctmais]')) { CTN += 40; $('#ctres').innerHTML = listaCentral(); return; }
+  const cta = e.target.closest('#main [data-ctabrir]'); if (cta) { const x = achaCt(cta.dataset.ctabrir, !!cta.dataset.prev); if (x) abrirMandar(x, !!cta.dataset.prev); return; }
+  const ctg = e.target.closest('#main [data-ctgo]');
+  if (ctg) {
+    if (ocupado) return;
+    const prev = !!ctg.dataset.prev, x = achaCt(ctg.dataset.ctgo, prev); if (!x || !x.sugestao) return;
+    if (!ctg.dataset.certeza) {
+      document.querySelectorAll('[data-ctgo][data-certeza]').forEach(y => { delete y.dataset.certeza; y.textContent = y.dataset.txt; y.classList.remove('warn'); });
+      ctg.dataset.txt = ctg.textContent; ctg.dataset.certeza = '1'; ctg.textContent = 'Confirmar: ' + ctNomeDestino(x.sugestao.destino, x.sugestao.maquina); ctg.classList.add('warn');
+      clearTimeout(abrirMandar.h); abrirMandar.h = setTimeout(() => { if (ctg.isConnected && ctg.dataset.certeza) { delete ctg.dataset.certeza; ctg.textContent = ctg.dataset.txt; ctg.classList.remove('warn'); } }, 6000);
+      return;
+    }
+    ocupado = true; ctg.disabled = true; ctg.textContent = 'Mandando…';
+    try { await mandarCt(x, prev, x.sugestao.destino, '', ''); ocupado = false; $('#ctres').innerHTML = listaCentral(); }
+    catch (er) { ocupado = false; ctg.disabled = false; delete ctg.dataset.certeza; ctg.textContent = ctg.dataset.txt; ctg.classList.remove('warn'); toast(MOTIVO_CT[er.message] || MOTIVO[er.message] || ERRO); if (['etapa', 'card'].includes(er.message)) carregarCentral(true); }
+    return;
+  }
   const g = e.target.closest('#main [data-go]');
   if (g) {
     const c = D.cards.find(x => x.id === g.dataset.go), p = c && proximo(c);
@@ -1856,6 +1892,7 @@ document.addEventListener('change', e => {
   if (e.target.id === 'pf-s' || e.target.id === 'pq-s') { if (e.target.id === 'pf-s') PF = e.target.value; else PQ = e.target.value; render(); return; }
   if (['ts', 'tp', 'tt'].includes(e.target.id)) { ({ ts: v => TS = v, tp: v => TP = v, tt: v => TT = v })[e.target.id](e.target.value); $('#dres').innerHTML = tabelaTodos(); return; }
   if (e.target.id === 'clf') { CLF = e.target.value; render(); return; }
+  if (e.target.id === 'ctt' || e.target.id === 'cto') { if (e.target.id === 'ctt') CTT = e.target.value; else CTO = e.target.value; CTN = 40; render(); return; }
   if (['evp', 'evj', 'evt'].includes(e.target.id)) { ({ evp: v => EVP = v, evj: v => EVJ = v, evt: v => EVT = v })[e.target.id](e.target.value); render(); return; }
   if (e.target.id === 'cep') { CEF = e.target.value; render(); return; }
   if (e.target.id === 'clo') { CLO = e.target.value; $('#clres').innerHTML = tabelaClientes(); return; }
@@ -1870,6 +1907,7 @@ document.addEventListener('input', e => {
   if (e.target.id === 'clq') { CLQ = e.target.value; $('#clres').innerHTML = tabelaClientes(); }
   if (e.target.id === 'ceq') { CEQ = e.target.value; $('#ceres').innerHTML = listaCarteira(); }
   if (e.target.id === 'foq') { FOQ = e.target.value; $('#fores').innerHTML = listaFormularios(); }
+  if (e.target.id === 'ctq') { CTQ = e.target.value; CTN = 40; $('#ctres').innerHTML = listaCentral(); }
   if (e.target.id === 'mq') { MQ = e.target.value; $('#dres').innerHTML = listaMensagens(); }
   if (e.target.id === 'mpq') { MPQ = e.target.value; $('#dres').innerHTML = listaPedidos(); }
   if (e.target.dataset && e.target.dataset.rtxt) RASC[e.target.dataset.rtxt] = e.target.value;
@@ -1910,11 +1948,128 @@ document.addEventListener('submit', async e => {
 
 // Atualiza sozinho a cada 2 minutos enquanto a aba está aberta e nada está sendo enviado.
 setInterval(() => { if (D && !ocupado && !document.hidden && !$('#layer').innerHTML) { if (view === 'grade') carregarGrade(); carregar(true); } }, 120000);
+// Central de Demandas: a cada 5 minutos quando a aba está aberta.
+setInterval(() => { if (D && view === 'central' && !ocupado && !document.hidden) carregarCentral(true); }, 300000);
 // Mensagens da equipe: a cada 2 minutos quando a aba está aberta.
 setInterval(() => { if (D && diretor() && view === 'mensagens' && !document.hidden) carregarMensagens(); }, 120000);
 // A fila de respostas muda mais rápido: atualiza a cada minuto quando a aba Responder está aberta.
 setInterval(() => { if (D && VIEWS.calls.pode() && !ocupado && !document.hidden) carregarCalls(); }, 300000);
 setInterval(() => { if (D && view === 'responder' && !ocupado && !document.hidden && !(document.activeElement && document.activeElement.dataset && document.activeElement.dataset.rtxt)) carregarRespostas(); }, 60000);
+
+// ---------- Central de Demandas ----------
+const CENTRAL_NO_AR = false;
+const CT_PESSOAS = [['victor', 'Victor'], ['lorena', 'Lorena'], ['daniel', 'Daniel'], ['ismael', 'Ismael'], ['romulo', 'Rômulo']];
+const CT_MAQ = { 'Vídeo longo': 'longos', 'Shorts': 'shorts', 'Carrossel': 'carrosseis', 'Outro': 'escritorio' };
+['Thumbnail', 'Arte', 'Banner', 'ID visual', 'Página', 'Funil', 'Blog', 'Roteiro', 'Copy', 'Apresentação', 'Relatório', 'Estratégia', 'Insta-Blindado'].forEach(t => CT_MAQ[t] = 'escritorio');
+const CT_ESTADO = { livre: ['ok', 'Folgada'], apertada: ['warn', 'Apertada'], cheia: ['red', 'Cheia hoje'], parada: ['', 'Fora do horário'], erro: ['red', 'Com erro'], 'sem-leitura': ['warn', 'Sem leitura'] };
+const ctMaq = id => (CT.maquinas || []).find(m => m.id === id);
+const ctNomeDestino = (d, maq) => d === 'maquina' ? ((ctMaq(maq) || {}).nome || 'Máquina') : d === 'eu' ? (diretor() ? 'Eu faço (à mão)' : 'Fico comigo') : ((CT_PESSOAS.find(p => p[0] === d) || [])[1] || d);
+function capacidadeCt(){
+  const card = m => { const e = CT_ESTADO[m.estado] || ['', m.estado];
+    return `<div class="panel" style="gap:8px;padding:16px"><div style="display:flex;justify-content:space-between;gap:8px;align-items:center"><b>${esc(m.nome)}</b><span class="chip ${e[0]}">${e[1]}</span></div>
+      <span class="sub" style="font-size:13px">${m.estado === 'sem-leitura' ? 'Não consegui ler o quadro agora.' : `<b>${m.fila}</b> na fila · <b>${m.fazendo}</b> fazendo${m.erro ? ` · <b style="color:var(--bad)">${m.erro} com erro</b>` : ''}${m.feitos7 !== null ? ` · <b>${m.feitos7}</b> prontos em 7 dias` : ''}`}</span>
+      <span class="sub" style="font-size:13px">${m.rodadasHoje ? `Hoje ainda cabem <b>${m.cabeHoje}</b> (${m.rodadasHoje} rodada${m.rodadasHoje > 1 ? 's' : ''} de ${m.porRodada}).` : `Próxima rodada: <b>${esc(m.proxima)}</b>.`} Pedido novo começa <b>${esc(m.novoEntra || '—')}</b>.</span></div>`; };
+  const max = Math.max(8, ...CT.pessoas.map(p => p.abertos));
+  const pessoa = p => `<li style="grid-template-columns:80px minmax(0,1fr) 112px"><span style="font-weight:600">${esc(p.nome)}</span><span class="bar"><span class="${p.atrasados > 2 ? 'hi' : p.atrasados ? 'mid' : ''}" style="width:${Math.round(p.abertos / max * 100)}%"></span></span><span class="n" style="white-space:nowrap">${p.abertos}${p.atrasados ? ` · <b>${p.atrasados} atras.</b>` : ''}</span></li>`;
+  return `<section class="group"><h2>Capacidade agora</h2>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px">${CT.maquinas.map(card).join('')}</div>
+    <div class="panel" style="margin-top:12px"><h2 style="font-size:16px">Equipe</h2><p class="sub" style="font-size:13px">Cards abertos de cada um (a fazer, fazendo e ajustes) · quantos estão atrasados. Barra vermelha = muitos atrasados.</p><ul class="load">${CT.pessoas.map(pessoa).join('')}</ul></div></section>`;
+}
+function filtraCt(x){
+  if (CTQ && !(String(x.clienteNome) + ' ' + String(x.nome || x.tipoNome)).toLowerCase().includes(CTQ.toLowerCase())) return false;
+  if (CTT && (x.tipo !== CTT && x.tipoNome !== CTT)) return false;
+  if (CTO === 'quente') return x.score >= 100;
+  if (CTO && CTO !== 'prev' && x.onde !== CTO) return false;
+  return true;
+}
+function chipsCt(x){
+  const pz = x.prazo ? diffCt(x.prazo) : null;
+  let h = `<span class="chip ${x.score >= 100 ? 'red' : x.score >= 60 ? 'org' : ''}">Prioridade ${x.score}</span><span class="chip">${esc(x.tipo || x.tipoNome || 'Entrega')}${x.qtd > 1 ? ' ×' + x.qtd : ''}</span>`;
+  if (x.prazo && pz >= 0 && !x.motivos.some(m => /^Prazo/.test(m))) h += `<span class="chip">Prazo ${fmtCt(x.prazo)}</span>`;
+  if (x.postar && !x.motivos.some(m => /^Vai ao ar/.test(m))) h += `<span class="chip">Vai ao ar ${fmtCt(x.postar)}</span>`;
+  h += x.motivos.map(m => `<span class="chip ${/Atrasado|🔴|🚨|😟/.test(m) ? 'red' : /hoje|amanhã|Urgente/.test(m) ? 'org' : ''}">${esc(m)}</span>`).join('');
+  if (x.ondeTexto) h += `<span class="chip ${x.onde === 'travado' ? 'warn' : x.onde === 'ninguem' ? 'warn' : x.onde === 'maquina' ? 'info' : ''}">${esc(x.ondeTexto)}</span>`;
+  return h;
+}
+const diffCt = s => Math.round((dia(s) - dia(CT.hoje)) / 864e5);
+const fmtCt = s => { const a = dia(s); return a ? a.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit' }).replace('.', '') : '—'; };
+function linhaCt(x, prev){
+  const s = x.sugestao, k = prev ? x.chave : x.id, cls = x.score >= 100 ? 'late' : x.score >= 60 ? 'today' : '';
+  const titulo = prev ? `${esc(x.clienteNome)} · ${esc(x.tipoNome)}${x.qtd > 1 ? ' ×' + x.qtd : ''} para ${esc(fmtCt(x.postar))}` : `${esc(x.clienteNome)} · ${esc(x.nome)}`;
+  const um = s && s.destino && !s.precisaLink && !(x.resp || []).includes(s.destino);
+  const mexe = !prev && ['maquina', 'flau', 'pessoa'].includes(x.onde);
+  return `<li class="item ${cls}"><span class="stripe"></span>
+    <div class="main" style="cursor:default"><span class="t">${titulo}</span><span class="meta">${chipsCt(prev ? Object.assign({ ondeTexto: 'Ainda sem card', onde: 'ninguem' }, x) : x)}</span>
+    ${s ? `<span class="sub" style="font-size:13px">Sugestão: <b>${esc(s.texto)}</b>${s.precisaLink ? ' (precisa do link do vídeo)' : ''}</span>` : ''}</div>
+    <span class="act" style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">${um ? `<button class="btn primary" data-ctgo="${esc(k)}" data-prev="${prev ? 1 : ''}">${prev ? 'Criar e mandar' : 'Mandar'}: ${esc(ctNomeDestino(s.destino, s.maquina))}</button>` : ''}<button class="btn ${um || mexe ? '' : 'primary'}" data-ctabrir="${esc(k)}" data-prev="${prev ? 1 : ''}">${um ? 'Outro destino' : prev ? 'Criar card' : mexe ? 'Mudar destino' : 'Escolher destino'}</button></span></li>`;
+}
+function listaCentral(){
+  const L = CT.demandas.filter(x => !x.velho && filtraCt(x)), P = CT.previstas.filter(filtraCt), V = CT.demandas.filter(x => x.velho && filtraCt(x));
+  const so = CTO === 'prev';
+  const fold = (k, titulo, html, n, aberto, nota) => { const open = aberto ? !FECHOU.has(k) : FOLD.has(k);
+    return `<details class="group" data-fold="${k}" ${aberto ? 'data-aberto="1"' : ''} ${open ? 'open' : ''}><summary style="cursor:pointer"><h2 style="display:inline">${titulo} <span class="count">${n}</span></h2></summary><div style="margin-top:12px">${nota ? `<p class="sub" style="font-size:13px;margin-bottom:10px">${nota}</p>` : ''}${html}</div></details>`; };
+  let h = '';
+  if (!so) h += `<section class="group"><h2>Fazer agora <span class="count">${L.length}</span></h2>${L.length ? `<ul class="rows">${L.slice(0, CTN).map(x => linhaCt(x, false)).join('')}</ul>${L.length > CTN ? `<p style="margin-top:10px"><button class="btn" data-ctmais>Ver mais ${Math.min(40, L.length - CTN)} (de ${L.length - CTN})</button></p>` : ''}` : '<p class="empty">Nada com esse filtro.</p>'}</section>`;
+  if (!CTO || so || CTT || CTQ) h += fold('ct:prev', 'Previstas para a semana, ainda sem card', P.length ? `<ul class="rows">${P.slice(0, so ? 400 : 60).map(x => linhaCt(x, true)).join('')}</ul>` : '<p class="empty">Nada previsto sem card.</p>', P.length, so,
+    `Semana de ${esc(fmtCt(CT.semana.de))} a ${esc(fmtCt(CT.semana.ate))}. Conta o ritmo da ficha do cliente (longos, shorts e carrosséis por semana) menos os cards que já existem para a semana. ${CT.semRitmo ? CT.semRitmo + ' clientes ativos estão sem ritmo na ficha e não entram aqui.' : ''} "Criar card" já cria o card no Entregas com o prazo D-3 e manda para quem você escolher.`);
+  if (!so && V.length) h += fold('ct:velhos', 'Parados há mais de 15 dias (conferir se ainda valem)', `<ul class="rows">${V.map(x => linhaCt(x, false)).join('')}</ul>`, V.length, false, 'Cards com o prazo vencido há mais de 15 dias. Muitos já foram feitos e ninguém fechou o card. Abra, confira e feche ou mande para alguém.');
+  return h;
+}
+function achaCt(k, prev){ return prev ? CT.previstas.find(x => x.chave === k) : CT.demandas.find(x => x.id === k); }
+async function mandarCt(x, prev, destino, link, nota){
+  const corpo = { acao: 'mandar', destino, link: link || '', nota: nota || '' };
+  if (prev) corpo.prevista = { cliente: x.cliente, tipo: x.tipo, postar: x.postar, qtd: x.qtd }; else corpo.card = x.id;
+  const r = await api('euforia-painel-central', corpo);
+  if (!r || !r.ok) throw new Error((r && r.motivo) || 'erro');
+  if (prev) CT.previstas = CT.previstas.filter(y => y !== x);
+  else { const d = destino === 'maquina' ? 'maquina' : destino === 'eu' && diretor() ? 'flau' : 'pessoa';
+    Object.assign(x, { onde: d, ondeTexto: d === 'maquina' ? 'Mandado para ' + r.para : d === 'flau' ? 'Com a diretoria (à mão)' : 'Com ' + r.para, sugestao: null }); }
+  toast((prev ? 'Card criado e mandado para ' : 'Mandado para ') + (r.para || ctNomeDestino(destino)) + '.');
+  setTimeout(() => carregarCentral(true), 2500);
+}
+const MOTIVO_CT = { link: 'Para a máquina, cole o link do vídeo no Drive.', semmaquina: 'Esse tipo não tem máquina. Escolha uma pessoa.', etapa: 'Esse card mudou de etapa. A lista foi atualizada.', teste: 'O usuário de teste só mexe em cards TESTE PAINEL.', data: 'Essa data já passou.', card: 'Não achei esse card. A lista foi atualizada.' };
+function abrirMandar(x, prev){
+  const tipo = prev ? x.tipoNome : x.tipo, mq = CT_MAQ[tipo], m = mq && ctMaq(mq), s = x.sugestao || {};
+  const precisaLink = ['longos', 'shorts'].includes(mq) && !(x.link);
+  const pes = Object.fromEntries((CT.pessoas || []).map(p => [p.id, p]));
+  const opt = (v, t, sub, dis) => `<label class="opt" style="border:1px solid var(--line)"><input type="radio" name="ctd" value="${v}" ${dis ? 'disabled' : ''} ${s.destino === v && !dis ? 'checked' : ''}><span><b>${t}</b>${sub ? `<small>${sub}</small>` : ''}</span></label>`;
+  const jaCom = id => !prev && (x.resp || []).length === 1 && x.resp[0] === id;
+  $('#layer').innerHTML = `<div class="scrim" data-x></div><aside class="drawer" role="dialog" aria-modal="true" aria-labelledby="ct-t"><div class="drawer-in">
+    <button class="close" data-x>Fechar</button>
+    <div><p class="eyebrow">${prev ? 'Prevista · ainda sem card' : 'Demanda' + (x.cod ? ' · ESTEIRA-' + x.cod : '')} · Prioridade ${x.score}</p><h2 id="ct-t" style="font-size:24px">${esc(x.clienteNome)}</h2><p class="sub">${esc(prev ? tipo + (x.qtd > 1 ? ' ×' + x.qtd : '') + ' para ' + fmtCt(x.postar) : x.nome)}</p></div>
+    <div class="meta" style="display:flex;flex-wrap:wrap;gap:6px">${chipsCt(prev ? Object.assign({ ondeTexto: 'Ainda sem card', onde: 'ninguem' }, x) : x)}</div>
+    ${!prev && x.obs1 ? `<p class="obs">${esc(x.obs1)}</p>` : ''}${!prev && x.url ? `<p><a class="btn" href="${esc(x.url)}" target="_blank" rel="noopener">Abrir no Notion</a></p>` : ''}
+    <form id="fct" style="display:flex;flex-direction:column;gap:10px">
+      <p class="eyebrow" style="margin:0">Para quem vai</p>
+      ${opt('maquina', mq ? esc(m ? m.nome : 'Máquina do Escritório') : 'Máquina', mq ? (m ? `${m.fila} na fila · começa ${esc(m.novoEntra || '—')}` : '') : 'Esse tipo não tem máquina.', !mq)}
+      ${CT_PESSOAS.map(([id, nome]) => opt(id, nome, pes[id] ? `${pes[id].abertos} abertos${pes[id].atrasados ? ' · ' + pes[id].atrasados + ' atrasados' : ''}${jaCom(id) ? ' · já está com ' + nome : ''}` : '', jaCom(id))).join('')}
+      ${opt('eu', diretor() ? 'Eu faço (à mão)' : 'Fico comigo', diretor() ? 'Vai para a sua fila do escritório como "À mão".' : 'O card passa para o seu nome.', false)}
+      <label for="ct-l" id="ct-lw" ${precisaLink ? '' : 'hidden'}>Link do vídeo no Drive (a máquina precisa)<input type="url" id="ct-l" maxlength="500" placeholder="https://drive.google.com/..." autocomplete="off" spellcheck="false"></label>
+      <label for="ct-n">Recado (opcional)<textarea id="ct-n" rows="2" maxlength="600" placeholder="Ex.: capricha na thumb, cliente reclamou no grupo."></textarea></label>
+      <div class="actions"><button class="btn primary" type="submit">${prev ? 'Criar card e mandar' : 'Mandar'}</button></div>
+    </form></div></aside>`;
+  const mostraLink = () => { const v = (document.querySelector('input[name="ctd"]:checked') || {}).value; $('#ct-lw').hidden = !(v === 'maquina' && precisaLink); };
+  mostraLink();
+  $('#fct').onchange = mostraLink;
+  $('#fct').onsubmit = async e => {
+    e.preventDefault(); if (ocupado) return;
+    const d = (document.querySelector('input[name="ctd"]:checked') || {}).value;
+    if (!d) { toast('Escolha para quem vai.'); return; }
+    const link = $('#ct-l').value.trim();
+    if (d === 'maquina' && precisaLink && !/^https:\/\/\S+$/.test(link)) { toast('Cole o link do vídeo (começa com https://).'); return; }
+    ocupado = true; const b = $('#fct button[type=submit]'); b.disabled = true; b.textContent = 'Mandando…';
+    try { await mandarCt(x, prev, d, d === 'maquina' ? link : '', $('#ct-n').value.trim()); ocupado = false; fechar(); render(); }
+    catch (er) { ocupado = false; b.disabled = false; b.textContent = prev ? 'Criar card e mandar' : 'Mandar'; toast(MOTIVO_CT[er.message] || MOTIVO[er.message] || ERRO); if (['etapa', 'card'].includes(er.message)) carregarCentral(true); }
+  };
+  $('#layer').onclick = e => { if (e.target.closest('[data-x]') && !ocupado) fechar(); };
+}
+async function carregarCentral(silencioso){
+  if (carregarCentral.indo) return; carregarCentral.indo = true;
+  try { const r = await api('euforia-painel-central', { acao: 'ver' }); if (r && r.ok) CT = r; else if (!CT) CT = { erro: true }; }
+  catch (e) { if (!CT) CT = { erro: true }; }
+  carregarCentral.indo = false;
+  if (view === 'central' && !ocupado && !$('#layer').innerHTML && !(silencioso && document.activeElement && document.activeElement.matches('#ctq'))) render();
+}
 
 // Demonstração (?demo=1): dados de exemplo, nada é enviado.
 function demoApi(path, b){
@@ -1931,6 +2086,14 @@ function demoApi(path, b){
   if (path === 'euforia-painel-call-link') { const c = DEMO_C.calls.find(x => x.id === b.evento); if (c) c.apresentacao = b.link; return wait({ ok: true }); }
   if (path === 'euforia-painel-clientes') return wait(DEMO_CE);
   if (path === 'euforia-painel-formularios') return wait(DEMO_FO);
+  if (path === 'euforia-painel-central') {
+    if (b.acao !== 'mandar') return wait(Object.assign({}, DEMO_CT, { nome: D.nome, papel: D.papel }));
+    if (b.destino === 'maquina' && !b.link && ['longo', 'shorts'].includes((b.prevista || {}).tipo)) return wait({ ok: false, motivo: 'link' });
+    const ct = b.card ? DEMO_CT.demandas.find(x => x.id === b.card) : null;
+    if (b.prevista) DEMO_CT.previstas = DEMO_CT.previstas.filter(x => x.chave !== b.prevista.cliente + '|' + b.prevista.tipo + '|' + b.prevista.postar);
+    const para = b.destino === 'maquina' ? ({ 'Vídeo longo': 'Máquina de Longos', 'Shorts': 'Máquina de Shorts', 'Carrossel': 'Máquina de Carrosséis' }[ct ? ct.tipo : ({ longo: 'Vídeo longo', shorts: 'Shorts', carrossel: 'Carrossel' })[b.prevista.tipo]] || 'Máquina do Escritório') : b.destino === 'eu' ? D.nome : (CT_PESSOAS.find(p => p[0] === b.destino) || [])[1];
+    return wait({ ok: true, para });
+  }
   if (path === 'euforia-painel-acessos') {
     const l = DEMO_AC[b.cliente] = DEMO_AC[b.cliente] || [];
     if (b.acao === 'listar') return wait({ ok: true, acessos: JSON.parse(JSON.stringify(l)) });
@@ -2054,6 +2217,38 @@ const DEMO_M = {"ok":true,"itens":[
   {"quem":"Rômulo","grupo":"EUFORIA | Instituto Aurora","texto":"Bom dia, pessoal! Os shorts desta semana vão para revisão hoje.","quando":"2026-10-26T09:02"},
   {"quem":"Rômulo","grupo":"EUFORIA | Clínica Vida","texto":"Tudo certo para a reunião de amanhã às 11h?","quando":"2026-10-25T17:20"}]};
 const DEMO_QR = 'data:image/svg+xml;utf8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 21 21" shape-rendering="crispEdges"><rect width="21" height="21" fill="#fff"/><path d="M1 1h7v7H1zM13 1h7v7h-7zM1 13h7v7H1z" fill="#111"/><path d="M2 2h5v5H2zM14 2h5v5h-5zM2 14h5v5H2z" fill="#fff"/><path d="M3 3h3v3H3zM15 3h3v3h-3zM3 15h3v3H3zM10 2h1v3h-1zM9 9h3v3H9zM13 10h2v1h-2zM16 13h3v2h-3zM10 15h3v1h-3zM13 17h2v3h-2zM17 17h3v1h-3z" fill="#111"/></svg>');
+// Central de Demandas de exemplo (nomes inventados).
+const DEMO_CT = (() => {
+  const h = new Date(), iso = d => { const x = new Date(h); x.setDate(x.getDate() + d); return x.getFullYear() + '-' + String(x.getMonth() + 1).padStart(2, '0') + '-' + String(x.getDate()).padStart(2, '0'); };
+  const sg = (destino, maquina, texto, precisaLink) => ({ destino, maquina, texto, precisaLink: !!precisaLink });
+  const dm = (id, cliente, nome, tipo, prazo, postar, score, motivos, onde, ondeTexto, resp, sugestao, extra) => Object.assign({ id, cod: 900 + Number(id.slice(1)), url: '', cliente: 'k' + cliente.length, clienteNome: cliente, nome, tipo, qtd: 1, status: 'A fazer', prazo: iso(prazo), postar: postar === null ? '' : iso(postar), link: '', obs1: '', faixa: 'B', atencao: false, onde, ondeTexto, resp, score, motivos, velho: false, sugestao }, extra || {});
+  return { ok: true, nome: 'Demo', papel: 'diretor', hoje: iso(0), agora: '09:12', hojeTexto: 'Hoje', semana: { de: iso(1), ate: iso(7) },
+    maquinas: [
+      { id: 'longos', nome: 'Máquina de Longos', faz: 'vídeo longo', fila: 1, fazendo: 1, erro: 0, feitos7: 4, porRodada: 1, rodadasHoje: 8, cabeHoje: 6, proxima: 'hoje ~09h37', novoEntra: 'hoje ~10h37', estado: 'apertada', itens: [] },
+      { id: 'shorts', nome: 'Máquina de Shorts', faz: 'pedido de shorts', fila: 0, fazendo: 0, erro: 1, feitos7: 10, porRodada: 3, rodadasHoje: 8, cabeHoje: 24, proxima: 'hoje ~10h07', novoEntra: 'hoje ~10h07', estado: 'erro', itens: [] },
+      { id: 'carrosseis', nome: 'Máquina de Carrosséis', faz: 'pedido de carrossel', fila: 0, fazendo: 0, erro: 0, feitos7: 4, porRodada: 2, rodadasHoje: 8, cabeHoje: 16, proxima: 'hoje ~09h47', novoEntra: 'hoje ~09h47', estado: 'livre', itens: [] },
+      { id: 'escritorio', nome: 'Máquina do Escritório', faz: 'card do escritório', fila: 5, fazendo: 0, erro: 0, feitos7: null, porRodada: 3, rodadasHoje: 9, cabeHoje: 22, proxima: 'hoje ~10h15', novoEntra: 'hoje ~11h15', estado: 'livre', itens: [] }],
+    pessoas: [
+      { id: 'ismael', nome: 'Ismael', papel: 'Revisão', abertos: 31, atrasados: 9, hoje: 2, fazendo: 3 },
+      { id: 'romulo', nome: 'Rômulo', papel: 'Calls', abertos: 18, atrasados: 4, hoje: 1, fazendo: 1 },
+      { id: 'victor', nome: 'Victor', papel: 'Edição', abertos: 12, atrasados: 2, hoje: 1, fazendo: 2 },
+      { id: 'lorena', nome: 'Lorena', papel: 'Edição', abertos: 8, atrasados: 1, hoje: 0, fazendo: 1 },
+      { id: 'daniel', nome: 'Daniel', papel: 'Edição', abertos: 4, atrasados: 0, hoje: 0, fazendo: 0 }],
+    demandas: [
+      dm('d1', 'Dra. Helena (exemplo)', 'VÍDEO LONGO · seg', 'Vídeo longo', -2, 1, 164, ['Atrasado 2 dias', 'Vai ao ar amanhã', '🔴 Atenção redobrada', '😟 Cliente sensível'], 'pessoa', 'Com Victor', ['victor'], sg('maquina', 'longos', 'Máquina de Longos · começa hoje ~10h37', true), { atencao: true, obs1: 'Bruto na pasta VÍDEOS BRUTOS do Drive.' }),
+      dm('d2', 'Instituto Exemplo', 'SHORTS ×3 · ter', 'Shorts', 0, 2, 118, ['Prazo hoje', 'Vai ao ar em 2 dias', 'Faixa A'], 'travado', 'Máquina parou: erro', [], sg('maquina', 'shorts', 'Máquina de Shorts · começa hoje ~10h07', false), { qtd: 3, faixa: 'A', link: 'https://drive.google.com/' }),
+      dm('d3', 'Mentor Exemplo', 'CARROSSEL · qua', 'Carrossel', 1, 3, 72, ['Prazo amanhã', 'Faixa A'], 'ninguem', 'Sem ninguém', [], sg('maquina', 'carrosseis', 'Máquina de Carrosséis · começa hoje ~09h47'), { faixa: 'A' }),
+      dm('d4', 'Clínica Exemplo', 'LIMPEZA DE CANAL', 'Limpeza de canal', 2, null, 35, ['Fim de contrato perto'], 'ninguem', 'Sem ninguém', [], sg('daniel', '', 'Daniel (4 abertos)')),
+      dm('d5', 'Dra. Helena (exemplo)', 'PÁGINA DE VENDAS', 'Página', 3, null, 50, ['🔴 Atenção redobrada'], 'maquina', 'Na Máquina do Escritório (na fila)', [], null, { atencao: true }),
+      dm('d6', 'Instituto Exemplo', 'APRESENTAÇÃO DA CALL', 'Apresentação', 0, null, 55, ['Prazo hoje'], 'flau', 'Com a diretoria (à mão)', [], null),
+      dm('d7', 'Consultoria Exemplo', 'VÍDEO LONGO · sex', 'Vídeo longo', 4, 5, 20, [], 'pessoa', 'Com Lorena', ['lorena'], sg('maquina', 'longos', 'Máquina de Longos · começa hoje ~10h37', true)),
+      dm('d8', 'Loja Exemplo', 'VÍDEO LONGO · 01/10', 'Vídeo longo', -30, -27, 100, ['Atrasado 30 dias'], 'pessoa', 'Com Ismael', ['ismael'], sg('lorena', '', 'Lorena (8 abertos)'), { velho: true })],
+    previstas: [
+      { chave: 'k5|shorts|' + iso(2), cliente: 'k5', clienteNome: 'Mentor Exemplo', tipo: 'shorts', tipoNome: 'Shorts', postar: iso(2), qtd: 3, faixa: 'A', atencao: false, score: 45, motivos: ['Vai ao ar em 2 dias', 'Faixa A'], sugestao: sg('maquina', 'shorts', 'Máquina de Shorts · começa hoje ~10h07', true) },
+      { chave: 'k6|longo|' + iso(4), cliente: 'k6', clienteNome: 'Clínica Exemplo', tipo: 'longo', tipoNome: 'Vídeo longo', postar: iso(4), qtd: 1, faixa: 'B', atencao: false, score: 25, motivos: ['Fim de contrato perto'], sugestao: sg('maquina', 'longos', 'Máquina de Longos · começa hoje ~10h37', true) },
+      { chave: 'k7|carrossel|' + iso(3), cliente: 'k7', clienteNome: 'Consultoria Exemplo', tipo: 'carrossel', tipoNome: 'Carrossel', postar: iso(3), qtd: 1, faixa: 'C', atencao: false, score: 10, motivos: [], sugestao: sg('maquina', 'carrosseis', 'Máquina de Carrosséis · começa hoje ~09h47') }],
+    semRitmo: 3 };
+})();
 const DEMO_FO = {"ok": true, "hoje": "2026-10-29", "formularios": [
  {"id": "f1", "nome": "Helena Duarte", "recebida": "28/10/2026 16:42", "dia": "2026-10-28", "dias": 0, "status": "🔗 Ligada ao cliente", "whatsapp": "+55 11 90000-0000", "canal": "Tenho um canal parado", "envio": "Por link (Google Drive / OneDrive / Dropbox)",
   "cliente": {"id": "c1", "nome": "Dra. Helena (exemplo)", "faixa": "A", "drive": "https://drive.google.com/"},
