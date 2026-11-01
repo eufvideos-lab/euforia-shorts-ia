@@ -1965,15 +1965,29 @@ const CT_ESTADO = { livre: ['ok', 'Folgada'], apertada: ['warn', 'Apertada'], ch
 const ctMaq = id => (CT.maquinas || []).find(m => m.id === id);
 const ctNomeDestino = (d, maq) => d === 'maquina' ? ((ctMaq(maq) || {}).nome || 'Máquina') : d === 'eu' ? (diretor() ? 'Eu faço (à mão)' : 'Fico comigo') : ((CT_PESSOAS.find(p => p[0] === d) || [])[1] || d);
 function capacidadeCt(){
-  const card = m => { const e = CT_ESTADO[m.estado] || ['', m.estado];
-    return `<div class="panel" style="gap:8px;padding:16px"><div style="display:flex;justify-content:space-between;gap:8px;align-items:center"><b>${esc(m.nome)}</b><span class="chip ${e[0]}">${e[1]}</span></div>
-      <span class="sub" style="font-size:13px">${m.estado === 'sem-leitura' ? 'Não consegui ler o quadro agora.' : `<b>${m.fila}</b> na fila · <b>${m.fazendo}</b> fazendo${m.erro ? ` · <b style="color:var(--bad)">${m.erro} com erro</b>` : ''}${m.feitos7 !== null ? ` · <b>${m.feitos7}</b> prontos em 7 dias` : ''}`}</span>
-      <span class="sub" style="font-size:13px">${m.rodadasHoje ? `Hoje ainda cabem <b>${m.cabeHoje}</b> (${m.rodadasHoje} rodada${m.rodadasHoje > 1 ? 's' : ''} de ${m.porRodada}).` : `Próxima rodada: <b>${esc(m.proxima)}</b>.`} Pedido novo começa <b>${esc(m.novoEntra || '—')}</b>.</span></div>`; };
+  const G = 'display:grid;grid-template-columns:minmax(0,1fr) 44px 52px 44px;gap:6px;align-items:baseline;font-size:13px;font-variant-numeric:tabular-nums';
+  const tab = l => `<div style="display:flex;flex-direction:column;gap:6px"><div style="${G};color:var(--muted);font-size:12px"><span>Fica pronto</span><span style="text-align:right">Cabe</span><span style="text-align:right">Na fila</span><span style="text-align:right">Livre</span></div>${l.map(x => `<div style="${G};border-top:1px solid var(--line);padding-top:6px"><span><b>${esc(x.nome)}</b><br><span style="color:var(--muted);font-size:12px">rodadas ${esc(x.de)}${x.de !== x.ate ? '–' + esc(x.ate) : ''}</span></span><span style="text-align:right">${x.cabe}</span><span style="text-align:right">${x.fila}</span><span style="text-align:right;font-weight:700;color:${x.livre ? 'var(--ok)' : 'var(--bad)'}">${x.livre}</span></div>`).join('')}</div>`;
+  const card = m => { const e = CT_ESTADO[m.estado] || ['', m.estado], pr = m.periodo || {};
+    if (m.estado === 'sem-leitura') return `<div class="panel" style="gap:8px;padding:16px"><div style="display:flex;justify-content:space-between;gap:8px;align-items:center"><b>${esc(m.nome)}</b><span class="chip ${e[0]}">${e[1]}</span></div><span class="sub" style="font-size:13px">Não consegui ler o quadro agora.</span></div>`;
+    const ag = pr.agora, pv = pr.proximaVaga;
+    const agora = !ag ? '' : ag.livre ? `Pega <b>${ag.livre}</b> pedido${ag.livre > 1 ? 's' : ''} na rodada de <b>${esc(ag.rodada)}</b>, pronto${ag.livre > 1 ? 's' : ''} até ~${esc(ag.pronto)}.`
+      : pv ? `A próxima rodada já está cheia. Próxima vaga: <b>${esc(pv.quando)}</b> (${pv.livre}), pronto até ~${esc(pv.pronto)}.` : `Sem vaga ${esc(pr.dia)}.`;
+    return `<div class="panel" style="gap:10px;padding:16px"><div style="display:flex;justify-content:space-between;gap:8px;align-items:center"><b>${esc(m.nome)}</b><span class="chip ${e[0]}">${e[1]}</span></div>
+      ${pr.dia && pr.dia !== 'hoje' ? `<span class="sub" style="font-size:13px">Fora do horário agora. Conta para <b>${esc(pr.dia)}</b>.</span>` : ''}
+      <span style="font-size:14px">${agora}</span>
+      ${pr.lista && pr.lista.length ? tab(pr.lista) : ''}
+      <span class="sub" style="font-size:13px">No dia: entrega <b>${pr.entregaNoDia || 0}</b> da fila e ainda cabem <b>${pr.livreNoDia || 0}</b> novos (${m.porRodada} por rodada).</span>
+      <span class="sub" style="font-size:13px"><b>${m.fila}</b> na fila · <b>${m.fazendo}</b> fazendo${m.feitos7 !== null ? ` · <b>${m.feitos7}</b> prontos em 7 dias` : ''}</span>
+      ${m.erro ? `<span style="font-size:13px;color:var(--bad)"><b>${m.erro} com erro</b>${m.erros && m.erros.length ? ': ' + esc(m.erros.join(', ')) : ''}. O pedido fica em Erro no quadro da máquina e o aviso técnico vai no #ia-status do Discord.</span>` : ''}</div>`; };
   const max = Math.max(8, ...CT.pessoas.map(p => p.abertos));
   const pessoa = p => `<li style="grid-template-columns:80px minmax(0,1fr) 112px"><span style="font-weight:600">${esc(p.nome)}</span><span class="bar"><span class="${p.atrasados > 2 ? 'hi' : p.atrasados ? 'mid' : ''}" style="width:${Math.round(p.abertos / max * 100)}%"></span></span><span class="n" style="white-space:nowrap">${p.abertos}${p.atrasados ? ` · <b>${p.atrasados} atras.</b>` : ''}</span></li>`;
+  const maq = m => { const pr = m.periodo || {}, cab = pr.cabeNoDia || 0, oc = cab ? Math.min(1, m.fila / cab) : 1;
+    return `<li style="grid-template-columns:80px minmax(0,1fr) 112px"><span style="font-weight:600">${esc(m.nome.replace('Máquina de ', '').replace('Máquina do ', ''))}</span><span class="bar"><span class="${m.erro || oc > .9 ? 'hi' : oc > .5 ? 'mid' : ''}" style="width:${Math.max(2, Math.round(oc * 100))}%"></span></span><span class="n" style="white-space:nowrap">${m.fila} · <b style="color:var(--ok)">${pr.livreNoDia || 0} livres</b></span></li>`; };
   return `<section class="group"><h2>Capacidade agora</h2>
-    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px">${CT.maquinas.map(card).join('')}</div>
-    <div class="panel" style="margin-top:12px"><h2 style="font-size:16px">Equipe</h2><p class="sub" style="font-size:13px">Cards abertos de cada um (a fazer, fazendo e ajustes) · quantos estão atrasados. Barra vermelha = muitos atrasados.</p><ul class="load">${CT.pessoas.map(pessoa).join('')}</ul></div></section>`;
+    <div class="panel"><h2 style="font-size:16px">Equipe (pessoas e máquinas)</h2><p class="sub" style="font-size:13px">Pessoas: cards abertos · atrasados. Máquinas: pedidos na fila · vagas livres no dia${(CT.maquinas[0] && CT.maquinas[0].periodo && CT.maquinas[0].periodo.dia !== 'hoje') ? ' (' + esc(CT.maquinas[0].periodo.dia) + ')' : ''}. Barra vermelha = sobrecarregado.</p>
+      <ul class="load">${CT.pessoas.map(pessoa).join('')}${CT.maquinas.map(maq).join('')}</ul></div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;margin-top:12px">${CT.maquinas.map(card).join('')}</div>
+    <p class="sub" style="font-size:12px;margin-top:8px">Cada rodada pega a quantidade da máquina e termina em até cerca de 1 hora. A fila ocupa as primeiras rodadas; "Livre" é o que ainda dá para mandar e receber pronto naquele horário.</p></section>`;
 }
 function filtraCt(x){
   if (CTQ && !(String(x.clienteNome) + ' ' + String(x.nome || x.tipoNome)).toLowerCase().includes(CTQ.toLowerCase())) return false;
@@ -2221,13 +2235,21 @@ const DEMO_QR = 'data:image/svg+xml;utf8,' + encodeURIComponent('<svg xmlns="htt
 const DEMO_CT = (() => {
   const h = new Date(), iso = d => { const x = new Date(h); x.setDate(x.getDate() + d); return x.getFullYear() + '-' + String(x.getMonth() + 1).padStart(2, '0') + '-' + String(x.getDate()).padStart(2, '0'); };
   const sg = (destino, maquina, texto, precisaLink) => ({ destino, maquina, texto, precisaLink: !!precisaLink });
+  // Rodadas de exemplo a partir das 9h (agora 09:12), cada uma pronta em ~1 hora.
+  const P = (fila, por, min, ultima) => { const hh = n => String(n).padStart(2, '0') + 'h' + String(min).padStart(2, '0'); let resto = fila; const r = [];
+    for (let h = 9; h <= ultima; h++) { if (h === 9 && min < 12) continue; const usa = Math.min(por, resto); resto -= usa; r.push({ h, usa, livre: por - usa }); }
+    const grupo = (nome, f) => { const x = r.filter(f); return x.length ? { nome, rodadas: x.length, cabe: x.length * por, fila: x.reduce((a, y) => a + y.usa, 0), livre: x.reduce((a, y) => a + y.livre, 0), de: hh(x[0].h), ate: hh(x[x.length - 1].h) } : null; };
+    const lv = r.find(x => x.livre);
+    return { dia: 'hoje', agora: { rodada: 'hoje ~' + hh(r[0].h), livre: r[0].livre, pronto: hh(r[0].h + 1) }, proximaVaga: lv ? { quando: 'hoje ~' + hh(lv.h), livre: lv.livre, pronto: hh(lv.h + 1) } : null,
+      entregaNoDia: Math.min(fila, r.length * por), livreNoDia: r.reduce((a, y) => a + y.livre, 0), cabeNoDia: r.length * por,
+      lista: [grupo('Até 12h', x => x.h + 1 < 12 || (x.h + 1 === 12 && min === 0)), grupo('Até 18h', x => x.h + 1 >= 12 && x.h + 1 < 18), grupo('Até ' + hh(ultima + 1), x => x.h + 1 >= 18)].filter(Boolean) }; };
   const dm = (id, cliente, nome, tipo, prazo, postar, score, motivos, onde, ondeTexto, resp, sugestao, extra) => Object.assign({ id, cod: 900 + Number(id.slice(1)), url: '', cliente: 'k' + cliente.length, clienteNome: cliente, nome, tipo, qtd: 1, status: 'A fazer', prazo: iso(prazo), postar: postar === null ? '' : iso(postar), link: '', obs1: '', faixa: 'B', atencao: false, onde, ondeTexto, resp, score, motivos, velho: false, sugestao }, extra || {});
   return { ok: true, nome: 'Demo', papel: 'diretor', hoje: iso(0), agora: '09:12', hojeTexto: 'Hoje', semana: { de: iso(1), ate: iso(7) },
     maquinas: [
-      { id: 'longos', nome: 'Máquina de Longos', faz: 'vídeo longo', fila: 1, fazendo: 1, erro: 0, feitos7: 4, porRodada: 1, rodadasHoje: 8, cabeHoje: 6, proxima: 'hoje ~09h37', novoEntra: 'hoje ~10h37', estado: 'apertada', itens: [] },
-      { id: 'shorts', nome: 'Máquina de Shorts', faz: 'pedido de shorts', fila: 0, fazendo: 0, erro: 1, feitos7: 10, porRodada: 3, rodadasHoje: 8, cabeHoje: 24, proxima: 'hoje ~10h07', novoEntra: 'hoje ~10h07', estado: 'erro', itens: [] },
-      { id: 'carrosseis', nome: 'Máquina de Carrosséis', faz: 'pedido de carrossel', fila: 0, fazendo: 0, erro: 0, feitos7: 4, porRodada: 2, rodadasHoje: 8, cabeHoje: 16, proxima: 'hoje ~09h47', novoEntra: 'hoje ~09h47', estado: 'livre', itens: [] },
-      { id: 'escritorio', nome: 'Máquina do Escritório', faz: 'card do escritório', fila: 5, fazendo: 0, erro: 0, feitos7: null, porRodada: 3, rodadasHoje: 9, cabeHoje: 22, proxima: 'hoje ~10h15', novoEntra: 'hoje ~11h15', estado: 'livre', itens: [] }],
+      { id: 'longos', nome: 'Máquina de Longos', faz: 'vídeo longo', fila: 1, fazendo: 1, erro: 0, feitos7: 4, porRodada: 1, rodadasHoje: 8, cabeHoje: 6, proxima: 'hoje ~09h37', novoEntra: 'hoje ~10h37', estado: 'apertada', itens: [], erros: [], periodo: P(1, 1, 37, 17) },
+      { id: 'shorts', nome: 'Máquina de Shorts', faz: 'pedido de shorts', fila: 0, fazendo: 0, erro: 1, feitos7: 10, porRodada: 3, rodadasHoje: 8, cabeHoje: 24, proxima: 'hoje ~10h07', novoEntra: 'hoje ~10h07', estado: 'erro', itens: [], erros: ['Instituto Exemplo'], periodo: P(0, 3, 7, 17) },
+      { id: 'carrosseis', nome: 'Máquina de Carrosséis', faz: 'pedido de carrossel', fila: 0, fazendo: 0, erro: 0, feitos7: 4, porRodada: 2, rodadasHoje: 8, cabeHoje: 16, proxima: 'hoje ~09h47', novoEntra: 'hoje ~09h47', estado: 'livre', itens: [], erros: [], periodo: P(0, 2, 47, 17) },
+      { id: 'escritorio', nome: 'Máquina do Escritório', faz: 'card do escritório', fila: 5, fazendo: 0, erro: 0, feitos7: null, porRodada: 3, rodadasHoje: 9, cabeHoje: 22, proxima: 'hoje ~10h15', novoEntra: 'hoje ~11h15', estado: 'livre', itens: [], erros: [], periodo: P(5, 3, 15, 18) }],
     pessoas: [
       { id: 'ismael', nome: 'Ismael', papel: 'Revisão', abertos: 31, atrasados: 9, hoje: 2, fazendo: 3 },
       { id: 'romulo', nome: 'Rômulo', papel: 'Calls', abertos: 18, atrasados: 4, hoje: 1, fazendo: 1 },

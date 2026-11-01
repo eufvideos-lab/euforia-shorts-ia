@@ -130,16 +130,16 @@ for (const it of $('Clientes ativos').all()) for (const p of (it.json.results ||
 }
 
 // ---------- Filas das máquinas ----------
-const lerQuadro = nome => { const out = { fila: 0, fazendo: 0, erro: 0, feitos7: 0, ok: true, itens: [] };
+const lerQuadro = nome => { const out = { fila: 0, fazendo: 0, erro: 0, feitos7: 0, ok: true, itens: [], erros: [] };
   let pages = []; try { for (const it of $(nome).all()) { if (it.json.error || it.json.object === 'error') out.ok = false; pages = pages.concat(it.json.results || []); } } catch (e) { out.ok = false; }
   for (const p of pages) { const pr = p.properties || {}, s = txt(pr['Status']); const cid = sem((((pr['Cliente'] || {}).relation || [])[0] || {}).id);
     if (['Editar', 'Criar', 'Ajustar'].includes(s)) { out.fila++; out.itens.push({ cliente: (cli[cid] || {}).nome || txt(pr['Pedido']).split('|')[0].trim(), status: s }); }
     else if (['Em edição', 'Em produção'].includes(s)) out.fazendo++;
-    else if (s === 'Erro') out.erro++;
+    else if (s === 'Erro') { out.erro++; out.erros.push((cli[cid] || {}).nome || txt(pr['Pedido']).split('|')[0].trim()); }
     if (txt(pr['Entregue em'])) out.feitos7++; }
   out.itens = out.itens.slice(0, 12); return out; };
 const Q = { longos: lerQuadro('Quadro de Longos'), shorts: lerQuadro('Quadro de Shorts'), carrosseis: lerQuadro('Quadro de Carrosséis'),
-  escritorio: { fila: 0, fazendo: 0, erro: 0, feitos7: null, ok: true, itens: [] } };
+  escritorio: { fila: 0, fazendo: 0, erro: 0, feitos7: null, ok: true, itens: [], erros: [] } };
 
 // ---------- Cards ----------
 const todos = [];
@@ -241,10 +241,30 @@ for (const k of Object.values(cli)) {
 }
 previstas.sort((a, b) => b.score - a.score || a.postar.localeCompare(b.postar));
 
+// Capacidade por período no próximo dia útil com rodadas (hoje ou o próximo): cada rodada pega porRodada pedidos e
+// termina em até ~1 hora (é o tempo de uma rodada; a seguinte começa na hora cheia). A fila atual ocupa as primeiras rodadas.
+const periodos = (m, fila) => { const d0 = m.prox[0]; if (!d0) return { dia: '', agora: null, lista: [] };
+  const doDia = m.prox.filter(t => t.hasSame(d0, 'day')); let resto = fila;
+  const rods = doDia.map(t => { const usa = Math.min(m.porRodada, resto); resto -= usa; return { t, pronto: t.plus({ minutes: 60 }), usa, livre: m.porRodada - usa }; });
+  const fx = [['Até 12h', 12 * 60], ['Até 18h', 18 * 60], ['Até 19h', 24 * 60]];
+  let ini = 0; const lista = [];
+  for (const [nome, lim] of fx) { const r = rods.filter(x => { const mm = x.pronto.hour * 60 + x.pronto.minute; return mm > ini && mm <= lim; }); ini = lim;
+    if (!r.length) continue;
+    lista.push({ nome: nome === 'Até 19h' ? 'Até ' + r[r.length - 1].pronto.toFormat("HH'h'mm") : nome, rodadas: r.length, cabe: r.length * m.porRodada,
+      fila: r.reduce((a, x) => a + x.usa, 0), livre: r.reduce((a, x) => a + x.livre, 0),
+      de: r[0].t.toFormat("HH'h'mm"), ate: r[r.length - 1].t.toFormat("HH'h'mm") }); }
+  const k = Math.round(d0.startOf('day').diff(hoje, 'days').days);
+  const dia = k === 0 ? 'hoje' : k === 1 ? 'amanhã' : d0.setLocale('pt-BR').toFormat('cccc dd/MM');
+  const lv = rods.find(x => x.livre > 0);
+  return { dia, agora: { rodada: quando(rods[0].t), livre: rods[0].livre, pronto: rods[0].pronto.toFormat("HH'h'mm") },
+    proximaVaga: lv ? { quando: quando(lv.t), livre: lv.livre, pronto: lv.pronto.toFormat("HH'h'mm") } : null,
+    entregaNoDia: Math.min(fila, doDia.length * m.porRodada), livreNoDia: rods.reduce((a, x) => a + x.livre, 0), cabeNoDia: doDia.length * m.porRodada, lista }; };
+
 const maquinas = Object.keys(MAQ).map(k => { const m = MAQ[k], q = Q[k], t = eta(m, q.fila);
   const estado = !q.ok ? 'sem-leitura' : q.erro ? 'erro' : !m.rodadasHoje ? 'parada' : q.fila > m.cabeHoje ? 'cheia' : q.fila > m.cabeHoje / 2 ? 'apertada' : 'livre';
   return { id: k, nome: m.nome, faz: m.faz, fila: q.fila, fazendo: q.fazendo, erro: q.erro, feitos7: q.feitos7, porRodada: m.porRodada, rodadasHoje: m.rodadasHoje,
-    cabeHoje: m.cabeHoje, proxima: m.prox[0] ? quando(m.prox[0]) : '', novoEntra: t ? quando(t) : '', estado, itens: q.itens }; });
+    cabeHoje: m.cabeHoje, proxima: m.prox[0] ? quando(m.prox[0]) : '', novoEntra: t ? quando(t) : '', estado, itens: q.itens, erros: q.erros.slice(0, 6),
+    periodo: periodos(m, q.fila) }; });
 
 return [{ json: { resposta: { ok: true, nome: quem.nome, papel: quem.papel, hoje: HOJE, agora: agora.toFormat('HH:mm'),
   hojeTexto: agora.setLocale('pt-BR').toFormat("cccc, dd 'de' LLLL"), semana: { de: ini.toISODate(), ate: fimS.toISODate() },
