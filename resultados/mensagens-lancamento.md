@@ -67,6 +67,8 @@ Domingo não. Horário: entre 9h e 11h ou 18h e 20h.
 O Rômulo pergunta uma vez por semana no grupo do cliente e lança no painel.
 
 ## Cuidados com o WhatsApp do cliente
-- Cada lista tem no máximo 256 contatos (limite do WhatsApp). Mais que isso: criar Lista 1, Lista 2...
+- **Quanto mais gente nas listas, mais resultado.** Cada lista tem no máximo 256 contatos (limite do WhatsApp): o cliente
+  cria quantas precisar (1.200 contatos = 5 listas) e envia a mesma mensagem para todas.
+- O WhatsApp não deixa dar acesso de administrador da lista para outra pessoa. Quem cria e envia é só o cliente.
 - Só contatos que conhecem o cliente. Se muita gente bloquear ou denunciar, o WhatsApp pode restringir o número.
 - O cliente nunca passa senha nem QR code para a Euforia.
