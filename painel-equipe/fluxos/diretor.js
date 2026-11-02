@@ -83,33 +83,33 @@ const caminho = switchCase({ version: 3.2, config: { name: 'O que fazer', parame
   ] }, options: {} } } });
 
 // ---------- Visão: tudo que está aberto + o que foi ao ar nos últimos 7 dias ----------
-const entregas = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, config: { name: 'Cards abertos e da semana', credentials: NOTION, parameters: {
+const entregas = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, config: { name: 'Cards abertos (Notion, reserva)', credentials: NOTION, parameters: {
   method: 'POST', url: 'https://api.notion.com/v1/databases/74b3076a325749e3bac4ba6659215e48/query', authentication: 'genericCredentialType', genericAuthType: 'httpHeaderAuth',
   sendHeaders: true, headerParameters: NOTION_HDR, sendBody: true, specifyBody: 'json',
-  jsonBody: '={{ JSON.stringify({ filter: { and: [{ property: "Status", select: { does_not_equal: "Cancelado" } }, { or: [{ property: "Status", select: { does_not_equal: "Postado" } }, { property: "Postado em", date: { on_or_after: $json.semana } }] }] }, sorts: [{ property: "Prazo", direction: "ascending" }], page_size: 100 }) }}',
+  jsonBody: '={{ JSON.stringify({ filter: { and: [{ property: "Status", select: { does_not_equal: "Cancelado" } }, { or: [{ property: "Status", select: { does_not_equal: "Postado" } }, { property: "Postado em", date: { on_or_after: $("Validar acesso").first().json.semana } }] }] }, sorts: [{ property: "Prazo", direction: "ascending" }], page_size: 100 }) }}',
   options: PAGINAR } } });
 
-const clientes = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, config: { name: 'Clientes ativos', credentials: NOTION, executeOnce: true, parameters: {
+const clientes = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, config: { name: 'Clientes ativos (Notion, reserva)', credentials: NOTION, executeOnce: true, parameters: {
   method: 'POST', url: 'https://api.notion.com/v1/databases/3ddc91b406be49e98e630c298d9162d8/query', authentication: 'genericCredentialType', genericAuthType: 'httpHeaderAuth',
   sendHeaders: true, headerParameters: NOTION_HDR, sendBody: true, specifyBody: 'json',
   jsonBody: '={{ JSON.stringify({ filter: { property: "Situação", select: { does_not_equal: "Encerrado" } }, sorts: [{ property: "Cliente", direction: "ascending" }], page_size: 100 }) }}',
   options: PAGINAR } } });
 
 const montarVisao = node({ type: 'n8n-nodes-base.code', version: 2, config: { name: 'Montar visão', parameters: { jsCode: `const Z = 'America/Recife';
-const txt = v => { if (!v) return ''; const a = v.title || v.rich_text; if (a) return a.map(t => t.plain_text).join('').trim(); if (v.select) return v.select.name; if (v.date) return v.date.start; if (v.url !== undefined) return v.url || ''; if (v.formula) return String(v.formula.string || v.formula.number || ''); return ''; };
+const fonte = n => { try { const r = $(n + ' (Notion, reserva)').all(); if (r.length && r[0].json && r[0].json.results) return r; } catch (e) {} return $(n).all(); };\nconst txt = v => { if (!v) return ''; const a = v.title || v.rich_text; if (a) return a.map(t => t.plain_text).join('').trim(); if (v.select) return v.select.name; if (v.date) return v.date.start; if (v.url !== undefined) return v.url || ''; if (v.formula) return String(v.formula.string || v.formula.number || ''); return ''; };
 const sem = id => String(id || '').replace(/-/g, '');
 const EQUIPE = [
   { id: '3ea98c0cdde08182a952f3d9a5b73575', nome: 'Victor', papel: 'Edição' }, { id: '3ea98c0cdde08163bd16f0213b098cb5', nome: 'Lorena', papel: 'Edição' },
   { id: '3ea98c0cdde0817e87aee637a96d4fd1', nome: 'Daniel', papel: 'Edição' }, { id: '3ea98c0cdde0812d9cb4c41ce70df4ae', nome: 'Ismael', papel: 'Revisão e postagem' },
   { id: '3ea98c0cdde081299709cf901fac7275', nome: 'Rômulo', papel: 'Calls e canal' }, { id: '3ea98c0cdde0812bba06cba7e4261426', nome: 'Escritório', papel: 'Flau + IA' }];
 const cli = {};
-for (const it of $('Clientes ativos').all()) for (const p of (it.json.results || [])) {
+for (const it of fonte('Clientes ativos')) for (const p of (it.json.results || [])) {
   const pr = p.properties || {};
   cli[sem(p.id)] = { id: sem(p.id), nome: txt(pr['Cliente']), faixa: txt(pr['Faixa']) || txt(pr['Faixa base']), situacao: txt(pr['Situação']),
     atencao: !!(pr['🔴 Atenção redobrada'] || {}).checkbox };
 }
 const cards = [];
-for (const it of $('Cards abertos e da semana').all()) for (const p of (it.json.results || [])) {
+for (const it of fonte('Cards abertos e da semana')) for (const p of (it.json.results || [])) {
   const pr = p.properties || {};
   const titulo = txt(pr['Entrega']);
   const cid = sem((((pr['Cliente'] || {}).relation || [])[0] || {}).id);
@@ -220,7 +220,7 @@ const criar = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, config: {
   sendHeaders: true, headerParameters: NOTION_HDR, sendBody: true, specifyBody: 'json', jsonBody: '={{ $json.body }}', options: {} } } });
 
 const okCriacao = node({ type: 'n8n-nodes-base.respondToWebhook', version: 1.5, config: { name: 'Confirmar card novo', parameters: {
-  respondWith: 'json', responseBody: '={{ JSON.stringify({ ok: true, id: String($json.id || "").replace(/-/g, "") }) }}', options: {} } } });
+  respondWith: 'json', responseBody: '={{ JSON.stringify({ ok: true, id: String($("Criar no Entregas").first().json.id || "").replace(/-/g, "") }) }}', options: {} } } });
 
 // ---------- Mensagens que a equipe mandou nos grupos de cliente (3 dias) ----------
 const mensagens = node({ type: 'n8n-nodes-base.postgres', version: 2.6, config: { name: 'Mensagens da equipe', credentials: PG, alwaysOutputData: true, parameters: {
@@ -252,14 +252,14 @@ const recusar = node({ type: 'n8n-nodes-base.respondToWebhook', version: 1.5, co
   respondWith: 'json', responseBody: '={{ JSON.stringify($json.resposta) }}', options: {} } } });
 
 // ---------- Clientes: ficha, contrato e o que já foi entregue ----------
-const fichas = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, config: { name: 'Fichas dos clientes', credentials: NOTION, executeOnce: true, parameters: {
+const fichas = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, config: { name: 'Fichas dos clientes (Notion, reserva)', credentials: NOTION, executeOnce: true, parameters: {
   method: 'POST', url: 'https://api.notion.com/v1/databases/3ddc91b406be49e98e630c298d9162d8/query', authentication: 'genericCredentialType', genericAuthType: 'httpHeaderAuth',
   sendHeaders: true, headerParameters: NOTION_HDR, sendBody: true, specifyBody: 'json',
   jsonBody: '={{ JSON.stringify({ filter: { property: "Situação", select: { does_not_equal: "Encerrado" } }, sorts: [{ property: "Cliente", direction: "ascending" }], page_size: 100 }) }}',
   options: PAGINAR } } });
 
 // Tudo que foi ao ar no último ano e tudo que ainda está aberto (para contar o feito e o que falta).
-const doAno = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, config: { name: 'Entregas do ano', credentials: NOTION, executeOnce: true, parameters: {
+const doAno = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, config: { name: 'Entregas do ano (Notion, reserva)', credentials: NOTION, executeOnce: true, parameters: {
   method: 'POST', url: 'https://api.notion.com/v1/databases/74b3076a325749e3bac4ba6659215e48/query', authentication: 'genericCredentialType', genericAuthType: 'httpHeaderAuth',
   sendHeaders: true, headerParameters: NOTION_HDR, sendBody: true, specifyBody: 'json',
   jsonBody: '={{ JSON.stringify({ filter: { and: [{ property: "Status", select: { does_not_equal: "Cancelado" } }, { or: [{ property: "Status", select: { does_not_equal: "Postado" } }, { property: "Postado em", date: { on_or_after: $("Validar acesso").first().json.ano } }] }] }, sorts: [{ property: "Postado em", direction: "descending" }], page_size: 100 }) }}',
@@ -281,7 +281,7 @@ GROUP BY m.chat_id;`, options: {} } } });
 // O contrato vem do texto "Resumo do contrato": "6 meses, contrato de 25/04/2026. Total: 20 longos, 60 shorts, 20 carrosséis".
 // Sem total no texto, a conta usa o ritmo por semana da ficha desde o início.
 const montarClientes = node({ type: 'n8n-nodes-base.code', version: 2, config: { name: 'Montar clientes', parameters: { jsCode: `const Z = 'America/Recife';
-const txt = v => { if (!v) return ''; const a = v.title || v.rich_text; if (a) return a.map(t => t.plain_text).join('').trim(); if (v.select) return v.select.name; if (v.date) return v.date.start; if (v.url !== undefined) return v.url || ''; if (v.formula) return String(v.formula.string || v.formula.number || ''); if (v.rollup) return String((v.rollup.date || {}).start || v.rollup.number || ''); if (v.phone_number !== undefined) return v.phone_number || ''; return ''; };
+const fonte = n => { try { const r = $(n + ' (Notion, reserva)').all(); if (r.length && r[0].json && r[0].json.results) return r; } catch (e) {} return $(n).all(); };\nconst txt = v => { if (!v) return ''; const a = v.title || v.rich_text; if (a) return a.map(t => t.plain_text).join('').trim(); if (v.select) return v.select.name; if (v.date) return v.date.start; if (v.url !== undefined) return v.url || ''; if (v.formula) return String(v.formula.string || v.formula.number || ''); if (v.rollup) return String((v.rollup.date || {}).start || v.rollup.number || ''); if (v.phone_number !== undefined) return v.phone_number || ''; return ''; };
 const num = v => (v && typeof v.number === 'number') ? v.number : null;
 const sem = id => String(id || '').replace(/-/g, '');
 const norm = s => String(s || '').normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').toLowerCase().replace(/ct/g, 't').replace(/[^a-z0-9 ]/g, ' ').replace(/\\s+/g, ' ').trim();
@@ -293,7 +293,7 @@ const GRUPO = { 'Vídeo longo': 'longos', 'Podcast': 'longos', 'Shorts': 'shorts
 const ABERTO = ['A fazer', 'Fazendo', 'Ajustes', 'Em revisão', 'Aguardando cliente', 'Aprovado', 'Agendado'];
 const grupos = $('Conversa nos grupos').all().map(i => i.json).filter(r => r && r.chat_id).map(r => Object.assign(r, { p: palavras(r.grupo) }));
 const entregas = {};
-for (const it of $('Entregas do ano').all()) for (const p of (it.json.results || [])) {
+for (const it of fonte('Entregas do ano')) for (const p of (it.json.results || [])) {
   const pr = p.properties || {};
   const cid = sem((((pr['Cliente'] || {}).relation || [])[0] || {}).id); if (!cid) continue;
   const titulo = txt(pr['Entrega']), partes = titulo.split('|').map(x => x.trim()).filter(Boolean);
@@ -302,7 +302,7 @@ for (const it of $('Entregas do ano').all()) for (const p of (it.json.results ||
     postado: txt(pr['Postado em']).slice(0, 10), linkPost: txt(pr['Link da postagem']), resp: ((pr['Responsável'] || {}).relation || []).map(r => RESP[sem(r.id)] || 'outro') });
 }
 const clientes = [];
-for (const it of $('Fichas dos clientes').all()) for (const p of (it.json.results || [])) {
+for (const it of fonte('Fichas dos clientes')) for (const p of (it.json.results || [])) {
   const pr = p.properties || {}, id = sem(p.id), nome = txt(pr['Cliente']);
   const resumo = txt(pr['Resumo do contrato']);
   const mm = resumo.match(/(\\d{1,2})\\s*meses/i), dm = resumo.match(/contrato de (\\d{2})\\/(\\d{2})\\/(\\d{4})/i);
@@ -384,16 +384,72 @@ const okFicha = node({ type: 'n8n-nodes-base.respondToWebhook', version: 1.5, co
 const erroFicha = node({ type: 'n8n-nodes-base.respondToWebhook', version: 1.5, config: { name: 'Recusar ficha', parameters: {
   respondWith: 'json', responseBody: '={{ JSON.stringify($json.resposta) }}', options: {} } } });
 
+
+// ---------- Cópia rápida no Postgres (notion_cache, alimentada pelo "Cache | Notion → Postgres" a cada 2 min) ----------
+// Mesmo formato da resposta do Notion ({ results: [...] }), então os nós "Montar…" não mudam. Se a cópia tiver mais de
+// 10 minutos ou erro, o fluxo lê o Notion como antes (nós "(Notion, reserva)").
+const cacheCards = node({ type: 'n8n-nodes-base.postgres', version: 2.6, config: { name: 'Cards abertos e da semana', credentials: PG, executeOnce: true, parameters: {
+  operation: 'executeQuery',
+  query: `SELECT coalesce((SELECT jsonb_agg(jsonb_build_object('id', c.id, 'url', 'https://www.notion.so/' || c.id, 'properties', c.props,
+  'last_edited_time', to_char(c.editado AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')) ORDER BY nullif(left(coalesce(c.props->'Prazo'->'date'->>'start', ''), 10), '') ASC NULLS LAST)
+  FROM notion_cache c WHERE c.db = 'entregas' AND NOT c.arquivado AND coalesce(c.props->'Status'->'select'->>'name', '') <> 'Cancelado' AND (coalesce(c.props->'Status'->'select'->>'name', '') <> 'Postado' OR left(coalesce(c.props->'Postado em'->'date'->>'start', ''), 10) >= $1)), '[]'::jsonb) AS results,
+  coalesce((SELECT e.erro IS NULL AND e.ultima_sync > now() - interval '10 minutes' AND e.ultima_completa IS NOT NULL FROM notion_cache_estado e WHERE e.db = 'entregas'), false) AS fresco;`,
+  options: { queryReplacement: '={{ [ $("Validar acesso").first().json.semana ] }}' } } } });
+
+const cacheClientes = node({ type: 'n8n-nodes-base.postgres', version: 2.6, config: { name: 'Clientes ativos', credentials: PG, executeOnce: true, parameters: {
+  operation: 'executeQuery',
+  query: `SELECT coalesce((SELECT jsonb_agg(jsonb_build_object('id', c.id, 'url', 'https://www.notion.so/' || c.id, 'properties', c.props,
+  'last_edited_time', to_char(c.editado AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')) ORDER BY (SELECT string_agg(x->>'plain_text', '') FROM jsonb_array_elements(c.props->'Cliente'->'title') x) ASC)
+  FROM notion_cache c WHERE c.db = 'clientes' AND NOT c.arquivado AND coalesce(c.props->'Situação'->'select'->>'name', '') <> 'Encerrado'), '[]'::jsonb) AS results,
+  coalesce((SELECT e.erro IS NULL AND e.ultima_sync > now() - interval '10 minutes' AND e.ultima_completa IS NOT NULL FROM notion_cache_estado e WHERE e.db = 'clientes'), false) AS fresco;`, options: {} } } });
+
+const visaoFresca = ifElse({ version: 2.2, config: { name: 'Cópia em dia (visão)?', parameters: { conditions: {
+  options: { caseSensitive: true, leftValue: '', typeValidation: 'loose' },
+  conditions: [{ leftValue: '={{ $("Cards abertos e da semana").first().json.fresco === true && $("Clientes ativos").first().json.fresco === true }}', rightValue: '', operator: { type: 'boolean', operation: 'true', singleValue: true } }],
+  combinator: 'and' } } } });
+
+const cacheFichas = node({ type: 'n8n-nodes-base.postgres', version: 2.6, config: { name: 'Fichas dos clientes', credentials: PG, executeOnce: true, parameters: {
+  operation: 'executeQuery',
+  query: `SELECT coalesce((SELECT jsonb_agg(jsonb_build_object('id', c.id, 'url', 'https://www.notion.so/' || c.id, 'properties', c.props,
+  'last_edited_time', to_char(c.editado AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')) ORDER BY (SELECT string_agg(x->>'plain_text', '') FROM jsonb_array_elements(c.props->'Cliente'->'title') x) ASC)
+  FROM notion_cache c WHERE c.db = 'clientes' AND NOT c.arquivado AND coalesce(c.props->'Situação'->'select'->>'name', '') <> 'Encerrado'), '[]'::jsonb) AS results,
+  coalesce((SELECT e.erro IS NULL AND e.ultima_sync > now() - interval '10 minutes' AND e.ultima_completa IS NOT NULL FROM notion_cache_estado e WHERE e.db = 'clientes'), false) AS fresco;`, options: {} } } });
+
+const cacheAno = node({ type: 'n8n-nodes-base.postgres', version: 2.6, config: { name: 'Entregas do ano', credentials: PG, executeOnce: true, parameters: {
+  operation: 'executeQuery',
+  query: `SELECT coalesce((SELECT jsonb_agg(jsonb_build_object('id', c.id, 'url', 'https://www.notion.so/' || c.id, 'properties', c.props,
+  'last_edited_time', to_char(c.editado AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')) ORDER BY nullif(left(coalesce(c.props->'Postado em'->'date'->>'start', ''), 10), '') DESC NULLS LAST)
+  FROM notion_cache c WHERE c.db = 'entregas' AND NOT c.arquivado AND coalesce(c.props->'Status'->'select'->>'name', '') <> 'Cancelado' AND (coalesce(c.props->'Status'->'select'->>'name', '') <> 'Postado' OR left(coalesce(c.props->'Postado em'->'date'->>'start', ''), 10) >= $1)), '[]'::jsonb) AS results,
+  coalesce((SELECT e.erro IS NULL AND e.ultima_sync > now() - interval '10 minutes' AND e.ultima_completa IS NOT NULL FROM notion_cache_estado e WHERE e.db = 'entregas'), false) AS fresco;`,
+  options: { queryReplacement: '={{ [ $("Validar acesso").first().json.ano ] }}' } } } });
+
+const clientesFresca = ifElse({ version: 2.2, config: { name: 'Cópia em dia (clientes)?', parameters: { conditions: {
+  options: { caseSensitive: true, leftValue: '', typeValidation: 'loose' },
+  conditions: [{ leftValue: '={{ $("Fichas dos clientes").first().json.fresco === true && $("Entregas do ano").first().json.fresco === true }}', rightValue: '', operator: { type: 'boolean', operation: 'true', singleValue: true } }],
+  combinator: 'and' } } } });
+
+// Depois de gravar no Notion, a mesma página entra na cópia na hora (o painel recarrega logo depois).
+const UPSERT_SQL = `INSERT INTO notion_cache (db, id, props, criado, editado, arquivado, visto_em)
+SELECT $1, replace($2::jsonb->>'id', '-', ''), $2::jsonb->'properties', ($2::jsonb->>'created_time')::timestamptz, ($2::jsonb->>'last_edited_time')::timestamptz, false, now()
+WHERE $2::jsonb->>'object' = 'page'
+ON CONFLICT (db, id) DO UPDATE SET props = EXCLUDED.props, editado = EXCLUDED.editado, arquivado = false, visto_em = now();`;
+const copiaEdicao = node({ type: 'n8n-nodes-base.postgres', version: 2.6, config: { name: 'Atualizar cópia (edição)', credentials: PG, onError: 'continueRegularOutput', alwaysOutputData: true, parameters: {
+  operation: 'executeQuery', query: UPSERT_SQL, options: { queryReplacement: '={{ [ "entregas", JSON.stringify($json) ] }}' } } } });
+const copiaCriacao = node({ type: 'n8n-nodes-base.postgres', version: 2.6, config: { name: 'Atualizar cópia (card novo)', credentials: PG, onError: 'continueRegularOutput', alwaysOutputData: true, parameters: {
+  operation: 'executeQuery', query: UPSERT_SQL, options: { queryReplacement: '={{ [ "entregas", JSON.stringify($json) ] }}' } } } });
+const copiaFicha = node({ type: 'n8n-nodes-base.postgres', version: 2.6, config: { name: 'Atualizar cópia (ficha)', credentials: PG, onError: 'continueRegularOutput', alwaysOutputData: true, parameters: {
+  operation: 'executeQuery', query: UPSERT_SQL, options: { queryReplacement: '={{ [ "clientes", JSON.stringify($json) ] }}' } } } });
+
 const nota = sticky('## Painel do diretor (V1)\nPágina grupoeuforia.com.br/diretor?u=<token> + PIN de 6 números. Só o papel "diretor" da tabela "Painel equipe · acesso" entra.\nAções: visao (cards abertos + postados nos últimos 7 dias, clientes ativos, equipe), editar (status, tipo, prioridade, prazo, vai ao ar, links, quantidade, responsável; registra "[Painel ...] Flau mudou ..." no topo da Obs), criar (card novo, Origem Extra), mensagens (o que Ismael, Rômulo e o suporte mandaram nos grupos de cliente nos últimos 3 dias), clientes (ficha, contrato, feito x total, abertos, postados, conversa no grupo), ficha (muda clima, risco, recuperação, atenção e próximo alinhamento no banco Clientes).\nNão apaga card: para tirar da fila, status Cancelado.', [], { color: 4 });
 
 export default workflow('painel-diretor', 'Painel | Diretor (V1)')
   .add(pedir).to(ler).to(acesso).to(validar)
   .to(caminho
-    .onCase(0, entregas.to(clientes).to(montarVisao).to(devolverVisao))
-    .onCase(1, cardAtual.to(montarEdicao).to(podeEditar.onTrue(salvar.to(okEdicao)).onFalse(erroEdicao)))
-    .onCase(2, montarCriacao.to(criar).to(okCriacao))
+    .onCase(0, cacheCards.to(cacheClientes).to(visaoFresca.onTrue(montarVisao.to(devolverVisao)).onFalse(entregas.to(clientes).to(montarVisao))))
+    .onCase(1, cardAtual.to(montarEdicao).to(podeEditar.onTrue(salvar.to(copiaEdicao).to(okEdicao)).onFalse(erroEdicao)))
+    .onCase(2, montarCriacao.to(criar).to(copiaCriacao).to(okCriacao))
     .onCase(3, mensagens.to(montarMensagens).to(devolverMensagens))
-    .onCase(4, fichas.to(doAno).to(conversas).to(montarClientes).to(devolverClientes))
-    .onCase(5, fichaAtual.to(montarFicha).to(podeFicha.onTrue(salvarFicha.to(okFicha)).onFalse(erroFicha)))
+    .onCase(4, cacheFichas.to(cacheAno).to(clientesFresca.onTrue(conversas.to(montarClientes).to(devolverClientes)).onFalse(fichas.to(doAno).to(conversas))))
+    .onCase(5, fichaAtual.to(montarFicha).to(podeFicha.onTrue(salvarFicha.to(copiaFicha).to(okFicha)).onFalse(erroFicha)))
     .onCase(6, recusar))
   .add(nota);

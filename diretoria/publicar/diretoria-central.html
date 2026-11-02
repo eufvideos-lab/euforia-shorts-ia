@@ -1,0 +1,469 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow"><title>Painel Central · To-do e Financeiro</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100..125,500..900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>:root{--bg:#050505;--card:#0f0f12;--card2:#16161b;--line:rgba(255,255,255,.08);--txt:#F4F2EE;--mut:rgba(244,242,238,.55);--or:#FF6518;--or2:#FF8A4C;--pe:#FEB089;--ok:#2ecc71;--err:#ff5a5a;--warn:#e9c46a}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{min-height:100%}
+body{background:var(--bg);color:var(--txt);font:15px/1.45 Inter,Arial,sans-serif;padding:18px 22px 80px}
+button{font:inherit;cursor:pointer;color:inherit}
+a{color:var(--or2)}
+.in{max-width:1180px}
+h2.sec{font:800 14px 'Archivo',sans-serif;text-transform:uppercase;letter-spacing:.6px;margin:26px 0 10px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+h2.sec small{font:500 12px Inter;color:var(--mut);text-transform:none;letter-spacing:0}
+h2.sec .n{font:700 11px Inter;background:var(--card2);border:1px solid var(--line);border-radius:20px;padding:1px 8px;color:var(--mut)}
+.mut{color:var(--mut)}
+.hint{color:var(--mut);font-size:12.5px;margin-top:6px}
+.btn{background:var(--or);color:#fff;border:0;border-radius:10px;padding:10px 16px;font-weight:700}
+.btn:disabled{opacity:.5;cursor:default}
+.ghost{background:transparent;border:1px solid var(--line);border-radius:9px;padding:6px 11px;font-weight:600;font-size:13px}
+.ghost:hover{border-color:var(--or)}
+.mini{background:var(--card2);border:1px solid var(--line);border-radius:7px;padding:3px 8px;font-size:12px;font-weight:600}
+.mini:hover{border-color:var(--or)}
+.mini.ok{color:var(--ok)} .mini.err{color:var(--err)}
+input,select,textarea{width:100%;background:var(--card2);border:1px solid var(--line);color:var(--txt);border-radius:10px;padding:10px 12px;font:inherit}
+textarea{min-height:90px;resize:vertical}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--or)}
+label{display:block;font-size:11.5px;color:var(--mut);margin:12px 0 5px;text-transform:uppercase;letter-spacing:.8px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 15px}
+.kpi small{display:block;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--mut)}
+.kpi b{display:block;font:800 24px/1.15 'Archivo',sans-serif;margin-top:4px}
+.kpi span{display:block;font-size:12.5px;color:var(--mut);margin-top:3px}
+.kpi.neg b{color:var(--err)} .kpi.pos b{color:var(--ok)} .kpi.or b{color:var(--or2)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:6px 14px}
+.lin{display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid var(--line);font-size:14px}
+.lin:first-child{border-top:0}
+.lin .t{flex:1;min-width:0}
+.lin .t .s{display:block;color:var(--mut);font-size:12px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lin .v{flex:none;font-weight:700;text-align:right;white-space:nowrap}
+.lin .acts{flex:none;display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end}
+.ent{color:var(--ok)} .sai{color:var(--err)}
+.chip{display:inline-block;font-size:11px;border:1px solid var(--line);border-radius:6px;padding:0 6px;margin-right:4px;color:var(--mut);white-space:nowrap}
+.chip.at{color:var(--err);border-color:rgba(255,90,90,.4)}
+.chip.hj{color:var(--or2);border-color:rgba(255,101,24,.4)}
+.vazio{color:var(--mut);padding:12px 0;font-size:14px}
+.erro{color:var(--err);padding:10px 0}
+.topo{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.topo .esp{flex:1}
+.estado{margin-top:30px;color:var(--mut);font-size:12px}
+.estado b{color:var(--warn);font-weight:600}
+.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:10px 16px;font-size:14px;box-shadow:0 8px 30px rgba(0,0,0,.5);z-index:50;max-width:90vw}
+.toast.err{border-color:rgba(255,90,90,.5)}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.65);display:flex;align-items:flex-start;justify-content:center;padding:6vh 16px;z-index:40;overflow:auto}
+.modal .box{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px;width:100%;max-width:520px}
+.modal h3{font:800 16px 'Archivo',sans-serif;text-transform:uppercase;letter-spacing:.4px}
+.modal .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.modal .pe{display:flex;gap:8px;justify-content:flex-end;margin-top:18px}
+.modal .msg{color:var(--err);font-size:13px;min-height:18px;margin-top:8px}
+@media (max-width:640px){body{padding:14px 16px 80px}.modal .row{grid-template-columns:1fr}.lin{flex-wrap:wrap}.lin .acts{width:100%;justify-content:flex-start}}
+</style></head><body><div class="in">
+<style>.tabs{display:flex;gap:6px;margin-bottom:16px}.tab{background:transparent;border:1px solid var(--line);border-radius:9px;padding:7px 14px;font-weight:700;font-size:13.5px}.tab.on{border-color:var(--or);color:var(--or2)}</style>
+<div class="tabs"><button class="tab" data-t="todo">To-do</button><button class="tab" data-t="fin">Financeiro</button></div><section id="sTodo" hidden><div class="topo">
+<input id="novo" placeholder="Anote e aperte Enter (ex.: ligar para o contador)" style="flex:2;min-width:220px" autocomplete="off">
+<input id="nData" type="date" title="Data limite (opcional)" style="width:150px;flex:none">
+<select id="nPrio" title="Prioridade" style="width:130px;flex:none"><option value="">Prioridade</option><option>🔴 Urgente</option><option>🟠 Alta</option><option>🟡 Média</option><option>⚪ Baixa</option></select>
+<select id="nSetor" title="Setor" style="width:120px;flex:none"><option value="">Setor</option><option>Clientes</option><option>Comercial</option><option>Financeiro</option><option>Equipe</option><option>Jurídico</option><option>Pessoal</option></select>
+<button class="btn" id="bNovo">Anotar</button></div>
+<div class="topo" style="margin-top:12px"><button class="ghost" data-f="meus" style="border-color:var(--or)">Meus</button><button class="ghost" data-f="equipe">De outros</button><button class="ghost" data-f="todos">Todos</button>
+<span class="mut" style="font-size:13px">Hoje: <b id="cHoje">–</b> · Atrasadas: <b id="cAtr" style="color:var(--err)">–</b></span><span class="esp"></span>
+<input id="busca" placeholder="Buscar" style="width:200px"><button class="ghost" id="bLanc">+ Lançamento</button></div>
+<div id="lista"><p class="vazio">Carregando…</p></div><div id="rodape"></div></section><section id="sFin" hidden><div class="topo"><span class="mut" style="font-size:13px">Valores do 💸 Lançamentos e do saldo que você informa. Nada é inventado; o que falta aparece como "—".</span><span class="esp"></span>
+<button class="ghost" id="bSaldo">Informar saldo do banco</button><button class="btn" id="bLancF">+ Lançamento</button></div>
+<div id="conteudo" style="margin-top:14px"><p class="vazio">Carregando…</p></div><div id="rodapeF"></div></section>
+</div><script>
+// Comum às abas do Painel Central (To-do e Financeiro). A sessão vem da casca (/diretoria), no sessionStorage.
+var API = 'https://n8n.grupoeuforia.tech/webhook/diretoria-central';
+function $(id) { return document.getElementById(id); }
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+function sessao() { try { return JSON.parse(sessionStorage.getItem('painelCasca_central') || 'null'); } catch (e) { return null; } }
+function api(acao, extra) {
+  var s = sessao() || {};
+  var corpo = Object.assign({ usuario: s.usuario, token: s.token, acao: acao }, extra || {});
+  return fetch(API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(corpo) })
+    .then(function (r) { return r.json(); })
+    .catch(function () { return { ok: false, erro: 'Sem conexão. Tente de novo.' }; })
+    .then(function (r) {
+      if (r && r.ok === false && r.erro === 'sessao') { r.erro = 'Sua sessão acabou. Saia e entre de novo no Painel Central.'; }
+      return r || { ok: false, erro: 'Sem resposta.' };
+    });
+}
+function brl(v) { if (v == null || isNaN(v)) return '—'; return (v < 0 ? '− ' : '') + 'R$ ' + Math.abs(Number(v)).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+function dm(d) { return d ? d.slice(8, 10) + '/' + d.slice(5, 7) : ''; }
+function hojeISO() { var d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0, 10); }
+function maisDias(n, base) { var d = base ? new Date(base + 'T12:00:00') : new Date(); d.setDate(d.getDate() + n); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0, 10); }
+var _t;
+function aviso(txt, erro) {
+  var el = $('toast'); if (!el) { el = document.createElement('div'); el.id = 'toast'; document.body.appendChild(el); }
+  el.className = 'toast' + (erro ? ' err' : ''); el.textContent = txt; el.hidden = false;
+  clearTimeout(_t); _t = setTimeout(function () { el.hidden = true; }, erro ? 6000 : 3000);
+}
+// Modal simples: campos [{k, rot, tipo:'text|date|select|textarea|number', ops:[[valor, rótulo]], v, meia}]
+function modal(titulo, campos, botao, enviar, nota) {
+  var m = document.createElement('div'); m.className = 'modal';
+  var html = '<div class="box"><h3>' + esc(titulo) + '</h3>' + (nota ? '<p class="hint">' + nota + '</p>' : '');
+  var linha = [];
+  function campo(c) {
+    var id = 'm_' + c.k, v = c.v == null ? '' : c.v, h = '<div><label for="' + id + '">' + esc(c.rot) + '</label>';
+    if (c.tipo === 'select') h += '<select id="' + id + '">' + c.ops.map(function (o) { return '<option value="' + esc(o[0]) + '"' + (String(o[0]) === String(v) ? ' selected' : '') + '>' + esc(o[1]) + '</option>'; }).join('') + '</select>';
+    else if (c.tipo === 'textarea') h += '<textarea id="' + id + '">' + esc(v) + '</textarea>';
+    else h += '<input id="' + id + '" type="' + (c.tipo || 'text') + '" value="' + esc(v) + '"' + (c.tipo === 'number' ? ' step="0.01" inputmode="decimal"' : '') + '>';
+    return h + '</div>';
+  }
+  campos.forEach(function (c) {
+    if (c.meia) { linha.push(campo(c)); if (linha.length === 2) { html += '<div class="row">' + linha.join('') + '</div>'; linha = []; } }
+    else { if (linha.length) { html += '<div class="row">' + linha.join('') + '</div>'; linha = []; } html += campo(c); }
+  });
+  if (linha.length) html += '<div class="row">' + linha.join('') + '</div>';
+  html += '<p class="msg" id="m_msg"></p><div class="pe"><button class="ghost" type="button" id="m_x">Cancelar</button><button class="btn" type="button" id="m_ok">' + esc(botao) + '</button></div></div>';
+  m.innerHTML = html; document.body.appendChild(m);
+  var primeiro = m.querySelector('input,textarea,select'); if (primeiro) primeiro.focus();
+  function fechar() { m.remove(); }
+  m.addEventListener('click', function (e) { if (e.target === m) fechar(); });
+  $('m_x').onclick = fechar;
+  $('m_ok').onclick = function () {
+    var val = {}; campos.forEach(function (c) { val[c.k] = $('m_' + c.k).value.trim(); });
+    $('m_ok').disabled = true; $('m_msg').textContent = '';
+    Promise.resolve(enviar(val)).then(function (erro) {
+      if (erro) { $('m_ok').disabled = false; $('m_msg').textContent = erro; } else fechar();
+    });
+  };
+  return m;
+}
+function rodapeEstado(estado) {
+  var nomes = { entregas: 'Entregas', clientes: 'Clientes', lancamentos: 'Lançamentos', pendencias: 'Pendências' };
+  return '<p class="estado">Cópia rápida do Notion: ' + (estado || []).map(function (e) {
+    return esc(nomes[e.db] || e.db) + ' ' + esc(e.sync || '—') + (e.erro ? ' <b>(erro)</b>' : e.velho ? ' <b>(atrasada)</b>' : '');
+  }).join(' · ') + '. O Notion continua sendo o oficial.</p>';
+}
+var CATS = ['Nova venda', 'Renovação', 'Mensalidade / recebimento', 'Avulso / upsell', 'Sinal', 'Aporte', 'Empréstimo recebido', 'Outras entradas',
+  'Equipe', 'Comissões e bônus', 'Ferramentas', 'Escritório', 'Tráfego', 'Equipamentos', 'Treinamentos', 'Reembolso', 'Dívida', 'Impostos e contador',
+  'Fatura de cartão', 'Reserva para meta', 'Casa e família', 'Pró-labore', 'Retirada', 'Outras saídas'];
+function novoLancamento(pre, depois) {
+  pre = pre || {};
+  modal('Novo lançamento', [
+    { k: 'desc', rot: 'Descrição', v: pre.desc || '' },
+    { k: 'tipo', rot: 'Tipo', tipo: 'select', ops: [['Saída', 'Saída (pagar)'], ['Entrada', 'Entrada (receber)']], v: pre.tipo || 'Saída', meia: 1 },
+    { k: 'valor', rot: 'Valor (R$)', tipo: 'number', v: pre.valor || '', meia: 1 },
+    { k: 'cat', rot: 'Categoria', tipo: 'select', ops: [['', 'Escolha…']].concat(CATS.map(function (c) { return [c, c]; })), v: pre.cat || '', meia: 1 },
+    { k: 'esc', rot: 'Empresa ou pessoal', tipo: 'select', ops: [['Empresa', 'Empresa'], ['Pessoal', 'Pessoal']], v: pre.esc || 'Empresa', meia: 1 },
+    { k: 'status', rot: 'Situação', tipo: 'select', ops: [['Previsto', 'Previsto'], ['Pago', 'Já pago'], ['Possível venda', 'Possível venda (a confirmar)']], v: 'Previsto', meia: 1 },
+    { k: 'venc', rot: 'Vencimento', tipo: 'date', v: pre.venc || hojeISO(), meia: 1 },
+    { k: 'obs', rot: 'Observação (opcional)', v: pre.obs || '' }
+  ], 'Lançar no Notion', function (v) {
+    return api('fin_lancar', { campos: v }).then(function (r) {
+      if (!r.ok) return r.erro || 'Não deu certo.';
+      aviso('Lançado no 💸 Lançamentos.'); if (depois) depois(r);
+    });
+  }, 'Vai direto para o 💸 Lançamentos do Notion (Origem: Manual).');
+}
+
+(function () {
+// Aba To-do do Painel Central: ✅ Minhas Pendências do Notion, lido da cópia rápida.
+var D = null, filtro = 'meus', busca = '', abertos = {};
+var PRIOS = ['🔴 Urgente', '🟠 Alta', '🟡 Média', '⚪ Baixa'];
+var SETORES = ['Clientes', 'Comercial', 'Financeiro', 'Equipe', 'Jurídico', 'Pessoal'];
+var MAQS = [['carrossel', 'Carrossel'], ['shorts', 'Shorts'], ['longo', 'Vídeo longo'], ['thumb', 'Thumbnail (escreva "Tema da thumb: …")'], ['arte', 'Arte'],
+  ['idv', 'ID visual'], ['pautas', 'Pautas e roteiros'], ['copy', 'Copy'], ['pagina', 'Página'], ['funil', 'Funil'], ['insta', 'Insta-Blindado'],
+  ['relatorio', 'Relatório'], ['situacao', 'Situação completa'], ['cronograma', 'Cronograma'], ['estrategia', 'Estratégia'], ['recuperacao', 'Estratégia de recuperação'],
+  ['alinhamento', 'Apresentação de alinhamento'], ['call', 'Apresentação de call'], ['setup', 'Setup'], ['outro', 'Outro (mín. 40 letras)']];
+
+function carregar() {
+  return api('todo').then(function (r) {
+    if (!r.ok) { $('lista').innerHTML = '<p class="erro">' + esc(r.erro || 'Não carregou.') + '</p>'; return; }
+    D = r; desenhar();
+  });
+}
+function meu(i) { return !i.re || i.re === 'Flau'; }
+function grupoDe(i, hoje) {
+  if (i.st === 'Feito') return 'feito';
+  if (i.st === 'Aguardando terceiros') return 'aguardando';
+  if (!i.d) return 'semdata';
+  if (i.d < hoje) return 'atrasadas';
+  if (i.d === hoje) return 'hoje';
+  if (i.d <= maisDias(7, hoje)) return 'semana';
+  return 'depois';
+}
+var GRUPOS = [['atrasadas', 'Atrasadas'], ['hoje', 'Hoje'], ['semana', 'Próximos 7 dias'], ['semdata', 'Sem data'], ['depois', 'Mais pra frente'],
+  ['aguardando', 'Aguardando alguém'], ['feito', 'Feitas (últimos 3 dias)']];
+var ORD_P = { '🔴 Urgente': 0, '🟠 Alta': 1, '🟡 Média': 2, '⚪ Baixa': 3, '': 4 };
+function desenhar() {
+  var hoje = D.hoje, q = busca.toLowerCase();
+  var itens = D.itens.filter(function (i) {
+    if (filtro === 'meus' && !meu(i)) return false;
+    if (filtro === 'equipe' && meu(i)) return false;
+    if (q && (i.t + ' ' + i.cp + ' ' + i.cx + ' ' + i.se).toLowerCase().indexOf(q) < 0) return false;
+    return true;
+  });
+  var por = {}; itens.forEach(function (i) { var g = grupoDe(i, hoje); (por[g] = por[g] || []).push(i); });
+  $('cHoje').textContent = (por.hoje || []).length; $('cAtr').textContent = (por.atrasadas || []).length;
+  var html = '';
+  GRUPOS.forEach(function (g) {
+    var l = por[g[0]] || []; if (!l.length) return;
+    l.sort(function (a, b) {
+      if (g[0] === 'feito') return String(b.e || '').localeCompare(String(a.e || ''));
+      return (ORD_P[a.pr] - ORD_P[b.pr]) || String(a.d || '9').localeCompare(String(b.d || '9'));
+    });
+    var max = abertos[g[0]] ? l.length : (g[0] === 'atrasadas' ? 25 : 60);
+    html += '<h2 class="sec">' + g[1] + ' <span class="n">' + l.length + '</span>' + (g[0] === 'atrasadas' ? '<small>As mais urgentes primeiro. Dica: reagende ou marque como feito o que já passou.</small>' : '') + '</h2><div class="card">';
+    html += l.slice(0, max).map(function (i) { return linha(i, hoje); }).join('');
+    if (l.length > max) html += '<div class="lin"><button class="ghost" data-mais="' + g[0] + '">Ver mais ' + (l.length - max) + '</button></div>';
+    html += '</div>';
+  });
+  $('lista').innerHTML = html || '<p class="vazio">Nada por aqui. 🎉</p>';
+  $('rodape').innerHTML = rodapeEstado(D.estado);
+}
+function linha(i, hoje) {
+  var chips = '';
+  if (i.d) chips += '<span class="chip' + (i.d < hoje && i.st !== 'Feito' ? ' at' : i.d === hoje ? ' hj' : '') + '">' + dm(i.d) + '</span>';
+  if (i.pr) chips += '<span class="chip">' + esc(i.pr) + '</span>';
+  if (i.se) chips += '<span class="chip">' + esc(i.se) + '</span>';
+  if (i.re && i.re !== 'Flau') chips += '<span class="chip">' + esc(i.re) + '</span>';
+  if (i.cp) chips += '<span class="chip">' + esc(i.cp) + '</span>';
+  var feito = i.st === 'Feito';
+  return '<div class="lin" data-id="' + i.id + '"><input type="checkbox" class="ck" title="Feito"' + (feito ? ' checked' : '') + ' style="width:18px;height:18px;flex:none;accent-color:#FF6518">' +
+    '<div class="t"' + (feito ? ' style="opacity:.5;text-decoration:line-through"' : '') + '>' + esc(i.t || '(sem título)') + '<span class="s">' + chips + (i.cx ? ' ' + esc(i.cx) : '') + '</span></div>' +
+    '<div class="acts"><button class="mini" data-a="hoje">Hoje</button><button class="mini" data-a="amanha">Amanhã</button><button class="mini" data-a="data">Data</button>' +
+    '<button class="mini" data-a="passar">Passar</button><button class="mini" data-a="maquina">Máquina</button><button class="mini" data-a="lanc">R$</button>' +
+    '<button class="mini" data-a="mais">⋯</button></div></div>';
+}
+function achar(id) { return D.itens.filter(function (x) { return x.id === id; })[0]; }
+function mudar(i, campos, msg) {
+  var antes = JSON.stringify(i);
+  if (campos.status) i.st = campos.status; if ('data' in campos) i.d = campos.data; if ('prio' in campos) i.pr = campos.prio;
+  if ('setor' in campos) i.se = campos.setor; if (campos.texto) i.t = campos.texto; if ('contexto' in campos) i.cx = campos.contexto;
+  i.e = new Date().toISOString(); desenhar();
+  return api('todo_mudar', { id: i.id, campos: campos }).then(function (r) {
+    if (!r.ok) { Object.assign(i, JSON.parse(antes)); desenhar(); aviso(r.erro || 'Não salvou.', true); return false; }
+    if (msg) aviso(msg); return true;
+  });
+}
+function criar() {
+  var t = $('novo').value.trim(); if (t.length < 2) return;
+  var campos = { texto: t };
+  if ($('nData').value) campos.data = $('nData').value;
+  if ($('nPrio').value) campos.prio = $('nPrio').value;
+  if ($('nSetor').value) campos.setor = $('nSetor').value;
+  $('novo').value = ''; $('novo').focus();
+  var tmp = { id: 'tmp' + Date.now(), t: t, st: 'A fazer', pr: campos.prio || '', se: campos.setor || '', re: 'Flau', d: campos.data || '', cx: '', cp: '', e: new Date().toISOString() };
+  D.itens.unshift(tmp); desenhar();
+  api('todo_criar', { campos: campos }).then(function (r) {
+    if (!r.ok) { D.itens = D.itens.filter(function (x) { return x !== tmp; }); desenhar(); $('novo').value = t; aviso(r.erro || 'Não salvou.', true); return; }
+    tmp.id = r.id; tmp.url = r.url; desenhar(); aviso('Anotado no ✅ Minhas Pendências.');
+  });
+}
+function passar(i) {
+  modal('Passar para alguém', [
+    { k: 'para', rot: 'Para quem', tipo: 'select', ops: [['Rômulo', 'Rômulo'], ['Ismael', 'Ismael'], ['Rômulo + Ismael', 'Rômulo + Ismael'], ['Diogo', 'Diogo'], ['Advogado', 'Advogado']], meia: 1 },
+    { k: 'prazo', rot: 'Prazo', tipo: 'date', v: i.d && i.d >= D.hoje ? i.d : maisDias(1, D.hoje), meia: 1 },
+    { k: 'tipo', rot: 'Tipo', tipo: 'select', ops: [['Processo interno', 'Processo interno'], ['Entrega', 'Entrega'], ['Resposta ao cliente', 'Resposta ao cliente'], ['Agenda', 'Agenda'], ['Rescisão / Jurídico', 'Rescisão / Jurídico']], meia: 1 },
+    { k: 'prio', rot: 'Prioridade', tipo: 'select', ops: [['Média', 'Média'], ['Alta', 'Alta'], ['Urgente', 'Urgente'], ['Baixa', 'Baixa']], v: /Urgente/.test(i.pr) ? 'Urgente' : /Alta/.test(i.pr) ? 'Alta' : 'Média', meia: 1 },
+    { k: 'texto', rot: 'Tarefa', v: i.t },
+    { k: 'cliente', rot: 'Cliente (opcional)', v: i.cp },
+    { k: 'contexto', rot: 'Contexto', tipo: 'textarea', v: i.cx }
+  ], 'Criar card', function (v) {
+    return api('todo_passar', { campos: v }).then(function (r) {
+      if (!r.ok) return r.erro || 'Não deu certo.';
+      mudar(i, { status: 'Aguardando terceiros', link: r.url, contexto: (i.cx ? i.cx + '\n' : '') + 'Passado para ' + v.para + ' em ' + dm(D.hoje) + ' (Pendências de Clientes).' });
+      i.link = r.url;
+      setTimeout(function () { avisarDiscord(v); }, 50);
+    });
+  }, 'Cria o card no quadro Pendências de Clientes, com responsável, prazo e contexto. O item daqui fica em "Aguardando alguém".');
+}
+function avisarDiscord(v) {
+  var txt = '📌 ' + v.para + ': nova tarefa da direção' + (v.prazo ? ' (prazo ' + dm(v.prazo) + ')' : '') + '\n' + v.texto + (v.cliente ? '\nCliente: ' + v.cliente : '') + '\nEstá no quadro Pendências de Clientes.';
+  modal('Avisar no #dia-a-dia?', [{ k: 'texto', rot: 'Mensagem no Discord', tipo: 'textarea', v: txt }], 'Enviar no Discord', function (x) {
+    return api('avisar', { campos: x }).then(function (r) { if (!r.ok) return r.erro || 'O Discord não aceitou.'; aviso('Aviso enviado no #dia-a-dia.'); });
+  }, 'Card criado. O aviso só sai se você clicar em Enviar. Pode editar o texto.');
+}
+function maquina(i) {
+  modal('Mandar para a máquina', [
+    { k: 'cliente', rot: 'Cliente', tipo: 'select', ops: [['', 'Escolha…']].concat(D.clientes.map(function (c) { return [c.id, c.nome]; })) },
+    { k: 'tipo', rot: 'O que fazer', tipo: 'select', ops: [['', 'Escolha…']].concat(MAQS), meia: 1 },
+    { k: 'prazo', rot: 'Prazo', tipo: 'date', v: i.d && i.d >= D.hoje ? i.d : maisDias(2, D.hoje), meia: 1 },
+    { k: 'modo', rot: 'Como', tipo: 'select', ops: [['auto', 'Automático (máquina faz)'], ['mao', 'À mão (escritório)']] },
+    { k: 'texto', rot: 'Pedido', tipo: 'textarea', v: i.t + (i.cx ? '\n' + i.cx : '') },
+    { k: 'link', rot: 'Link (opcional)', v: i.link || '' }
+  ], 'Mandar', function (v) {
+    return api('maquina', { campos: v }).then(function (r) {
+      if (!r.ok) return 'Não foi: ' + ({ acesso: 'acesso de diretor', tipo: 'tipo', cliente: 'cliente inválido ou encerrado', prazo: 'prazo no passado', texto: 'pedido curto demais', tema: 'falta "Tema da thumb: …"' }[r.erro] || r.erro);
+      mudar(i, { status: 'Aguardando terceiros', contexto: (i.cx ? i.cx + '\n' : '') + 'Mandado para ' + (r.quem || 'a máquina') + ' em ' + dm(D.hoje) + ': ' + (r.titulo || '') });
+      aviso('Pedido criado no Entregas: ' + (r.quem || 'máquina') + '.');
+    });
+  }, 'Mesmo caminho do "Pedido ao escritório" do painel da equipe: cria o card no Entregas e, quando é automático, o pedido no quadro da máquina.');
+}
+function mais(i) {
+  modal('Editar pendência', [
+    { k: 'texto', rot: 'Pendência', v: i.t },
+    { k: 'data', rot: 'Data limite', tipo: 'date', v: i.d, meia: 1 },
+    { k: 'prio', rot: 'Prioridade', tipo: 'select', ops: [['', '—']].concat(PRIOS.map(function (p) { return [p, p]; })), v: i.pr, meia: 1 },
+    { k: 'setor', rot: 'Setor', tipo: 'select', ops: [['', '—']].concat(SETORES.map(function (p) { return [p, p]; })), v: i.se, meia: 1 },
+    { k: 'status', rot: 'Status', tipo: 'select', ops: [['A fazer', 'A fazer'], ['Em andamento', 'Em andamento'], ['Aguardando terceiros', 'Aguardando alguém'], ['Feito', 'Feito']], v: i.st, meia: 1 },
+    { k: 'contexto', rot: 'Contexto', tipo: 'textarea', v: i.cx }
+  ], 'Salvar', function (v) {
+    return mudar(i, v, 'Salvo no Notion.').then(function (ok) { return ok ? '' : 'Não salvou.'; });
+  }, '<a href="https://www.notion.so/' + i.id + '" target="_blank" rel="noopener">Abrir no Notion</a>' + (i.link ? ' · <a href="' + esc(i.link) + '" target="_blank" rel="noopener">Link do item</a>' : ''));
+}
+window.iniciarTodo = function () {
+  if (!sessao()) { $('lista').innerHTML = '<p class="erro">Abra esta aba pelo Painel Central (lp.grupoeuforia.tech/diretoria).</p>'; return; }
+  $('novo').addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); criar(); } });
+  $('bNovo').onclick = criar;
+  $('busca').addEventListener('input', function () { busca = this.value; desenhar(); });
+  [].forEach.call(document.querySelectorAll('[data-f]'), function (b) {
+    b.onclick = function () { filtro = b.getAttribute('data-f'); [].forEach.call(document.querySelectorAll('[data-f]'), function (x) { x.style.borderColor = x === b ? 'var(--or)' : ''; }); desenhar(); };
+  });
+  $('bLanc').onclick = function () { novoLancamento(); };
+  $('lista').addEventListener('click', function (e) {
+    var m = e.target.closest('[data-mais]'); if (m) { abertos[m.getAttribute('data-mais')] = 1; desenhar(); return; }
+    var l = e.target.closest('.lin[data-id]'); if (!l) return; var i = achar(l.getAttribute('data-id')); if (!i || /^tmp/.test(i.id)) return;
+    if (e.target.classList.contains('ck')) { mudar(i, { status: e.target.checked ? 'Feito' : 'A fazer' }, e.target.checked ? 'Feito ✓' : 'Reaberta.'); return; }
+    var b = e.target.closest('[data-a]'); if (!b) return; var a = b.getAttribute('data-a');
+    if (a === 'hoje') mudar(i, { data: D.hoje }, 'Para hoje.');
+    else if (a === 'amanha') mudar(i, { data: maisDias(1, D.hoje) }, 'Para amanhã.');
+    else if (a === 'data') modal('Mudar a data', [{ k: 'data', rot: 'Data limite', tipo: 'date', v: i.d || D.hoje }], 'Salvar', function (v) { return mudar(i, { data: v.data }, 'Data mudada.').then(function (ok) { return ok ? '' : 'Não salvou.'; }); });
+    else if (a === 'passar') passar(i);
+    else if (a === 'maquina') maquina(i);
+    else if (a === 'lanc') novoLancamento({ desc: i.t, venc: i.d || D.hoje, obs: 'Veio do To-do.' });
+    else if (a === 'mais') mais(i);
+  });
+  carregar();
+  setInterval(function () { if (aba === 'todo' && !document.hidden && !document.querySelector('.modal')) carregar(); }, 120000);
+  window.addEventListener('focus', function () { if (aba === 'todo' && D && !document.querySelector('.modal')) carregar(); });
+};
+})();
+
+(function () {
+// Aba Financeiro do Painel Central: 💸 Lançamentos do Notion (cópia rápida) + saldo real informado pelo Henrique.
+var F = null, abertoDia = {};
+function carregar() {
+  return api('fin').then(function (r) {
+    if (!r.ok) { $('conteudo').innerHTML = '<p class="erro">' + esc(r.erro || 'Não carregou.') + '</p>'; return; }
+    F = r; desenhar();
+  });
+}
+function kpi(t, v, s, cls) { return '<div class="kpi ' + (cls || '') + '"><small>' + esc(t) + '</small><b>' + v + '</b>' + (s ? '<span>' + s + '</span>' : '') + '</div>'; }
+function soma(l) { return l.reduce(function (t, x) { return t + (x.v || 0); }, 0); }
+function item(x, acoes) {
+  var sinal = x.tipo === 'Entrada' ? 'ent' : 'sai';
+  var sub = [x.venc ? 'vence ' + dm(x.venc) : 'sem data', x.cat, x.esc === 'Pessoal' ? 'Pessoal' : '', x.parc].filter(Boolean).join(' · ');
+  return '<div class="lin" data-id="' + x.id + '"><div class="t">' + esc(x.d || '(sem descrição)') + '<span class="s" title="' + esc(x.obs) + '">' + esc(sub) + (x.obs ? ' · ' + esc(x.obs) : '') + '</span></div>' +
+    '<div class="v ' + sinal + '">' + (x.tipo === 'Saída' ? '− ' : '+ ') + brl(x.v) + '</div>' +
+    (acoes === false ? '' : '<div class="acts"><button class="mini ok" data-a="pago">' + (x.tipo === 'Entrada' ? 'Recebido' : 'Pago') + '</button><button class="mini" data-a="adiar">Adiar</button><button class="mini" data-a="valor">Valor</button><button class="mini err" data-a="cancelar">Não vai</button></div>') + '</div>';
+}
+function bloco(titulo, lista, nota, acoes) {
+  if (!lista || !lista.length) return '';
+  var e = lista.filter(function (x) { return x.tipo === 'Entrada'; }), s = lista.filter(function (x) { return x.tipo === 'Saída'; });
+  var tot = (e.length ? '<span class="ent">+ ' + brl(soma(e)) + '</span> ' : '') + (s.length ? '<span class="sai">− ' + brl(soma(s)) + '</span>' : '');
+  return '<h2 class="sec">' + titulo + ' <span class="n">' + lista.length + '</span><small>' + tot + (nota ? ' · ' + nota : '') + '</small></h2><div class="card">' + lista.map(function (x) { return item(x, acoes); }).join('') + '</div>';
+}
+function desenhar() {
+  var h = '', b = F.base;
+  var atrE = F.atrasados.filter(function (x) { return x.tipo === 'Entrada'; }), atrS = F.atrasados.filter(function (x) { return x.tipo === 'Saída'; });
+  h += '<div class="kpis">';
+  h += kpi('Saldo agora', F.saldoAgora == null ? '—' : brl(F.saldoAgora),
+    b ? 'Banco em ' + dm(b.dia) + ': ' + brl(b.valor) + (F.depois.length ? ' + ' + F.depois.length + ' pago(s) depois' : '') : 'Informe o saldo do banco', F.saldoAgora < 0 ? 'neg' : 'or');
+  h += kpi('Fim dos 7 dias', F.fimSemana == null ? '—' : brl(F.fimSemana), 'Se tudo previsto acontecer no dia', F.fimSemana < 0 ? 'neg' : 'pos');
+  h += kpi('Atrasado a receber', brl(soma(atrE)), atrE.length + ' lançamento(s), fora da projeção', atrE.length ? 'or' : '');
+  h += kpi('Atrasado a pagar', brl(soma(atrS)), atrS.length + ' lançamento(s), fora da projeção', atrS.length ? 'neg' : '');
+  h += kpi('Folha (40 dias)', brl(soma(F.folha)), F.folha.length + ' pagamento(s) da equipe');
+  h += '</div>';
+  // Semana dia a dia
+  h += '<h2 class="sec">Próximos 7 dias <small>Saldo projetado = saldo agora + entradas − saídas previstas de cada dia. Toque no dia para ver.</small></h2><div class="card">';
+  F.semana.forEach(function (d) {
+    var neg = d.saldo != null && d.saldo < 0;
+    h += '<div class="lin" data-dia="' + d.d + '" style="cursor:pointer"><div class="t"><b>' + esc(d.rot) + '</b>' + (d.d === F.hoje ? ' <span class="chip hj">hoje</span>' : '') +
+      '<span class="s">' + (d.itens.length ? d.itens.length + ' lançamento(s)' : 'nada previsto') + '</span></div>' +
+      '<div class="v ent">' + (d.ent ? '+ ' + brl(d.ent) : '') + '</div><div class="v sai" style="min-width:110px">' + (d.sai ? '− ' + brl(d.sai) : '') + '</div>' +
+      '<div class="v" style="min-width:120px;color:' + (neg ? 'var(--err)' : 'var(--txt)') + '">' + (d.saldo == null ? '—' : brl(d.saldo)) + '</div></div>';
+    if (abertoDia[d.d] && d.itens.length) h += '<div style="padding:0 0 6px 14px">' + d.itens.map(function (x) { return item(x); }).join('') + '</div>';
+  });
+  h += '</div>';
+  h += bloco('Atrasados', F.atrasados, 'resolva: recebido/pago, adiar ou "não vai"');
+  h += bloco('Folha e comissões', F.folha, 'vale dia 20 (40%) + saldo no 5º dia útil; conferir NF 48h antes');
+  h += bloco('A receber (30 dias)', F.aReceber);
+  h += bloco('A pagar (30 dias)', F.aPagar, 'contas, dívidas e acordos');
+  h += bloco('A confirmar (possível venda)', F.possiveis, 'fora do saldo até virar Previsto');
+  if (F.semData.length) h += bloco('Previstos sem data', F.semData);
+  // Mês
+  var m = F.mes;
+  h += '<h2 class="sec">' + esc(m.nome) + ' até agora <small>só o que já está como pago</small></h2><div class="kpis">' +
+    kpi('Entradas pagas', brl(m.entradas), 'Empresa ' + brl(m.entEmp) + ' · Pessoal ' + brl(m.entPes), 'pos') +
+    kpi('Saídas pagas', brl(m.saidas), 'Empresa ' + brl(m.saiEmp) + ' · Pessoal ' + brl(m.saiPes), 'neg') +
+    kpi('Resultado do mês', brl(m.entradas - m.saidas), '', m.entradas - m.saidas < 0 ? 'neg' : 'pos') + '</div>';
+  if (m.cats.length) h += '<div class="card" style="margin-top:10px">' + m.cats.map(function (c) { return '<div class="lin"><div class="t">' + esc(c.cat) + '</div><div class="v sai">' + brl(c.v) + '</div></div>'; }).join('') + '</div>';
+  // Imposto
+  h += '<h2 class="sec">Imposto estimado</h2><div class="card"><div class="lin"><div class="t">' +
+    (F.imposto ? 'Com ' + String(F.imposto.pct).replace('.', ',') + '%: ' + brl(F.imposto.sobrePago) + ' sobre as vendas já recebidas no mês (' + brl(F.imposto.vendasPagas) + ') e ' + brl(F.imposto.sobrePrevisto) + ' sobre as previstas (' + brl(F.imposto.vendasPrev) + ').'
+      : 'Desligado. Só liga depois que o contador confirmar o percentual do Simples do CNPJ novo.') +
+    '</div><div class="acts"><button class="mini" id="bImp">' + (F.imposto ? 'Mudar %' : 'Informar %') + '</button></div></div></div>';
+  if (F.semValor) h += '<p class="hint">' + F.semValor + ' lançamento(s) previsto/pago sem valor no Notion ficaram de fora das contas.</p>';
+  $('conteudo').innerHTML = h;
+  $('rodapeF').innerHTML = rodapeEstado(F.estado);
+  $('bImp').onclick = imposto;
+}
+function achar(id) {
+  var todos = [].concat(F.atrasados, F.aReceber, F.aPagar, F.folha, F.possiveis, F.semData);
+  F.semana.forEach(function (d) { todos = todos.concat(d.itens); });
+  return todos.filter(function (x) { return x.id === id; })[0];
+}
+function mudar(x, campos, msg) {
+  return api('fin_mudar', { id: x.id, campos: campos }).then(function (r) {
+    if (!r.ok) { aviso(r.erro || 'Não salvou.', true); return r.erro || 'Não salvou.'; }
+    aviso(msg || 'Salvo no Notion.'); carregar(); return '';
+  });
+}
+function saldo() {
+  modal('Informar saldo do banco', [
+    { k: 'valor', rot: 'Saldo somado das contas (R$)', tipo: 'number', meia: 1 },
+    { k: 'dia', rot: 'De que dia', tipo: 'date', v: hojeISO(), meia: 1 },
+    { k: 'contas', rot: 'Quais contas (ex.: Itaú 1.200 + InfinitePay 300)' },
+    { k: 'obs', rot: 'Observação (opcional)' }
+  ], 'Gravar saldo', function (v) {
+    return api('fin_saldo', { campos: v }).then(function (r) { if (!r.ok) return r.erro || 'Não gravou.'; aviso('Saldo gravado.'); carregar(); });
+  }, 'Use o valor real que aparece no app do banco. Daqui pra frente o "Saldo agora" soma o que for marcado como pago depois desse dia.');
+}
+function imposto() {
+  modal('Percentual do imposto', [{ k: 'imposto_pct', rot: 'Percentual (%) — deixe vazio para desligar', tipo: 'number', v: F.config.imposto_pct || '' }], 'Salvar', function (v) {
+    return api('fin_config', { campos: v }).then(function (r) { if (!r.ok) return r.erro || 'Não gravou.'; aviso('Salvo.'); carregar(); });
+  }, 'Só preencha com o percentual que o contador confirmar. Sem número inventado.');
+}
+window.iniciarFin = function () {
+  if (!sessao()) { $('conteudo').innerHTML = '<p class="erro">Abra esta aba pelo Painel Central (lp.grupoeuforia.tech/diretoria).</p>'; return; }
+  $('bSaldo').onclick = saldo;
+  $('bLancF').onclick = function () { novoLancamento({}, carregar); };
+  $('conteudo').addEventListener('click', function (e) {
+    var dia = e.target.closest('[data-dia]'); if (dia && !e.target.closest('[data-a]')) { var d = dia.getAttribute('data-dia'); abertoDia[d] = !abertoDia[d]; desenhar(); return; }
+    var b = e.target.closest('[data-a]'); if (!b) return; var l = b.closest('[data-id]'); var x = l && achar(l.getAttribute('data-id')); if (!x) return;
+    var a = b.getAttribute('data-a');
+    if (a === 'pago') modal(x.tipo === 'Entrada' ? 'Marcar como recebido' : 'Marcar como pago', [{ k: 'pago', rot: 'Em que dia', tipo: 'date', v: hojeISO() }], 'Confirmar', function (v) {
+      return mudar(x, { status: 'Pago', pago: v.pago }, 'Marcado como pago.'); }, esc(x.d) + ' · ' + brl(x.v));
+    else if (a === 'adiar') modal('Adiar', [{ k: 'venc', rot: 'Novo vencimento', tipo: 'date', v: maisDias(7, x.venc && x.venc > hojeISO() ? x.venc : hojeISO()) }], 'Salvar', function (v) {
+      return mudar(x, { venc: v.venc }, 'Vencimento mudado.'); }, esc(x.d) + ' · ' + brl(x.v));
+    else if (a === 'valor') modal('Corrigir valor', [{ k: 'valor', rot: 'Valor (R$)', tipo: 'number', v: x.v }], 'Salvar', function (v) {
+      return mudar(x, { valor: v.valor }, 'Valor corrigido.'); }, esc(x.d));
+    else if (a === 'cancelar') modal('Não vai acontecer?', [{ k: 'status', rot: 'Marcar como', tipo: 'select', ops: [['Não realizado', 'Não realizado'], ['Cancelado', 'Cancelado']] }], 'Confirmar', function (v) {
+      return mudar(x, { status: v.status }, 'Tirado da previsão.'); }, esc(x.d) + ' · ' + brl(x.v) + '. Sai da previsão, mas continua no Notion.');
+  });
+  carregar();
+  setInterval(function () { if (aba === 'fin' && !document.hidden && !document.querySelector('.modal')) carregar(); }, 120000);
+};
+})();
+
+var aba = '', iniciadas = {};
+function abrirAba(t) {
+  aba = t;
+  [].forEach.call(document.querySelectorAll('.tab'), function (b) { b.classList.toggle('on', b.getAttribute('data-t') === t); });
+  $('sTodo').hidden = t !== 'todo'; $('sFin').hidden = t !== 'fin';
+  try { localStorage.setItem('centralAba', t); } catch (e) {}
+  if (!iniciadas[t]) { iniciadas[t] = 1; (t === 'todo' ? window.iniciarTodo : window.iniciarFin)(); }
+}
+document.addEventListener('click', function (e) { var b = e.target.closest('.tab[data-t]'); if (b) abrirAba(b.getAttribute('data-t')); });
+document.addEventListener('DOMContentLoaded', function () {
+  var q = new URLSearchParams(location.search).get('aba'), u = '';
+  try { u = localStorage.getItem('centralAba') || ''; } catch (e) {}
+  // Dentro da casca, ela clica na aba certa; fora dela, abre a última usada.
+  setTimeout(function () { if (!aba) abrirAba(q === 'fin' || (!q && u === 'fin') ? 'fin' : 'todo'); }, window.parent !== window ? 1500 : 0);
+});
+
+</script></body></html>
