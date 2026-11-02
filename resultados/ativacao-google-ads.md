@@ -16,7 +16,9 @@ medir na 1ª semana do piloto; não existe número de referência.
 Primeiro vídeo do cliente recebe mais verba; os seguintes, menos (valores definidos pelo Henrique).
 
 ## Antes de criar
-- [ ] Vídeo está **público** (não "não listado") e com thumb e título finais.
+- [ ] Vídeo com thumb e título finais. Para ligar o anúncio 1 a 3 h antes da estreia, o vídeo sobe **não listado** e vira
+      público na hora marcada (o Google Ads aceita vídeo não listado; confirmar no 1º teste do piloto).
+- [ ] Campanha criada no D-1 e deixada **pausada** (aprovação do Google pode levar horas). No dia: ligar 1 a 3 h antes.
 - [ ] Vídeo cadastrado na aba **Resultados** do painel (cliente, link, palavra-chave).
 - [ ] Verba, teto e meta de views recebidos do Henrique (por escrito).
 - [ ] Região e faixa etária de **quem compra do cliente** (ficha do cliente, dossiê ou Call 1). Se não tiver, perguntar
