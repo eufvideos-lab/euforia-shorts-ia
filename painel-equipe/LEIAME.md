@@ -28,3 +28,23 @@ Nada aqui está publicado. Publicar os fluxos e subir a página (slug `equipe`) 
 ## Falta informação (Máquina do Escritório devolve o pedido)
 Quando um pedido ao escritório não dá para fazer, a máquina põe o Responsável = quem pediu, "🏢 Escritório IA" = "Falta informação" e uma linha "[Escritório dd/MM HH:mm] Falta informação: ..." no topo da Obs, e marca a pessoa no #dia-a-dia.
 No painel o card aparece no topo da Minha fila (grupo "Falta informação para o escritório", faixa vermelha) com o que falta. O botão "Completar pedido" abre o campo de texto (obrigatório), arquivos (vão para PEDIDOS DO PAINEL na pasta do cliente) e links. O fluxo de botões (ação `completar`) grava tudo na Obs e devolve o card ao Escritório com "Na fila".
+
+## Resultados (Máquina de Resultados, V1, NO AR 02/11/2026 com OK do Henrique)
+- Aba "Resultados" (Ismael, Rômulo, diretoria; teste só vê cliente TESTE) atrás de `RESULTADOS_NO_AR = false`.
+- Fluxo n8n "Painel | Resultados (V1)" (`fluxos/resultados.js`, webhook euforia-painel-resultados), NÃO publicado.
+- Tabela n8n "Resultados · vídeos" (BezGvdw9Xrsv4ZNw): uma linha por vídeo. Orgânico = total − ativação.
+  Orgânico x ativação, campanha, piloto, verba, gasto e custo por view só para a diretoria (o fluxo não devolve nem
+  deixa a equipe mudar). Equipe vê views totais e o que o cliente contou.
+- Para pôr no ar: publicar o fluxo, trocar a constante para `true` e subir a página (mesma rotina das outras abas).
+
+## Estreias do canal (Vídeo 1) · NO AR 02/11/2026 (OK do Henrique)
+- Fluxo "Painel | Estreias (V1)" (`fluxos/estreias.js`), tabela "Painel · estreias" (uma linha por cliente).
+- Rômulo, Ismael e diretoria marcam dia e hora do Vídeo 1 na Reunião de Lançamento (grade › YouTube › "+ Marcar estreia").
+  Mínimo 7 dias à frente; abaixo de 14 o painel avisa. A diretoria pode marcar qualquer data.
+- O Vídeo 1 aparece destacado (🚀) na grade de todo mundo.
+- Só a diretoria vê: bloco "Lançamentos" na Visão geral (21 dias antes até o dia seguinte) e o checklist do lançamento
+  (mensagens, listas, público, verba, vídeo não listado, campanha pausada, anúncio 1–3 h antes, vídeo público).
+  A equipe nunca recebe os checks.
+- Para ligar: publicar o fluxo e trocar `ESTREIAS_NO_AR` para `true`.
+- "Clientes novos sem estreia marcada" (início nos últimos 60 dias, pela data do "Resumo do contrato" ou "Entrada (onboarding)")
+  aparece na Visão geral da diretoria e no topo da Minha fila do Rômulo e do Ismael. Se o Vídeo 1 já saiu, marcar a data passada.

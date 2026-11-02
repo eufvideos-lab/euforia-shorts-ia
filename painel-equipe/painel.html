@@ -199,6 +199,13 @@ textarea{min-height:90px;resize:vertical}
 .slot.Instagram{border-left-color:#C13584}
 .slot.Blog{border-left-color:var(--info)}
 .slot.pausado{opacity:.5;border-style:dashed}
+.slot.estreia{border:2px solid var(--accent);border-left-width:6px;background:var(--accent-soft)}
+.chip.estreia{background:var(--accent);color:var(--on-accent)}
+.estreias{display:flex;flex-direction:column;gap:8px}
+.estreias li{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:var(--surface)}
+.estreias li .t{flex:1;min-width:180px}
+.chk{display:flex;flex-direction:column;gap:6px;margin-top:6px;width:100%}
+.chk label{flex-direction:row;align-items:flex-start;gap:8px;font-weight:500;font-size:14px}
 .slot.confirmar{background:var(--warn-soft)}
 button.slot:hover,.slot .abre:hover b{border-color:var(--muted)}
 /* Programado (cinza) e Postado (laranja): marcados direto na grade, valem para aquela data. */
@@ -423,6 +430,8 @@ let MP = null, MPQ = '', CC = null;
 let CE = null, CEQ = '', CEF = '';
 let FO = null, FOQ = '', FOF = '';
 let CT = null, CTQ = '', CTT = '', CTO = '', CTN = 40;
+let RS = null, RSC = '', RSP = '';
+let ES = null;
 let CL = null, CLQ = '', CLF = '', CLO = 'atencao';
 let EV = null, EVJ = '', EVP = '1', EVT = '';
 let DD = null, MM = null, PF = 'abertos', PQ = '', TQ = '', TS = '', TP = '', TT = '', MQ = '', MW = '';
@@ -587,6 +596,7 @@ const VIEWS = {
         <section class="panel"><h2>O que a equipe fez hoje</h2>${ativ.length ? `<ul class="ativ">${ativ.map(a => `<li><span class="mono">${esc(a.hora)}</span><button data-dcard="${a.card}"><b>${esc(a.quem)}</b> ${esc(a.oque)} <span class="sub">· ${esc(a.titulo)}</span></button></li>`).join('')}</ul>` : '<p class="empty">Ninguém mexeu em card pelo painel hoje ainda.</p>'}</section>
       </div>
       ${precisa.length ? `<section class="group"><h2>Precisa de você <span class="count">${precisa.length}</span></h2><div class="board" style="grid-template-columns:repeat(auto-fill,minmax(260px,1fr))">${precisa.map(mini).join('')}</div></section>` : ''}
+      ${(DEMO || ESTREIAS_NO_AR) ? lancamentosDir() + semEstreiaBloco() : ''}
       <section class="group"><h2>🔴 Clientes em atenção <span class="count">${vermelhos.length}</span></h2>
         ${vermelhos.length ? `<div class="tbl"><table><thead><tr><th>Cliente</th><th>Faixa</th><th>Abertos</th><th>Atrasados</th><th>Próximo prazo</th></tr></thead><tbody>${vermelhos.map(v => { const prox = v.ab.slice().sort((a, b) => dd(a.prazo) - dd(b.prazo))[0];
           return `<tr class="click" data-cliente="${v.c.id}"><td><b>${esc(v.c.nome)}</b></td><td>${esc(v.c.faixa || '—')}</td><td>${v.ab.length}</td><td>${v.atr.length ? `<span class="chip red">${v.atr.length}</span>` : '0'}</td><td>${prox ? esc(prox.nome) + ' · ' + fmt(prox.prazo) : '—'}</td></tr>`; }).join('')}</tbody></table></div>` : '<p class="empty">Nenhum cliente marcado em atenção.</p>'}
@@ -608,6 +618,32 @@ const VIEWS = {
         <label for="cto">Onde está<select id="cto">${[['', 'Em qualquer lugar'], ['ninguem', 'Sem ninguém'], ['pessoa', 'Com uma pessoa'], ['maquina', 'Na máquina'], ['travado', 'Máquina parou'], ['flau', 'Com a diretoria'], ['quente', 'Prioridade alta'], ['prev', 'Só as previstas']].map(([v, t]) => `<option value="${v}" ${CTO === v ? 'selected' : ''}>${t}</option>`).join('')}</select></label>
       </div>
       <div id="ctres">${listaCentral()}</div>`;
+    } },
+  resultados: { nome: 'Resultados', pode: () => (DEMO || RESULTADOS_NO_AR) && ['revisor', 'calls', 'diretor', 'teste'].includes(papel()), badge: () => 0,
+    html(){
+      const topo = `<div class="head"><div><p class="eyebrow">Máquina de Resultados${RS && RS.ok ? ' · atualizada às ' + esc(RS.agora) : ''}</p><h1>Resultados por vídeo</h1></div><p class="sub">${diretor() ? 'Views de cada vídeo com orgânico e ativação separados (só você vê a ativação, a verba e o custo) e' : 'Views de cada vídeo e'} o que o cliente contou: mensagens com a palavra-chave, respostas da lista de transmissão, reuniões e contratos.</p></div>`;
+      if (!RS) { carregarResultados(); return topo + '<p class="sub">Carregando…</p>'; }
+      if (RS.erro) return topo + '<p class="empty">Não consegui ler os resultados agora. Tente de novo em alguns minutos.</p>';
+      const teste = papel() === 'teste';
+      const todos = RS.videos.filter(v => teste ? /TESTE/i.test(v.clienteNome) : !/TESTE/i.test(v.clienteNome) || DEMO);
+      const L = todos.filter(v => (!RSC || v.cliente === RSC) && (!RSP || v.piloto));
+      const dir = diretor();
+      const soma = k => L.reduce((a, v) => a + (typeof v[k] === 'number' ? v[k] : 0), 0);
+      const nf = x => x == null ? '—' : Number(x).toLocaleString('pt-BR');
+      const pct = (a, b) => b ? Math.round(a / b * 100) + '%' : '—';
+      const clientes = [...new Map(todos.map(v => [v.cliente, v.clienteNome])).entries()].sort((a, b) => String(a[1]).localeCompare(String(b[1])));
+      const tot = soma('viewsTotal'), ati = soma('viewsAtivacao');
+      const cards = [[nf(tot), 'views totais'], ...(dir ? [[nf(Math.max(0, tot - ati)) + ' · ' + pct(Math.max(0, tot - ati), tot), 'orgânico'], [nf(ati) + ' · ' + pct(ati, tot), 'ativação']] : []), [nf(soma('mensagens')), 'mensagens com a palavra-chave'], [nf(soma('respostasLista')), 'respostas da lista'], [nf(soma('reunioes')) + ' / ' + nf(soma('contratos')), 'reuniões / contratos']];
+      if (diretor()) { const g = soma('gasto'); cards.push([g ? 'R$ ' + g.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '—', 'gasto na ativação'], [g && ati ? 'R$ ' + (g / ati).toLocaleString('pt-BR', { minimumFractionDigits: 3, maximumFractionDigits: 3 }) : '—', 'custo por view (ativação)']); }
+      const linha = v => `<tr class="click" data-rsabre="${esc(v.chave)}"><td><b>${esc(v.clienteNome)}</b>${dir && v.piloto ? ' <span class="chip info">piloto</span>' : ''}<br><span class="sub" style="font-size:13px">${esc(v.video)}</span></td><td>${v.publicado ? fmt(v.publicado) : '—'}</td><td>${v.palavra ? `<span class="mono">${esc(v.palavra)}</span>` : '<span class="chip warn">sem palavra</span>'}</td><td>${nf(v.viewsTotal)}</td>${dir ? `<td>${nf(v.viewsOrganico)}</td><td>${nf(v.viewsAtivacao)}</td>` : ''}<td>${nf(v.mensagens)}</td><td>${nf(v.respostasLista)}</td><td>${nf(v.reunioes)} / ${nf(v.contratos)}</td>${diretor() ? `<td>${v.gasto != null ? 'R$ ' + v.gasto.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) : '—'}${v.verba != null ? `<br><span class="sub" style="font-size:12px">verba R$ ${v.verba.toLocaleString('pt-BR')}</span>` : ''}</td><td>${v.custoView != null ? 'R$ ' + v.custoView.toLocaleString('pt-BR', { minimumFractionDigits: 3 }) : '—'}</td>` : ''}</tr>`;
+      return topo + `<div class="stats s5" style="grid-template-columns:repeat(auto-fill,minmax(170px,1fr))">${cards.map(([v, t]) => `<div class="stat"><span class="v" style="font-size:${String(v).length > 9 ? 20 : 30}px">${v}</span><span>${t}</span></div>`).join('')}</div>
+      <div class="filtros">
+        <label for="rsc">Cliente<select id="rsc"><option value="">Todos</option>${clientes.map(([id, n]) => `<option value="${esc(id)}" ${id === RSC ? 'selected' : ''}>${esc(n)}</option>`).join('')}</select></label>
+        ${dir ? `<label for="rsp">Mostrar<select id="rsp"><option value="">Todos os vídeos</option><option value="1" ${RSP ? 'selected' : ''}>Só o piloto</option></select></label>` : ''}
+        <button class="btn primary" data-rsnovo style="align-self:flex-end">+ Cadastrar vídeo</button>
+      </div>
+      ${L.length ? `<div class="tbl"><table><thead><tr><th>Cliente e vídeo</th><th>No ar</th><th>Palavra</th><th>Views</th>${dir ? '<th>Orgânico</th><th>Ativação</th>' : ''}<th>Mensagens</th><th>Lista</th><th>Reuniões / contratos</th>${diretor() ? '<th>Gasto</th><th>Custo/view</th>' : ''}</tr></thead><tbody>${L.map(linha).join('')}</tbody></table></div>` : '<p class="empty">Nenhum vídeo cadastrado ainda. Cadastre o vídeo assim que ele for ao ar.</p>'}
+      ${dir ? '<p class="note">Para o cliente: views totais com "ativação de lançamento incluída". Nunca chamar a ativação de orgânico. Proibido views compradas, sites de views ou robôs.</p>' : '<p class="note">Lance aqui, toda semana, o que o cliente contar no grupo. Views totais: as do YouTube.</p>'}`;
     } },
   clientes: { nome: 'Clientes', pode: diretor, badge: () => CL ? CL.clientes.filter(k => k.clima === 'Em rescisão' || k.recuperacao === '🚨 SOS').length : 0,
     html(){
@@ -722,6 +758,7 @@ const VIEWS = {
         <div class="stat"><span class="v">${meus.filter(c => c.status === 'Ajustes').length}</span><span>ajustes pedidos</span></div>
         <div class="stat"><span class="v">${comigo.length}</span><span>na revisão ou com o cliente</span></div>
       </div>
+      ${(DEMO || ESTREIAS_NO_AR) && ['revisor', 'calls', 'teste'].includes(papel()) ? semEstreiaBloco() : ''}
       ${grupoFold('Falta informação para o escritório', faltas, '', true)}
       ${grupoFold('Fazer agora', ag, 'Nada atrasado nem para hoje.', true)}
       ${grupoFold('Amanhã', am, 'Nada para amanhã.', false)}
@@ -823,7 +860,7 @@ const VIEWS = {
       <section class="group"><h2>Esperando resposta <span class="count">${R.itens.length}</span></h2>${R.itens.length ? `<ul class="rows">${R.itens.map(item).join('')}</ul>` : '<p class="empty">Ninguém esperando resposta agora. 🎉</p>'}</section>
       <p class="note">A ordem é: assunto sensível, cliente 🔴 em atenção, faixa A, B e C, e depois quem espera há mais tempo. A resposta sai pelo seu número de suporte, com o seu nome em negrito na frente.</p>`;
     } },
-  grade: { nome: 'Grade de postagem', pode: () => true,
+  grade: { nome: 'Grade de postagem', pode: () => true, badge: () => (DEMO || ESTREIAS_NO_AR) && diretor() && ES && ES.estreias ? ES.estreias.filter(e => { const d = diff(e.data); return d >= 0 && d <= 14 && faltaChk(e).length; }).length : 0,
     html(){
       if (!G) { carregarGrade(); return `<div class="head"><div><p class="eyebrow">Quando cada cliente posta</p><h1>Grade de postagem</h1></div></div><p class="sub">Carregando…</p>`; }
       const nome = id => (G.clientes.find(c => c.id === id) || {}).nome || '';
@@ -837,16 +874,21 @@ const VIEWS = {
       const daPlat = G.horarios.filter(h => h.plataforma === GP);
       const hs = daPlat.filter(h => !GC || h.cliente === GC)
         .sort((a, b) => (a.horario || '99').localeCompare(b.horario || '99') || nome(a.cliente).localeCompare(nome(b.cliente)));
-      const cartao = h => { const m = marcaDe(h), dt = iso(GDIAS.indexOf(h.dia)), st = m ? m.status : '';
+      const EST = (DEMO || ESTREIAS_NO_AR) && ES && ES.estreias ? ES.estreias : [];
+      if ((DEMO || ESTREIAS_NO_AR) && !ES) carregarEstreias();
+      const estreiaDe = (cid, dt) => GP === 'YouTube' ? EST.find(e => e.cliente === cid && e.data === dt) : null;
+      const cartao = h => { const m = marcaDe(h), dt = iso(GDIAS.indexOf(h.dia)), st = m ? m.status : '', es = h.formato !== 'Shorts' ? estreiaDe(h.cliente, dt) : null;
         const bt = (k, t) => `<button type="button" class="m-${k === 'programado' ? 'prog' : 'post'}" data-marca="${k}" data-ms="${h.id}" data-md="${dt}" aria-pressed="${st === k}" title="${st === k ? 'Clique de novo para desmarcar' : 'Marcar como ' + t.toLowerCase()}">${t}</button>`;
-        return `<div class="slot ${esc(h.plataforma)} ${h.status.includes('Pausado') ? 'pausado' : ''} ${h.status.includes('Confirmar') ? 'confirmar' : ''} ${st === 'postado' ? 'post' : st === 'programado' ? 'prog' : ''}">
-        <button type="button" class="abre" data-slot="${h.id}"><b>${esc(nome(h.cliente))}</b><span class="sub">${esc(h.plataforma)} · ${esc(h.formato)}${h.qtd > 1 ? ' ×' + h.qtd : ''}</span>
+        return `<div class="slot ${esc(h.plataforma)} ${es ? 'estreia' : ''} ${h.status.includes('Pausado') ? 'pausado' : ''} ${h.status.includes('Confirmar') ? 'confirmar' : ''} ${st === 'postado' ? 'post' : st === 'programado' ? 'prog' : ''}">
+        ${es ? '<span class="chip estreia">🚀 Vídeo 1 · estreia' + (es.hora ? ' ' + esc(es.hora) : '') + '</span>' : ''}<button type="button" class="abre" data-slot="${h.id}"><b>${esc(nome(h.cliente))}</b><span class="sub">${esc(h.plataforma)} · ${esc(h.formato)}${h.qtd > 1 ? ' ×' + h.qtd : ''}</span>
         <span class="sub">${h.horario ? esc(h.horario) : 'sem horário'}${h.status.includes('Pausado') ? ' · pausado' : h.status.includes('Confirmar') ? ' · ❓ confirmar' : ''}</span></button>
         ${m ? `<span class="quem">${st === 'postado' ? '✓ Postado' : '🕒 Programado'} · ${esc(m.por)} ${esc(m.quando)}</span>` : ''}
         ${G.podeMarcar !== false ? `<div class="marcar">${bt('programado', 'Programado')}${bt('postado', 'Postado')}</div>` : ''}</div>`; };
-      const cols = GDIAS.map((d, i) => { const l = hs.filter(h => h.dia === d), dt = new Date(seg.getTime() + i * 864e5);
-        return `<div class="col ${i === hj ? 'hoje' : ''} ${l.length ? '' : 'vazio'}"><h3>${d.slice(2)}${i === hj ? ' · hoje' : ''} <span class="mono">${String(dt.getDate()).padStart(2, '0')}/${String(dt.getMonth() + 1).padStart(2, '0')}</span></h3>
-          ${l.length ? l.map(cartao).join('') : '<span class="sub" style="font-size:12px">Nada</span>'}</div>`; }).join('');
+      const soEstreia = i => GP !== 'YouTube' ? [] : EST.filter(e => e.data === iso(i) && (!GC || e.cliente === GC) && !hs.some(h => h.cliente === e.cliente && h.dia === GDIAS[i] && h.formato !== 'Shorts'));
+      const cartaoEstreia = e => `<div class="slot YouTube estreia"><span class="chip estreia">🚀 Vídeo 1 · estreia</span><b>${esc(nome(e.cliente) || e.clienteNome)}</b><span class="sub">YouTube · Vídeo 1 · ${esc(e.hora || 'sem horário')}</span></div>`;
+      const cols = GDIAS.map((d, i) => { const l = hs.filter(h => h.dia === d), x = soEstreia(i), dt = new Date(seg.getTime() + i * 864e5);
+        return `<div class="col ${i === hj ? 'hoje' : ''} ${l.length || x.length ? '' : 'vazio'}"><h3>${d.slice(2)}${i === hj ? ' · hoje' : ''} <span class="mono">${String(dt.getDate()).padStart(2, '0')}/${String(dt.getMonth() + 1).padStart(2, '0')}</span></h3>
+          ${x.map(cartaoEstreia).join('')}${l.length ? l.map(cartao).join('') : x.length ? '' : '<span class="sub" style="font-size:12px">Nada</span>'}</div>`; }).join('');
       const hoje = hs.filter(h => h.dia === GDIAS[hj0] && h.status.includes('Publicar'));
       const daSemana = hs.filter(h => h.status.includes('Publicar')), nPost = daSemana.filter(h => (marcaDe(h) || {}).status === 'postado').length, nProg = daSemana.filter(h => (marcaDe(h) || {}).status === 'programado').length;
       const fmt = i => { const t = new Date(seg.getFullYear(), seg.getMonth(), seg.getDate() + i); return String(t.getDate()).padStart(2, '0') + '/' + String(t.getMonth() + 1).padStart(2, '0'); };
@@ -870,7 +912,8 @@ const VIEWS = {
         ${G.podeMudar ? '<button class="btn primary" id="g-novo">+ Adicionar dia</button>' : ''}
       </div>
       <div class="semnav"><button class="btn" data-gw="-1" ${GW <= -2 ? 'disabled' : ''}>← Semana anterior</button><span class="rot">${GW === 0 ? 'Esta semana' : GW === 1 ? 'Próxima semana' : GW === -1 ? 'Semana passada' : 'Há 2 semanas'} · ${fmt(0)} a ${fmt(6)}</span>${GW !== 0 ? '<button class="btn" data-gw="0">Esta semana</button>' : ''}<button class="btn" data-gw="1" ${GW >= 1 ? 'disabled' : ''}>Próxima semana →</button></div>
-      <div class="legenda"><span><i style="background:var(--cinza)"></i>programado</span><span><i style="background:var(--accent)"></i>postado</span><span><i style="background:var(--warn-soft);border:1px solid var(--warn)"></i>❓ confirmar com a diretoria</span><span><i style="border:1px dashed var(--muted)"></i>pausado</span></div>
+      <div class="legenda"><span><i style="background:var(--cinza)"></i>programado</span><span><i style="background:var(--accent)"></i>postado</span><span><i style="background:var(--warn-soft);border:1px solid var(--warn)"></i>❓ confirmar com a diretoria</span><span><i style="border:1px dashed var(--muted)"></i>pausado</span>${(DEMO || ESTREIAS_NO_AR) && GP === 'YouTube' ? '<span><i style="background:var(--accent-soft);border:2px solid var(--accent)"></i>🚀 Vídeo 1 (estreia do canal)</span>' : ''}</div>
+      ${(DEMO || ESTREIAS_NO_AR) && GP === 'YouTube' ? blocoEstreias(['revisor', 'calls', 'diretor', 'teste'].includes(papel())) : ''}
       <div class="semana">${cols}</div>
       ${sem.length ? `<section class="group"><h2>${GP === 'YouTube' ? 'Clientes ativos sem dia no YouTube' : 'Com ' + esc(GP) + ' na ficha e sem dia na grade'} <span class="count">${sem.length}</span></h2><ul class="rows">${sem.map(c => `<li class="item"><span class="stripe"></span>
         <div class="main" style="cursor:default"><span class="t">${esc(c.nome)}</span><span class="meta">${c.faixa ? `<span class="chip">Faixa ${esc(c.faixa)}</span>` : ''}${c.atencao ? '<span class="chip red">🔴 Atenção</span>' : ''}${c.yt ? `<span class="chip">Ficha: YouTube ${esc(c.yt)}</span>` : ''}${c.tt ? `<span class="chip">Ficha: TikTok ${esc(c.tt)}</span>` : ''}</span></div>
@@ -1644,7 +1687,7 @@ const GFORM = ['Vídeo padrão', 'Shorts', 'Corte horizontal', 'Podcast', 'Carro
 const GMOTIVO = {permissao:'Só o Ismael e o Rômulo mudam a grade.', campos:'Escolha plataforma, formato e dia.', horario:'Esse horário mudou. A grade foi atualizada.', cliente:'Escolha um cliente ativo.', acesso: MOTIVO.acesso};
 async function carregarGrade(){
   if (carregarGrade.indo) return; carregarGrade.indo = true;
-  try { const r = await api('euforia-painel-grade', { acao: 'listar' }); if (r && r.ok) { G = r; if (view === 'grade' && !ocupado && !$('#layer').innerHTML) render(); } else if (r && r.motivo === 'acesso') { PIN = ''; carregar(); } }
+  try { const r = await api('euforia-painel-grade', { acao: 'listar' }); if (r && r.ok) { G = r; if (['grade', 'geral', 'fila'].includes(view) && !ocupado && !$('#layer').innerHTML) render(); } else if (r && r.motivo === 'acesso') { PIN = ''; carregar(); } }
   catch (e) { if (view === 'grade' && !G) $('#main').innerHTML = `<div class="view"><h1>Grade de postagem</h1><p class="sub">${ERRO}</p></div>`; }
   carregarGrade.indo = false;
 }
@@ -1800,6 +1843,10 @@ document.addEventListener('drop', e => { const d = e.target.closest && e.target.
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && !ocupado) fechar(); });
 document.addEventListener('click', async e => {
   const v = e.target.closest('[data-view]'); if (v) { view = v.dataset.view; try { localStorage.setItem('painel-view', view); } catch (x) {} $('#main').innerHTML = ''; if (view === 'formularios' && FO && FO.formularios && Date.now() - (carregarFormularios.em || 0) > 1800000) carregarFormularios(); render(); window.scrollTo({ top: 0 }); return; }
+  if (e.target.closest('#main [data-rsnovo]')) { abrirResultado(null); return; }
+  const esb = e.target.closest('#main [data-estreia]'); if (esb) { abrirEstreia(esb.dataset.estreia); return; }
+  const ckb = e.target.closest('#main [data-chk]'); if (ckb && ES) { abrirChecklist(ckb.dataset.chk); return; }
+  const rsa = e.target.closest('#main [data-rsabre]'); if (rsa && RS && RS.videos) { abrirResultado(RS.videos.find(x => x.chave === rsa.dataset.rsabre)); return; }
   const ctf = e.target.closest('#main [data-ctf]'); if (ctf) { CTO = CTO === ctf.dataset.ctf ? '' : ctf.dataset.ctf; CTN = 40; render(); return; }
   if (e.target.closest('#main [data-ctmais]')) { CTN += 40; $('#ctres').innerHTML = listaCentral(); return; }
   const cta = e.target.closest('#main [data-ctabrir]'); if (cta) { const x = achaCt(cta.dataset.ctabrir, !!cta.dataset.prev); if (x) abrirMandar(x, !!cta.dataset.prev); return; }
@@ -1892,6 +1939,7 @@ document.addEventListener('change', e => {
   if (e.target.id === 'pf-s' || e.target.id === 'pq-s') { if (e.target.id === 'pf-s') PF = e.target.value; else PQ = e.target.value; render(); return; }
   if (['ts', 'tp', 'tt'].includes(e.target.id)) { ({ ts: v => TS = v, tp: v => TP = v, tt: v => TT = v })[e.target.id](e.target.value); $('#dres').innerHTML = tabelaTodos(); return; }
   if (e.target.id === 'clf') { CLF = e.target.value; render(); return; }
+  if (e.target.id === 'rsc' || e.target.id === 'rsp') { if (e.target.id === 'rsc') RSC = e.target.value; else RSP = e.target.value; render(); return; }
   if (e.target.id === 'ctt' || e.target.id === 'cto') { if (e.target.id === 'ctt') CTT = e.target.value; else CTO = e.target.value; CTN = 40; render(); return; }
   if (['evp', 'evj', 'evt'].includes(e.target.id)) { ({ evp: v => EVP = v, evj: v => EVJ = v, evt: v => EVT = v })[e.target.id](e.target.value); render(); return; }
   if (e.target.id === 'cep') { CEF = e.target.value; render(); return; }
@@ -1957,6 +2005,160 @@ setInterval(() => { if (D && VIEWS.calls.pode() && !ocupado && !document.hidden)
 setInterval(() => { if (D && view === 'responder' && !ocupado && !document.hidden && !(document.activeElement && document.activeElement.dataset && document.activeElement.dataset.rtxt)) carregarRespostas(); }, 60000);
 
 // ---------- Central de Demandas ----------
+// ---------- Estreias do canal (Vídeo 1) · Máquina de Resultados (02/11/2026) ----------
+const ESTREIAS_NO_AR = true;
+// Checklist do lançamento: SÓ a diretoria vê (a equipe não sabe da ativação). d = dias antes da estreia.
+const CHK = [['msgs', 'Mensagens do lançamento e tour da lista mandados ao cliente no grupo', 10], ['listas', 'Cliente confirmou que criou as listas de transmissão', 7],
+  ['publico', 'Público da ativação: região e idade de quem compra do cliente', 5], ['verba', 'Verba e meta de views definidas', 5],
+  ['video', 'Vídeo 1 pronto: sobe não listado, com thumb e título finais', 2], ['campanha', 'Campanha criada e pausada, já aprovada pelo Google', 1],
+  ['anuncio', 'Anúncio ligado 1 a 3 h antes da estreia', 0], ['nohora', 'Vídeo público na hora e cadastrado na aba Resultados', 0]];
+const faltaChk = e => CHK.filter(c => !(e.checks || []).includes(c[0]));
+const fase = d => d > 14 ? ['', 'marcada'] : d > 5 ? ['info', 'preparar'] : d > 0 ? ['warn', 'checklist'] : d === 0 ? ['red', 'hoje'] : ['ok', 'no ar'];
+async function carregarEstreias(){
+  if (carregarEstreias.indo) return; carregarEstreias.indo = true;
+  try { const r = await api('euforia-painel-estreias', { acao: 'listar' }); ES = r && r.ok ? r : (ES && ES.estreias ? ES : { erro: true, estreias: [] }); } catch (e) { ES = ES && ES.estreias ? ES : { erro: true, estreias: [] }; }
+  carregarEstreias.indo = false;
+  if (['grade', 'geral', 'fila'].includes(view) && !ocupado && !$('#layer').innerHTML) render();
+}
+const quandoEst = e => { const d = diff(e.data); return fmt(e.data) + (e.hora ? ' · ' + e.hora : '') + ' · ' + (d === 0 ? 'hoje' : d === 1 ? 'amanhã' : d > 0 ? 'em ' + d + ' dias' : 'há ' + (-d) + ' dias'); };
+function blocoEstreias(pode){
+  if (!ES) return '';
+  const L = ES.estreias.filter(e => diff(e.data) >= -7);
+  return `<section class="group"><h2>🚀 Estreias do canal (Vídeo 1) <span class="count">${L.length}</span></h2>
+    <p class="sub" style="font-size:13px">A data do Vídeo 1 é marcada na Reunião de Lançamento, com pelo menos 7 dias de antecedência (o ideal são 14). O Vídeo 1 aparece destacado na grade.</p>
+    ${L.length ? `<ul class="estreias">${L.map(e => { const d = diff(e.data);
+      return `<li><span class="t"><b>${esc(e.clienteNome)}</b>${diretor() && e.checks ? ` <span class="chip ${fase(d)[0]}">${fase(d)[1]}</span>` : ''}<br><span class="sub" style="font-size:13px">${quandoEst(e)} · marcada por ${esc(e.por)}${diretor() && e.checks ? ' · checklist ' + (CHK.length - faltaChk(e).length) + '/' + CHK.length : ''}</span></span>${diretor() && e.checks ? `<button class="btn" data-chk="${e.cliente}">Checklist</button>` : ''}${pode ? `<button class="btn" data-estreia="${e.cliente}">Mudar data</button>` : ''}</li>`; }).join('')}</ul>` : '<p class="empty">Nenhuma estreia marcada.</p>'}
+    ${pode ? '<div class="actions"><button class="btn primary" data-estreia="">+ Marcar estreia</button></div>' : ''}</section>`;
+}
+function lancamentosDir(){
+  if (!ES) { carregarEstreias(); return ''; }
+  const L = ES.estreias.filter(e => { const d = diff(e.data); return d >= -1 && d <= 21; });
+  if (!L.length) return '';
+  return `<section class="group"><h2>🚀 Lançamentos (só você vê) <span class="count">${L.length}</span></h2>
+    <p class="sub" style="font-size:13px">Aviso 14 dias antes; checklist da ativação de 5 dias antes até o dia. A equipe e o cliente não veem esta parte.</p>
+    <ul class="estreias">${L.map(e => { const d = diff(e.data), f = fase(d), falta = faltaChk(e), vence = falta.filter(c => d <= c[2]);
+      return `<li><span class="t"><b>${esc(e.clienteNome)}</b> <span class="chip ${f[0]}">${f[1]}</span><br><span class="sub" style="font-size:13px">${quandoEst(e)} · ${CHK.length - falta.length}/${CHK.length} feitos${vence.length ? ` · <b style="color:var(--bad)">${vence.length} para hoje ou atrasado</b>` : ''}</span></span><button class="btn ${vence.length ? 'primary' : ''}" data-chk="${e.cliente}">Checklist</button></li>`; }).join('')}</ul></section>`;
+}
+// Clientes novos (início nos últimos 60 dias) sem a estreia do Vídeo 1 marcada: aparece para diretoria, Rômulo e Ismael.
+function semEstreia(){
+  if (!ES) { carregarEstreias(); return null; }
+  const tem = new Set(ES.estreias.map(e => e.cliente));
+  return (ES.novos || []).filter(c => !tem.has(c.cliente));
+}
+function semEstreiaBloco(){
+  const L = semEstreia(); if (!L || !L.length) return '';
+  return `<section class="group"><h2>🚀 Clientes novos sem estreia marcada <span class="count">${L.length}</span></h2>
+    <p class="sub" style="font-size:13px">Marque o dia do Vídeo 1 na Reunião de Lançamento (mínimo 7 dias, ideal 14). Se o Vídeo 1 já saiu, marque a data em que saiu.</p>
+    <ul class="estreias">${L.map(c => `<li><span class="t"><b>${esc(c.clienteNome)}</b><br><span class="sub" style="font-size:13px">Começou em ${fmtA(c.inicio)} · há ${-diff(c.inicio)} dias</span></span><button class="btn primary" data-estreia="${c.cliente}">Marcar estreia</button></li>`).join('')}</ul></section>`;
+}
+function abrirEstreia(cid){
+  const ja = (ES && ES.estreias || []).find(x => x.cliente === cid), e = ja || { cliente: '', data: '', hora: '19:00' }, pre = ja ? '' : cid;
+  const nomes = ((G && G.clientes) || D.clientes).filter(c => c.ativo !== false || c.id === cid).slice();
+  const nv = pre && ES && (ES.novos || []).find(x => x.cliente === pre); if (nv && !nomes.some(c => c.id === pre)) nomes.push({ id: pre, nome: nv.clienteNome });
+  nomes.sort((a, b) => a.nome.localeCompare(b.nome));
+  const min = new Date(dia(D.hoje).getTime() + 7 * 864e5).toISOString().slice(0, 10);
+  $('#layer').innerHTML = `<div class="scrim" data-x></div><aside class="drawer" role="dialog" aria-modal="true" aria-labelledby="es-t"><div class="drawer-in">
+    <button class="close" data-x>Fechar</button>
+    <div><p class="eyebrow">Reunião de Lançamento</p><h2 id="es-t" style="font-size:26px">${e.cliente ? 'Mudar a estreia' : 'Marcar a estreia do canal'}</h2></div>
+    <form id="festreia" style="display:flex;flex-direction:column;gap:12px">
+      <label for="es-c">Cliente<select id="es-c" ${e.cliente ? 'disabled' : ''}><option value="">Escolha</option>${nomes.map(k => `<option value="${k.id}" ${k.id === (e.cliente || pre) ? 'selected' : ''}>${esc(k.nome)}</option>`).join('')}</select></label>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <label for="es-d">Dia do Vídeo 1<input type="date" id="es-d" ${diretor() ? '' : `min="${min}"`} value="${esc(e.data)}"></label>
+        <label for="es-h">Hora<input type="time" id="es-h" value="${esc(e.hora || '19:00')}"></label>
+      </div>
+      <label for="es-ja" style="flex-direction:row;align-items:center;gap:8px;font-weight:500"><input type="checkbox" id="es-ja"> O Vídeo 1 já saiu (só registrar a data)</label>
+      <p class="note" id="es-aviso">Mínimo de 7 dias a partir de hoje. O ideal são 14 dias, para dar tempo de preparar o lançamento.</p>
+      <div class="actions"><button class="btn primary" type="submit">Salvar estreia</button></div>
+    </form></div></aside>`;
+  const ontem = new Date(dia(D.hoje).getTime() - 864e5).toISOString().slice(0, 10);
+  $('#es-ja').onchange = () => { const j = $('#es-ja').checked, d = $('#es-d'); if (!diretor()) { if (j) { d.removeAttribute('min'); d.max = ontem; } else { d.removeAttribute('max'); d.min = min; } } aviso(); };
+  const aviso = () => { const v = $('#es-d').value, n = v ? diff(v) : null, el = $('#es-aviso'), j = $('#es-ja').checked;
+    if (j) { el.style.color = n !== null && n >= 0 ? 'var(--bad)' : ''; el.textContent = n !== null && n >= 0 ? 'Se já saiu, a data tem que ser de ontem para trás.' : 'Escolha o dia em que o Vídeo 1 saiu.'; return; }
+    el.style.color = n !== null && n < 14 ? 'var(--bad)' : ''; el.textContent = n === null ? 'Mínimo de 7 dias a partir de hoje. O ideal são 14 dias, para dar tempo de preparar o lançamento.' : n < 7 && !diretor() ? 'Faltam só ' + n + ' dias. O mínimo é 7: escolha outra data.' : n < 14 ? 'Faltam ' + n + ' dias. Dá, mas o ideal são 14. Avise a diretoria.' : 'Faltam ' + n + ' dias. Boa folga.'; };
+  $('#es-d').oninput = aviso; aviso();
+  $('#layer').onclick = ev => { if (ev.target.closest('[data-x]') && !ocupado) fechar(); };
+  $('#layer').onsubmit = async ev => {
+    if (ev.target.id !== 'festreia') return; ev.preventDefault(); if (ocupado) return;
+    const c = e.cliente || $('#es-c').value, k = ((G && G.clientes) || D.clientes).find(x => x.id === c) || ((ES && ES.novos) || []).map(x => ({ id: x.cliente, nome: x.clienteNome })).find(x => x.id === c), data = $('#es-d').value, hora = $('#es-h').value;
+    if (!c) { toast('Escolha o cliente.'); return; }
+    if (!data || !hora) { toast('Escolha o dia e a hora do Vídeo 1.'); return; }
+    const ja = $('#es-ja').checked;
+    if (ja && diff(data) >= 0) { toast('Se o Vídeo 1 já saiu, escolha uma data de ontem para trás.'); return; }
+    if (!ja && !diretor() && diff(data) < 7) { toast('A estreia precisa ser daqui a 7 dias ou mais.'); return; }
+    ocupado = true;
+    try { const r = await api('euforia-painel-estreias', { acao: 'marcar', estreia: { cliente: c, clienteNome: k ? k.nome : (e.clienteNome || ''), data, hora } }); if (!r || !r.ok) throw new Error((r && r.motivo) || 'erro'); toast('Estreia marcada. O Vídeo 1 já aparece na grade.'); ocupado = false; fechar(); ES = null; render(); }
+    catch (er) { ocupado = false; toast(er.message === 'cedo' ? 'A estreia precisa ser daqui a 7 dias ou mais.' : er.message === 'campos' ? 'Falta o dia ou a hora.' : MOTIVO[er.message] || ERRO); }
+  };
+}
+function abrirChecklist(cid){
+  const e = ES.estreias.find(x => x.cliente === cid); if (!e) return;
+  const d = diff(e.data);
+  $('#layer').innerHTML = `<div class="scrim" data-x></div><aside class="drawer" role="dialog" aria-modal="true" aria-labelledby="ck-t"><div class="drawer-in">
+    <button class="close" data-x>Fechar</button>
+    <div><p class="eyebrow">Lançamento · só a diretoria vê</p><h2 id="ck-t" style="font-size:26px">${esc(e.clienteNome)}</h2><p class="sub">Vídeo 1: ${quandoEst(e)}</p></div>
+    <form id="fchk"><div class="chk">${CHK.map(([id, t, dd]) => `<label for="ck-${id}"><input type="checkbox" id="ck-${id}" value="${id}" ${(e.checks || []).includes(id) ? 'checked' : ''}><span>${esc(t)}<br><span class="sub" style="font-size:12px">${dd ? 'até ' + dd + ' dia' + (dd > 1 ? 's' : '') + ' antes' : 'no dia'}${d <= dd && !(e.checks || []).includes(id) ? ' · <b style="color:var(--bad)">agora</b>' : ''}</span></span></label>`).join('')}</div>
+      <p class="note">Passo a passo da campanha: resultados/ativacao-google-ads.md no repositório. Verba e teto: decisão sua.</p>
+      <div class="actions"><button class="btn primary" type="submit">Salvar checklist</button></div></form></div></aside>`;
+  $('#layer').onclick = ev => { if (ev.target.closest('[data-x]') && !ocupado) fechar(); };
+  $('#layer').onsubmit = async ev => {
+    if (ev.target.id !== 'fchk') return; ev.preventDefault(); if (ocupado) return;
+    const checks = [...document.querySelectorAll('#fchk input:checked')].map(x => x.value);
+    ocupado = true;
+    try { const r = await api('euforia-painel-estreias', { acao: 'checar', estreia: { cliente: cid, checks } }); if (!r || !r.ok) throw new Error((r && r.motivo) || 'erro'); e.checks = checks; toast('Checklist salvo.'); ocupado = false; fechar(); render(); }
+    catch (er) { ocupado = false; toast(MOTIVO[er.message] || ERRO); }
+  };
+}
+
+// ---------- Máquina de Resultados (V1, 02/11/2026) ----------
+const RESULTADOS_NO_AR = true;
+async function carregarResultados(){
+  if (carregarResultados.indo) return; carregarResultados.indo = true;
+  try { const r = await api('euforia-painel-resultados', { acao: 'ver' }); RS = r && r.ok ? r : (RS && RS.videos ? RS : { erro: true }); } catch (e) { RS = RS && RS.videos ? RS : { erro: true }; }
+  carregarResultados.indo = false;
+  if (view === 'resultados' && !ocupado && !$('#layer').innerHTML) render();
+}
+function abrirResultado(v){
+  v = v || { piloto: true };
+  const dir = diretor(), nomes = D.clientes.slice().sort((a, b) => a.nome.localeCompare(b.nome));
+  const campo = (id, rot, val, extra) => `<label for="${id}">${rot}<input type="text" inputmode="numeric" id="${id}" value="${val == null ? '' : esc(String(val))}" ${extra || ''}></label>`;
+  $('#layer').innerHTML = `<div class="scrim" data-x></div><aside class="drawer" role="dialog" aria-modal="true" aria-labelledby="rs-t"><div class="drawer-in">
+    <button class="close" data-x>Fechar</button>
+    <div><p class="eyebrow">Máquina de Resultados</p><h2 id="rs-t" style="font-size:26px">${v.chave ? esc(v.video) : 'Cadastrar vídeo'}</h2></div>
+    <form id="fresult" style="display:flex;flex-direction:column;gap:12px">
+      <label for="rs-c">Cliente<select id="rs-c" ${v.chave ? 'disabled' : ''}><option value="">Escolha</option>${nomes.map(k => `<option value="${k.id}" ${k.id === v.cliente ? 'selected' : ''}>${esc(k.nome)}</option>`).join('')}</select></label>
+      <label for="rs-v">Vídeo (número e título)<input type="text" id="rs-v" maxlength="160" placeholder="VÍDEO 01 · Os 3 erros da aposentadoria" value="${esc(v.video || '')}"></label>
+      <label for="rs-l">Link do YouTube<input type="text" id="rs-l" maxlength="300" placeholder="https://youtu.be/..." value="${esc(v.link || '')}"></label>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <label for="rs-d">Foi ao ar em<input type="date" id="rs-d" value="${esc(v.publicado || '')}"></label>
+        <label for="rs-p">Palavra-chave<input type="text" id="rs-p" maxlength="20" placeholder="PROTOCOLO" value="${esc(v.palavra || '')}" style="text-transform:uppercase"></label>
+      </div>
+      ${dir ? `<label style="flex-direction:row;align-items:center;gap:8px"><input type="checkbox" id="rs-pi" ${v.piloto ? 'checked' : ''}> Faz parte do piloto</label>` : ''}
+      <h3 style="font-size:16px;margin:6px 0 0">Views</h3>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">${campo('rs-vt', 'Views totais (YouTube)', v.viewsTotal)}${dir ? campo('rs-va', 'Views da ativação (Google Ads)', v.viewsAtivacao) : ''}</div>
+      ${dir ? `<label for="rs-cp">Campanha no Google Ads<input type="text" id="rs-cp" maxlength="120" placeholder="Cliente | Vídeo 1 Lançamento | AAAA-MM-DD" value="${esc(v.campanha || '')}"></label>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">${campo('rs-vb', 'Verba (R$)', v.verba)}${campo('rs-g', 'Gasto até agora (R$)', v.gasto)}</div>` : ''}
+      <h3 style="font-size:16px;margin:6px 0 0">O que o cliente contou</h3>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">${campo('rs-m', 'Mensagens com a palavra', v.mensagens)}${campo('rs-r', 'Respostas da lista', v.respostasLista)}${campo('rs-re', 'Reuniões', v.reunioes)}${campo('rs-ct', 'Contratos', v.contratos)}</div>
+      <label for="rs-o">Observação<textarea id="rs-o" rows="2" maxlength="600" placeholder="Ex.: público 50+ de Recife rendeu mais">${esc(v.obs || '')}</textarea></label>
+      ${v.atualizadoPor ? `<p class="note">Última mudança: ${esc(v.atualizadoPor)} · ${esc(v.atualizadoEm)}</p>` : ''}
+      <div class="actions"><button class="btn primary" type="submit">Salvar</button></div>
+    </form></div></aside>`;
+  $('#layer').onclick = e => { if (e.target.closest('[data-x]') && !ocupado) fechar(); };
+  $('#layer').onsubmit = async e => {
+    if (e.target.id !== 'fresult') return; e.preventDefault(); if (ocupado) return;
+    const g = id => { const el = $('#' + id); return el ? el.value.trim() : ''; };
+    const cid = v.cliente || g('rs-c'), k = D.clientes.find(x => x.id === cid);
+    const video = { chave: v.chave || '', cliente: cid, clienteNome: k ? k.nome : (v.clienteNome || ''), video: g('rs-v'), link: g('rs-l'), publicado: g('rs-d'), palavra: g('rs-p'), viewsTotal: g('rs-vt'), mensagens: g('rs-m'), respostasLista: g('rs-r'), reunioes: g('rs-re'), contratos: g('rs-ct'), obs: g('rs-o') };
+    if (dir) Object.assign(video, { piloto: $('#rs-pi').checked, campanha: g('rs-cp'), viewsAtivacao: g('rs-va'), verba: g('rs-vb'), gasto: g('rs-g') });
+    if (!video.cliente) { toast('Escolha o cliente.'); return; }
+    if (video.video.length < 3) { $('#rs-v').focus(); toast('Escreva qual é o vídeo.'); return; }
+    if (video.link && !/^https:\/\/(www\.|m\.)?(youtube\.com|youtu\.be)\//.test(video.link)) { $('#rs-l').focus(); toast('O link precisa ser do YouTube.'); return; }
+    ocupado = true;
+    try { const r = await api('euforia-painel-resultados', { acao: 'salvar', video }); if (!r || !r.ok) throw new Error((r && r.motivo) || 'erro'); toast('Resultados salvos.'); ocupado = false; fechar(); RS = null; render(); }
+    catch (er) { ocupado = false; toast(er.message === 'campos' ? 'Falta o cliente ou o vídeo.' : MOTIVO[er.message] || ERRO); }
+  };
+}
+
 const CENTRAL_NO_AR = true;
 const CT_PESSOAS = [['victor', 'Victor'], ['lorena', 'Lorena'], ['daniel', 'Daniel'], ['ismael', 'Ismael'], ['romulo', 'Rômulo']];
 const CT_MAQ = { 'Vídeo longo': 'longos', 'Shorts': 'shorts', 'Carrossel': 'carrosseis', 'Outro': 'escritorio' };
@@ -2100,6 +2302,18 @@ function demoApi(path, b){
   if (path === 'euforia-painel-call-link') { const c = DEMO_C.calls.find(x => x.id === b.evento); if (c) c.apresentacao = b.link; return wait({ ok: true }); }
   if (path === 'euforia-painel-clientes') return wait(DEMO_CE);
   if (path === 'euforia-painel-formularios') return wait(DEMO_FO);
+  if (path === 'euforia-painel-estreias') {
+    semearEstreias();
+    if (b.acao === 'marcar') { const i = DEMO_ES.estreias.findIndex(x => x.cliente === b.estreia.cliente); const v = Object.assign({ checks: [] }, i >= 0 ? DEMO_ES.estreias[i] : {}, b.estreia, { por: 'Exemplo', quando: 'agora' }); if (i >= 0) DEMO_ES.estreias[i] = v; else DEMO_ES.estreias.push(v); return wait({ ok: true }); }
+    if (b.acao === 'checar') { DEMO_ES.estreias.find(x => x.cliente === b.estreia.cliente).checks = b.estreia.checks; return wait({ ok: true }); }
+    const r = JSON.parse(JSON.stringify(DEMO_ES)); delete r.semeado; r.novos = DEMO_G.clientes.filter(c => !DEMO_ES.estreias.some(e => e.cliente === c.id)).slice(0, 2).map((c, i) => ({ cliente: c.id, clienteNome: c.nome, inicio: i ? '2026-10-12' : '2026-09-20', dias: i ? 14 : 36 })); if (DEMO_D.papel !== 'diretor') r.estreias.forEach(x => delete x.checks); return wait(r);
+  }
+  if (path === 'euforia-painel-resultados') {
+    if (b.acao === 'salvar') { const v = Object.assign({}, b.video); ['viewsTotal', 'viewsAtivacao', 'verba', 'gasto', 'mensagens', 'respostasLista', 'reunioes', 'contratos'].forEach(k => { v[k] = v[k] === '' || v[k] == null ? null : Number(String(v[k]).replace(/\./g, '').replace(',', '.')); });
+      v.palavra = String(v.palavra || '').toUpperCase(); v.viewsOrganico = v.viewsTotal != null ? Math.max(0, v.viewsTotal - (v.viewsAtivacao || 0)) : null; v.custoView = v.gasto != null && v.viewsAtivacao ? v.gasto / v.viewsAtivacao : null; v.atualizadoPor = 'Exemplo'; v.atualizadoEm = 'agora';
+      const i = DEMO_RS.videos.findIndex(x => x.chave === v.chave); if (i >= 0) DEMO_RS.videos[i] = Object.assign(DEMO_RS.videos[i], v); else DEMO_RS.videos.unshift(Object.assign(v, { chave: 'r-demo' + Date.now().toString(36) })); return wait({ ok: true }); }
+    return wait(JSON.parse(JSON.stringify(DEMO_RS)));
+  }
   if (path === 'euforia-painel-central') {
     if (b.acao !== 'mandar') return wait(Object.assign({}, DEMO_CT, { nome: D.nome, papel: D.papel }));
     if (b.destino === 'maquina' && !b.link && ['longo', 'shorts'].includes((b.prevista || {}).tipo)) return wait({ ok: false, motivo: 'link' });
@@ -2160,6 +2374,13 @@ function demoApi(path, b){
     return wait({ ok: true, status: para });
   }
 }
+const DEMO_ES = { ok: true, estreias: [] };
+function semearEstreias(){ if (DEMO_ES.semeado) return; DEMO_ES.semeado = true; const h = new Date(2026, 9, 26), iso = d => { const x = new Date(h); x.setDate(x.getDate() + d); return x.getFullYear() + '-' + String(x.getMonth() + 1).padStart(2, '0') + '-' + String(x.getDate()).padStart(2, '0'); };
+  const cs = DEMO_G.clientes || [];
+  [[0, 3, 'msgs,listas'], [1, 12, ''], [2, 20, '']].forEach(([i, d, c]) => { const k = cs[i]; if (k) DEMO_ES.estreias.push({ cliente: k.id, clienteNome: k.nome, data: iso(d), hora: '19:00', por: 'Rômulo (exemplo)', quando: '26/10 10:00', checks: c ? c.split(',') : [] }); }); }
+const DEMO_RS = { ok: true, diretor: true, agora: '02/11 11:20', videos: [
+  { chave: 'r-demo1', cliente: 'c1', clienteNome: 'Cliente Exemplo A', video: 'VÍDEO 01 · Os 3 erros da aposentadoria', link: 'https://youtu.be/exemplo1', publicado: '2026-11-03', palavra: 'PROTOCOLO', piloto: true, campanha: 'Cliente Exemplo A | Vídeo 1 Lançamento | 2026-11-03', viewsTotal: 4200, viewsAtivacao: 3100, viewsOrganico: 1100, verba: null, gasto: null, custoView: null, mensagens: 6, respostasLista: 23, reunioes: 2, contratos: 1, obs: 'Números de exemplo.', atualizadoPor: 'Exemplo', atualizadoEm: '2026-11-02 11:00' },
+  { chave: 'r-demo2', cliente: 'c2', clienteNome: 'Cliente Exemplo B', video: 'VÍDEO 01 · Herança sem briga', link: 'https://youtu.be/exemplo2', publicado: '2026-11-05', palavra: '', piloto: true, campanha: '', viewsTotal: 380, viewsAtivacao: null, viewsOrganico: 380, verba: null, gasto: null, custoView: null, mensagens: null, respostasLista: 4, reunioes: null, contratos: null, obs: '', atualizadoPor: 'Exemplo', atualizadoEm: '2026-11-02 11:05' }] };
 const DEMO_D = {"ok":true,"nome":"Ismael (exemplo)","papel":"revisor","hoje":"2026-10-26","hojeTexto":"segunda-feira, 26 de outubro",
  "pedidos":[
   {"id":"p9","cod":451,"quando":"28/10 09:40","por":"Ismael (exemplo)","modo":"Automático (Máquina do Escritório)","clienteNome":"Dra. Helena (exemplo)","nome":"SITUAÇÃO COMPLETA","tipo":"Relatório","status":"Em revisão","escritorio":"Feito pela IA","prazo":"2026-10-29","resp":["Escritório"],"link":"https://drive.google.com/file/d/1AbCdEfGhIjKlMnOpQrStUvWxYz012345/view","quadro":"","quadroNome":"","falta":"","texto":"Situação completa do cliente Foco: ela reclamou dos shorts no grupo"},
@@ -2185,11 +2406,11 @@ const DEMO_D = {"ok":true,"nome":"Ismael (exemplo)","papel":"revisor","hoje":"20
 
 const DEMO_G = {"ok":true,"podeMudar":true,"podeMarcar":true,
  "marcas":{"g7|2026-10-26":{"status":"postado","por":"Ismael (exemplo)","quando":"26/10 17:04"},"g1|2026-10-27":{"status":"programado","por":"Daniel (exemplo)","quando":"25/10 21:30"},"g3|2026-10-28":{"status":"programado","por":"Daniel (exemplo)","quando":"25/10 21:41"}},
- "clientes":[{"id":"c1","nome":"Dra. Helena (exemplo)","faixa":"A","atencao":true,"ativo":true,"pausado":false,"yt":"Ter, Qui","tt":""},
-  {"id":"c2","nome":"Instituto Aurora (exemplo)","faixa":"A","atencao":false,"ativo":true,"pausado":false,"yt":"Qua","tt":"Seg, Qua, Sex"},
-  {"id":"c3","nome":"Marcos Lima (exemplo)","faixa":"B","atencao":false,"ativo":true,"pausado":false,"yt":"Seg","tt":""},
-  {"id":"c4","nome":"Paula Reis (exemplo)","faixa":"B","atencao":true,"ativo":true,"pausado":false,"yt":"Sex","tt":""},
-  {"id":"c5","nome":"Clínica Vida (exemplo)","faixa":"C","atencao":false,"ativo":true,"pausado":false,"yt":"Qui","tt":"Qui"}],
+ "clientes":[{"id":"c1","nome":"Dra. Helena (exemplo)","faixa":"A","atencao":true,"ativo":true,"pausado":false,"inicio":"2026-10-05","yt":"Ter, Qui","tt":""},
+  {"id":"c2","nome":"Instituto Aurora (exemplo)","faixa":"A","atencao":false,"ativo":true,"pausado":false,"inicio":"2026-10-05","yt":"Qua","tt":"Seg, Qua, Sex"},
+  {"id":"c3","nome":"Marcos Lima (exemplo)","faixa":"B","atencao":false,"ativo":true,"pausado":false,"inicio":"2026-10-05","yt":"Seg","tt":""},
+  {"id":"c4","nome":"Paula Reis (exemplo)","faixa":"B","atencao":true,"ativo":true,"pausado":false,"inicio":"2026-10-05","yt":"Sex","tt":""},
+  {"id":"c5","nome":"Clínica Vida (exemplo)","faixa":"C","atencao":false,"ativo":true,"pausado":false,"inicio":"2026-10-05","yt":"Qui","tt":"Qui"}],
  "horarios":[
   {"id":"g1","cliente":"c1","plataforma":"YouTube","formato":"Vídeo padrão","dia":"2 Ter","horario":"18:00","qtd":1,"status":"✅ Publicar","nota":""},
   {"id":"g2","cliente":"c1","plataforma":"YouTube","formato":"Shorts","dia":"4 Qui","horario":"12:00","qtd":3,"status":"✅ Publicar","nota":""},
