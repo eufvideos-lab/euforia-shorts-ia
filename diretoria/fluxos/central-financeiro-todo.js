@@ -5,6 +5,7 @@ import { workflow, node, trigger, switchCase, sticky } from '@n8n/workflow-sdk';
 // atualiza a mesma linha na cópia para a mudança aparecer na hora.
 const NOTION = { httpHeaderAuth: { id: 'VYOze6gUMvjy3QXF', name: 'Notion Euforia' } };
 const DISCORD = { httpHeaderAuth: { id: 'PY2ZcN5kAVFaS1io', name: 'Discord Bot' } };
+const EVO = { httpHeaderAuth: { id: 'MqNLRX9duuYKJSR2', name: 'Evolution API' } };
 const PG = { postgres: { id: '2QBGXkxxr41tWTQw', name: 'Postgres account' } };
 const ORIGENS = 'https://lp.grupoeuforia.tech,https://grupoeuforia.com.br,https://www.grupoeuforia.com.br';
 const NOTION_HDR = { parameters: [{ name: 'Notion-Version', value: '2022-06-28' }] };
@@ -87,7 +88,7 @@ if (acao === 'todo_mudar') {
   if (tem('resp') && RESP.includes(c.resp)) pr['Responsável'] = sel(c.resp);
   if (tem('texto') && s(c.texto).length >= 2) pr['Pendência'] = tt(s(c.texto, 300));
   if (tem('link')) pr['Link'] = { url: /^https:[/][/][^ ]+$/.test(s(c.link)) ? s(c.link) : null };
-  if (tem('contexto')) pr['Contexto'] = rt(s(c.contexto, 1900));
+  if (tem('contexto')) pr['Contexto'] = rt(s(c.contexto, 7900));
   if (!Object.keys(pr).length) return nega('Nada para mudar.');
   return notion('PATCH', PAGES + '/' + id, { properties: pr });
 }
@@ -139,6 +140,23 @@ if (acao === 'fin_config') {
   if (v !== '' && !(v > 0 && v <= 30)) return nega('Percentual entre 0 e 30.');
   return [{ json: { rota: 'pg', acao, j: JSON.stringify({ imposto_pct: v === '' ? '' : String(v) }) } }];
 }
+if (acao === 'todo_zerar') return [{ json: { rota: 'pg', acao, j: JSON.stringify({ quando: agora.toUTC().toISO() }) } }];
+if (acao === 'msg_buscar') {
+  const q = s(c.q, 60);
+  if (q.replace(/[^0-9A-Za-zÀ-ú]/g, '').length < 2) return nega('Digite pelo menos 2 letras.');
+  return [{ json: { rota: 'msgbusca', acao, q: '%' + q.replace(/[%_]/g, '') + '%', dig: '%' + q.replace(/[^0-9]/g, '') + '%' } }];
+}
+if (acao === 'msg_enviar') {
+  const INST = ['isabela', 'suporte'];
+  if (!INST.includes(c.inst)) return nega('Escolha por qual número sai (Isabela ou suporte).');
+  let para = s(c.para, 60);
+  if (/^[0-9]{10,13}$/.test(para.replace(/[^0-9]/g, '')) && !/@/.test(para)) { para = para.replace(/[^0-9]/g, ''); if (para.length <= 11) para = '55' + para; }
+  if (!/^([0-9]{12,13}(@s[.]whatsapp[.]net)?|[0-9-]{10,40}@g[.]us)$/.test(para)) return nega('Destinatário inválido.');
+  const t = String(c.texto == null ? '' : c.texto).replace(/\\r/g, '').trim().slice(0, 3000);
+  if (t.length < 2) return nega('Escreva a mensagem.');
+  if (/henrique|flau/i.test(t)) return nega('A mensagem cita Henrique/Flau. Para cliente, assine como Isabela ou Érica.');
+  return [{ json: { rota: 'whats', acao, inst: c.inst, corpo: JSON.stringify({ number: para, text: t }) } }];
+}
 if (acao === 'avisar') {
   const t = s(c.texto, 1800);
   if (t.length < 3) return nega('Escreva o aviso.');
@@ -167,6 +185,10 @@ const rota = switchCase({ version: 3.2, config: { name: 'Rota', parameters: { ru
     conditions: [{ leftValue: '={{ $json.rota }}', rightValue: 'maquina', operator: { type: 'string', operation: 'equals' } }], combinator: 'and' } },
   { outputKey: 'discord', conditions: { options: { caseSensitive: true, leftValue: '', typeValidation: 'strict' },
     conditions: [{ leftValue: '={{ $json.rota }}', rightValue: 'discord', operator: { type: 'string', operation: 'equals' } }], combinator: 'and' } },
+  { outputKey: 'msgbusca', conditions: { options: { caseSensitive: true, leftValue: '', typeValidation: 'strict' },
+    conditions: [{ leftValue: '={{ $json.rota }}', rightValue: 'msgbusca', operator: { type: 'string', operation: 'equals' } }], combinator: 'and' } },
+  { outputKey: 'whats', conditions: { options: { caseSensitive: true, leftValue: '', typeValidation: 'strict' },
+    conditions: [{ leftValue: '={{ $json.rota }}', rightValue: 'whats', operator: { type: 'string', operation: 'equals' } }], combinator: 'and' } },
   { outputKey: 'negado', conditions: { options: { caseSensitive: true, leftValue: '', typeValidation: 'strict' },
     conditions: [{ leftValue: '={{ $json.rota }}', rightValue: 'negado', operator: { type: 'string', operation: 'equals' } }], combinator: 'and' } }] }, options: {} } } });
 
@@ -175,7 +197,7 @@ const lerCopia = node({ type: 'n8n-nodes-base.postgres', version: 2.6, config: {
   operation: 'executeQuery',
   query: `WITH a AS (SELECT $1::text AS acao)
 SELECT a.acao,
-  CASE WHEN a.acao = 'todo' THEN (SELECT coalesce(jsonb_agg(jsonb_build_object('id', c.id, 'p', c.props, 'e', c.editado) ORDER BY c.editado DESC), '[]'::jsonb)
+  CASE WHEN a.acao = 'todo' THEN (SELECT coalesce(jsonb_agg(jsonb_build_object('id', c.id, 'p', c.props, 'e', c.editado, 'c', c.criado) ORDER BY c.editado DESC), '[]'::jsonb)
     FROM notion_cache c WHERE c.db = 'pendencias' AND NOT c.arquivado
     AND (coalesce(c.props->'Status'->'select'->>'name', '') <> 'Feito' OR c.editado > now() - interval '3 days')) END AS pend,
   CASE WHEN a.acao = 'todo' THEN (SELECT coalesce(jsonb_agg(jsonb_build_object('id', c.id, 'nome',
@@ -210,9 +232,12 @@ const estado = (r.estado || []).map(e => ({ db: e.db, sync: e.sync, linhas: e.li
 const out = { ok: true, acao, hoje, rotHoje: rot(hoje), estado, config: r.config || {} };
 
 if (acao === 'todo') {
+  const corteRaw = String((r.config || {}).todo_zerado_em || '');
+  const corte = corteRaw ? DateTime.fromISO(corteRaw).toUTC().startOf('minute').toMillis() : 0;
+  out.corte = corteRaw;
   out.itens = (r.pend || []).map(i => { const p = i.p || {}; return { id: i.id, t: T(p['Pendência']), st: S(p['Status']), pr: S(p['Prioridade']), se: S(p['Setor']),
-    re: S(p['Responsável']), d: D(p['Data limite']), cx: T(p['Contexto']).slice(0, 500), cp: T(p['Cliente / Pessoa']), link: (p['Link'] || {}).url || '',
-    e: i.e, url: 'https://www.notion.so/' + i.id }; });
+    re: S(p['Responsável']), d: D(p['Data limite']), cx: T(p['Contexto']).slice(0, 7900), cp: T(p['Cliente / Pessoa']), link: (p['Link'] || {}).url || '',
+    e: i.e, url: 'https://www.notion.so/' + i.id, antiga: !!(corte && i.c && DateTime.fromISO(String(i.c)).toMillis() < corte) }; });
   out.clientes = (r.clientes || []).filter(x => x.nome).map(x => ({ id: x.id, nome: x.nome.trim() })).sort((a, b) => a.nome.localeCompare(b.nome));
 }
 if (acao === 'fin') {
@@ -306,8 +331,11 @@ s AS (INSERT INTO diretoria_saldo (dia, valor, contas, obs)
   SELECT (j->>'dia')::date, (j->>'valor')::numeric, nullif(j->>'contas', ''), nullif(j->>'obs', '') FROM a WHERE acao = 'fin_saldo' RETURNING id),
 c AS (INSERT INTO diretoria_config (chave, valor, atualizado)
   SELECT 'imposto_pct', j->>'imposto_pct', now() FROM a WHERE acao = 'fin_config'
+  ON CONFLICT (chave) DO UPDATE SET valor = EXCLUDED.valor, atualizado = now() RETURNING 1),
+z AS (INSERT INTO diretoria_config (chave, valor, atualizado)
+  SELECT 'todo_zerado_em', j->>'quando', now() FROM a WHERE acao = 'todo_zerar'
   ON CONFLICT (chave) DO UPDATE SET valor = EXCLUDED.valor, atualizado = now() RETURNING 1)
-SELECT (SELECT count(*) FROM s) + (SELECT count(*) FROM c) AS feitos;`,
+SELECT (SELECT count(*) FROM s) + (SELECT count(*) FROM c) + (SELECT count(*) FROM z) AS feitos;`,
   options: { queryReplacement: '={{ [ $json.acao, $json.j ] }}' } } } });
 
 const okPg = node({ type: 'n8n-nodes-base.respondToWebhook', version: 1.5, config: { name: 'Confirmar saldo ou ajuste', parameters: {
@@ -331,6 +359,27 @@ const avisar = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, config: 
 const okAviso = node({ type: 'n8n-nodes-base.respondToWebhook', version: 1.5, config: { name: 'Confirmar aviso', parameters: {
   respondWith: 'json', responseBody: '={{ JSON.stringify({ ok: !!$json.id }) }}', options: {} } } });
 
+// ---------- Mandar mensagem (WhatsApp): achar contato e enviar só depois do clique em Enviar ----------
+const buscarContato = node({ type: 'n8n-nodes-base.postgres', version: 2.6, config: { name: 'Buscar contato', credentials: PG, alwaysOutputData: true, parameters: {
+  operation: 'executeQuery',
+  query: `SELECT coalesce(jsonb_agg(x ORDER BY x->>'ultima' DESC NULLS LAST), '[]'::jsonb) AS lista FROM (
+  SELECT jsonb_build_object('chat', c.chat_id, 'nome', c.nome, 'inst', c.origem,
+    'ultima', (SELECT to_char(max(m.enviado_em) AT TIME ZONE 'America/Recife', 'YYYY-MM-DD HH24:MI') FROM mensagens m WHERE m.chat_id = c.chat_id AND m.origem = c.origem)) AS x
+  FROM chats c WHERE c.origem IN ('isabela', 'suporte') AND c.chat_id NOT LIKE '%@lid'
+    AND (c.nome ILIKE $1 OR (length($2) > 5 AND c.chat_id LIKE $2))
+  LIMIT 30) t;`,
+  options: { queryReplacement: '={{ [ $json.q, $json.dig ] }}' } } } });
+
+const okBusca = node({ type: 'n8n-nodes-base.respondToWebhook', version: 1.5, config: { name: 'Devolver contatos', parameters: {
+  respondWith: 'json', responseBody: '={{ JSON.stringify({ ok: true, lista: $json.lista || [] }) }}', options: {} } } });
+
+const mandarWhats = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, config: { name: 'Mandar no WhatsApp', credentials: EVO, onError: 'continueRegularOutput', alwaysOutputData: true, parameters: {
+  method: 'POST', url: '=https://api.grupoeuforia.tech/message/sendText/{{ $json.inst }}', authentication: 'genericCredentialType', genericAuthType: 'httpHeaderAuth',
+  sendBody: true, specifyBody: 'json', jsonBody: '={{ $json.corpo }}', options: { response: { response: { neverError: true, fullResponse: true } } } } } });
+
+const okWhats = node({ type: 'n8n-nodes-base.respondToWebhook', version: 1.5, config: { name: 'Confirmar mensagem', parameters: {
+  respondWith: 'json', responseBody: '={{ JSON.stringify($json.statusCode >= 200 && $json.statusCode < 300 ? { ok: true } : { ok: false, erro: "O WhatsApp não aceitou (número desconectado ou inválido)." }) }}', options: {} } } });
+
 const recusar = node({ type: 'n8n-nodes-base.respondToWebhook', version: 1.5, config: { name: 'Recusar', parameters: {
   respondWith: 'json', responseBody: '={{ JSON.stringify($json.resp) }}', options: {} } } });
 
@@ -344,5 +393,7 @@ export default workflow('diretoria-central', 'Diretoria | Painel Central (financ
     .onCase(2, gravarPg.to(okPg))
     .onCase(3, maquina.to(okMaquina))
     .onCase(4, avisar.to(okAviso))
-    .onCase(5, recusar))
+    .onCase(5, buscarContato.to(okBusca))
+    .onCase(6, mandarWhats.to(okWhats))
+    .onCase(7, recusar))
   .add(nota);

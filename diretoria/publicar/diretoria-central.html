@@ -161,7 +161,7 @@ function novoLancamento(pre, depois) {
 
 (function () {
 // Aba To-do do Painel Central: ✅ Minhas Pendências do Notion, lido da cópia rápida.
-var D = null, filtro = 'meus', busca = '', abertos = {};
+var D = null, filtro = 'meus', busca = '', abertos = {}, verAntigas = false;
 var PRIOS = ['🔴 Urgente', '🟠 Alta', '🟡 Média', '⚪ Baixa'];
 var SETORES = ['Clientes', 'Comercial', 'Financeiro', 'Equipe', 'Jurídico', 'Pessoal'];
 var MAQS = [['carrossel', 'Carrossel'], ['shorts', 'Shorts'], ['longo', 'Vídeo longo'], ['thumb', 'Thumbnail (escreva "Tema da thumb: …")'], ['arte', 'Arte'],
@@ -190,12 +190,13 @@ var GRUPOS = [['atrasadas', 'Atrasadas'], ['hoje', 'Hoje'], ['semana', 'Próximo
 var ORD_P = { '🔴 Urgente': 0, '🟠 Alta': 1, '🟡 Média': 2, '⚪ Baixa': 3, '': 4 };
 function desenhar() {
   var hoje = D.hoje, q = busca.toLowerCase();
-  var itens = D.itens.filter(function (i) {
+  var todos = D.itens.filter(function (i) {
     if (filtro === 'meus' && !meu(i)) return false;
     if (filtro === 'equipe' && meu(i)) return false;
     if (q && (i.t + ' ' + i.cp + ' ' + i.cx + ' ' + i.se).toLowerCase().indexOf(q) < 0) return false;
     return true;
   });
+  var itens = todos.filter(function (i) { return !i.antiga; }), antigas = todos.filter(function (i) { return i.antiga; });
   var por = {}; itens.forEach(function (i) { var g = grupoDe(i, hoje); (por[g] = por[g] || []).push(i); });
   $('cHoje').textContent = (por.hoje || []).length; $('cAtr').textContent = (por.atrasadas || []).length;
   var html = '';
@@ -211,7 +212,19 @@ function desenhar() {
     if (l.length > max) html += '<div class="lin"><button class="ghost" data-mais="' + g[0] + '">Ver mais ' + (l.length - max) + '</button></div>';
     html += '</div>';
   });
-  $('lista').innerHTML = html || '<p class="vazio">Nada por aqui. 🎉</p>';
+  if (!html) html = '<p class="vazio">Lista limpa. Anote acima o que for surgindo.</p>';
+  if (antigas.length || D.corte) {
+    html += '<h2 class="sec" style="margin-top:28px"><button class="ghost" id="bAntigas">' + (verAntigas ? '▾' : '▸') + ' Antigas (anteriores a ' + (D.corte ? dm(String(D.corte).slice(0, 10)) : 'hoje') + ') <span class="n">' + antigas.length + '</span></button>' +
+      '<small>Ficam guardadas aqui e no Notion. Abra quando quiser revisar uma por uma.</small></h2>';
+    if (verAntigas) {
+      antigas.sort(function (a, b) { return (ORD_P[a.pr] - ORD_P[b.pr]) || String(b.d || '').localeCompare(String(a.d || '')); });
+      var maxA = abertos.antigas ? antigas.length : 40;
+      html += '<div class="card" style="opacity:.85">' + antigas.slice(0, maxA).map(function (i) { return linha(i, hoje); }).join('') +
+        (antigas.length > maxA ? '<div class="lin"><button class="ghost" data-mais="antigas">Ver mais ' + (antigas.length - maxA) + '</button></div>' : '') + '</div>';
+    }
+  }
+  html += '<p class="hint" style="margin-top:18px"><button class="ghost" id="bZerar">Mandar a lista de agora para Antigas</button></p>';
+  $('lista').innerHTML = html;
   $('rodape').innerHTML = rodapeEstado(D.estado);
 }
 function linha(i, hoje) {
@@ -223,9 +236,9 @@ function linha(i, hoje) {
   if (i.cp) chips += '<span class="chip">' + esc(i.cp) + '</span>';
   var feito = i.st === 'Feito';
   return '<div class="lin" data-id="' + i.id + '"><input type="checkbox" class="ck" title="Feito"' + (feito ? ' checked' : '') + ' style="width:18px;height:18px;flex:none;accent-color:#FF6518">' +
-    '<div class="t"' + (feito ? ' style="opacity:.5;text-decoration:line-through"' : '') + '>' + esc(i.t || '(sem título)') + '<span class="s">' + chips + (i.cx ? ' ' + esc(i.cx) : '') + '</span></div>' +
+    '<div class="t"' + (feito ? ' style="opacity:.5;text-decoration:line-through"' : '') + '>' + esc(i.t || '(sem título)') + '<span class="s">' + chips + (i.cx ? ' ' + esc(i.cx.length > 280 ? i.cx.slice(0, 280) + '…' : i.cx) : '') + '</span></div>' +
     '<div class="acts"><button class="mini" data-a="hoje">Hoje</button><button class="mini" data-a="amanha">Amanhã</button><button class="mini" data-a="data">Data</button>' +
-    '<button class="mini" data-a="passar">Passar</button><button class="mini" data-a="maquina">Máquina</button><button class="mini" data-a="lanc">R$</button>' +
+    '<button class="mini" data-a="passar">Passar</button><button class="mini" data-a="msg">Mensagem</button><button class="mini" data-a="maquina">Máquina</button><button class="mini" data-a="lanc">R$</button>' +
     '<button class="mini" data-a="mais">⋯</button></div></div>';
 }
 function achar(id) { return D.itens.filter(function (x) { return x.id === id; })[0]; }
@@ -293,6 +306,52 @@ function maquina(i) {
     });
   }, 'Mesmo caminho do "Pedido ao escritório" do painel da equipe: cria o card no Entregas e, quando é automático, o pedido no quadro da máquina.');
 }
+function fone(chat) {
+  var c = String(chat || '');
+  if (/@g\.us$/.test(c)) return 'grupo de WhatsApp';
+  var n = c.replace(/@.*/, '');
+  if (/^55\d{10,11}$/.test(n)) return '+55 ' + n.slice(2, 4) + ' ' + n.slice(4, n.length - 4) + '-' + n.slice(-4);
+  return '+' + n;
+}
+var INSTS = [['isabela', 'Isabela (cobrança e financeiro)'], ['suporte', 'Suporte (Érica)']];
+function nomeInst(k) { return k === 'suporte' ? 'número do suporte (Érica)' : 'número da Isabela'; }
+function mensagem(i) {
+  modal('Mandar mensagem', [
+    { k: 'quem', rot: 'Para quem (nome do contato ou grupo, ou número com DDD)', v: i.cp || '' },
+    { k: 'texto', rot: 'Mensagem', tipo: 'textarea', v: '' }
+  ], 'Revisar', function (v) {
+    if (v.texto.length < 2) return 'Escreva a mensagem.';
+    var dig = v.quem.replace(/\D/g, '');
+    if (dig.length >= 10 && dig.length <= 13 && !/[a-zA-Z]/.test(v.quem)) {
+      setTimeout(function () { confirmar(i, { chat: (dig.length <= 11 ? '55' : '') + dig, nome: '', inst: 'isabela' }, v.texto); }, 30);
+      return '';
+    }
+    return api('msg_buscar', { campos: { q: v.quem } }).then(function (r) {
+      if (!r.ok) return r.erro || 'Não achei.';
+      if (!r.lista.length) return 'Não achei esse contato nas conversas da Isabela e do suporte. Tente outro nome ou digite o número.';
+      setTimeout(function () {
+        if (r.lista.length === 1) { confirmar(i, r.lista[0], v.texto); return; }
+        modal('Qual destes?', [{ k: 'c', rot: 'Contato', tipo: 'select', ops: r.lista.map(function (x, n) {
+          return [n, (x.nome || 'sem nome') + ' · ' + fone(x.chat) + ' · ' + (x.inst === 'suporte' ? 'suporte' : 'Isabela') + (x.ultima ? ' · última conversa ' + dm(x.ultima) : '')]; }) }],
+        'Continuar', function (y) { setTimeout(function () { confirmar(i, r.lista[Number(y.c)], v.texto); }, 30); return ''; });
+      }, 30);
+      return '';
+    });
+  }, 'Nada sai daqui ainda: na próxima tela você confere destinatário, número e texto antes de enviar. Para cliente, assine como Isabela ou Érica, nunca no seu nome.');
+}
+function confirmar(i, ct, texto) {
+  modal('Conferir e enviar', [
+    { k: 'inst', rot: 'Sai pelo número', tipo: 'select', ops: INSTS, v: ct.inst === 'suporte' ? 'suporte' : 'isabela' },
+    { k: 'texto', rot: 'Mensagem', tipo: 'textarea', v: texto }
+  ], 'Enviar agora', function (v) {
+    return api('msg_enviar', { campos: { inst: v.inst, para: ct.chat, texto: v.texto } }).then(function (r) {
+      if (!r.ok) return r.erro || 'Não enviou.';
+      var quem = (ct.nome || fone(ct.chat));
+      aviso('Mensagem enviada para ' + quem + '.');
+      mudar(i, { status: 'Aguardando terceiros', contexto: (i.cx ? i.cx + '\n' : '') + 'Mensagem enviada para ' + quem + ' em ' + dm(D.hoje) + ' pelo ' + nomeInst(v.inst) + '.' });
+    });
+  }, '<b>Para:</b> ' + esc(ct.nome || 'número digitado') + ' · <b>' + esc(fone(ct.chat)) + '</b>. Só sai quando você clicar em Enviar agora.');
+}
 function mais(i) {
   modal('Editar pendência', [
     { k: 'texto', rot: 'Pendência', v: i.t },
@@ -316,6 +375,10 @@ window.iniciarTodo = function () {
   $('bLanc').onclick = function () { novoLancamento(); };
   $('lista').addEventListener('click', function (e) {
     var m = e.target.closest('[data-mais]'); if (m) { abertos[m.getAttribute('data-mais')] = 1; desenhar(); return; }
+    if (e.target.closest('#bAntigas')) { verAntigas = !verAntigas; desenhar(); return; }
+    if (e.target.closest('#bZerar')) { modal('Mandar a lista para Antigas?', [], 'Mandar', function () {
+      return api('todo_zerar').then(function (r) { if (!r.ok) return r.erro || 'Não deu certo.'; aviso('Lista limpa. O que está nela foi para Antigas.'); verAntigas = false; carregar(); }); },
+      'Tudo que está na lista agora vai para a seção Antigas (nada é apagado do Notion). O que você anotar depois aparece normal.'); return; }
     var l = e.target.closest('.lin[data-id]'); if (!l) return; var i = achar(l.getAttribute('data-id')); if (!i || /^tmp/.test(i.id)) return;
     if (e.target.classList.contains('ck')) { mudar(i, { status: e.target.checked ? 'Feito' : 'A fazer' }, e.target.checked ? 'Feito ✓' : 'Reaberta.'); return; }
     var b = e.target.closest('[data-a]'); if (!b) return; var a = b.getAttribute('data-a');
@@ -323,6 +386,7 @@ window.iniciarTodo = function () {
     else if (a === 'amanha') mudar(i, { data: maisDias(1, D.hoje) }, 'Para amanhã.');
     else if (a === 'data') modal('Mudar a data', [{ k: 'data', rot: 'Data limite', tipo: 'date', v: i.d || D.hoje }], 'Salvar', function (v) { return mudar(i, { data: v.data }, 'Data mudada.').then(function (ok) { return ok ? '' : 'Não salvou.'; }); });
     else if (a === 'passar') passar(i);
+    else if (a === 'msg') mensagem(i);
     else if (a === 'maquina') maquina(i);
     else if (a === 'lanc') novoLancamento({ desc: i.t, venc: i.d || D.hoje, obs: 'Veio do To-do.' });
     else if (a === 'mais') mais(i);
