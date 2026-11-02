@@ -5,6 +5,7 @@ import { workflow, node, trigger, switchCase, sticky } from '@n8n/workflow-sdk';
 // O checklist do lançamento (ativação) é só da diretoria: a equipe nunca recebe os checks.
 const ORIGENS = 'https://lp.grupoeuforia.tech,https://grupoeuforia.com.br,https://www.grupoeuforia.com.br';
 const ACESSO = { __rl: true, mode: 'id', value: 'ilXDZWGAcOjoajx7', cachedResultName: 'Painel equipe · acesso' };
+const NOTION = { httpHeaderAuth: { id: 'VYOze6gUMvjy3QXF', name: 'Notion Euforia' } };
 const TABELA = { __rl: true, mode: 'id', value: 'mg63BiWRYW8BAXvw', cachedResultName: 'Painel · estreias' };
 
 const pedir = trigger({ type: 'n8n-nodes-base.webhook', version: 2.1, config: { name: 'Pedido de Estreias', parameters: {
@@ -41,7 +42,7 @@ if (!motivo && p.acao === 'marcar') {
   if (!['revisor', 'calls', 'diretor', 'teste'].includes(r.papel)) motivo = 'permissao';
   else if (!e.cliente || !e.data || !e.hora) motivo = 'campos';
   else if (r.papel === 'teste' && !/TESTE/i.test(e.clienteNome)) motivo = 'permissao';
-  else if (r.papel !== 'diretor' && DateTime.fromISO(e.data, { zone: 'America/Recife' }).diff(hoje, 'days').days < 7) motivo = 'cedo';
+  else if (r.papel !== 'diretor' && (dd => dd >= 0 && dd < 7)(DateTime.fromISO(e.data, { zone: 'America/Recife' }).diff(hoje, 'days').days)) motivo = 'cedo'; // data passada = Vídeo 1 que já saiu (só registrar)
 }
 if (!motivo && p.acao === 'checar' && (r.papel !== 'diretor' || !e.cliente || e.checks === null)) motivo = 'permissao';
 return [{ json: { ok: !motivo, acao: motivo ? 'recusar' : p.acao, nome: r.nome || '', papel: r.papel || '', resposta: { ok: false, motivo } } }];
@@ -59,14 +60,36 @@ const caminho = switchCase({ version: 3.2, config: { name: 'O que fazer', parame
 const todas = node({ type: 'n8n-nodes-base.dataTable', version: 1.1, config: { name: 'Todas as estreias', executeOnce: true, alwaysOutputData: true, parameters: {
   resource: 'row', operation: 'get', dataTableId: TABELA, returnAll: true } } });
 
+// Clientes ativos: para listar os novos (início nos últimos 60 dias) que ainda não têm a estreia marcada.
+const fichas = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, config: { name: 'Clientes ativos', credentials: NOTION, executeOnce: true, parameters: {
+  method: 'POST', url: 'https://api.notion.com/v1/databases/3ddc91b406be49e98e630c298d9162d8/query', authentication: 'genericCredentialType', genericAuthType: 'httpHeaderAuth',
+  sendHeaders: true, headerParameters: { parameters: [{ name: 'Notion-Version', value: '2022-06-28' }] }, sendBody: true, specifyBody: 'json',
+  jsonBody: '={{ JSON.stringify({ filter: { property: "Situação", select: { equals: "Ativo" } }, page_size: 100 }) }}',
+  options: { pagination: { pagination: { paginationMode: 'updateAParameterInEachRequest',
+    parameters: { parameters: [{ type: 'body', name: 'start_cursor', value: '={{ $response.body.next_cursor }}' }] },
+    paginationCompleteWhen: 'other', completeExpression: '={{ !$response.body.has_more }}', limitPagesFetched: true, maxRequests: 10 } } } } } });
+
 const montar = node({ type: 'n8n-nodes-base.code', version: 2, config: { name: 'Montar estreias', parameters: { jsCode: `const quem = $('Validar acesso').first().json;
 const dir = quem.papel === 'diretor';
-const desde = DateTime.now().setZone('America/Recife').minus({ days: 45 }).toISODate();
-const estreias = $input.all().map(i => i.json).filter(r => r && r.cliente && r.data && r.data >= desde).map(r => {
+const estreias = $('Todas as estreias').all().map(i => i.json).filter(r => r && r.cliente && r.data).map(r => {
   const v = { cliente: r.cliente, clienteNome: r.clienteNome || '', data: r.data, hora: r.hora || '', por: r.por || '', quando: r.quando || '' };
   if (dir) { v.checks = String(r.checks || '').split(',').filter(Boolean); v.obs = r.obs || ''; }
   return v; }).sort((a, b) => (a.data + a.hora).localeCompare(b.data + b.hora));
-return [{ json: { ok: true, diretor: dir, estreias } }];
+const tem = new Set(estreias.map(e => e.cliente)), hoje = DateTime.now().setZone('America/Recife').startOf('day');
+const txt = x => { if (!x) return ''; const a = x.title || x.rich_text; if (a) return a.map(t => t.plain_text).join('').trim(); if (x.select) return x.select.name; if (x.date) return x.date.start || ''; return ''; };
+const novos = [];
+for (const it of $('Clientes ativos').all()) for (const p of (it.json.results || [])) {
+  const pr = p.properties || {}, id = String(p.id || '').replace(/-/g, ''), nome = txt(pr['Cliente']);
+  if (!nome || tem.has(id) || (/^TESTE/i.test(nome) && !['teste', 'diretor'].includes(quem.papel))) continue;
+  const m = txt(pr['Resumo do contrato']).match(/contrato de (\\d{2})\\/(\\d{2})\\/(\\d{4})/i);
+  const inicio = m ? m[3] + '-' + m[2] + '-' + m[1] : txt(pr['Entrada (onboarding)']).slice(0, 10);
+  const d = inicio ? DateTime.fromISO(inicio, { zone: 'America/Recife' }) : null;
+  if (!d || !d.isValid) continue;
+  const dias = Math.round(hoje.diff(d.startOf('day'), 'days').days);
+  if (dias >= 0 && dias <= 60) novos.push({ cliente: id, clienteNome: nome, inicio, dias });
+}
+novos.sort((a, b) => b.dias - a.dias);
+return [{ json: { ok: true, diretor: dir, estreias, novos } }];
 ` } } });
 
 const devolver = node({ type: 'n8n-nodes-base.respondToWebhook', version: 1.5, config: { name: 'Devolver estreias', parameters: {
@@ -108,7 +131,7 @@ const nota = sticky('## Painel · Estreias (V1)\nData e hora do Vídeo 1 (estrei
 
 export default workflow('painel-estreias', 'Painel | Estreias (V1)')
   .add(pedir).to(ler).to(acesso).to(validar).to(caminho
-    .onCase(0, todas.to(montar).to(devolver))
+    .onCase(0, todas.to(fichas).to(montar).to(devolver))
     .onCase(1, atual.to(juntar).to(gravar).to(confirmar))
     .onCase(2, recusar))
   .add(nota);

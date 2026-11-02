@@ -596,7 +596,7 @@ const VIEWS = {
         <section class="panel"><h2>O que a equipe fez hoje</h2>${ativ.length ? `<ul class="ativ">${ativ.map(a => `<li><span class="mono">${esc(a.hora)}</span><button data-dcard="${a.card}"><b>${esc(a.quem)}</b> ${esc(a.oque)} <span class="sub">· ${esc(a.titulo)}</span></button></li>`).join('')}</ul>` : '<p class="empty">Ninguém mexeu em card pelo painel hoje ainda.</p>'}</section>
       </div>
       ${precisa.length ? `<section class="group"><h2>Precisa de você <span class="count">${precisa.length}</span></h2><div class="board" style="grid-template-columns:repeat(auto-fill,minmax(260px,1fr))">${precisa.map(mini).join('')}</div></section>` : ''}
-      ${(DEMO || ESTREIAS_NO_AR) ? lancamentosDir() : ''}
+      ${(DEMO || ESTREIAS_NO_AR) ? lancamentosDir() + semEstreiaBloco() : ''}
       <section class="group"><h2>🔴 Clientes em atenção <span class="count">${vermelhos.length}</span></h2>
         ${vermelhos.length ? `<div class="tbl"><table><thead><tr><th>Cliente</th><th>Faixa</th><th>Abertos</th><th>Atrasados</th><th>Próximo prazo</th></tr></thead><tbody>${vermelhos.map(v => { const prox = v.ab.slice().sort((a, b) => dd(a.prazo) - dd(b.prazo))[0];
           return `<tr class="click" data-cliente="${v.c.id}"><td><b>${esc(v.c.nome)}</b></td><td>${esc(v.c.faixa || '—')}</td><td>${v.ab.length}</td><td>${v.atr.length ? `<span class="chip red">${v.atr.length}</span>` : '0'}</td><td>${prox ? esc(prox.nome) + ' · ' + fmt(prox.prazo) : '—'}</td></tr>`; }).join('')}</tbody></table></div>` : '<p class="empty">Nenhum cliente marcado em atenção.</p>'}
@@ -758,6 +758,7 @@ const VIEWS = {
         <div class="stat"><span class="v">${meus.filter(c => c.status === 'Ajustes').length}</span><span>ajustes pedidos</span></div>
         <div class="stat"><span class="v">${comigo.length}</span><span>na revisão ou com o cliente</span></div>
       </div>
+      ${(DEMO || ESTREIAS_NO_AR) && ['revisor', 'calls', 'teste'].includes(papel()) ? semEstreiaBloco() : ''}
       ${grupoFold('Falta informação para o escritório', faltas, '', true)}
       ${grupoFold('Fazer agora', ag, 'Nada atrasado nem para hoje.', true)}
       ${grupoFold('Amanhã', am, 'Nada para amanhã.', false)}
@@ -1686,7 +1687,7 @@ const GFORM = ['Vídeo padrão', 'Shorts', 'Corte horizontal', 'Podcast', 'Carro
 const GMOTIVO = {permissao:'Só o Ismael e o Rômulo mudam a grade.', campos:'Escolha plataforma, formato e dia.', horario:'Esse horário mudou. A grade foi atualizada.', cliente:'Escolha um cliente ativo.', acesso: MOTIVO.acesso};
 async function carregarGrade(){
   if (carregarGrade.indo) return; carregarGrade.indo = true;
-  try { const r = await api('euforia-painel-grade', { acao: 'listar' }); if (r && r.ok) { G = r; if (view === 'grade' && !ocupado && !$('#layer').innerHTML) render(); } else if (r && r.motivo === 'acesso') { PIN = ''; carregar(); } }
+  try { const r = await api('euforia-painel-grade', { acao: 'listar' }); if (r && r.ok) { G = r; if (['grade', 'geral', 'fila'].includes(view) && !ocupado && !$('#layer').innerHTML) render(); } else if (r && r.motivo === 'acesso') { PIN = ''; carregar(); } }
   catch (e) { if (view === 'grade' && !G) $('#main').innerHTML = `<div class="view"><h1>Grade de postagem</h1><p class="sub">${ERRO}</p></div>`; }
   carregarGrade.indo = false;
 }
@@ -2005,7 +2006,7 @@ setInterval(() => { if (D && view === 'responder' && !ocupado && !document.hidde
 
 // ---------- Central de Demandas ----------
 // ---------- Estreias do canal (Vídeo 1) · Máquina de Resultados (02/11/2026) ----------
-const ESTREIAS_NO_AR = false;
+const ESTREIAS_NO_AR = true;
 // Checklist do lançamento: SÓ a diretoria vê (a equipe não sabe da ativação). d = dias antes da estreia.
 const CHK = [['msgs', 'Mensagens do lançamento e tour da lista mandados ao cliente no grupo', 10], ['listas', 'Cliente confirmou que criou as listas de transmissão', 7],
   ['publico', 'Público da ativação: região e idade de quem compra do cliente', 5], ['verba', 'Verba e meta de views definidas', 5],
@@ -2017,7 +2018,7 @@ async function carregarEstreias(){
   if (carregarEstreias.indo) return; carregarEstreias.indo = true;
   try { const r = await api('euforia-painel-estreias', { acao: 'listar' }); ES = r && r.ok ? r : (ES && ES.estreias ? ES : { erro: true, estreias: [] }); } catch (e) { ES = ES && ES.estreias ? ES : { erro: true, estreias: [] }; }
   carregarEstreias.indo = false;
-  if (['grade', 'geral'].includes(view) && !ocupado && !$('#layer').innerHTML) render();
+  if (['grade', 'geral', 'fila'].includes(view) && !ocupado && !$('#layer').innerHTML) render();
 }
 const quandoEst = e => { const d = diff(e.data); return fmt(e.data) + (e.hora ? ' · ' + e.hora : '') + ' · ' + (d === 0 ? 'hoje' : d === 1 ? 'amanhã' : d > 0 ? 'em ' + d + ' dias' : 'há ' + (-d) + ' dias'); };
 function blocoEstreias(pode){
@@ -2038,32 +2039,52 @@ function lancamentosDir(){
     <ul class="estreias">${L.map(e => { const d = diff(e.data), f = fase(d), falta = faltaChk(e), vence = falta.filter(c => d <= c[2]);
       return `<li><span class="t"><b>${esc(e.clienteNome)}</b> <span class="chip ${f[0]}">${f[1]}</span><br><span class="sub" style="font-size:13px">${quandoEst(e)} · ${CHK.length - falta.length}/${CHK.length} feitos${vence.length ? ` · <b style="color:var(--bad)">${vence.length} para hoje ou atrasado</b>` : ''}</span></span><button class="btn ${vence.length ? 'primary' : ''}" data-chk="${e.cliente}">Checklist</button></li>`; }).join('')}</ul></section>`;
 }
+// Clientes novos (início nos últimos 60 dias) sem a estreia do Vídeo 1 marcada: aparece para diretoria, Rômulo e Ismael.
+function semEstreia(){
+  if (!ES) { carregarEstreias(); return null; }
+  const tem = new Set(ES.estreias.map(e => e.cliente));
+  return (ES.novos || []).filter(c => !tem.has(c.cliente));
+}
+function semEstreiaBloco(){
+  const L = semEstreia(); if (!L || !L.length) return '';
+  return `<section class="group"><h2>🚀 Clientes novos sem estreia marcada <span class="count">${L.length}</span></h2>
+    <p class="sub" style="font-size:13px">Marque o dia do Vídeo 1 na Reunião de Lançamento (mínimo 7 dias, ideal 14). Se o Vídeo 1 já saiu, marque a data em que saiu.</p>
+    <ul class="estreias">${L.map(c => `<li><span class="t"><b>${esc(c.clienteNome)}</b><br><span class="sub" style="font-size:13px">Começou em ${fmtA(c.inicio)} · há ${-diff(c.inicio)} dias</span></span><button class="btn primary" data-estreia="${c.cliente}">Marcar estreia</button></li>`).join('')}</ul></section>`;
+}
 function abrirEstreia(cid){
-  const e = (ES && ES.estreias || []).find(x => x.cliente === cid) || { cliente: '', data: '', hora: '19:00' };
-  const nomes = ((G && G.clientes) || D.clientes).filter(c => c.ativo !== false || c.id === cid).slice().sort((a, b) => a.nome.localeCompare(b.nome));
+  const ja = (ES && ES.estreias || []).find(x => x.cliente === cid), e = ja || { cliente: '', data: '', hora: '19:00' }, pre = ja ? '' : cid;
+  const nomes = ((G && G.clientes) || D.clientes).filter(c => c.ativo !== false || c.id === cid).slice();
+  const nv = pre && ES && (ES.novos || []).find(x => x.cliente === pre); if (nv && !nomes.some(c => c.id === pre)) nomes.push({ id: pre, nome: nv.clienteNome });
+  nomes.sort((a, b) => a.nome.localeCompare(b.nome));
   const min = new Date(dia(D.hoje).getTime() + 7 * 864e5).toISOString().slice(0, 10);
   $('#layer').innerHTML = `<div class="scrim" data-x></div><aside class="drawer" role="dialog" aria-modal="true" aria-labelledby="es-t"><div class="drawer-in">
     <button class="close" data-x>Fechar</button>
     <div><p class="eyebrow">Reunião de Lançamento</p><h2 id="es-t" style="font-size:26px">${e.cliente ? 'Mudar a estreia' : 'Marcar a estreia do canal'}</h2></div>
     <form id="festreia" style="display:flex;flex-direction:column;gap:12px">
-      <label for="es-c">Cliente<select id="es-c" ${e.cliente ? 'disabled' : ''}><option value="">Escolha</option>${nomes.map(k => `<option value="${k.id}" ${k.id === e.cliente ? 'selected' : ''}>${esc(k.nome)}</option>`).join('')}</select></label>
+      <label for="es-c">Cliente<select id="es-c" ${e.cliente ? 'disabled' : ''}><option value="">Escolha</option>${nomes.map(k => `<option value="${k.id}" ${k.id === (e.cliente || pre) ? 'selected' : ''}>${esc(k.nome)}</option>`).join('')}</select></label>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
         <label for="es-d">Dia do Vídeo 1<input type="date" id="es-d" ${diretor() ? '' : `min="${min}"`} value="${esc(e.data)}"></label>
         <label for="es-h">Hora<input type="time" id="es-h" value="${esc(e.hora || '19:00')}"></label>
       </div>
+      <label for="es-ja" style="flex-direction:row;align-items:center;gap:8px;font-weight:500"><input type="checkbox" id="es-ja"> O Vídeo 1 já saiu (só registrar a data)</label>
       <p class="note" id="es-aviso">Mínimo de 7 dias a partir de hoje. O ideal são 14 dias, para dar tempo de preparar o lançamento.</p>
       <div class="actions"><button class="btn primary" type="submit">Salvar estreia</button></div>
     </form></div></aside>`;
-  const aviso = () => { const v = $('#es-d').value, n = v ? diff(v) : null, el = $('#es-aviso');
+  const ontem = new Date(dia(D.hoje).getTime() - 864e5).toISOString().slice(0, 10);
+  $('#es-ja').onchange = () => { const j = $('#es-ja').checked, d = $('#es-d'); if (!diretor()) { if (j) { d.removeAttribute('min'); d.max = ontem; } else { d.removeAttribute('max'); d.min = min; } } aviso(); };
+  const aviso = () => { const v = $('#es-d').value, n = v ? diff(v) : null, el = $('#es-aviso'), j = $('#es-ja').checked;
+    if (j) { el.style.color = n !== null && n >= 0 ? 'var(--bad)' : ''; el.textContent = n !== null && n >= 0 ? 'Se já saiu, a data tem que ser de ontem para trás.' : 'Escolha o dia em que o Vídeo 1 saiu.'; return; }
     el.style.color = n !== null && n < 14 ? 'var(--bad)' : ''; el.textContent = n === null ? 'Mínimo de 7 dias a partir de hoje. O ideal são 14 dias, para dar tempo de preparar o lançamento.' : n < 7 && !diretor() ? 'Faltam só ' + n + ' dias. O mínimo é 7: escolha outra data.' : n < 14 ? 'Faltam ' + n + ' dias. Dá, mas o ideal são 14. Avise a diretoria.' : 'Faltam ' + n + ' dias. Boa folga.'; };
   $('#es-d').oninput = aviso; aviso();
   $('#layer').onclick = ev => { if (ev.target.closest('[data-x]') && !ocupado) fechar(); };
   $('#layer').onsubmit = async ev => {
     if (ev.target.id !== 'festreia') return; ev.preventDefault(); if (ocupado) return;
-    const c = e.cliente || $('#es-c').value, k = ((G && G.clientes) || D.clientes).find(x => x.id === c), data = $('#es-d').value, hora = $('#es-h').value;
+    const c = e.cliente || $('#es-c').value, k = ((G && G.clientes) || D.clientes).find(x => x.id === c) || ((ES && ES.novos) || []).map(x => ({ id: x.cliente, nome: x.clienteNome })).find(x => x.id === c), data = $('#es-d').value, hora = $('#es-h').value;
     if (!c) { toast('Escolha o cliente.'); return; }
     if (!data || !hora) { toast('Escolha o dia e a hora do Vídeo 1.'); return; }
-    if (!diretor() && diff(data) < 7) { toast('A estreia precisa ser daqui a 7 dias ou mais.'); return; }
+    const ja = $('#es-ja').checked;
+    if (ja && diff(data) >= 0) { toast('Se o Vídeo 1 já saiu, escolha uma data de ontem para trás.'); return; }
+    if (!ja && !diretor() && diff(data) < 7) { toast('A estreia precisa ser daqui a 7 dias ou mais.'); return; }
     ocupado = true;
     try { const r = await api('euforia-painel-estreias', { acao: 'marcar', estreia: { cliente: c, clienteNome: k ? k.nome : (e.clienteNome || ''), data, hora } }); if (!r || !r.ok) throw new Error((r && r.motivo) || 'erro'); toast('Estreia marcada. O Vídeo 1 já aparece na grade.'); ocupado = false; fechar(); ES = null; render(); }
     catch (er) { ocupado = false; toast(er.message === 'cedo' ? 'A estreia precisa ser daqui a 7 dias ou mais.' : er.message === 'campos' ? 'Falta o dia ou a hora.' : MOTIVO[er.message] || ERRO); }
@@ -2089,7 +2110,7 @@ function abrirChecklist(cid){
 }
 
 // ---------- Máquina de Resultados (V1, 02/11/2026) ----------
-const RESULTADOS_NO_AR = false;
+const RESULTADOS_NO_AR = true;
 async function carregarResultados(){
   if (carregarResultados.indo) return; carregarResultados.indo = true;
   try { const r = await api('euforia-painel-resultados', { acao: 'ver' }); RS = r && r.ok ? r : (RS && RS.videos ? RS : { erro: true }); } catch (e) { RS = RS && RS.videos ? RS : { erro: true }; }
@@ -2285,7 +2306,7 @@ function demoApi(path, b){
     semearEstreias();
     if (b.acao === 'marcar') { const i = DEMO_ES.estreias.findIndex(x => x.cliente === b.estreia.cliente); const v = Object.assign({ checks: [] }, i >= 0 ? DEMO_ES.estreias[i] : {}, b.estreia, { por: 'Exemplo', quando: 'agora' }); if (i >= 0) DEMO_ES.estreias[i] = v; else DEMO_ES.estreias.push(v); return wait({ ok: true }); }
     if (b.acao === 'checar') { DEMO_ES.estreias.find(x => x.cliente === b.estreia.cliente).checks = b.estreia.checks; return wait({ ok: true }); }
-    const r = JSON.parse(JSON.stringify(DEMO_ES)); delete r.semeado; if (DEMO_D.papel !== 'diretor') r.estreias.forEach(x => delete x.checks); return wait(r);
+    const r = JSON.parse(JSON.stringify(DEMO_ES)); delete r.semeado; r.novos = DEMO_G.clientes.filter(c => !DEMO_ES.estreias.some(e => e.cliente === c.id)).slice(0, 2).map((c, i) => ({ cliente: c.id, clienteNome: c.nome, inicio: i ? '2026-10-12' : '2026-09-20', dias: i ? 14 : 36 })); if (DEMO_D.papel !== 'diretor') r.estreias.forEach(x => delete x.checks); return wait(r);
   }
   if (path === 'euforia-painel-resultados') {
     if (b.acao === 'salvar') { const v = Object.assign({}, b.video); ['viewsTotal', 'viewsAtivacao', 'verba', 'gasto', 'mensagens', 'respostasLista', 'reunioes', 'contratos'].forEach(k => { v[k] = v[k] === '' || v[k] == null ? null : Number(String(v[k]).replace(/\./g, '').replace(',', '.')); });
@@ -2385,11 +2406,11 @@ const DEMO_D = {"ok":true,"nome":"Ismael (exemplo)","papel":"revisor","hoje":"20
 
 const DEMO_G = {"ok":true,"podeMudar":true,"podeMarcar":true,
  "marcas":{"g7|2026-10-26":{"status":"postado","por":"Ismael (exemplo)","quando":"26/10 17:04"},"g1|2026-10-27":{"status":"programado","por":"Daniel (exemplo)","quando":"25/10 21:30"},"g3|2026-10-28":{"status":"programado","por":"Daniel (exemplo)","quando":"25/10 21:41"}},
- "clientes":[{"id":"c1","nome":"Dra. Helena (exemplo)","faixa":"A","atencao":true,"ativo":true,"pausado":false,"yt":"Ter, Qui","tt":""},
-  {"id":"c2","nome":"Instituto Aurora (exemplo)","faixa":"A","atencao":false,"ativo":true,"pausado":false,"yt":"Qua","tt":"Seg, Qua, Sex"},
-  {"id":"c3","nome":"Marcos Lima (exemplo)","faixa":"B","atencao":false,"ativo":true,"pausado":false,"yt":"Seg","tt":""},
-  {"id":"c4","nome":"Paula Reis (exemplo)","faixa":"B","atencao":true,"ativo":true,"pausado":false,"yt":"Sex","tt":""},
-  {"id":"c5","nome":"Clínica Vida (exemplo)","faixa":"C","atencao":false,"ativo":true,"pausado":false,"yt":"Qui","tt":"Qui"}],
+ "clientes":[{"id":"c1","nome":"Dra. Helena (exemplo)","faixa":"A","atencao":true,"ativo":true,"pausado":false,"inicio":"2026-10-05","yt":"Ter, Qui","tt":""},
+  {"id":"c2","nome":"Instituto Aurora (exemplo)","faixa":"A","atencao":false,"ativo":true,"pausado":false,"inicio":"2026-10-05","yt":"Qua","tt":"Seg, Qua, Sex"},
+  {"id":"c3","nome":"Marcos Lima (exemplo)","faixa":"B","atencao":false,"ativo":true,"pausado":false,"inicio":"2026-10-05","yt":"Seg","tt":""},
+  {"id":"c4","nome":"Paula Reis (exemplo)","faixa":"B","atencao":true,"ativo":true,"pausado":false,"inicio":"2026-10-05","yt":"Sex","tt":""},
+  {"id":"c5","nome":"Clínica Vida (exemplo)","faixa":"C","atencao":false,"ativo":true,"pausado":false,"inicio":"2026-10-05","yt":"Qui","tt":"Qui"}],
  "horarios":[
   {"id":"g1","cliente":"c1","plataforma":"YouTube","formato":"Vídeo padrão","dia":"2 Ter","horario":"18:00","qtd":1,"status":"✅ Publicar","nota":""},
   {"id":"g2","cliente":"c1","plataforma":"YouTube","formato":"Shorts","dia":"4 Qui","horario":"12:00","qtd":3,"status":"✅ Publicar","nota":""},
