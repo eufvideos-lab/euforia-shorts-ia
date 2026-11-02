@@ -64,6 +64,19 @@ const historico = node({ type: 'n8n-nodes-base.postgres', version: 2.6, config: 
   operation: 'executeQuery',
   query: `SELECT to_char(dia, 'YYYY-MM-DD') AS dia, ig_seguidores FROM marketing_diario ORDER BY dia DESC LIMIT 120;` } } });
 
+const blog = node({ type: 'n8n-nodes-base.postgres', version: 2.6, config: { name: 'Ler blog', credentials: PG, executeOnce: true, alwaysOutputData: true, parameters: {
+  operation: 'executeQuery',
+  query: `WITH b AS (SELECT * FROM blog_visitas WHERE quando > now() - interval '30 days'),
+s AS (SELECT * FROM b WHERE quando > now() - interval '7 days')
+SELECT (SELECT count(*) FROM s) AS v7, (SELECT count(DISTINCT nullif(visitante, '')) FROM s) AS u7,
+  (SELECT count(*) FROM blog_visitas WHERE quando > now() - interval '14 days' AND quando <= now() - interval '7 days') AS a7,
+  (SELECT count(*) FROM b) AS v30, (SELECT count(DISTINCT nullif(visitante, '')) FROM b) AS u30,
+  (SELECT coalesce(json_agg(x ORDER BY x.n DESC), '[]') FROM (SELECT fonte, count(*) AS n FROM s GROUP BY 1) x) AS f7,
+  (SELECT coalesce(json_agg(x ORDER BY x.n DESC), '[]') FROM (SELECT fonte, count(*) AS n FROM b GROUP BY 1) x) AS f30,
+  (SELECT coalesce(json_agg(x ORDER BY x.n DESC), '[]') FROM (SELECT caminho, count(*) AS n FROM s GROUP BY 1 ORDER BY 2 DESC LIMIT 10) x) AS p7,
+  (SELECT coalesce(json_agg(x ORDER BY x.n DESC), '[]') FROM (SELECT caminho, count(*) AS n FROM b GROUP BY 1 ORDER BY 2 DESC LIMIT 10) x) AS p30,
+  (SELECT to_char(min(quando) AT TIME ZONE 'America/Recife', 'YYYY-MM-DD') FROM blog_visitas) AS desde;` } } });
+
 const montar = node({ type: 'n8n-nodes-base.code', version: 2, config: { name: 'Montar marketing', parameters: { jsCode: `const j = n => { try { return $(n).first().json || {}; } catch (e) { return {}; } };
 const erroDe = r => r && r.error ? String(r.error.message || 'erro').slice(0, 160) : '';
 const tot = r => { const o = {}; ((r && r.data) || []).forEach(m => { o[m.name] = m.total_value ? Number(m.total_value.value) || 0 : 0; }); return o; };
@@ -92,10 +105,13 @@ soma.ctr = soma.impressoes ? Math.round(soma.cliques / soma.impressoes * 10000) 
 const ads = { erro: erroDe(a7) || erroDe(a30), conta: 'Grupo Euforia · Anúncios', d7: soma, d30: resumo((a30.data || [])[0] || {}), hoje: resumo((ah.data || [])[0] || {}),
   campanhas, campanhas30, ativas: ativasL };
 
+const bl = j('Ler blog');
+const blog = { conectado: true, desde: bl.desde || '', v7: num(bl.v7), u7: num(bl.u7), a7: num(bl.a7), v30: num(bl.v30), u30: num(bl.u30),
+  f7: bl.f7 || [], f30: bl.f30 || [], p7: bl.p7 || [], p30: bl.p30 || [] };
 const historico = $('Ler histórico').all().map(i => i.json).filter(x => x && x.dia).map(x => ({ dia: x.dia, seg: num(x.ig_seguidores) })).reverse();
 const hoje = DateTime.now().setZone('America/Recife');
 return [{ json: { resp: { ok: true, hoje: hoje.toISODate(), hora: hoje.toFormat('HH:mm'), ig, ads, historico,
-  blog: { conectado: false }, youtube: { conectado: false } } } }];
+  blog, youtube: { conectado: false } } } }];
 ` } } });
 
 const devolver = node({ type: 'n8n-nodes-base.respondToWebhook', version: 1.5, config: { name: 'Devolver marketing', parameters: {
@@ -117,7 +133,7 @@ const nota = sticky('## Aba Marketing (Painel Central)\nSó leitura do Instagram
 
 export default workflow('diretoria-central-marketing', 'Diretoria | Painel Central (marketing)')
   .add(pedir).to(pessoas).to(conferir).to(pode
-    .onTrue(perfil.to(sem).to(ant).to(mes).to(novos).to(posts).to(ads7).to(ads30c).to(ads30).to(adsHoje).to(ativas).to(foto).to(historico).to(montar).to(devolver))
+    .onTrue(perfil.to(sem).to(ant).to(mes).to(novos).to(posts).to(ads7).to(ads30c).to(ads30).to(adsHoje).to(ativas).to(foto).to(historico).to(blog).to(montar).to(devolver))
     .onFalse(negar))
   .add(todoDia).to(perfilNoite).to(fotoNoite)
   .add(nota);

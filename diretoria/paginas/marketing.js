@@ -66,10 +66,29 @@ function desenhar() {
       '<div class="v">' + rs(c.gasto) + '<span style="display:block;font-size:12px;color:var(--mut);font-weight:500">CPL ' + rs(c.cpl) + '</span></div></div>'; }).join('')
     : '<p class="vazio" style="margin:6px 0">' + (per === '7' ? 'Nenhuma campanha gastou nos últimos 7 dias. Troque para 28-30 dias para ver o mês.' : 'Nenhuma campanha gastou nos últimos 30 dias.') + '</p>';
   h += '</div>';
-  // Blog e YouTube
-  h += '<h2 class="sec">Blog e YouTube</h2><div class="kpis">' +
-    '<div class="kpi"><small>Blog</small><b style="font-size:17px">Ainda sem medidor</b><span>Falta um contador nas páginas ou conectar o Google Search Console para ver visitas e se aparece no Google.</span></div>' +
-    '<div class="kpi"><small>YouTube</small><b style="font-size:17px">Ainda não conectado</b><span>Falta conectar a conta do canal no n8n. Depois disso entram inscritos, visualizações e vídeos.</span></div></div>';
+  // Blog (contador próprio)
+  var bl = M.blog || {};
+  h += '<h2 class="sec">Blog <small>Contador próprio' + (bl.desde ? ', ligado em ' + dm(bl.desde) : '') + '. Robôs não contam.</small></h2>';
+  if (!bl.conectado) h += '<p class="vazio">Contador ainda não ligado.</p>';
+  else {
+    var b7 = per === '7', fs = (b7 ? bl.f7 : bl.f30) || [], ps = (b7 ? bl.p7 : bl.p30) || [], tv = b7 ? bl.v7 : bl.v30;
+    var busca = fs.filter(function (x) { return x.fonte === 'Google' || x.fonte === 'Outras buscas'; }).reduce(function (t, x) { return t + Number(x.n); }, 0);
+    h += '<div class="kpis">' +
+      kpi('Visitas', n0(tv) + (b7 ? varia(bl.v7, bl.a7) : ''), (b7 ? 'últimos 7 dias' : 'últimos 30 dias'), 'or') +
+      kpi('Pessoas', n0(b7 ? bl.u7 : bl.u30), 'navegadores diferentes') +
+      kpi('Vindas do Google', n0(busca), tv ? Math.round(busca / tv * 100) + '% das visitas (orgânico)' : 'orgânico') +
+      kpi('Posts lidos', n0(ps.length), 'páginas com visita') + '</div>';
+    if (fs.length || ps.length) {
+      h += '<div class="card" style="margin-top:12px;display:flex;gap:28px;flex-wrap:wrap"><div style="flex:1;min-width:240px"><div class="mut" style="font-size:12.5px;margin-bottom:6px">De onde vieram</div>' +
+        fs.map(function (x) { return '<div class="lin"><div class="t">' + esc(x.fonte) + '</div><div class="v">' + n0(x.n) + '</div></div>'; }).join('') + '</div>' +
+        '<div style="flex:2;min-width:280px"><div class="mut" style="font-size:12.5px;margin-bottom:6px">Mais lidos</div>' +
+        ps.map(function (x) { var nome = String(x.caminho).replace(/^\/|\.html$/g, '').replace(/^blog-?/, '').replace(/-/g, ' ') || 'Página inicial do blog';
+          return '<div class="lin"><div class="t">' + esc(nome.charAt(0).toUpperCase() + nome.slice(1)) + '</div><div class="v">' + n0(x.n) + '</div></div>'; }).join('') + '</div></div>';
+    } else h += '<p class="vazio" style="margin-top:8px">Nenhuma visita contada ainda. As primeiras aparecem aqui assim que alguém abrir o blog.</p>';
+  }
+  // YouTube
+  h += '<h2 class="sec">YouTube</h2><div class="kpis"><div class="kpi"><small>YouTube</small><b style="font-size:17px">Ainda não conectado</b><span>Falta conectar a conta do canal no n8n. Depois disso entram inscritos, visualizações e vídeos.</span></div>' +
+    '<div class="kpi"><small>Google (Search Console)</small><b style="font-size:17px">Ainda não conectado</b><span>Depois de conectado mostra em quantas buscas o blog apareceu e quantos cliques teve.</span></div></div>';
   $('mkLista').innerHTML = h;
   $('mkHora').textContent = 'Dados de ' + dm(M.hoje) + ' às ' + M.hora;
 }
