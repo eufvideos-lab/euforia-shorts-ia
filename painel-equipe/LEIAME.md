@@ -36,3 +36,13 @@ No painel o card aparece no topo da Minha fila (grupo "Falta informação para o
   Orgânico x ativação, campanha, piloto, verba, gasto e custo por view só para a diretoria (o fluxo não devolve nem
   deixa a equipe mudar). Equipe vê views totais e o que o cliente contou.
 - Para pôr no ar: publicar o fluxo, trocar a constante para `true` e subir a página (mesma rotina das outras abas).
+
+## Estreias do canal (Vídeo 1) · escondido até o OK do Henrique
+- Fluxo "Painel | Estreias (V1)" (`fluxos/estreias.js`), tabela "Painel · estreias" (uma linha por cliente).
+- Rômulo, Ismael e diretoria marcam dia e hora do Vídeo 1 na Reunião de Lançamento (grade › YouTube › "+ Marcar estreia").
+  Mínimo 7 dias à frente; abaixo de 14 o painel avisa. A diretoria pode marcar qualquer data.
+- O Vídeo 1 aparece destacado (🚀) na grade de todo mundo.
+- Só a diretoria vê: bloco "Lançamentos" na Visão geral (21 dias antes até o dia seguinte) e o checklist do lançamento
+  (mensagens, listas, público, verba, vídeo não listado, campanha pausada, anúncio 1–3 h antes, vídeo público).
+  A equipe nunca recebe os checks.
+- Para ligar: publicar o fluxo e trocar `ESTREIAS_NO_AR` para `true`.
