@@ -55,16 +55,62 @@ function desenhar() {
   if (antigas.length || D.corte) {
     html += '<h2 class="sec" style="margin-top:28px"><button class="ghost" id="bAntigas">' + (verAntigas ? '▾' : '▸') + ' Antigas (anteriores a ' + (D.corte ? dm(String(D.corte).slice(0, 10)) : 'hoje') + ') <span class="n">' + antigas.length + '</span></button>' +
       '<small>Ficam guardadas aqui e no Notion. Abra quando quiser revisar uma por uma.</small></h2>';
-    if (verAntigas) {
-      antigas.sort(function (a, b) { return (ORD_P[a.pr] - ORD_P[b.pr]) || String(b.d || '').localeCompare(String(a.d || '')); });
-      var maxA = abertos.antigas ? antigas.length : 40;
-      html += '<div class="card" style="opacity:.85">' + antigas.slice(0, maxA).map(function (i) { return linha(i, hoje); }).join('') +
-        (antigas.length > maxA ? '<div class="lin"><button class="ghost" data-mais="antigas">Ver mais ' + (antigas.length - maxA) + '</button></div>' : '') + '</div>';
-    }
+    if (verAntigas) html += antigasPorCliente(antigas, hoje);
   }
   html += '<p class="hint" style="margin-top:18px"><button class="ghost" id="bZerar">Mandar a lista de agora para Antigas</button></p>';
   $('lista').innerHTML = html;
   $('rodape').innerHTML = rodapeEstado(D.estado);
+}
+// Antigas agrupadas por cliente (casando o "Cliente / Pessoa" com a lista de clientes); o resto vira Euforia por setor.
+var abertosCli = {};
+function semAc(x) { return String(x || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, ' ').trim(); }
+function parecido(p, q) {
+  if (p === q) return true;
+  if ((p.length >= 8 && q.indexOf(p) >= 0) || (q.length >= 8 && p.indexOf(q) >= 0)) return true;
+  var pw = p.split(' '), qw = q.split(' ');
+  if (pw.length === 1 && p.length >= 3 && qw[0] === p) return true;
+  if (qw.length === 1 && q.length >= 3 && pw[0] === q) return true;
+  if (pw.length >= 2 && qw.length >= 2 && pw[0].slice(0, 5) === qw[0].slice(0, 5)) {
+    if (pw[pw.length - 1] === qw[qw.length - 1]) return true;
+    if (pw[1].slice(0, 4) === qw[1].slice(0, 4)) return true;
+  }
+  return false;
+}
+function partes(x) { return String(x).split(/[\/()|,;]+/).map(semAc).filter(function (y) { return y.length >= 3; }); }
+// Devolve o nome do cliente (da lista de clientes ou de outro to-do já visto) ou '' quando é coisa interna.
+function clienteDe(i, vistos) {
+  var cp = String(i.cp || '').trim(), n = semAc(cp);
+  if (!n || /^(equipe|euforia|grupo euforia|interno|escritorio|henrique|flau|varios|todos)\b/.test(n) || /\bteste\b/.test(n)
+    || /^(criar|enviar|fazer|segue|mandar|ver|revisar|ajustar|gravar|editar)\b/.test(n) || /^[0-9]/.test(n) || n.split(' ').length > 6) return '';
+  var ps = partes(cp), alvos = (D.clientes || []).map(function (c) { return c.nome; }).concat(vistos);
+  for (var k = 0; k < alvos.length; k++) {
+    var qs = partes(alvos[k]);
+    for (var a = 0; a < ps.length; a++) for (var b = 0; b < qs.length; b++) if (parecido(ps[a], qs[b])) return alvos[k];
+  }
+  var nome = cp.toLowerCase().replace(/(^|\s)\S/g, function (m) { return m.toUpperCase(); });
+  vistos.push(nome); return nome;
+}
+function antigasPorCliente(antigas, hoje) {
+  var g = {}, vistos = [];
+  antigas.forEach(function (i) {
+    var cli = clienteDe(i, vistos);
+    var nome = cli || ('Euforia · ' + (i.se && i.se !== 'Clientes' ? i.se : 'Escritório'));
+    (g[nome] = g[nome] || { nome: nome, cli: !!cli, l: [] }).l.push(i);
+  });
+  var gs = Object.keys(g).map(function (k) { return g[k]; });
+  gs.sort(function (a, b) { return (b.cli - a.cli) || (b.l.length - a.l.length) || a.nome.localeCompare(b.nome); });
+  var nCli = gs.filter(function (x) { return x.cli; }).length;
+  var h = '<p class="mut" style="font-size:13px;margin:4px 0 10px">' + nCli + ' cliente(s) e ' + (gs.length - nCli) + ' grupo(s) da Euforia. Clique num nome para ver as tarefas dele.</p><div class="card" style="opacity:.92">';
+  gs.forEach(function (x) {
+    x.l.sort(function (a, b) { return (ORD_P[a.pr] - ORD_P[b.pr]) || String(b.d || '').localeCompare(String(a.d || '')); });
+    var urg = x.l.filter(function (i) { return /Urgente|Alta/.test(i.pr || ''); }).length, ab = !!abertosCli[x.nome];
+    var ult = x.l.map(function (i) { return String(i.d || ''); }).sort().pop();
+    h += '<div class="lin" style="cursor:pointer" data-cli="' + esc(x.nome) + '"><div class="t"><b>' + (ab ? '▾ ' : '▸ ') + esc(x.nome) + '</b>' +
+      '<span style="display:block;color:var(--mut);font-size:12.5px;margin-top:2px">' + x.l.length + ' tarefa(s)' + (urg ? ' · ' + urg + ' urgente(s) ou alta(s)' : '') + (ult ? ' · última data ' + dm(ult) : '') + '</span></div>' +
+      (urg ? '<span class="chip at">' + urg + '</span>' : '') + '</div>';
+    if (ab) h += '<div style="margin:0 0 8px 18px;border-left:2px solid var(--line);padding-left:10px">' + x.l.map(function (i) { return linha(i, hoje); }).join('') + '</div>';
+  });
+  return h + '</div>';
 }
 function linha(i, hoje) {
   var chips = '';
@@ -213,6 +259,7 @@ window.iniciarTodo = function () {
   });
   $('bLanc').onclick = function () { novoLancamento(); };
   $('lista').addEventListener('click', function (e) {
+    var gc = e.target.closest('[data-cli]'); if (gc && !e.target.closest('button,a,input,select')) { var k = gc.getAttribute('data-cli'); abertosCli[k] = !abertosCli[k]; desenhar(); return; }
     var m = e.target.closest('[data-mais]'); if (m) { abertos[m.getAttribute('data-mais')] = 1; desenhar(); return; }
     if (e.target.closest('#bAntigas')) { verAntigas = !verAntigas; desenhar(); return; }
     if (e.target.closest('#bZerar')) { modal('Mandar a lista para Antigas?', [], 'Mandar', function () {
