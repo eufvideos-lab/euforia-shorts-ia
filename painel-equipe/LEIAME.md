@@ -33,5 +33,6 @@ No painel o card aparece no topo da Minha fila (grupo "Falta informação para o
 - Aba "Resultados" (Ismael, Rômulo, diretoria; teste só vê cliente TESTE) atrás de `RESULTADOS_NO_AR = false`.
 - Fluxo n8n "Painel | Resultados (V1)" (`fluxos/resultados.js`, webhook euforia-painel-resultados), NÃO publicado.
 - Tabela n8n "Resultados · vídeos" (BezGvdw9Xrsv4ZNw): uma linha por vídeo. Orgânico = total − ativação.
-  Verba, gasto e custo por view só para a diretoria (o fluxo não devolve nem deixa a equipe mudar).
+  Orgânico x ativação, campanha, piloto, verba, gasto e custo por view só para a diretoria (o fluxo não devolve nem
+  deixa a equipe mudar). Equipe vê views totais e o que o cliente contou.
 - Para pôr no ar: publicar o fluxo, trocar a constante para `true` e subir a página (mesma rotina das outras abas).

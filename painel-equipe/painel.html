@@ -612,28 +612,29 @@ const VIEWS = {
     } },
   resultados: { nome: 'Resultados', pode: () => (DEMO || RESULTADOS_NO_AR) && ['revisor', 'calls', 'diretor', 'teste'].includes(papel()), badge: () => 0,
     html(){
-      const topo = `<div class="head"><div><p class="eyebrow">Máquina de Resultados${RS && RS.ok ? ' · atualizada às ' + esc(RS.agora) : ''}</p><h1>Resultados por vídeo</h1></div><p class="sub">Views de cada vídeo (orgânico e ativação separados, só aqui dentro) e o que o cliente contou: mensagens com a palavra-chave, respostas da lista de transmissão, reuniões e contratos. ${diretor() ? 'Verba e custo por view só você vê.' : ''}</p></div>`;
+      const topo = `<div class="head"><div><p class="eyebrow">Máquina de Resultados${RS && RS.ok ? ' · atualizada às ' + esc(RS.agora) : ''}</p><h1>Resultados por vídeo</h1></div><p class="sub">${diretor() ? 'Views de cada vídeo com orgânico e ativação separados (só você vê a ativação, a verba e o custo) e' : 'Views de cada vídeo e'} o que o cliente contou: mensagens com a palavra-chave, respostas da lista de transmissão, reuniões e contratos.</p></div>`;
       if (!RS) { carregarResultados(); return topo + '<p class="sub">Carregando…</p>'; }
       if (RS.erro) return topo + '<p class="empty">Não consegui ler os resultados agora. Tente de novo em alguns minutos.</p>';
       const teste = papel() === 'teste';
       const todos = RS.videos.filter(v => teste ? /TESTE/i.test(v.clienteNome) : !/TESTE/i.test(v.clienteNome) || DEMO);
       const L = todos.filter(v => (!RSC || v.cliente === RSC) && (!RSP || v.piloto));
+      const dir = diretor();
       const soma = k => L.reduce((a, v) => a + (typeof v[k] === 'number' ? v[k] : 0), 0);
       const nf = x => x == null ? '—' : Number(x).toLocaleString('pt-BR');
       const pct = (a, b) => b ? Math.round(a / b * 100) + '%' : '—';
       const clientes = [...new Map(todos.map(v => [v.cliente, v.clienteNome])).entries()].sort((a, b) => String(a[1]).localeCompare(String(b[1])));
       const tot = soma('viewsTotal'), ati = soma('viewsAtivacao');
-      const cards = [[nf(tot), 'views totais'], [nf(Math.max(0, tot - ati)) + ' · ' + pct(Math.max(0, tot - ati), tot), 'orgânico'], [nf(ati) + ' · ' + pct(ati, tot), 'ativação'], [nf(soma('mensagens')), 'mensagens com a palavra-chave'], [nf(soma('respostasLista')), 'respostas da lista'], [nf(soma('reunioes')) + ' / ' + nf(soma('contratos')), 'reuniões / contratos']];
+      const cards = [[nf(tot), 'views totais'], ...(dir ? [[nf(Math.max(0, tot - ati)) + ' · ' + pct(Math.max(0, tot - ati), tot), 'orgânico'], [nf(ati) + ' · ' + pct(ati, tot), 'ativação']] : []), [nf(soma('mensagens')), 'mensagens com a palavra-chave'], [nf(soma('respostasLista')), 'respostas da lista'], [nf(soma('reunioes')) + ' / ' + nf(soma('contratos')), 'reuniões / contratos']];
       if (diretor()) { const g = soma('gasto'); cards.push([g ? 'R$ ' + g.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '—', 'gasto na ativação'], [g && ati ? 'R$ ' + (g / ati).toLocaleString('pt-BR', { minimumFractionDigits: 3, maximumFractionDigits: 3 }) : '—', 'custo por view (ativação)']); }
-      const linha = v => `<tr class="click" data-rsabre="${esc(v.chave)}"><td><b>${esc(v.clienteNome)}</b>${v.piloto ? ' <span class="chip info">piloto</span>' : ''}<br><span class="sub" style="font-size:13px">${esc(v.video)}</span></td><td>${v.publicado ? fmt(v.publicado) : '—'}</td><td>${v.palavra ? `<span class="mono">${esc(v.palavra)}</span>` : '<span class="chip warn">sem palavra</span>'}</td><td>${nf(v.viewsTotal)}</td><td>${nf(v.viewsOrganico)}</td><td>${nf(v.viewsAtivacao)}</td><td>${nf(v.mensagens)}</td><td>${nf(v.respostasLista)}</td><td>${nf(v.reunioes)} / ${nf(v.contratos)}</td>${diretor() ? `<td>${v.gasto != null ? 'R$ ' + v.gasto.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) : '—'}${v.verba != null ? `<br><span class="sub" style="font-size:12px">verba R$ ${v.verba.toLocaleString('pt-BR')}</span>` : ''}</td><td>${v.custoView != null ? 'R$ ' + v.custoView.toLocaleString('pt-BR', { minimumFractionDigits: 3 }) : '—'}</td>` : ''}</tr>`;
+      const linha = v => `<tr class="click" data-rsabre="${esc(v.chave)}"><td><b>${esc(v.clienteNome)}</b>${dir && v.piloto ? ' <span class="chip info">piloto</span>' : ''}<br><span class="sub" style="font-size:13px">${esc(v.video)}</span></td><td>${v.publicado ? fmt(v.publicado) : '—'}</td><td>${v.palavra ? `<span class="mono">${esc(v.palavra)}</span>` : '<span class="chip warn">sem palavra</span>'}</td><td>${nf(v.viewsTotal)}</td>${dir ? `<td>${nf(v.viewsOrganico)}</td><td>${nf(v.viewsAtivacao)}</td>` : ''}<td>${nf(v.mensagens)}</td><td>${nf(v.respostasLista)}</td><td>${nf(v.reunioes)} / ${nf(v.contratos)}</td>${diretor() ? `<td>${v.gasto != null ? 'R$ ' + v.gasto.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) : '—'}${v.verba != null ? `<br><span class="sub" style="font-size:12px">verba R$ ${v.verba.toLocaleString('pt-BR')}</span>` : ''}</td><td>${v.custoView != null ? 'R$ ' + v.custoView.toLocaleString('pt-BR', { minimumFractionDigits: 3 }) : '—'}</td>` : ''}</tr>`;
       return topo + `<div class="stats s5" style="grid-template-columns:repeat(auto-fill,minmax(170px,1fr))">${cards.map(([v, t]) => `<div class="stat"><span class="v" style="font-size:${String(v).length > 9 ? 20 : 30}px">${v}</span><span>${t}</span></div>`).join('')}</div>
       <div class="filtros">
         <label for="rsc">Cliente<select id="rsc"><option value="">Todos</option>${clientes.map(([id, n]) => `<option value="${esc(id)}" ${id === RSC ? 'selected' : ''}>${esc(n)}</option>`).join('')}</select></label>
-        <label for="rsp">Mostrar<select id="rsp"><option value="">Todos os vídeos</option><option value="1" ${RSP ? 'selected' : ''}>Só o piloto</option></select></label>
+        ${dir ? `<label for="rsp">Mostrar<select id="rsp"><option value="">Todos os vídeos</option><option value="1" ${RSP ? 'selected' : ''}>Só o piloto</option></select></label>` : ''}
         <button class="btn primary" data-rsnovo style="align-self:flex-end">+ Cadastrar vídeo</button>
       </div>
-      ${L.length ? `<div class="tbl"><table><thead><tr><th>Cliente e vídeo</th><th>No ar</th><th>Palavra</th><th>Views</th><th>Orgânico</th><th>Ativação</th><th>Palavra-chave</th><th>Lista</th><th>Reuniões / contratos</th>${diretor() ? '<th>Gasto</th><th>Custo/view</th>' : ''}</tr></thead><tbody>${L.map(linha).join('')}</tbody></table></div>` : '<p class="empty">Nenhum vídeo cadastrado ainda. Cadastre o vídeo assim que ele for ao ar.</p>'}
-      <p class="note">Para o cliente: views totais com "ativação de lançamento incluída". Nunca chamar a ativação de orgânico. Proibido views compradas, sites de views ou robôs.</p>`;
+      ${L.length ? `<div class="tbl"><table><thead><tr><th>Cliente e vídeo</th><th>No ar</th><th>Palavra</th><th>Views</th>${dir ? '<th>Orgânico</th><th>Ativação</th>' : ''}<th>Mensagens</th><th>Lista</th><th>Reuniões / contratos</th>${diretor() ? '<th>Gasto</th><th>Custo/view</th>' : ''}</tr></thead><tbody>${L.map(linha).join('')}</tbody></table></div>` : '<p class="empty">Nenhum vídeo cadastrado ainda. Cadastre o vídeo assim que ele for ao ar.</p>'}
+      ${dir ? '<p class="note">Para o cliente: views totais com "ativação de lançamento incluída". Nunca chamar a ativação de orgânico. Proibido views compradas, sites de views ou robôs.</p>' : '<p class="note">Lance aqui, toda semana, o que o cliente contar no grupo. Views totais: as do YouTube.</p>'}`;
     } },
   clientes: { nome: 'Clientes', pode: diretor, badge: () => CL ? CL.clientes.filter(k => k.clima === 'Em rescisão' || k.recuperacao === '🚨 SOS').length : 0,
     html(){
@@ -2009,11 +2010,11 @@ function abrirResultado(v){
         <label for="rs-d">Foi ao ar em<input type="date" id="rs-d" value="${esc(v.publicado || '')}"></label>
         <label for="rs-p">Palavra-chave<input type="text" id="rs-p" maxlength="20" placeholder="PROTOCOLO" value="${esc(v.palavra || '')}" style="text-transform:uppercase"></label>
       </div>
-      <label style="flex-direction:row;align-items:center;gap:8px"><input type="checkbox" id="rs-pi" ${v.piloto ? 'checked' : ''}> Faz parte do piloto</label>
+      ${dir ? `<label style="flex-direction:row;align-items:center;gap:8px"><input type="checkbox" id="rs-pi" ${v.piloto ? 'checked' : ''}> Faz parte do piloto</label>` : ''}
       <h3 style="font-size:16px;margin:6px 0 0">Views</h3>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">${campo('rs-vt', 'Views totais (YouTube)', v.viewsTotal)}${campo('rs-va', 'Views da ativação (Google Ads)', v.viewsAtivacao)}</div>
-      <label for="rs-cp">Campanha no Google Ads<input type="text" id="rs-cp" maxlength="120" placeholder="Cliente | Vídeo 1 Lançamento | AAAA-MM-DD" value="${esc(v.campanha || '')}"></label>
-      ${dir ? `<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">${campo('rs-vb', 'Verba (R$)', v.verba)}${campo('rs-g', 'Gasto até agora (R$)', v.gasto)}</div>` : ''}
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">${campo('rs-vt', 'Views totais (YouTube)', v.viewsTotal)}${dir ? campo('rs-va', 'Views da ativação (Google Ads)', v.viewsAtivacao) : ''}</div>
+      ${dir ? `<label for="rs-cp">Campanha no Google Ads<input type="text" id="rs-cp" maxlength="120" placeholder="Cliente | Vídeo 1 Lançamento | AAAA-MM-DD" value="${esc(v.campanha || '')}"></label>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">${campo('rs-vb', 'Verba (R$)', v.verba)}${campo('rs-g', 'Gasto até agora (R$)', v.gasto)}</div>` : ''}
       <h3 style="font-size:16px;margin:6px 0 0">O que o cliente contou</h3>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">${campo('rs-m', 'Mensagens com a palavra', v.mensagens)}${campo('rs-r', 'Respostas da lista', v.respostasLista)}${campo('rs-re', 'Reuniões', v.reunioes)}${campo('rs-ct', 'Contratos', v.contratos)}</div>
       <label for="rs-o">Observação<textarea id="rs-o" rows="2" maxlength="600" placeholder="Ex.: público 50+ de Recife rendeu mais">${esc(v.obs || '')}</textarea></label>
@@ -2025,9 +2026,8 @@ function abrirResultado(v){
     if (e.target.id !== 'fresult') return; e.preventDefault(); if (ocupado) return;
     const g = id => { const el = $('#' + id); return el ? el.value.trim() : ''; };
     const cid = v.cliente || g('rs-c'), k = D.clientes.find(x => x.id === cid);
-    const video = { chave: v.chave || '', cliente: cid, clienteNome: k ? k.nome : (v.clienteNome || ''), video: g('rs-v'), link: g('rs-l'), publicado: g('rs-d'), palavra: g('rs-p'), piloto: $('#rs-pi').checked,
-      campanha: g('rs-cp'), viewsTotal: g('rs-vt'), viewsAtivacao: g('rs-va'), mensagens: g('rs-m'), respostasLista: g('rs-r'), reunioes: g('rs-re'), contratos: g('rs-ct'), obs: g('rs-o') };
-    if (dir) { video.verba = g('rs-vb'); video.gasto = g('rs-g'); }
+    const video = { chave: v.chave || '', cliente: cid, clienteNome: k ? k.nome : (v.clienteNome || ''), video: g('rs-v'), link: g('rs-l'), publicado: g('rs-d'), palavra: g('rs-p'), viewsTotal: g('rs-vt'), mensagens: g('rs-m'), respostasLista: g('rs-r'), reunioes: g('rs-re'), contratos: g('rs-ct'), obs: g('rs-o') };
+    if (dir) Object.assign(video, { piloto: $('#rs-pi').checked, campanha: g('rs-cp'), viewsAtivacao: g('rs-va'), verba: g('rs-vb'), gasto: g('rs-g') });
     if (!video.cliente) { toast('Escolha o cliente.'); return; }
     if (video.video.length < 3) { $('#rs-v').focus(); toast('Escreva qual é o vídeo.'); return; }
     if (video.link && !/^https:\/\/(www\.|m\.)?(youtube\.com|youtu\.be)\//.test(video.link)) { $('#rs-l').focus(); toast('O link precisa ser do YouTube.'); return; }

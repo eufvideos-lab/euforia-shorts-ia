@@ -3,7 +3,8 @@ import { workflow, node, trigger, switchCase, sticky } from '@n8n/workflow-sdk';
 // Máquina de Resultados (V1, 02/11/2026): métricas por cliente e por vídeo.
 // Views totais com a origem separada internamente (orgânico x ativação), e o que o cliente informa:
 // mensagens pela palavra-chave, respostas da lista de transmissão, reuniões e contratos.
-// Verba e gasto da ativação: só a diretoria vê e muda. Equipe nunca recebe valores.
+// Ativação (views da ativação, orgânico, campanha, verba, gasto, piloto): só a diretoria vê e muda.
+// A equipe e o cliente não sabem do processo de crescimento (Henrique, 02/11/2026).
 const ORIGENS = 'https://lp.grupoeuforia.tech,https://grupoeuforia.com.br,https://www.grupoeuforia.com.br';
 const ACESSO = { __rl: true, mode: 'id', value: 'ilXDZWGAcOjoajx7', cachedResultName: 'Painel equipe · acesso' };
 const TABELA = { __rl: true, mode: 'id', value: 'BezGvdw9Xrsv4ZNw', cachedResultName: 'Resultados · vídeos' };
@@ -67,11 +68,10 @@ const num = x => typeof x === 'number' && isFinite(x) ? x : null;
 const videos = $input.all().map(i => i.json).filter(r => r && r.chave).map(r => {
   const total = num(r.viewsTotal), ativ = num(r.viewsAtivacao);
   const v = { chave: r.chave, cliente: r.cliente, clienteNome: r.clienteNome, video: r.video, link: r.link, publicado: r.publicado, palavra: r.palavra,
-    piloto: r.piloto === true, campanha: r.campanha || '', viewsTotal: total, viewsAtivacao: ativ,
-    viewsOrganico: total != null ? Math.max(0, total - (ativ || 0)) : null,
+    viewsTotal: total,
     mensagens: num(r.mensagens), respostasLista: num(r.respostasLista), reunioes: num(r.reunioes), contratos: num(r.contratos),
     obs: r.obs || '', atualizadoPor: r.atualizadoPor || '', atualizadoEm: r.atualizadoEm || '' };
-  if (dir) { v.verba = num(r.verba); v.gasto = num(r.gasto); v.custoView = v.gasto != null && ativ ? Math.round(v.gasto / ativ * 1000) / 1000 : null; }
+  if (dir) { v.piloto = r.piloto === true; v.campanha = r.campanha || ''; v.viewsAtivacao = ativ; v.viewsOrganico = total != null ? Math.max(0, total - (ativ || 0)) : null; v.verba = num(r.verba); v.gasto = num(r.gasto); v.custoView = v.gasto != null && ativ ? Math.round(v.gasto / ativ * 1000) / 1000 : null; }
   return v; }).sort((a, b) => String(b.publicado || '').localeCompare(String(a.publicado || '')) || String(a.clienteNome).localeCompare(String(b.clienteNome)));
 return [{ json: { ok: true, diretor: dir, videos, agora: DateTime.now().setZone('America/Recife').toFormat("dd/MM HH:mm") } }];
 ` } } });
@@ -84,11 +84,11 @@ const atual = node({ type: 'n8n-nodes-base.dataTable', version: 1.1, config: { n
   resource: 'row', operation: 'get', dataTableId: TABELA, matchType: 'allConditions',
   filters: { conditions: [{ keyName: 'chave', condition: 'eq', keyValue: '={{ $("Ler pedido").first().json.chaveBusca }}' }] }, limit: 1 } } });
 
-// Junta o que chegou com a linha que já existe. Quem não é diretoria nunca mexe em verba e gasto.
+// Junta o que chegou com a linha que já existe. Quem não é diretoria nunca mexe em nada da ativação.
 const juntar = node({ type: 'n8n-nodes-base.code', version: 2, config: { name: 'Juntar linha', parameters: { jsCode: `const p = $('Ler pedido').first().json, quem = $('Validar acesso').first().json;
 const velho = ($input.first().json && $input.first().json.chave) ? $input.first().json : {};
 const v = Object.assign({}, p.video);
-if (quem.papel !== 'diretor') { v.verba = velho.verba == null ? null : velho.verba; v.gasto = velho.gasto == null ? null : velho.gasto; }
+if (quem.papel !== 'diretor') for (const k of ['verba', 'gasto', 'viewsAtivacao', 'campanha', 'piloto']) v[k] = velho[k] == null ? (k === 'campanha' ? '' : k === 'piloto' ? false : null) : velho[k];
 v.chave = velho.chave || ('r-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6));
 v.atualizadoPor = quem.nome; v.atualizadoEm = DateTime.now().setZone('America/Recife').toFormat('yyyy-MM-dd HH:mm');
 return [{ json: v }];
@@ -126,7 +126,7 @@ const confirmar = node({ type: 'n8n-nodes-base.respondToWebhook', version: 1.5, 
 const recusar = node({ type: 'n8n-nodes-base.respondToWebhook', version: 1.5, config: { name: 'Recusar', parameters: {
   respondWith: 'json', responseBody: '={{ JSON.stringify($json.resposta) }}', options: {} } } });
 
-const nota = sticky('## Painel · Resultados (V1)\nMáquina de Resultados: uma linha por vídeo na tabela "Resultados · vídeos".\nver: todos os vídeos; orgânico = total − ativação. Verba, gasto e custo por view SÓ para a diretoria.\nsalvar: Ismael, Rômulo e diretoria lançam/ajustam (teste só cliente TESTE). Quem não é diretoria nunca muda verba/gasto.\nViews totais digitadas no V1 (automático no V2 pelo fluxo de dados do YouTube). Proibido views compradas.', [], { color: 4 });
+const nota = sticky('## Painel · Resultados (V1)\nMáquina de Resultados: uma linha por vídeo na tabela "Resultados · vídeos".\nver: todos os vídeos. Orgânico x ativação, campanha, piloto, verba, gasto e custo por view SÓ para a diretoria.\nsalvar: Ismael, Rômulo e diretoria lançam/ajustam (teste só cliente TESTE). Quem não é diretoria nunca vê nem muda nada da ativação.\nViews totais digitadas no V1 (automático no V2 pelo fluxo de dados do YouTube). Proibido views compradas.', [], { color: 4 });
 
 export default workflow('painel-resultados', 'Painel | Resultados (V1)')
   .add(pedir).to(ler).to(acesso).to(validar).to(caminho
