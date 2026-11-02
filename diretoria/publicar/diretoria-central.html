@@ -639,7 +639,7 @@ window.iniciarEvo = function () {
 })();
 
 (function () {
-// Aba Marketing do Painel Central: Instagram @euforiagrupo e anúncios da Meta (só leitura). Blog e YouTube entram quando tiverem fonte.
+// Aba Marketing do Painel Central (só leitura): Instagram @euforiagrupo, anúncios da Meta, blog (contador próprio), YouTube e Google Search Console.
 var M = null, per = '7';
 function n0(v) { return Number(v || 0).toLocaleString('pt-BR'); }
 function rs(v) { return v === null || v === undefined ? '—' : 'R$ ' + Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
@@ -727,8 +727,47 @@ function desenhar() {
     } else h += '<p class="vazio" style="margin-top:8px">Nenhuma visita contada ainda. As primeiras aparecem aqui assim que alguém abrir o blog.</p>';
   }
   // YouTube
-  h += '<h2 class="sec">YouTube</h2><div class="kpis"><div class="kpi"><small>YouTube</small><b style="font-size:17px">Ainda não conectado</b><span>Falta conectar a conta do canal no n8n. Depois disso entram inscritos, visualizações e vídeos.</span></div>' +
-    '<div class="kpi"><small>Google (Search Console)</small><b style="font-size:17px">Ainda não conectado</b><span>Depois de conectado mostra em quantas buscas o blog apareceu e quantos cliques teve.</span></div></div>';
+  var yt = M.youtube || {};
+  h += '<h2 class="sec">YouTube' + (yt.canal ? ' · <a href="' + esc(yt.link) + '" target="_blank" rel="noopener">' + esc(yt.canal) + '</a>' : '') + ' <small>' + (per === '7' ? 'Últimos 7 dias, comparado com os 7 anteriores' : 'Últimos 28 dias') + (yt.ate ? '. O YouTube entrega os números com 2 a 3 dias de atraso (até ' + dm(yt.ate) + ').' : '.') + '</small></h2>';
+  if (!yt.conectado) h += '<p class="erro">YouTube não respondeu' + (yt.erro ? ': ' + esc(yt.erro) : '.') + '</p>';
+  else {
+    var ys = per === '7' ? yt.s7 : yt.s28, ya = per === '7' ? yt.a7 : null, yd = (yt.dias || []).slice(per === '7' ? -7 : -28);
+    h += '<div class="kpis">' +
+      kpi('Inscritos', n0(yt.inscritos), ((ys.ganhos - ys.perdidos) >= 0 ? '+' : '') + n0(ys.ganhos - ys.perdidos) + ' no período (' + n0(ys.ganhos) + ' entraram, ' + n0(ys.perdidos) + ' saíram)', 'or') +
+      kpi('Visualizações', n0(ys.views) + (ya ? varia(ys.views, ya.views) : ''), n0(yt.views_total) + ' no canal todo') +
+      kpi('Horas assistidas', n0(Math.round(ys.min / 60)) + (ya ? varia(ys.min, ya.min) : ''), n0(ys.min) + ' minutos') +
+      kpi('Vídeos no canal', n0(yt.videos_total), '') + '</div>';
+    if (yd.length) {
+      var ymx = Math.max.apply(null, [1].concat(yd.map(function (x) { return x.views; })));
+      h += '<div class="card" style="margin-top:12px"><div class="mut" style="font-size:12.5px;margin-bottom:8px">Visualizações por dia</div><div style="display:flex;align-items:flex-end;gap:3px;height:80px">' +
+        yd.map(function (x) { return '<div title="' + dm(x.dia) + ': ' + x.views + ' visualizações" style="flex:1;height:' + Math.max(2, Math.round(x.views / ymx * 76)) + 'px;background:var(--or);border-radius:3px 3px 0 0"></div>'; }).join('') +
+        '</div><div style="display:flex;justify-content:space-between;font-size:11px;color:var(--mut);margin-top:4px"><span>' + dm(yd[0].dia) + '</span><span>' + dm(yd[yd.length - 1].dia) + '</span></div></div>';
+    }
+    var yf = yt.fontes || [], ytot = yf.reduce(function (t, x) { return t + x.n; }, 0);
+    h += '<div class="card" style="margin-top:12px;display:flex;gap:28px;flex-wrap:wrap"><div style="flex:1;min-width:240px"><div class="mut" style="font-size:12.5px;margin-bottom:6px">De onde vêm as visualizações (28 dias)</div>' +
+      (yf.length ? yf.map(function (x) { return '<div class="lin"><div class="t">' + esc(x.fonte) + '</div><div class="v">' + n0(x.n) + (ytot ? ' <span class="mut" style="font-weight:500">' + Math.round(x.n / ytot * 100) + '%</span>' : '') + '</div></div>'; }).join('') : '<p class="vazio">Sem dados.</p>') + '</div>' +
+      '<div style="flex:2;min-width:280px"><div class="mut" style="font-size:12.5px;margin-bottom:6px">Mais vistos (28 dias)</div>' +
+      ((yt.top || []).length ? yt.top.map(function (v) { return '<div class="lin"><div class="t"><a href="https://youtu.be/' + esc(v.id) + '" target="_blank" rel="noopener">' + esc(v.titulo || v.id) + '</a><span class="s">' + n0(Math.round(v.min28 / 60)) + ' h assistidas · retenção média ' + Math.round(v.retencao) + '%' + (v.inscritos28 ? ' · +' + n0(v.inscritos28) + ' inscritos' : '') + '</span></div><div class="v">' + n0(v.views28) + '</div></div>'; }).join('') : '<p class="vazio">Sem dados.</p>') + '</div></div>';
+    var ST = { 'public': 'Público', 'unlisted': 'Não listado', 'private': 'Privado' };
+    if ((yt.ultimos || []).length) h += '<h2 class="sec">Últimos vídeos</h2><div class="card">' + yt.ultimos.map(function (v) {
+      return '<div class="lin"><div class="t"><a href="https://youtu.be/' + esc(v.id) + '" target="_blank" rel="noopener">' + esc(v.titulo || v.id) + '</a><span class="s">' + (v.quando ? dm(v.quando) + ' · ' : '') + esc(ST[v.status] || v.status || '') + '</span></div><div class="v">👁 ' + n0(v.views) + ' · ♥ ' + n0(v.curtidas) + ' · 💬 ' + n0(v.comentarios) + '</div></div>'; }).join('') + '</div>';
+  }
+  // Google (Search Console)
+  var g = M.google || {};
+  h += '<h2 class="sec">Google · buscas <small>Site ' + esc(g.site || 'grupoeuforia.com.br') + ', inclusive o blog. O Google entrega os números com 2 a 3 dias de atraso.</small></h2>';
+  if (!g.conectado) h += '<p class="erro">Search Console não respondeu' + (g.erro ? ': ' + esc(g.erro) : '.') + '</p>';
+  else if (!g.s28 || !g.s28.impressoes) h += '<p class="vazio">Conectado hoje. O Google ainda está juntando os dados do site; os primeiros números aparecem aqui em 2 a 3 dias.</p>';
+  else {
+    var gs = per === '7' ? g.s7 : g.s28, ga = per === '7' ? g.a7 : null;
+    h += '<div class="kpis">' +
+      kpi('Apareceu nas buscas', n0(gs.impressoes) + (ga ? varia(gs.impressoes, ga.impressoes) : ''), 'impressões no Google', 'or') +
+      kpi('Cliques do Google', n0(gs.cliques) + (ga ? varia(gs.cliques, ga.cliques) : ''), 'CTR ' + Number(gs.ctr || 0).toLocaleString('pt-BR') + '%') +
+      kpi('Posição média', gs.posicao === null ? '—' : Number(gs.posicao).toLocaleString('pt-BR'), 'quanto menor, melhor') + '</div>';
+    h += '<div class="card" style="margin-top:12px;display:flex;gap:28px;flex-wrap:wrap"><div style="flex:1;min-width:260px"><div class="mut" style="font-size:12.5px;margin-bottom:6px">O que as pessoas buscaram (28 dias)</div>' +
+      ((g.buscas || []).length ? g.buscas.map(function (x) { return '<div class="lin"><div class="t">' + esc(x.chave) + '<span class="s">' + n0(x.impressoes) + ' impressões · posição ' + Number(x.posicao).toLocaleString('pt-BR') + '</span></div><div class="v">' + n0(x.cliques) + ' cliques</div></div>'; }).join('') : '<p class="vazio">Sem buscas ainda.</p>') + '</div>' +
+      '<div style="flex:1;min-width:260px"><div class="mut" style="font-size:12.5px;margin-bottom:6px">Páginas que mais apareceram (28 dias)</div>' +
+      ((g.paginas || []).length ? g.paginas.map(function (x) { return '<div class="lin"><div class="t">' + esc(String(x.chave).replace(/^https?:\/\/(www\.)?/, '')) + '<span class="s">' + n0(x.impressoes) + ' impressões</span></div><div class="v">' + n0(x.cliques) + ' cliques</div></div>'; }).join('') : '<p class="vazio">Sem páginas ainda.</p>') + '</div></div>';
+  }
   $('mkLista').innerHTML = h;
   $('mkHora').textContent = 'Dados de ' + dm(M.hoje) + ' às ' + M.hora;
 }

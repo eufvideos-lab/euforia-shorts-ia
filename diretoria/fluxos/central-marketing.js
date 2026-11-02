@@ -53,6 +53,26 @@ const adsHoje = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, config:
 const ativas = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, config: { name: 'Campanhas ativas', executeOnce: true, alwaysOutputData: true, credentials: { httpHeaderAuth: { id: 'KrcLPLRoUtJXpis4', name: 'Meta Ads' } }, parameters: {
   method: 'GET', url: 'https://graph.facebook.com/v23.0/act_2954136178260460/campaigns?effective_status=%5B%22ACTIVE%22%5D&fields=name,daily_budget,lifetime_budget,start_time&limit=50', authentication: 'genericCredentialType', genericAuthType: 'httpHeaderAuth', options: { response: { response: { neverError: true } } } } } });
 
+// YouTube (credencial YouTube Euforia) e Google Search Console (propriedade de domínio grupoeuforia.com.br). Só leitura.
+const ytCanal = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, config: { name: 'YouTube canal', executeOnce: true, alwaysOutputData: true, credentials: { googleOAuth2Api: { id: 'HCURLnh3Nf1ZIxhN', name: 'YouTube Euforia' } }, parameters: {
+  method: 'GET', url: 'https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics,contentDetails&mine=true', authentication: 'predefinedCredentialType', nodeCredentialType: 'googleOAuth2Api', options: { response: { response: { neverError: true } } } } } });
+const ytDias = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, config: { name: 'YouTube por dia', executeOnce: true, alwaysOutputData: true, credentials: { googleOAuth2Api: { id: 'HCURLnh3Nf1ZIxhN', name: 'YouTube Euforia' } }, parameters: {
+  method: 'GET', url: '={{ "https://youtubeanalytics.googleapis.com/v2/reports?ids=channel==MINE&metrics=views,estimatedMinutesWatched,subscribersGained,subscribersLost&dimensions=day&sort=day&startDate=" + $now.setZone("America/Recife").minus({days: 56}).toFormat("yyyy-MM-dd") + "&endDate=" + $now.setZone("America/Recife").minus({days: 0}).toFormat("yyyy-MM-dd") }}', authentication: 'predefinedCredentialType', nodeCredentialType: 'googleOAuth2Api', options: { response: { response: { neverError: true } } } } } });
+const ytTop = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, config: { name: 'YouTube vídeos mais vistos', executeOnce: true, alwaysOutputData: true, credentials: { googleOAuth2Api: { id: 'HCURLnh3Nf1ZIxhN', name: 'YouTube Euforia' } }, parameters: {
+  method: 'GET', url: '={{ "https://youtubeanalytics.googleapis.com/v2/reports?ids=channel==MINE&metrics=views,estimatedMinutesWatched,averageViewPercentage,subscribersGained&dimensions=video&sort=-views&maxResults=10&startDate=" + $now.setZone("America/Recife").minus({days: 28}).toFormat("yyyy-MM-dd") + "&endDate=" + $now.setZone("America/Recife").minus({days: 0}).toFormat("yyyy-MM-dd") }}', authentication: 'predefinedCredentialType', nodeCredentialType: 'googleOAuth2Api', options: { response: { response: { neverError: true } } } } } });
+const ytFontes = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, config: { name: 'YouTube de onde vêm', executeOnce: true, alwaysOutputData: true, credentials: { googleOAuth2Api: { id: 'HCURLnh3Nf1ZIxhN', name: 'YouTube Euforia' } }, parameters: {
+  method: 'GET', url: '={{ "https://youtubeanalytics.googleapis.com/v2/reports?ids=channel==MINE&metrics=views&dimensions=insightTrafficSourceType&sort=-views&startDate=" + $now.setZone("America/Recife").minus({days: 28}).toFormat("yyyy-MM-dd") + "&endDate=" + $now.setZone("America/Recife").minus({days: 0}).toFormat("yyyy-MM-dd") }}', authentication: 'predefinedCredentialType', nodeCredentialType: 'googleOAuth2Api', options: { response: { response: { neverError: true } } } } } });
+const ytUlt = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, config: { name: 'YouTube últimos envios', executeOnce: true, alwaysOutputData: true, credentials: { googleOAuth2Api: { id: 'HCURLnh3Nf1ZIxhN', name: 'YouTube Euforia' } }, parameters: {
+  method: 'GET', url: '={{ "https://www.googleapis.com/youtube/v3/playlistItems?part=contentDetails&maxResults=8&playlistId=" + ($(\'YouTube canal\').first().json.items ? $(\'YouTube canal\').first().json.items[0].contentDetails.relatedPlaylists.uploads : "x") }}', authentication: 'predefinedCredentialType', nodeCredentialType: 'googleOAuth2Api', options: { response: { response: { neverError: true } } } } } });
+const ytVideos = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, config: { name: 'YouTube dados dos vídeos', executeOnce: true, alwaysOutputData: true, credentials: { googleOAuth2Api: { id: 'HCURLnh3Nf1ZIxhN', name: 'YouTube Euforia' } }, parameters: {
+  method: 'GET', url: '={{ "https://www.googleapis.com/youtube/v3/videos?part=snippet,statistics,status&id=" + [].concat(($(\'YouTube últimos envios\').first().json.items || []).map(i => i.contentDetails.videoId), ($(\'YouTube vídeos mais vistos\').first().json.rows || []).map(r => r[0])).filter((v, i, a) => v && a.indexOf(v) === i).slice(0, 50).join(",") }}', authentication: 'predefinedCredentialType', nodeCredentialType: 'googleOAuth2Api', options: { response: { response: { neverError: true } } } } } });
+const scDias = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, config: { name: 'Google buscas por dia', executeOnce: true, alwaysOutputData: true, credentials: { googleOAuth2Api: { id: 'DVPVVjDG7zUjbpz6', name: 'Google Search Console' } }, parameters: {
+  method: 'POST', url: 'https://www.googleapis.com/webmasters/v3/sites/sc-domain%3Agrupoeuforia.com.br/searchAnalytics/query', sendBody: true, specifyBody: 'json', jsonBody: '={{ JSON.stringify({ startDate: $now.setZone("America/Recife").minus({days: 58}).toFormat("yyyy-MM-dd"), endDate: $now.setZone("America/Recife").minus({days: 0}).toFormat("yyyy-MM-dd"), dimensions: ["date"], rowLimit: 100 }) }}', authentication: 'predefinedCredentialType', nodeCredentialType: 'googleOAuth2Api', options: { response: { response: { neverError: true } } } } } });
+const scBuscas = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, config: { name: 'Google principais buscas', executeOnce: true, alwaysOutputData: true, credentials: { googleOAuth2Api: { id: 'DVPVVjDG7zUjbpz6', name: 'Google Search Console' } }, parameters: {
+  method: 'POST', url: 'https://www.googleapis.com/webmasters/v3/sites/sc-domain%3Agrupoeuforia.com.br/searchAnalytics/query', sendBody: true, specifyBody: 'json', jsonBody: '={{ JSON.stringify({ startDate: $now.setZone("America/Recife").minus({days: 28}).toFormat("yyyy-MM-dd"), endDate: $now.setZone("America/Recife").minus({days: 0}).toFormat("yyyy-MM-dd"), dimensions: ["query"], rowLimit: 15 }) }}', authentication: 'predefinedCredentialType', nodeCredentialType: 'googleOAuth2Api', options: { response: { response: { neverError: true } } } } } });
+const scPaginas = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, config: { name: 'Google principais páginas', executeOnce: true, alwaysOutputData: true, credentials: { googleOAuth2Api: { id: 'DVPVVjDG7zUjbpz6', name: 'Google Search Console' } }, parameters: {
+  method: 'POST', url: 'https://www.googleapis.com/webmasters/v3/sites/sc-domain%3Agrupoeuforia.com.br/searchAnalytics/query', sendBody: true, specifyBody: 'json', jsonBody: '={{ JSON.stringify({ startDate: $now.setZone("America/Recife").minus({days: 28}).toFormat("yyyy-MM-dd"), endDate: $now.setZone("America/Recife").minus({days: 0}).toFormat("yyyy-MM-dd"), dimensions: ["page"], rowLimit: 10 }) }}', authentication: 'predefinedCredentialType', nodeCredentialType: 'googleOAuth2Api', options: { response: { response: { neverError: true } } } } } });
+
 const foto = node({ type: 'n8n-nodes-base.postgres', version: 2.6, config: { name: 'Guardar foto do dia', credentials: PG, executeOnce: true, alwaysOutputData: true, parameters: {
   operation: 'executeQuery',
   query: `CREATE TABLE IF NOT EXISTS marketing_diario (dia date PRIMARY KEY, ig_seguidores int, ig_posts int, atualizado timestamptz DEFAULT now());
@@ -108,10 +128,29 @@ const ads = { erro: erroDe(a7) || erroDe(a30), conta: 'Grupo Euforia · Anúncio
 const bl = j('Ler blog');
 const blog = { conectado: true, desde: bl.desde || '', v7: num(bl.v7), u7: num(bl.u7), a7: num(bl.a7), v30: num(bl.v30), u30: num(bl.u30),
   f7: bl.f7 || [], f30: bl.f30 || [], p7: bl.p7 || [], p30: bl.p30 || [] };
+const yc = j('YouTube canal'), ych = (yc.items || [])[0] || {};
+const ydRows = (j('YouTube por dia').rows || []).map(r => ({ dia: r[0], views: num(r[1]), min: num(r[2]), ganhos: num(r[3]), perdidos: num(r[4]) }));
+const somaY = (arr) => arr.reduce((t, x) => ({ views: t.views + x.views, min: t.min + x.min, ganhos: t.ganhos + x.ganhos, perdidos: t.perdidos + x.perdidos }), { views: 0, min: 0, ganhos: 0, perdidos: 0 });
+const ultDiaY = ydRows.length ? ydRows[ydRows.length - 1].dia : '';
+const vids = {}; (j('YouTube dados dos vídeos').items || []).forEach(v => { vids[v.id] = { titulo: (v.snippet || {}).title || '', quando: String((v.snippet || {}).publishedAt || '').slice(0, 10), thumb: (((v.snippet || {}).thumbnails || {}).medium || {}).url || '', views: num((v.statistics || {}).viewCount), curtidas: num((v.statistics || {}).likeCount), comentarios: num((v.statistics || {}).commentCount), status: (v.status || {}).privacyStatus || '' }; });
+const FONTES = { YT_SEARCH: 'Busca do YouTube', SUGGESTED: 'Vídeos sugeridos', BROWSE: 'Página inicial e inscrições', EXT_URL: 'Sites e apps de fora', NO_LINK_OTHER: 'Direto ou desconhecido', PLAYLIST: 'Playlists', YT_CHANNEL: 'Página do canal', SHORTS: 'Feed de Shorts', NOTIFICATION: 'Notificações', ADVERTISING: 'Anúncios', END_SCREEN: 'Tela final', YT_OTHER_PAGE: 'Outras páginas do YouTube', SUBSCRIBER: 'Inscritos', RELATED_VIDEO: 'Vídeos relacionados', HASHTAGS: 'Hashtags', CAMPAIGN_CARD: 'Cards', ANNOTATION: 'Cards', SOUND_PAGE: 'Página de som', LIVE_REDIRECT: 'Redirecionamento de live', PRODUCT_PAGE: 'Página de produto', VIDEO_REMIXES: 'Remixes' };
+const youtube = { conectado: !!ych.id, erro: erroDe(yc) || erroDe(j('YouTube por dia')), canal: (ych.snippet || {}).title || '', link: ych.id ? 'https://www.youtube.com/channel/' + ych.id : '',
+  inscritos: num((ych.statistics || {}).subscriberCount), views_total: num((ych.statistics || {}).viewCount), videos_total: num((ych.statistics || {}).videoCount),
+  ate: ultDiaY, dias: ydRows.slice(-28), s7: somaY(ydRows.slice(-7)), a7: somaY(ydRows.slice(-14, -7)), s28: somaY(ydRows.slice(-28)),
+  top: (j('YouTube vídeos mais vistos').rows || []).map(r => Object.assign({ id: r[0], views28: num(r[1]), min28: num(r[2]), retencao: num(r[3]), inscritos28: num(r[4]) }, vids[r[0]] || {})),
+  fontes: (j('YouTube de onde vêm').rows || []).map(r => ({ fonte: FONTES[r[0]] || r[0], n: num(r[1]) })),
+  ultimos: (j('YouTube últimos envios').items || []).map(i => Object.assign({ id: i.contentDetails.videoId }, vids[i.contentDetails.videoId] || {})) };
+const scR = (j('Google buscas por dia').rows || []).map(r => ({ dia: r.keys[0], cliques: num(r.clicks), impressoes: num(r.impressions), pos: num(r.position) }));
+const somaS = arr => { const t = arr.reduce((t, x) => ({ cliques: t.cliques + x.cliques, impressoes: t.impressoes + x.impressoes, pp: t.pp + x.pos * x.impressoes }), { cliques: 0, impressoes: 0, pp: 0 });
+  return { cliques: t.cliques, impressoes: t.impressoes, ctr: t.impressoes ? Math.round(t.cliques / t.impressoes * 1000) / 10 : 0, posicao: t.impressoes ? Math.round(t.pp / t.impressoes * 10) / 10 : null }; };
+const linhaS = r => ({ chave: r.keys[0], cliques: num(r.clicks), impressoes: num(r.impressions), posicao: Math.round(num(r.position) * 10) / 10 });
+const google = { conectado: !erroDe(j('Google buscas por dia')), erro: erroDe(j('Google buscas por dia')), site: 'grupoeuforia.com.br', ate: scR.length ? scR[scR.length - 1].dia : '',
+  dias: scR.slice(-28), s7: somaS(scR.slice(-7)), a7: somaS(scR.slice(-14, -7)), s28: somaS(scR.slice(-28)),
+  buscas: (j('Google principais buscas').rows || []).map(linhaS), paginas: (j('Google principais páginas').rows || []).map(linhaS) };
 const historico = $('Ler histórico').all().map(i => i.json).filter(x => x && x.dia).map(x => ({ dia: x.dia, seg: num(x.ig_seguidores) })).reverse();
 const hoje = DateTime.now().setZone('America/Recife');
 return [{ json: { resp: { ok: true, hoje: hoje.toISODate(), hora: hoje.toFormat('HH:mm'), ig, ads, historico,
-  blog, youtube: { conectado: false } } } }];
+  blog, youtube, google } } }];
 ` } } });
 
 const devolver = node({ type: 'n8n-nodes-base.respondToWebhook', version: 1.5, config: { name: 'Devolver marketing', parameters: {
@@ -129,11 +168,11 @@ INSERT INTO marketing_diario (dia, ig_seguidores, ig_posts) SELECT (now() AT TIM
 ON CONFLICT (dia) DO UPDATE SET ig_seguidores = EXCLUDED.ig_seguidores, ig_posts = EXCLUDED.ig_posts, atualizado = now();`,
   options: { queryReplacement: '={{ [ Number($json.followers_count) || 0, Number($json.media_count) || 0 ] }}' } } } });
 
-const nota = sticky('## Aba Marketing (Painel Central)\nSó leitura do Instagram @euforiagrupo (credencial Instagram Euforia) e da conta de anúncios Meta (credencial Meta Ads). Foto diária de seguidores em marketing_diario (Postgres), também às 23h50. Blog e YouTube ainda sem fonte. Execução manual = teste sem sessão.', [], { color: 4 });
+const nota = sticky('## Aba Marketing (Painel Central)\nSó leitura do Instagram @euforiagrupo (credencial Instagram Euforia) e da conta de anúncios Meta (credencial Meta Ads). Foto diária de seguidores em marketing_diario (Postgres), também às 23h50. YouTube (YouTube Euforia) e Google Search Console (domínio grupoeuforia.com.br) só leitura. Blog pelo contador próprio. Execução manual = teste sem sessão.', [], { color: 4 });
 
 export default workflow('diretoria-central-marketing', 'Diretoria | Painel Central (marketing)')
   .add(pedir).to(pessoas).to(conferir).to(pode
-    .onTrue(perfil.to(sem).to(ant).to(mes).to(novos).to(posts).to(ads7).to(ads30c).to(ads30).to(adsHoje).to(ativas).to(foto).to(historico).to(blog).to(montar).to(devolver))
+    .onTrue(perfil.to(sem).to(ant).to(mes).to(novos).to(posts).to(ads7).to(ads30c).to(ads30).to(adsHoje).to(ativas).to(ytCanal).to(ytDias).to(ytTop).to(ytFontes).to(ytUlt).to(ytVideos).to(scDias).to(scBuscas).to(scPaginas).to(foto).to(historico).to(blog).to(montar).to(devolver))
     .onFalse(negar))
   .add(todoDia).to(perfilNoite).to(fotoNoite)
   .add(nota);
