@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lista de transmissão: passo a passo</title>
+<meta name="description" content="Passo a passo interativo para criar a sua lista de transmissão no WhatsApp e enviar o vídeo novo para os seus contatos.">
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--preto:#050505;--off:#F2EFEA;--laranja:#FF6518;--brasa:#C2410C;--tinta:#050505;--suave:#5b5650;--linha:#d9d4cc;--card:#ffffff;
+  --wa-verde:#1f8f5f;--wa-claro:#d9fdd3;--wa-fundo:#efeae2;--wa-topo:#ffffff;--wa-texto:#111b21;--wa-cinza:#667781}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{background:var(--off);color:var(--tinta);font-family:Inter,system-ui,sans-serif;font-size:19px;line-height:1.5}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+.topo{background:var(--preto);color:var(--off);padding:14px 16px}
+.topo .in{max-width:1080px;margin:0 auto;display:flex;align-items:center;gap:10px;font-family:Archivo,sans-serif;font-weight:800;letter-spacing:.02em;font-size:15px;text-transform:uppercase}
+.play{width:0;height:0;border-left:13px solid var(--laranja);border-top:8px solid transparent;border-bottom:8px solid transparent}
+main{max-width:1080px;margin:0 auto;padding:28px 16px 48px}
+h1{font-family:Archivo,sans-serif;font-weight:800;font-size:clamp(30px,5vw,46px);line-height:1.08;letter-spacing:-.01em}
+.lead{margin-top:12px;color:var(--suave);max-width:720px}
+.modos{display:flex;flex-wrap:wrap;gap:10px;margin:24px 0 22px}
+.modo{border:2px solid var(--preto);border-radius:999px;padding:12px 22px;font-weight:700;font-size:18px;min-height:52px}
+.modo[aria-pressed="true"]{background:var(--preto);color:var(--off)}
+.palco{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:32px;align-items:start}
+.guia{background:var(--card);border:1px solid var(--linha);border-radius:18px;padding:24px;position:sticky;top:16px}
+.passo{font-family:Archivo,sans-serif;font-weight:800;color:var(--brasa);font-size:15px;text-transform:uppercase;letter-spacing:.06em}
+.barra{height:8px;background:var(--off);border-radius:99px;margin:10px 0 18px;overflow:hidden}
+.barra span{display:block;height:100%;background:var(--laranja);transition:width .3s}
+.guia h2{font-family:Archivo,sans-serif;font-weight:800;font-size:28px;line-height:1.15;margin-bottom:10px}
+.guia p{margin-bottom:10px}
+.dica{background:var(--off);border-left:5px solid var(--laranja);padding:12px 14px;border-radius:8px;font-size:17px;margin-top:6px}
+.acoes{display:flex;gap:12px;margin-top:20px;flex-wrap:wrap}
+.btn{border-radius:12px;padding:14px 22px;font-weight:700;font-size:19px;min-height:56px}
+.btn.pri{background:var(--laranja);color:var(--preto)}
+.btn.sec{border:2px solid var(--preto)}
+.btn:disabled{opacity:.35;cursor:default}
+.btn:focus-visible,.modo:focus-visible,.alvo:focus-visible{outline:3px solid var(--brasa);outline-offset:3px}
+/* Telefone */
+.aparelho{display:flex;justify-content:center}
+.fone{width:340px;max-width:100%;height:660px;background:var(--preto);border-radius:44px;padding:12px;box-shadow:0 20px 50px rgba(5,5,5,.18)}
+.tela{background:#fff;border-radius:34px;height:100%;overflow:hidden;display:flex;flex-direction:column;position:relative;color:var(--wa-texto);font-size:16px}
+.status{height:26px;display:flex;justify-content:space-between;align-items:center;padding:0 22px;font-size:13px;font-weight:600}
+.wtopo{display:flex;align-items:center;gap:10px;padding:10px 14px;min-height:56px;border-bottom:1px solid #eee;background:var(--wa-topo)}
+.wtopo .tt{flex:1;font-weight:700;font-size:20px}
+.wtopo .tt small{display:block;font-weight:400;font-size:13px;color:var(--wa-cinza)}
+.ico{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;font-size:22px;color:var(--wa-texto)}
+.chats{flex:1;overflow:auto}
+.chat{display:flex;gap:12px;align-items:center;padding:10px 14px;width:100%;text-align:left}
+.av{width:46px;height:46px;border-radius:50%;flex:none;display:grid;place-items:center;font-weight:700;color:#fff;font-size:18px}
+.chat .n{font-weight:600}
+.chat .u{color:var(--wa-cinza);font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px}
+.menu{position:absolute;right:10px;top:64px;background:#fff;border-radius:12px;box-shadow:0 8px 28px rgba(0,0,0,.2);padding:6px 0;min-width:210px;z-index:3}
+.menu .it{display:block;width:100%;text-align:left;padding:12px 18px;font-size:16px}
+.aviso{background:#fff7e6;color:#5c4400;font-size:13px;padding:8px 14px}
+.check{width:24px;height:24px;border-radius:50%;border:2px solid #b7bec2;margin-left:auto;flex:none;display:grid;place-items:center;color:#fff;font-size:14px}
+.check.on{background:var(--wa-verde);border-color:var(--wa-verde)}
+.fab{position:absolute;right:18px;bottom:24px;width:58px;height:58px;border-radius:16px;background:var(--wa-verde);color:#fff;font-size:26px;display:grid;place-items:center;box-shadow:0 6px 16px rgba(0,0,0,.25)}
+.conversa{flex:1;background:var(--wa-fundo);overflow:auto;padding:14px 10px;display:flex;flex-direction:column;gap:8px}
+.sis{align-self:center;background:#fff;color:var(--wa-cinza);font-size:13px;padding:6px 12px;border-radius:8px;text-align:center;max-width:90%}
+.bal{max-width:85%;padding:8px 10px 18px;border-radius:10px;position:relative;font-size:15px;white-space:pre-line;box-shadow:0 1px 1px rgba(0,0,0,.08)}
+.bal.eu{align-self:flex-end;background:var(--wa-claro)}
+.bal.ele{align-self:flex-start;background:#fff}
+.bal .h{position:absolute;right:8px;bottom:3px;font-size:11px;color:var(--wa-cinza)}
+.entrada{display:flex;gap:8px;align-items:flex-end;padding:8px;background:var(--wa-fundo)}
+.campo{flex:1;background:#fff;border-radius:22px;padding:11px 16px;min-height:46px;text-align:left;color:var(--wa-cinza);font-size:15px;white-space:pre-line;max-height:160px;overflow:auto}
+.campo.cheio{color:var(--wa-texto)}
+.enviar{width:48px;height:48px;border-radius:50%;background:var(--wa-verde);color:#fff;font-size:20px;display:grid;place-items:center;flex:none}
+/* Computador */
+.pc{width:100%;max-width:520px;background:var(--preto);border-radius:16px;padding:10px 10px 24px;box-shadow:0 20px 50px rgba(5,5,5,.18)}
+.pc .tela{border-radius:8px;height:420px;flex-direction:row}
+.pc .esq{width:42%;border-right:1px solid #e5e5e5;display:flex;flex-direction:column}
+.pc .dir{flex:1;display:flex;flex-direction:column;min-width:0}
+.pc .chat .u{max-width:120px}
+.pc .av{width:38px;height:38px;font-size:15px}
+.pc .wtopo .tt{font-size:16px}
+.vazio{flex:1;display:grid;place-items:center;color:var(--wa-cinza);background:#f7f5f3;text-align:center;padding:20px;font-size:14px}
+/* Destaque do que tocar */
+.alvo{position:relative;z-index:2;animation:pulso 1.4s ease-in-out infinite;border-radius:14px}
+@keyframes pulso{0%,100%{box-shadow:0 0 0 0 rgba(255,101,24,.75)}50%{box-shadow:0 0 0 9px rgba(255,101,24,0)}}
+.dedo{position:absolute;z-index:4;pointer-events:none;background:var(--laranja);color:var(--preto);font-weight:800;font-size:13px;padding:5px 10px;border-radius:999px;white-space:nowrap;font-family:Inter,sans-serif}
+@media (prefers-reduced-motion:reduce){.alvo{animation:none;box-shadow:0 0 0 4px var(--laranja)}.barra span{transition:none}}
+.rodape{margin-top:40px;color:var(--suave);font-size:15px;border-top:1px solid var(--linha);padding-top:16px}
+@media (max-width:820px){
+  .palco{grid-template-columns:1fr;gap:20px}
+  .guia{position:static;order:2}
+  .aparelho{order:1}
+  .fone{height:600px}
+  .pc.lado-dir .esq{display:none}
+  .pc.lado-esq .dir{display:none}
+  .pc.lado-esq .esq{width:100%;border-right:0}
+  .pc .chat .u{max-width:220px}
+}
+</style>
+</head>
+<body>
+<header class="topo"><div class="in"><span class="play" aria-hidden="true"></span>Grupo Euforia</div></header>
+<main>
+  <h1>Como enviar o seu vídeo novo pela lista de transmissão</h1>
+  <p class="lead">Treine aqui, sem medo de errar: nada é enviado de verdade. Toque no ponto que pisca (ou use o botão <b>Próximo</b>). Leva 2 minutos.</p>
+  <div class="modos" role="group" aria-label="Onde você usa o WhatsApp">
+    <button class="modo" data-modo="cel" aria-pressed="true">📱 No celular</button>
+    <button class="modo" data-modo="web" aria-pressed="false">💻 No computador (WhatsApp Web)</button>
+  </div>
+  <div class="palco">
+    <section class="guia" aria-live="polite">
+      <p class="passo" id="pnum"></p>
+      <div class="barra"><span id="pbar"></span></div>
+      <h2 id="ptit"></h2>
+      <div id="ptxt"></div>
+      <div class="acoes">
+        <button class="btn sec" id="voltar">Voltar</button>
+        <button class="btn pri" id="prox">Próximo</button>
+      </div>
+    </section>
+    <div class="aparelho" id="aparelho"></div>
+  </div>
+  <p class="rodape">Por que lista de transmissão: cada pessoa recebe a mensagem no particular, como se fosse só para ela, e a resposta volta só para você. <b>Só recebe quem tem o seu número salvo.</b> Cada lista aceita até 256 contatos. Os nomes dos botões podem mudar um pouco conforme a versão do seu WhatsApp. Nós nunca pedimos a sua senha nem o código do seu WhatsApp.</p>
+</main>
+<script>
+(function(){
+const MSG = 'Saiu! 🎬 Os 3 erros mais comuns na hora de planejar a aposentadoria\nhttps://youtu.be/seu-video\nGravei pensando em quem está a poucos anos de parar. São poucos minutos.';
+const CONTATOS = [['Marta Ribeiro','#c2410c'],['Dr. Paulo Lima','#1f6f8b'],['Cláudia (escritório)','#7a4fb3'],['Seu Antônio','#2e7d32'],['Renata Souza','#b23a48'],['Jorge Martins','#5d6d7e']];
+let modo = 'cel', i = 0, marcados = 0, enviado = false, colado = false;
+
+const CEL = [
+  { tela: 'conversas', alvo: 'menu', tit: 'Abra o WhatsApp e toque nos 3 pontinhos', txt: '<p>Na tela de <b>Conversas</b>, toque nos <b>três pontinhos</b> (⋮) no canto de cima, à direita.</p><p class="dica">No iPhone: toque em <b>Listas</b> (ou nos três pontinhos ⋯) no alto da tela de Conversas.</p>' },
+  { tela: 'menu', alvo: 'nova', tit: 'Toque em "Nova transmissão"', txt: '<p>Abriu um menu. Toque em <b>Nova transmissão</b>.</p><p class="dica">No iPhone o nome é <b>Nova lista</b>.</p>' },
+  { tela: 'contatos', alvo: 'contato', tit: 'Marque quem vai receber', txt: '<p>Toque no nome das pessoas que conhecem você: clientes, ex-clientes, parceiros, indicações. Marque <b>3 contatos</b> para treinar.</p><p class="dica">Só quem tem o <b>seu número salvo</b> recebe. Até 256 pessoas por lista.</p>' },
+  { tela: 'contatos', alvo: 'criar', tit: 'Toque no ✓ verde para criar', txt: '<p>Pronto, contatos escolhidos. Agora toque no <b>botão verde com o ✓</b>, embaixo à direita.</p><p>A lista fica salva: na próxima vez você não precisa criar de novo.</p>' },
+  { tela: 'lista', alvo: 'campo', tit: 'Cole a mensagem que preparamos', txt: '<p>A sua lista abriu, igual a uma conversa. Toque na caixa de mensagem e <b>cole</b> o texto que mandamos no seu grupo.</p><p class="dica">Para colar: segure o dedo na caixa por 1 segundo e toque em <b>Colar</b>.</p>' },
+  { tela: 'lista', alvo: 'enviar', tit: 'Toque na setinha para enviar', txt: '<p>Confira o texto e toque no <b>botão verde da setinha</b>.</p><p>Cada pessoa recebe no particular, com o seu nome, como uma mensagem normal.</p>' },
+  { tela: 'resposta', alvo: null, tit: 'As respostas chegam no seu particular', txt: '<p>Quando alguém responder, aparece como uma conversa normal com essa pessoa. Ninguém vê a resposta dos outros.</p><p>Se a pessoa mandar a <b>palavra-chave</b> do vídeo, é alguém querendo conversar com você: responda no mesmo dia.</p><p class="dica">Toda semana vamos perguntar no grupo quantas respostas e palavras-chave chegaram. Assim medimos o resultado de cada vídeo.</p>' },
+  { tela: 'fim', alvo: null, tit: 'Nos próximos vídeos é só isso', txt: '<p>A lista aparece nas suas Conversas com o ícone de <b>megafone 📢</b>. Abra, cole a mensagem nova e envie.</p><p>A cada vídeo nós mandamos no grupo as 4 mensagens prontas, com o dia de enviar cada uma:</p><p><b>1.</b> Aviso &nbsp; <b>2.</b> Vídeo + página &nbsp; <b>3.</b> Corte &nbsp; <b>4.</b> Convite para conversar</p>' }
+];
+const WEB = [
+  { tela: 'w0', alvo: null, tit: 'Criar a lista: só no celular', txt: '<p>O WhatsApp no computador <b>não cria</b> lista de transmissão. Crie uma vez pelo celular (veja o passo a passo "No celular").</p><p>Depois de criada, a lista aparece no computador e você envia por lá, com o teclado grande.</p>' },
+  { tela: 'w1', alvo: 'wlista', tit: 'Clique na sua lista', txt: '<p>Na coluna da esquerda, procure a conversa com o ícone de <b>megafone 📢</b> e clique nela.</p><p class="dica">Não achou? Digite o nome da lista na busca, no alto da coluna.</p>' },
+  { tela: 'w2', alvo: 'campo', tit: 'Cole a mensagem', txt: '<p>Clique na caixa de mensagem, embaixo, e cole o texto (<b>Ctrl + V</b>, ou <b>Cmd + V</b> no Mac).</p>' },
+  { tela: 'w2', alvo: 'enviar', tit: 'Clique na setinha (ou aperte Enter)', txt: '<p>Confira o texto e clique na <b>setinha</b>. Cada pessoa recebe no particular.</p>' },
+  { tela: 'w3', alvo: null, tit: 'Pronto!', txt: '<p>As respostas chegam como conversas normais, no celular e no computador.</p><p>Se alguém mandar a <b>palavra-chave</b> do vídeo, responda no mesmo dia.</p>' }
+];
+const passos = () => modo === 'cel' ? CEL : WEB;
+const $ = s => document.querySelector(s);
+const hora = '09:12';
+const av = (n, c) => `<span class="av" style="background:${c}" aria-hidden="true">${n.replace(/^(Dr\.|Seu) /, '')[0]}</span>`;
+const A = (k, alvo) => alvo === k ? ' alvo' : '';
+
+function conversas(alvo, menu){
+  return `<div class="wtopo"><span class="tt">WhatsApp</span><span class="ico" aria-hidden="true">📷</span><button class="ico${A('menu', alvo)}" data-k="menu" aria-label="Mais opções">⋮</button></div>
+  <div class="chats">${CONTATOS.slice(0, 5).map((c, j) => `<div class="chat">${av(c[0], c[1])}<div><div class="n">${c[0]}</div><div class="u">${['Obrigada pelo retorno!', 'Combinado, até quinta.', 'Recebi o documento.', 'Bom dia!', 'Vou ver e te falo.'][j]}</div></div></div>`).join('')}</div>
+  ${menu ? `<div class="menu" role="menu"><span class="it">Novo grupo</span><span class="it">Nova comunidade</span><button class="it${A('nova', alvo)}" data-k="nova" role="menuitem">Nova transmissão</button><span class="it">Aparelhos conectados</span><span class="it">Mensagens favoritas</span><span class="it">Configurações</span></div>` : ''}`;
+}
+function contatos(alvo){
+  const n = Math.min(marcados, 3);
+  return `<div class="wtopo"><span class="ico" aria-hidden="true">←</span><span class="tt">Nova transmissão<small>${n} de 256 selecionados</small></span></div>
+  <div class="aviso">Só os contatos que têm o seu número salvo vão receber.</div>
+  <div class="chats">${CONTATOS.map((c, j) => { const on = j < n; const ehAlvo = alvo === 'contato' && j === n;
+    return `<button class="chat${ehAlvo ? ' alvo' : ''}" data-k="${ehAlvo ? 'contato' : ''}">${av(c[0], c[1])}<div><div class="n">${c[0]}</div><div class="u">Disponível</div></div><span class="check${on ? ' on' : ''}" aria-hidden="true">${on ? '✓' : ''}</span></button>`; }).join('')}</div>
+  ${n ? `<button class="fab${A('criar', alvo)}" data-k="criar" aria-label="Criar lista">✓</button>` : ''}`;
+}
+function lista(alvo, pc){
+  return `<div class="wtopo">${pc ? '' : '<span class="ico" aria-hidden="true">←</span>'}<span class="av" style="background:#8a8580" aria-hidden="true">📢</span><span class="tt">Lista de transmissão<small>3 destinatários</small></span></div>
+  <div class="conversa"><div class="sis">Você criou uma lista de transmissão com 3 destinatários</div>${enviado ? `<div class="bal eu">${esc(MSG)}<span class="h">${hora} ✓✓</span></div>` : ''}</div>
+  <div class="entrada"><button class="campo${colado && !enviado ? ' cheio' : ''}${A('campo', alvo)}" data-k="campo">${colado && !enviado ? esc(MSG) : 'Mensagem'}</button><button class="enviar${A('enviar', alvo)}" data-k="enviar" aria-label="Enviar">➤</button></div>`;
+}
+function resposta(){
+  return `<div class="wtopo"><span class="ico" aria-hidden="true">←</span>${av('Marta Ribeiro', '#c2410c')}<span class="tt">Marta Ribeiro<small>online</small></span></div>
+  <div class="conversa"><div class="bal eu">${esc(MSG)}<span class="h">${hora} ✓✓</span></div><div class="bal ele">Que bom esse vídeo! Assisti agora.<span class="h">10:40</span></div><div class="bal ele">PROTOCOLO<span class="h">10:41</span></div></div>
+  <div class="entrada"><span class="campo">Mensagem</span><span class="enviar" aria-hidden="true">🎤</span></div>`;
+}
+function fim(){
+  return `<div class="wtopo"><span class="tt">WhatsApp</span><span class="ico" aria-hidden="true">⋮</span></div>
+  <div class="chats"><div class="chat alvo" style="background:#fff4ec"><span class="av" style="background:#8a8580" aria-hidden="true">📢</span><div><div class="n">Lista de transmissão</div><div class="u">Você: Saiu! 🎬 Os 3 erros mais…</div></div></div>${CONTATOS.slice(0, 4).map(c => `<div class="chat">${av(c[0], c[1])}<div><div class="n">${c[0]}</div><div class="u">…</div></div></div>`).join('')}</div>`;
+}
+function web(tela, alvo){
+  const esq = `<div class="esq"><div class="wtopo"><span class="tt">Conversas</span></div><div class="chats">
+    ${tela === 'w0' ? '' : `<button class="chat${A('wlista', alvo)}" data-k="wlista" style="${tela !== 'w1' ? 'background:#f0f2f5' : ''}"><span class="av" style="background:#8a8580" aria-hidden="true">📢</span><div><div class="n">Lista de transmissão</div><div class="u">3 destinatários</div></div></button>`}
+    ${CONTATOS.slice(0, 4).map(c => `<div class="chat">${av(c[0], c[1])}<div><div class="n">${c[0]}</div><div class="u">…</div></div></div>`).join('')}</div></div>`;
+  let dir;
+  if (tela === 'w0' || tela === 'w1') dir = `<div class="vazio">${tela === 'w0' ? 'No computador: só enviar.<br>Criar a lista: no celular.' : 'Escolha uma conversa'}</div>`;
+  else dir = lista(alvo, true);
+  return `<div class="pc ${tela === 'w0' || tela === 'w1' ? 'lado-esq' : 'lado-dir'}"><div class="tela">${esq}<div class="dir">${dir}</div></div></div>`;
+}
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+
+function tela(p){
+  if (modo === 'web') return web(p.tela, p.alvo);
+  let t = '';
+  if (p.tela === 'conversas') t = conversas(p.alvo, false);
+  else if (p.tela === 'menu') t = conversas(p.alvo, true);
+  else if (p.tela === 'contatos') t = contatos(p.alvo);
+  else if (p.tela === 'lista') t = lista(p.alvo);
+  else if (p.tela === 'resposta') t = resposta();
+  else t = fim();
+  return `<div class="fone"><div class="tela"><div class="status"><span>${hora}</span><span aria-hidden="true">▂▄▆ 🔋</span></div>${t}</div></div>`;
+}
+// Estado coerente com o passo (para Voltar/Próximo funcionarem em qualquer ordem).
+function ajustar(){
+  const p = passos()[i];
+  if (modo === 'cel') { marcados = i < 2 ? 0 : i === 2 ? Math.min(marcados, 2) : 3; colado = i >= 5; enviado = i >= 6; }
+  else { colado = i >= 3; enviado = i >= 4; }
+  return p;
+}
+function render(){
+  const L = passos(), p = ajustar();
+  $('#pnum').textContent = `Passo ${i + 1} de ${L.length}`;
+  $('#pbar').style.width = ((i + 1) / L.length * 100) + '%';
+  $('#ptit').textContent = p.tit;
+  $('#ptxt').innerHTML = p.txt;
+  $('#voltar').disabled = i === 0;
+  $('#prox').textContent = i === L.length - 1 ? 'Recomeçar' : 'Próximo';
+  $('#aparelho').innerHTML = tela(p);
+  const a = $('#aparelho .alvo[data-k]');
+  if (a) { a.setAttribute('aria-label', (a.getAttribute('aria-label') || a.textContent.trim().slice(0, 40)) + ' (toque aqui)'); }
+}
+function avancar(){
+  const L = passos();
+  if (i === L.length - 1) { i = 0; marcados = 0; render(); return; }
+  if (modo === 'cel' && i === 2 && marcados < 2) { marcados++; renderTela(); return; }
+  i++; render();
+}
+function renderTela(){ $('#aparelho').innerHTML = tela(passos()[i]); }
+document.addEventListener('click', e => {
+  const m = e.target.closest('[data-modo]');
+  if (m) { modo = m.dataset.modo; i = 0; marcados = 0; document.querySelectorAll('[data-modo]').forEach(b => b.setAttribute('aria-pressed', String(b === m))); render(); return; }
+  const k = e.target.closest('#aparelho [data-k]');
+  if (k && k.dataset.k && k.classList.contains('alvo')) { avancar(); return; }
+});
+$('#prox').addEventListener('click', () => { if (modo === 'cel' && i === 2) { marcados = 3; i++; render(); return; } avancar(); });
+$('#voltar').addEventListener('click', () => { if (i > 0) { i--; if (modo === 'cel' && i === 2) marcados = 0; render(); } });
+render();
+})();
+</script>
+</body>
+</html>

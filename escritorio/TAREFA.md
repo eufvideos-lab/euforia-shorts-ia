@@ -48,6 +48,20 @@ este arquivo, mas **cada uma só pega os cards do seu tipo**. O prompt da rotina
   Roteiro só sai de lote **👍 Aprovado pelo cliente**; se o lote não estiver aprovado, card em
   "Falta do cliente" com a linha "Esperando o cliente aprovar o Lote N de pautas: <link>". Pedido de roteiros sem
   lote nenhum: faça o lote de pautas primeiro (é a entrega da rodada).
+  **Máquina de Resultados (desde 02/11/2026), vale por cima da skill:** todo roteiro termina com a
+  **palavra-chave de WhatsApp** e leva as mensagens do lançamento prontas:
+  1. Palavra-chave: uma palavra por vídeo, em MAIÚSCULAS, curta (até 12 letras, sem acento, sem espaço), ligada ao tema
+     e diferente das outras palavras do mesmo cliente (confira os roteiros dele no 🎬). Ex.: PROTOCOLO, HERANCA.
+  2. Último bloco do roteiro (o cliente fala olhando para a câmera, 10 a 15 s): "Se você quer conversar sobre o seu
+     caso, me chama no WhatsApp com a palavra **PALAVRA**. O link está aqui embaixo na descrição." Nunca prometer
+     resultado nem prazo.
+  3. Na Ficha dos cortes, acrescente a linha "Palavra-chave do vídeo: PALAVRA" e, na descrição sugerida do YouTube,
+     "Fale comigo no WhatsApp: [LINK DO WHATSAPP DO CLIENTE] (mande PALAVRA)". O link do WhatsApp do cliente o
+     Ismael põe ao postar; não invente número.
+  4. Seção "## Mensagens do lançamento (lista de transmissão)" no fim do roteiro: as mensagens 1 a 4 de
+     `resultados/mensagens-lancamento.md` já preenchidas com tema, gancho e palavra (links ficam entre colchetes).
+     São escritas para o **cliente** enviar do celular dele; a máquina nunca envia nada.
+  Roteiro de lote antigo sem palavra-chave: quando passar por ajuste, acrescente os 4 itens.
 - **Setup**: o passo 3 "Setup" abaixo, um cliente por rodada, os três cards juntos.
 - **Apresentações de call**: o passo 3 "Apresentação de call da agenda". A Call Audiovisual do setup só nas 48 h
   antes da call (como diz a tabela do passo 2). Call que já aconteceu sem apresentação: Precisa da Direção.
