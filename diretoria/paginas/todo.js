@@ -98,9 +98,9 @@ function antigasPorCliente(antigas, hoje) {
     (g[nome] = g[nome] || { nome: nome, cli: !!cli, l: [] }).l.push(i);
   });
   var gs = Object.keys(g).map(function (k) { return g[k]; });
-  gs.sort(function (a, b) { return (b.cli - a.cli) || (b.l.length - a.l.length) || a.nome.localeCompare(b.nome); });
+  gs.sort(function (a, b) { return (a.cli - b.cli) || (b.l.length - a.l.length) || a.nome.localeCompare(b.nome); });
   var nCli = gs.filter(function (x) { return x.cli; }).length;
-  var h = '<p class="mut" style="font-size:13px;margin:4px 0 10px">' + nCli + ' cliente(s) e ' + (gs.length - nCli) + ' grupo(s) da Euforia. Clique num nome para ver as tarefas dele.</p><div class="card" style="opacity:.92">';
+  var h = '<p class="mut" style="font-size:13px;margin:4px 0 10px">' + (gs.length - nCli) + ' grupo(s) da Euforia e ' + nCli + ' cliente(s). Clique num nome para ver as tarefas dele.</p><div class="card" style="opacity:.92">';
   gs.forEach(function (x) {
     x.l.sort(function (a, b) { return (ORD_P[a.pr] - ORD_P[b.pr]) || String(b.d || '').localeCompare(String(a.d || '')); });
     var urg = x.l.filter(function (i) { return /Urgente|Alta/.test(i.pr || ''); }).length, ab = !!abertosCli[x.nome];
