@@ -131,7 +131,8 @@ for (const it of $('Fichas dos clientes').all()) for (const p of (it.json.result
   clientes.push({ id, nome, faixa: txt(pr['Faixa']) || txt(pr['Faixa base']), atencao: !!(pr['🔴 Atenção redobrada'] || {}).checkbox,
     situacao: txt(pr['Situação']), fase: txt(pr['Fase']).replace(/^\\d\\.\\s*/, ''), plano, tags, semContrato: !r || /n[aã]o localizado/i.test(r),
     contrato, total, catalogo, feito, mes, inclui, diferencas, extras, abertos, atrasados,
-    dias: ((pr['Dias YouTube'] || {}).multi_select || []).map(x => x.name), alinhamento: txt(pr['Próximo alinhamento']).slice(0, 10), drive: /^https:/.test((pr['Drive'] || {}).url || '') ? pr['Drive'].url : '' });
+    dias: ((pr['Dias YouTube'] || {}).multi_select || []).map(x => x.name), alinhamento: txt(pr['Próximo alinhamento']).slice(0, 10), drive: /^https:/.test((pr['Drive'] || {}).url || '') ? pr['Drive'].url : '',
+    canva: /^https:\\/\\/(www\\.)?canva\\.com\\//.test((pr['Canva (editáveis)'] || {}).url || '') ? pr['Canva (editáveis)'].url : '' });
 }
 return [{ json: { resposta: { ok: true, hoje: hoje.toISODate(), clientes } } }];
 ` } } });
