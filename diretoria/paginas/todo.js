@@ -1,6 +1,6 @@
 (function () {
 // Aba To-do do Painel Central: ✅ Minhas Pendências do Notion, lido da cópia rápida.
-var D = null, filtro = 'meus', busca = '', abertos = {}, verAntigas = false;
+var D = null, modo = 'meu', filtro = 'meus', busca = '', abertos = {}, verAntigas = false;
 var PRIOS = ['🔴 Urgente', '🟠 Alta', '🟡 Média', '⚪ Baixa'];
 var SETORES = ['Clientes', 'Comercial', 'Financeiro', 'Equipe', 'Jurídico', 'Pessoal'];
 var MAQS = [['carrossel', 'Carrossel'], ['shorts', 'Shorts'], ['longo', 'Vídeo longo'], ['thumb', 'Thumbnail (escreva "Tema da thumb: …")'], ['arte', 'Arte'],
@@ -14,6 +14,8 @@ function carregar() {
     D = r; desenhar();
   });
 }
+// Pedidos que a equipe passa para o Escritório (Esteira de Entregas) ficam na aba To-do escritório, fora do To-do pessoal.
+function doEscritorio(i) { return /^Pedido da equipe para o Escrit/i.test(String(i.cx || '')); }
 function meu(i) { return !i.re || i.re === 'Flau'; }
 function grupoDe(i, hoje) {
   if (i.st === 'Feito') return 'feito';
@@ -30,6 +32,7 @@ var ORD_P = { '🔴 Urgente': 0, '🟠 Alta': 1, '🟡 Média': 2, '⚪ Baixa': 
 function desenhar() {
   var hoje = D.hoje, q = busca.toLowerCase();
   var todos = D.itens.filter(function (i) {
+    if ((modo === 'esc') !== doEscritorio(i)) return false;
     if (filtro === 'meus' && !meu(i)) return false;
     if (filtro === 'equipe' && meu(i)) return false;
     if (q && (i.t + ' ' + i.cp + ' ' + i.cx + ' ' + i.se).toLowerCase().indexOf(q) < 0) return false;
@@ -51,7 +54,7 @@ function desenhar() {
     if (l.length > max) html += '<div class="lin"><button class="ghost" data-mais="' + g[0] + '">Ver mais ' + (l.length - max) + '</button></div>';
     html += '</div>';
   });
-  if (!html) html = '<p class="vazio">Lista limpa. Anote acima o que for surgindo.</p>';
+  if (!html) html = '<p class="vazio">' + (modo === 'esc' ? 'Nenhum pedido da equipe para o Escritório agora.' : 'Lista limpa. Anote acima o que for surgindo.') + '</p>';
   if (antigas.length || D.corte) {
     html += '<h2 class="sec" style="margin-top:28px"><button class="ghost" id="bAntigas">' + (verAntigas ? '▾' : '▸') + ' Antigas (anteriores a ' + (D.corte ? dm(String(D.corte).slice(0, 10)) : 'hoje') + ') <span class="n">' + antigas.length + '</span></button>' +
       '<small>Ficam guardadas aqui e no Notion. Abra quando quiser revisar uma por uma.</small></h2>';
@@ -143,8 +146,9 @@ function criar() {
   if ($('nData').value) campos.data = $('nData').value;
   if ($('nPrio').value) campos.prio = $('nPrio').value;
   if ($('nSetor').value) campos.setor = $('nSetor').value;
+  if (modo === 'esc') campos.contexto = 'Pedido da equipe para o Escritório (anotado no painel).';
   $('novo').value = ''; $('novo').focus();
-  var tmp = { id: 'tmp' + Date.now(), t: t, st: 'A fazer', pr: campos.prio || '', se: campos.setor || '', re: 'Flau', d: campos.data || '', cx: '', cp: '', e: new Date().toISOString() };
+  var tmp = { id: 'tmp' + Date.now(), t: t, st: 'A fazer', pr: campos.prio || '', se: campos.setor || '', re: 'Flau', d: campos.data || '', cx: campos.contexto || '', cp: '', e: new Date().toISOString() };
   D.itens.unshift(tmp); desenhar();
   api('todo_criar', { campos: campos }).then(function (r) {
     if (!r.ok) { D.itens = D.itens.filter(function (x) { return x !== tmp; }); desenhar(); $('novo').value = t; aviso(r.erro || 'Não salvou.', true); return; }
@@ -249,6 +253,9 @@ function mais(i) {
     return mudar(i, v, 'Salvo no Notion.').then(function (ok) { return ok ? '' : 'Não salvou.'; });
   }, '<a href="https://www.notion.so/' + i.id + '" target="_blank" rel="noopener">Abrir no Notion</a>' + (i.link ? ' · <a href="' + esc(i.link) + '" target="_blank" rel="noopener">Link do item</a>' : ''));
 }
+window.modoTodo = function (m) { modo = m === 'esc' ? 'esc' : 'meu'; abertos = {}; verAntigas = false;
+  $('novo').placeholder = modo === 'esc' ? 'Anote um pedido do escritório e aperte Enter' : 'Anote e aperte Enter (ex.: ligar para o contador)';
+  if (D) desenhar(); };
 window.iniciarTodo = function () {
   if (!sessao()) { $('lista').innerHTML = '<p class="erro">Abra esta aba pelo Painel Central (lp.grupoeuforia.tech/diretoria).</p>'; return; }
   $('novo').addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); criar(); } });
@@ -278,7 +285,7 @@ window.iniciarTodo = function () {
     else if (a === 'mais') mais(i);
   });
   carregar();
-  setInterval(function () { if (aba === 'todo' && !document.hidden && !document.querySelector('.modal')) carregar(); }, 120000);
-  window.addEventListener('focus', function () { if (aba === 'todo' && D && !document.querySelector('.modal')) carregar(); });
+  setInterval(function () { if ((aba === 'todo' || aba === 'esc') && !document.hidden && !document.querySelector('.modal')) carregar(); }, 120000);
+  window.addEventListener('focus', function () { if ((aba === 'todo' || aba === 'esc') && D && !document.querySelector('.modal')) carregar(); });
 };
 })();
