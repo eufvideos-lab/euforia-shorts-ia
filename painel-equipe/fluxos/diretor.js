@@ -341,7 +341,7 @@ for (const it of $('Fichas dos clientes').all()) for (const p of (it.json.result
     recuperacao: txt(pr['Recuperação']), atencao: !!(pr['🔴 Atenção redobrada'] || {}).checkbox, faixa: txt(pr['Faixa']) || txt(pr['Faixa base']), tipo: txt(pr['Tipo de cliente']),
     resumo: resumo.slice(0, 1500), obs: txt(pr['Obs importante']).slice(0, 1500), extras: ((pr['Extras do contrato'] || {}).multi_select || []).map(x => x.name),
     alinhamento: txt(pr['Próximo alinhamento']).slice(0, 10), ultimaPostagem: txt(pr['Última postagem']).slice(0, 10), canalDesde: txt(pr['Canal no ar desde']).slice(0, 10),
-    drive: txt(pr['Drive']), youtube: txt(pr['YouTube']), instagram: txt(pr['Instagram']), tiktok: txt(pr['TikTok']),
+    drive: txt(pr['Drive']), canva: /^https:\\/\\/(www\\.)?canva\\.com\\//.test(txt(pr['Canva (editáveis)'])) ? txt(pr['Canva (editáveis)']) : '', youtube: txt(pr['YouTube']), instagram: txt(pr['Instagram']), tiktok: txt(pr['TikTok']),
     contrato, total, ritmo, feito, mes, atrasados, abertos: abertos.slice(0, 40), postados,
     grupo: grupo ? { nome: grupo.grupo || '', ultima: grupo.ultima || '', semana: Number(grupo.semana || 0) } : null });
 }

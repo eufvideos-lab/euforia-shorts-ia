@@ -40,7 +40,7 @@ este arquivo, mas **cada uma só pega os cards do seu tipo**. O prompt da rotina
 | **Apresentações de call** | Título com "APRESENTAÇÃO DE CALL", "APRESENTAÇÃO DA CALL" ou "APRESENTAÇÃO DE ALINHAMENTO" (agenda, painel e a da Call Audiovisual do setup), ou Tipo = Apresentação ligado a uma call | até 3 (a call mais próxima primeiro) |
 | **Pautas e roteiros** | Tipo = Roteiro, ou título com "PAUTAS" ou "ROTEIRO" (inclui roteiro de tema quente) | 1 lote de pautas **ou** até 6 roteiros |
 | **Setup** | Cards de setup: "SETUP (painel)", COPY DA PÁGINA, FUNIL DE VENDAS, ESTRATÉGIA + POSICIONAMENTO, página de vendas, os pedidos do painel "ESTRATÉGIA (painel)", "PÁGINA (painel)" e "FUNIL (painel)", e a identidade do setup (ID DO CANAL, ANTES E DEPOIS, MODELO DE CARROSSEL) | 1 cliente (os cards dele que estiverem na fila) |
-| **Escritório** | Todo o resto (thumbs, artes, relatórios, Situação completa, Cronograma, bio, guias, conferências, classificações para outras máquinas, Direção, Falta informação) | 3 (até 6 se sobrar tempo) |
+| **Escritório** | Todo o resto (thumbs, artes, editáveis no Canva, relatórios, Situação completa, Cronograma, bio, guias, conferências, classificações para outras máquinas, Direção, Falta informação) | 3 (até 6 se sobrar tempo) |
 
 - O aviso no #dia-a-dia leva o nome da máquina na primeira linha (ex.: "🎤 Apresentações de call: ...",
   "🎬 Pautas e roteiros: ...", "🧱 Setup: ...", "🏢 Escritório: ...").
@@ -91,6 +91,7 @@ Nome das calls (vale para Obs, avisos e material): **Call 1 Onboarding + Oferta*
 | SEO, otimização ou melhorias no canal do YouTube (títulos, descrições, tags, playlists, acervo) | **É da equipe.** Responsável = Ismael (`3ea98c0cdde0812d9cb4c41ce70df4ae`), "🏢 Escritório IA" vazio, linha no topo do Obs `[Escritório dd/MM HH:mm] SEO e otimização de canal são com a equipe.` e aviso no #dia-a-dia. |
 | APRESENTAÇÃO DA CALL DE CONSULTORIA AUDIOVISUAL (card do setup) | Só quando a Call Audiovisual estiver na agenda "Assessoria EDL" nas próximas 48 h; antes disso, **pule sem anotar nada**. Se já existir o card "(agenda)" dessa call, faça nele e ponha o mesmo link neste. |
 | Identidade do setup: ID DO CANAL, ANTES E DEPOIS DO CANAL, MODELO DE CARROSSEL, CALL DE CONSULTORIA AUDIOVISUAL / CALL DE APROVAÇÃO | **Produzir** seguindo `escritorio/identidade/IDENTIDADE.md` (kit em PNG, antes e depois, apresentação da call). |
+| Card "CLIENTE \| EDITÁVEIS NO CANVA (painel)" ou "EDITÁVEIS NO CANVA" (cliente aprovou peças na call/apresentação) | **Produzir** seguindo `escritorio/editaveis/EDITAVEIS.md` (modelos editáveis no Canva da equipe, link na ficha "Canva (editáveis)"). |
 | Card "CLIENTE \| APRESENTAÇÃO DE CALL (agenda)" (criado pelo fluxo da agenda, Obs com "Evento da agenda: <id>") | **Produzir** como **Apresentação de call da agenda** (passo 3). |
 | Card "CLIENTE \| SITUAÇÃO COMPLETA (painel)" ou "CLIENTE \| CRONOGRAMA (painel)" | **Produzir** seguindo `escritorio/diagnostico/DIAGNOSTICO.md` (PDF pelo gerador `escritorio/diagnostico/gerar.py`). Não é "contrato/financeiro": é leitura do contrato para planejar; nunca escreva valores. Um card desses vale uma rodada inteira: faça só ele na rodada. |
 | O resto (relatório, apresentação de call, página de vendas, roteiros, pautas, bio, guia, conferências) | **Produzir** (passo 3). |

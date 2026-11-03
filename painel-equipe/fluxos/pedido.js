@@ -37,7 +37,7 @@ const txt = v => { if (!v) return ''; const a = v.title || v.rich_text; if (a) r
 const CAT = {
   longo: ['Vídeo longo', 'VÍDEO LONGO', 'Máquina de Longos'], shorts: ['Shorts', 'SHORTS', 'Máquina de Shorts'], ajvid: ['Vídeo longo', 'AJUSTE EM VÍDEO', ''],
   carrossel: ['Carrossel', 'CARROSSEL', 'Máquina de Carrosséis'], thumb: ['Thumbnail', 'THUMB', 'Máquina do Escritório'], arte: ['Arte', 'ARTE', 'Máquina do Escritório'],
-  idv: ['ID visual', 'ID VISUAL', 'Máquina do Escritório'], alinhamento: ['Apresentação', 'APRESENTAÇÃO DE ALINHAMENTO', 'Máquina do Escritório'],
+  idv: ['ID visual', 'ID VISUAL', 'Máquina do Escritório'], canva: ['ID visual', 'EDITÁVEIS NO CANVA', 'Máquina do Escritório'], alinhamento: ['Apresentação', 'APRESENTAÇÃO DE ALINHAMENTO', 'Máquina do Escritório'],
   call: ['Apresentação', 'APRESENTAÇÃO DE CALL', 'Máquina do Escritório'], relatorio: ['Relatório', 'RELATÓRIO', 'Máquina do Escritório'],
   recuperacao: ['Estratégia', 'ESTRATÉGIA DE RECUPERAÇÃO', 'Máquina do Escritório'], pautas: ['Roteiro', 'PAUTAS E ROTEIROS', 'Máquina do Escritório'],
   pagina: ['Página', 'PÁGINA', 'Máquina do Escritório'], funil: ['Funil', 'FUNIL', 'Máquina do Escritório'], insta: ['Insta-Blindado', 'INSTA-BLINDADO', 'Máquina do Escritório'],
