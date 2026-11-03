@@ -1705,7 +1705,7 @@ function blocoGravacao(l){
   return `<section class="group"><h2>🎥 Esperando o cliente gravar <span class="count">${l.length}</span></h2><ul class="rows">${l.map(c => `<li class="item"><span class="stripe" style="background:var(--warn)"></span>
     <div class="main" style="cursor:default"><span class="t">${esc(c.nome)}</span><span class="meta"><span class="chip warn">🎥 ${esc(desde(c.gravacao))}</span>${c.gravacao.por ? `<span class="chip">marcado por ${esc(c.gravacao.por)}</span>` : ''}${c.faixa ? `<span class="chip">Faixa ${esc(c.faixa)}</span>` : ''}${c.atencao ? '<span class="chip red">🔴 Atenção</span>' : ''}</span>
     ${slots(c) ? `<span class="sub" style="font-size:13px">Fora da grade: ${esc(slots(c))}</span>` : ''}</div>
-    <span class="act">${G.podeMudar ? `<button class="btn ok" data-gravou="${c.id}">✓ Gravou: volta para a grade</button>` : ''}</span></li>`).join('')}</ul>
+    <span class="act">${G.podeGravar !== false ? `<button class="btn ok" data-gravou="${c.id}">✓ Gravou: volta para a grade</button>` : ''}</span></li>`).join('')}</ul>
     <p class="sub" style="font-size:13px;margin-top:8px">Peça a gravação no grupo do cliente. Enquanto estiver aqui, os horários dele não aparecem na grade, os vídeos e shorts dele não contam como atraso da equipe e a Central não prevê vídeo novo para ele. Chegou o material? Aperte "Gravou".</p></section>`;
 }
 async function marcarGravacao(cliente, gravou){
@@ -1756,15 +1756,15 @@ function abrirSlot(id, novoCliente){
       <div class="grid2"><label for="sq">Quantas peças nesse dia<input type="text" id="sq" inputmode="numeric" value="${v.qtd || 1}" maxlength="2"></label><span></span></div>
       <label for="so">Observação (opcional)<input type="text" id="so" maxlength="300" placeholder="Ex.: cliente pediu para mudar de terça para quarta"></label>
       <div class="actions"><button class="btn primary" type="submit">${h ? 'Salvar ajuste' : 'Adicionar à grade'}</button>
-      ${h ? (h.status.includes('Pausado') ? '<button class="btn ok" type="button" data-gact="reativar">Reativar</button>' : '<button class="btn warn" type="button" data-gact="pausar">Pausar</button>') : ''}</div></form>
-      ${h ? (c.gravacao ? `<div class="actions" style="margin-top:14px;padding-top:14px;border-top:1px solid var(--line)"><button class="btn ok" type="button" data-gravou="${h.cliente}">✓ Cliente gravou: volta para a grade</button></div>`
-        : `<div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:8px"><p class="sub" style="font-size:13px;margin:0">O cliente ainda não mandou a gravação? Marque aqui: todos os horários de ${esc(c.nome)} saem da grade e dos atrasos até alguém marcar que gravou. Depois peça a gravação no grupo.</p><div class="actions"><button class="btn warn" type="button" data-naogravou="${h.cliente}">🎥 Cliente ainda não gravou</button></div></div>`) : ''}` : '';
+      ${h ? (h.status.includes('Pausado') ? '<button class="btn ok" type="button" data-gact="reativar">Reativar</button>' : '<button class="btn warn" type="button" data-gact="pausar">Pausar</button>') : ''}</div></form>` : '';
+  const gravBtn = h && G.podeGravar !== false ? `${c.gravacao ? `<div class="actions" style="margin-top:14px;padding-top:14px;border-top:1px solid var(--line)"><button class="btn ok" type="button" data-gravou="${h.cliente}">✓ Cliente gravou: volta para a grade</button></div>`
+        : `<div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:8px"><p class="sub" style="font-size:13px;margin:0">O cliente ainda não mandou a gravação? Marque aqui: todos os horários de ${esc(c.nome)} saem da grade e dos atrasos até alguém marcar que gravou. Depois avise o Ismael ou o Rômulo para pedir a gravação no grupo.</p><div class="actions"><button class="btn warn" type="button" data-naogravou="${h.cliente}">🎥 Cliente ainda não gravou</button></div></div>`}` : '';
   $('#layer').innerHTML = `<div class="scrim" data-x></div><aside class="drawer" role="dialog" aria-modal="true" aria-labelledby="d-t"><div class="drawer-in">
     <button class="close" data-x>Fechar</button>
     <div><p class="eyebrow">Grade de postagem</p><h2 id="d-t" style="font-size:26px">${h ? esc(c.nome) + ' · ' + esc(h.dia.slice(2)) : 'Adicionar dia de postagem'}</h2></div>
     ${h ? `<dl class="dl"><dt>Onde</dt><dd>${esc(h.plataforma)} · ${esc(h.formato)}${h.qtd > 1 ? ' ×' + h.qtd : ''}</dd><dt>Horário</dt><dd>${h.horario ? esc(h.horario) : 'sem horário fixo'}</dd><dt>Situação</dt><dd>${esc(h.status)}</dd>
       ${c.faixa || c.atencao ? `<dt>Cliente</dt><dd>${c.faixa ? 'Faixa ' + esc(c.faixa) : ''}${c.atencao ? ' · 🔴 atenção redobrada' : ''}</dd>` : ''}${h.nota ? `<dt>Nota</dt><dd>${esc(h.nota)}</dd>` : ''}</dl>` : ''}
-    ${form || '<p class="note">Quem ajusta a grade é o Ismael ou o Rômulo. Viu algo errado? Avise um deles.</p>'}
+    ${form || '<p class="note">Quem ajusta a grade é o Ismael ou o Rômulo. Viu algo errado? Avise um deles.</p>'}${gravBtn}
   </div></aside>`;
   const mandar = async (acao, slot) => {
     if (ocupado) return; ocupado = true; document.querySelectorAll('#layer .btn').forEach(b => b.disabled = true);
@@ -2469,7 +2469,7 @@ const DEMO_D = {"ok":true,"nome":"Ismael (exemplo)","papel":"revisor","hoje":"20
   {"id":"k6","cod":405,"titulo":"","nome":"THUMB 03","cliente":"c4","clienteNome":"Paula Reis (exemplo)","tipo":"Thumbnail","qtd":1,"status":"Aprovado","prazo":"2026-10-23","postar":"2026-10-26","link":"https://drive.google.com/demo","linkPost":"","obs":"[Portal 25/10 10:06] Cliente aprovou","resp":["Lorena"],"meu":false,"voltas":0},
   {"id":"k7","cod":407,"titulo":"","nome":"CARROSSEL 08","cliente":"c1","clienteNome":"Dra. Helena (exemplo)","tipo":"Carrossel","qtd":1,"status":"Aguardando cliente","prazo":"2026-10-24","postar":"2026-10-27","link":"https://drive.google.com/demo","linkPost":"","obs":"","resp":["Lorena"],"meu":false,"voltas":0}]};
 
-const DEMO_G = {"ok":true,"podeMudar":true,"podeMarcar":true,
+const DEMO_G = {"ok":true,"podeMudar":true,"podeMarcar":true,"podeGravar":true,
  "marcas":{"g7|2026-10-26":{"status":"postado","por":"Ismael (exemplo)","quando":"26/10 17:04"},"g1|2026-10-27":{"status":"programado","por":"Daniel (exemplo)","quando":"25/10 21:30"},"g3|2026-10-28":{"status":"programado","por":"Daniel (exemplo)","quando":"25/10 21:41"}},
  "clientes":[{"id":"c1","nome":"Dra. Helena (exemplo)","faixa":"A","atencao":true,"ativo":true,"pausado":false,"inicio":"2026-10-05","yt":"Ter, Qui","tt":""},
   {"id":"c9","nome":"Carla Mendes (exemplo)","faixa":"B","atencao":false,"ativo":true,"pausado":false,"inicio":"2026-10-05","yt":"Qua","tt":"","gravacao":{"desde":"2026-10-23 10:40","por":"Ismael (exemplo)"}},
