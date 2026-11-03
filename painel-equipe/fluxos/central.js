@@ -126,8 +126,11 @@ for (const it of $('Clientes ativos').all()) for (const p of (it.json.results ||
     situacao: txt(pr['Situação']), atencao: !!(pr['🔴 Atenção redobrada'] || {}).checkbox, clima: txt(pr['Clima']), recuperacao: txt(pr['Recuperação']),
     fimDias: fim ? Math.round(fim.diff(hoje, 'days').days) : null,
     ritmo: { longo: num(pr['Longos por semana']) || 0, shorts: num(pr['Shorts por semana']) || 0, carrossel: num(pr['Carrosséis por semana']) || 0 },
-    diasYT: ((pr['Dias YouTube'] || {}).multi_select || []).map(x => x.name) };
+    diasYT: ((pr['Dias YouTube'] || {}).multi_select || []).map(x => x.name), grav: txt(pr['🎥 Aguardando gravação']) };
 }
+// Cliente ainda não gravou (marcado na Grade de postagem): vídeo, shorts e podcast dele ficam esperando o cliente, fora dos atrasos da equipe.
+const GRAVA = ['Vídeo longo', 'Shorts', 'Podcast'];
+const espera = c => !!((cli[c.cliente] || {}).grav) && GRAVA.includes(c.tipo);
 
 // ---------- Filas das máquinas ----------
 const lerQuadro = nome => { const out = { fila: 0, fazendo: 0, erro: 0, feitos7: 0, ok: true, itens: [], erros: [] };
@@ -160,6 +163,7 @@ for (const c of abertos) if (c.resp.includes(ESC)) { if (c.escritorio === 'Fazen
 
 // Onde a demanda está agora.
 const onde = c => {
+  if (espera(c)) return ['cliente', '🎥 Esperando o cliente gravar'];
   if (c.resp.includes(ESC)) {
     if (c.escritorio === 'Foi para outra máquina') return ['maquina', 'No quadro de uma máquina'];
     if (c.escritorio === 'À mão (Flau)') return ['flau', 'Com a diretoria (à mão)'];
@@ -172,7 +176,7 @@ const onde = c => {
 // Carga da equipe: o que cada um tem aberto.
 const carga = {};
 for (const id of Object.keys(PESSOAS)) carga[id] = { id: PESSOAS[id][0], nome: PESSOAS[id][1], papel: PESSOAS[id][2], abertos: 0, atrasados: 0, hoje: 0, fazendo: 0 };
-for (const c of abertos) for (const r of c.resp) if (carga[r]) { const k = dias(c.prazo); carga[r].abertos++; if (c.status === 'Fazendo') carga[r].fazendo++; if (k !== null && k < 0) carga[r].atrasados++; if (k === 0) carga[r].hoje++; }
+for (const c of abertos) for (const r of c.resp) if (carga[r]) { const k = espera(c) ? null : dias(c.prazo); carga[r].abertos++; if (c.status === 'Fazendo') carga[r].fazendo++; if (k !== null && k < 0) carga[r].atrasados++; if (k === 0) carga[r].hoje++; }
 const EDIT = ['3ea98c0cdde08182a952f3d9a5b73575', '3ea98c0cdde08163bd16f0213b098cb5', '3ea98c0cdde0817e87aee637a96d4fd1'];
 const maisLivre = ids => ids.map(i => carga[i]).sort((a, b) => (a.abertos + a.atrasados * 2) - (b.abertos + b.atrasados * 2))[0];
 
@@ -206,11 +210,11 @@ function sugerir(c, ondeK) {
   if (c.tipo === 'Podcast') { const p = maisLivre(EDIT); return { destino: p.id, texto: p.nome + ' (menos carga agora)' }; }
   return ondeK === 'ninguem' ? { destino: '', texto: 'Escolha quem faz' } : null;
 }
-const demandas = abertos.map(c => { const k = cli[c.cliente] || {}; const o = onde(c), pt = pontuar(c, k), pz = dias(c.prazo);
+const demandas = abertos.map(c => { const k = cli[c.cliente] || {}; const o = onde(c), pt = espera(c) ? { score: 0, motivos: ['🎥 Cliente ainda não gravou'] } : pontuar(c, k), pz = dias(c.prazo);
   return { id: c.id, cod: c.cod, url: c.url, cliente: c.cliente, clienteNome: c.clienteNome, nome: c.nome, tipo: c.tipo, qtd: c.qtd, status: c.status,
     prazo: c.prazo, postar: c.postar, link: /^https:/.test(c.link) ? c.link : '', obs1: c.obs1, faixa: k.faixa || '', atencao: !!k.atencao,
     onde: o[0], ondeTexto: o[1], resp: c.resp.filter(r => PESSOAS[r]).map(r => PESSOAS[r][0]), score: pt.score, motivos: pt.motivos,
-    velho: pz !== null && pz < -15, sugestao: ['maquina', 'flau'].includes(o[0]) ? null : sugerir(c, o[0]) }; })
+    velho: pz !== null && pz < -15 && o[0] !== 'cliente', sugestao: ['maquina', 'flau', 'cliente'].includes(o[0]) ? null : sugerir(c, o[0]) }; })
   .sort((a, b) => b.score - a.score || String(a.prazo || '9').localeCompare(String(b.prazo || '9')));
 
 // ---------- Previstas: o ritmo da ficha (longos, shorts e carrosséis por semana) contra os cards que já existem na semana ----------
@@ -219,13 +223,14 @@ const fimS = ini.plus({ days: 6 });
 const DIA = { seg: 1, ter: 2, qua: 3, qui: 4, sex: 5, sab: 6, 'sáb': 6, dom: 7 };
 const diaN = s => { const t = String(s).toLowerCase().replace(/[^a-záéíóúâêôãõç]/g, '').slice(0, 3); return DIA[t] || null; };
 const TIPO_P = { longo: 'Vídeo longo', shorts: 'Shorts', carrossel: 'Carrossel' };
-const previstas = []; let semRitmo = 0;
+const previstas = []; let semRitmo = 0; const semGravacao = new Set();
 for (const k of Object.values(cli)) {
   if (/TESTE/i.test(k.nome) || /paus|stand|encerr|cancel|inativ/i.test(k.situacao)) continue;
   if (!k.ritmo.longo && !k.ritmo.shorts && !k.ritmo.carrossel) { semRitmo++; continue; }
   const daSemana = todos.filter(c => c.cliente === k.id && c.postar && c.postar >= ini.toISODate() && c.postar <= fimS.toISODate());
   for (const tp of ['longo', 'shorts', 'carrossel']) {
     const quer = k.ritmo[tp]; if (!quer) continue;
+    if (k.grav && tp !== 'carrossel') { semGravacao.add(k.id); continue; }
     const ja = daSemana.filter(c => c.tipo === TIPO_P[tp]), tem = ja.reduce((a, c) => a + (c.qtd || 1), 0);
     let falta = quer - tem; if (falta <= 0) continue;
     const usados = new Set(ja.map(c => c.postar));
@@ -268,7 +273,9 @@ const maquinas = Object.keys(MAQ).map(k => { const m = MAQ[k], q = Q[k], t = eta
 
 return [{ json: { resposta: { ok: true, nome: quem.nome, papel: quem.papel, hoje: HOJE, agora: agora.toFormat('HH:mm'),
   hojeTexto: agora.setLocale('pt-BR').toFormat("cccc, dd 'de' LLLL"), semana: { de: ini.toISODate(), ate: fimS.toISODate() },
-  maquinas, pessoas: Object.values(carga), demandas, previstas, semRitmo } } }];
+  maquinas, pessoas: Object.values(carga), demandas, previstas, semRitmo,
+  aguardandoGravacao: Object.values(cli).filter(k => k.grav && !(teste ? !/TESTE/i.test(k.nome) : /TESTE/i.test(k.nome))).map(k => ({ cliente: k.id, nome: k.nome, desde: k.grav.slice(0, 16), por: k.grav.split('·').slice(1).join('·').trim() })),
+  previstasSemGravacao: semGravacao.size } } }];
 ` } } });
 
 const devolverVer = node({ type: 'n8n-nodes-base.respondToWebhook', version: 1.5, config: { name: 'Devolver central', parameters: {

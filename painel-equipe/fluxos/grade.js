@@ -18,7 +18,7 @@ const FORM = ['Vídeo padrão', 'Podcast', 'Corte horizontal', 'Shorts', 'Blog',
 const DIAS = ['1 Seg', '2 Ter', '3 Qua', '4 Qui', '5 Sex', '6 Sáb', '7 Dom'];
 const hora = String(s.horario || '').trim();
 return [{ json: { u: /^[0-9a-f]{24}$/.test(u) ? u : 'x', pin: String(b.pin || '').replace(/[^0-9]/g, '').slice(0, 6),
-  acao: ['salvar', 'pausar', 'reativar', 'marcar'].includes(b.acao) ? b.acao : 'listar',
+  acao: ['salvar', 'pausar', 'reativar', 'marcar', 'gravacao'].includes(b.acao) ? b.acao : 'listar', gravou: b.gravou === true,
   marca: ['programado', 'postado'].includes(b.marca) ? b.marca : '', data: /^\\d{4}-\\d{2}-\\d{2}$/.test(String(b.data || '')) ? String(b.data) : '',
   slot: { id: id(s.id), cliente: id(s.cliente), plataforma: PLAT.includes(s.plataforma) ? s.plataforma : '', formato: FORM.includes(s.formato) ? s.formato : '',
     dia: DIAS.includes(s.dia) ? s.dia : '', horario: (m => m && Number(m[1]) < 24 && Number(m[2] || 0) < 60 ? m[1].padStart(2, '0') + ':' + (m[2] || '00') : '')(hora.toLowerCase().match(/^(\\d{1,2})(?:[:h](\\d{2})?)?$/)),
@@ -58,9 +58,10 @@ let erro = '';
 if (!acessoOk) erro = 'acesso';
 else if (p.acao !== 'listar' && p.acao !== 'marcar' && !muda) erro = 'permissao';
 else if (p.acao !== 'listar' && s.id && !daGrade) erro = 'horario';
-else if (p.acao === 'salvar' && (!s.cliente || sem((cli.parent || {}).database_id) !== '3ddc91b406be49e98e630c298d9162d8')) erro = 'cliente';
+else if ((p.acao === 'salvar' || p.acao === 'gravacao') && (!s.cliente || sem((cli.parent || {}).database_id) !== '3ddc91b406be49e98e630c298d9162d8')) erro = 'cliente';
 else if (p.acao === 'salvar' && (!s.plataforma || !s.formato || !s.dia)) erro = 'campos';
 else if (teste && p.acao !== 'listar' && ((s.cliente && s.cliente !== TESTE) || (s.id && cliAtual !== TESTE))) erro = 'permissao';
+else if (p.acao === 'gravacao' && s.id) erro = 'horario';
 else if ((p.acao === 'pausar' || p.acao === 'reativar' || p.acao === 'marcar') && !s.id) erro = 'horario';
 const agora = DateTime.now().setZone(Z);
 // Marcar Programado / Postado: vale para o dia daquele horário, de 3 semanas atrás até 2 semanas à frente.
@@ -87,10 +88,13 @@ if (p.acao === 'salvar') {
 }
 if (p.acao === 'pausar') props['Status do slot'] = { select: { name: '⏸️ Pausado' } };
 if (p.acao === 'reativar') props['Status do slot'] = { select: { name: '✅ Publicar' } };
+// Cliente ainda não gravou: marca na ficha do cliente (texto "AAAA-MM-DD HH:mm · quem"). Vazio = gravou, volta para a grade.
+const grav = p.acao === 'gravacao';
+if (grav) props = { '🎥 Aguardando gravação': { rich_text: p.gravou ? [] : [{ type: 'text', text: { content: agora.toFormat('yyyy-MM-dd HH:mm') + ' · ' + (r.nome || '') } }] } };
 const cria = p.acao === 'salvar' && !s.id;
 return [{ json: { ok: !erro, listar: p.acao === 'listar', marcar: p.acao === 'marcar', podeMudar: muda, podeMarcar: true, teste, desde,
   marca: { chave: s.id + '|' + p.data, slot: s.id, dia: p.data, status: p.marca, por: r.nome || '', quando: agora.toFormat('dd/MM HH:mm') },
-  metodo: cria ? 'POST' : 'PATCH', url: cria ? 'https://api.notion.com/v1/pages' : 'https://api.notion.com/v1/pages/' + s.id,
+  metodo: cria ? 'POST' : 'PATCH', url: cria ? 'https://api.notion.com/v1/pages' : 'https://api.notion.com/v1/pages/' + (grav ? s.cliente : s.id),
   body: JSON.stringify(cria ? { parent: { database_id: '2d21b7a7166240f5afaa4d697c3d1ae8' }, properties: props } : { properties: props }),
   resposta: { ok: false, motivo: erro } } }];
 ` } } });
@@ -150,7 +154,8 @@ for (const it of $('Clientes ativos').all()) for (const p of (it.json.results ||
   const nome = txt(pr['Cliente']);
   if (!v.teste && /^TESTE/i.test(nome)) continue;
   cli[sem(p.id)] = { id: sem(p.id), nome, faixa: txt(pr['Faixa']) || txt(pr['Faixa base']), atencao: !!(pr['🔴 Atenção redobrada'] || {}).checkbox, situacao: txt(pr['Situação']),
-    yt: ((pr['Dias YouTube'] || {}).multi_select || []).map(o => o.name).join(', '), tt: ((pr['Dias TikTok'] || {}).multi_select || []).map(o => o.name).join(', ') };
+    yt: ((pr['Dias YouTube'] || {}).multi_select || []).map(o => o.name).join(', '), tt: ((pr['Dias TikTok'] || {}).multi_select || []).map(o => o.name).join(', '),
+    grav: (g => g ? { desde: g.slice(0, 16), por: g.split('·').slice(1).join('·').trim() } : null)(txt(pr['🎥 Aguardando gravação'])) };
 }
 const horarios = [];
 for (const it of $('Horários da grade').all()) for (const p of (it.json.results || [])) {
@@ -161,7 +166,7 @@ for (const it of $('Horários da grade').all()) for (const p of (it.json.results
   horarios.push({ id: sem(p.id), cliente: c, plataforma: txt(pr['Plataforma']), formato: txt(pr['Formato']), dia: txt(pr['Dia']), horario: txt(pr['Horário']),
     qtd: (pr['Quantidade'] || {}).number || 1, status: txt(pr['Status do slot']), nota: obs.split('\\n').filter(l => !/^\\[Painel /.test(l)).join(' ').slice(0, 200) });
 }
-const lista = Object.values(cli).map(c => ({ id: c.id, nome: c.nome, faixa: c.faixa, atencao: c.atencao, ativo: c.situacao === 'Ativo', pausado: c.situacao === 'Pausado', yt: c.yt, tt: c.tt }));
+const lista = Object.values(cli).map(c => ({ id: c.id, nome: c.nome, faixa: c.faixa, atencao: c.atencao, ativo: c.situacao === 'Ativo', pausado: c.situacao === 'Pausado', yt: c.yt, tt: c.tt, gravacao: c.grav }));
 const ids = new Set(horarios.map(h => h.id));
 const marcas = {};
 for (const it of $('Marcações da grade').all()) { const m = it.json || {}; if (m.chave && m.status && ids.has(m.slot)) marcas[m.chave] = { status: m.status, por: m.por || '', quando: m.quando || '' }; }
@@ -200,7 +205,7 @@ const devolver = node({ type: 'n8n-nodes-base.respondToWebhook', version: 1.5, c
 const recusar = node({ type: 'n8n-nodes-base.respondToWebhook', version: 1.5, config: { name: 'Recusar', parameters: {
   respondWith: 'json', responseBody: '={{ JSON.stringify($json.resposta) }}', options: {} } } });
 
-const nota = sticky('## Painel da equipe · grade de postagem (V1)\nLê o banco Grade de Postagem (horários fixos de cada cliente: plataforma, formato, dia, horário, quantidade) e devolve a semana para a aba Grade.\nTodos veem. Ismael (revisor), Rômulo (calls) e o teste podem criar, ajustar, pausar e reativar um horário. Toda mudança vira uma linha [Painel dd/mm] no topo da Obs do horário. Nunca encerra nem apaga.\nTodos marcam Programado ou Postado em cada data (tabela Painel · grade marcações; desmarcar grava status vazio).', [], { color: 4 });
+const nota = sticky('## Painel da equipe · grade de postagem (V1)\nLê o banco Grade de Postagem (horários fixos de cada cliente: plataforma, formato, dia, horário, quantidade) e devolve a semana para a aba Grade.\nTodos veem. Ismael (revisor), Rômulo (calls) e o teste podem criar, ajustar, pausar e reativar um horário. Toda mudança vira uma linha [Painel dd/mm] no topo da Obs do horário. Nunca encerra nem apaga.\nTodos marcam Programado ou Postado em cada data (tabela Painel · grade marcações; desmarcar grava status vazio).\nCliente ainda não gravou (Ismael, Rômulo, diretoria): grava 🎥 Aguardando gravação na ficha do cliente; os horários dele saem da grade até marcarem que gravou.', [], { color: 4 });
 
 export default workflow('painel-grade', 'Painel | Grade de postagem (V1)')
   .add(pedir).to(ler).to(acesso).to(slotAtual).to(clienteNode).to(validar)
