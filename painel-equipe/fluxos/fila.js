@@ -91,12 +91,15 @@ for (const it of $('Clientes ativos').all()) for (const p of (it.json.results ||
   cli[sem(p.id)] = { id: sem(p.id), nome: txt(pr['Cliente']), faixa: txt(pr['Faixa']) || txt(pr['Faixa base']), atencao: !!(pr['🔴 Atenção redobrada'] || {}).checkbox,
     padroes: txt(pr['Padrões de edição']).slice(0, 1200), gosta: txt(pr['Direção criativa (gosta / não gosta)']).slice(0, 1200) };
 }
+// Cliente que a pessoa não pode atender (decisão da diretoria 04/11: Victor fora da Ana Mangia).
+const BLOQUEIO = { '3ea98c0cdde08182a952f3d9a5b73575': ['3ea98c0cdde081578305ec053b215822'] };
 const TIPOS_LIVRE = ['Vídeo longo', 'Shorts', 'Podcast', 'Carrossel', 'Thumbnail'];
 const cards = [];
 for (const it of $('Cards da pessoa').all()) for (const p of (it.json.results || [])) {
   const pr = p.properties || {};
   const titulo = txt(pr['Entrega']);
   const cid = sem(((pr['Cliente'] || {}).relation || [])[0] && pr['Cliente'].relation[0].id);
+  if ((BLOQUEIO[quem.ficha] || []).includes(cid)) continue;
   const resp = ((pr['Responsável'] || {}).relation || []).map(r => sem(r.id));
   const status = txt(pr['Status']), tipo = txt(pr['Tipo']);
   const livre = quem.papel !== 'teste' && !resp.length && TIPOS_LIVRE.includes(tipo) && ['A fazer', 'Fazendo', 'Ajustes'].includes(status);

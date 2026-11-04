@@ -416,7 +416,7 @@ if (!SITUACAO_NO_AR && !DEMO) for (let i = TIPOS.length - 1; i >= 0; i--) if (TI
 // Erros que a pessoa consegue resolver sozinha; o resto vira o aviso padrão.
 const MOTIVO = {acesso:'Seu acesso mudou. Entre de novo com o PIN.', permissao:'Esse card não está no seu nome.', etapa:'Esse card mudou de etapa. A fila foi atualizada.',
   link:'Cole o link antes de mandar.', texto:'Escreva o que precisa antes de mandar.', prazo:'Escolha um prazo de hoje em diante.', cliente:'Escolha um cliente ativo.',
-  tema:'Escreva o tema ou o texto da thumb.', pessoa:'Esse card já está com essa pessoa. Escolha outra.', fim:'Escolha o que aconteceu.', pego:'Alguém pegou esse card antes. A fila foi atualizada.', limite:'Você já está com 8 cards em produção. Termine um para pegar outro.', direcao:'Esse assunto é da diretoria. Não responda por aqui.', grupo:'Esse grupo não é de cliente do suporte.', whatsapp:'O WhatsApp não mandou. Tente de novo ou responda direto no grupo.', tamanho:'Arquivo vazio ou maior que 20 GB.', 'sem-pasta':'A pasta do cliente no Drive não foi achada. Cole o link do arquivo no lugar.'};
+  tema:'Escreva o tema ou o texto da thumb.', pessoa:'Esse card já está com essa pessoa. Escolha outra.', bloqueio:'Essa pessoa não atende esse cliente. Escolha outra.', fim:'Escolha o que aconteceu.', pego:'Alguém pegou esse card antes. A fila foi atualizada.', limite:'Você já está com 8 cards em produção. Termine um para pegar outro.', direcao:'Esse assunto é da diretoria. Não responda por aqui.', grupo:'Esse grupo não é de cliente do suporte.', whatsapp:'O WhatsApp não mandou. Tente de novo ou responda direto no grupo.', tamanho:'Arquivo vazio ou maior que 20 GB.', 'sem-pasta':'A pasta do cliente no Drive não foi achada. Cole o link do arquivo no lugar.'};
 const ERRO = 'Deu erro, a diretoria está resolvendo.';
 const LIMITE = 8;
 let PANEXOS = [];
@@ -1687,7 +1687,7 @@ function abrirDD(id){
 const GDIAS = ['1 Seg', '2 Ter', '3 Qua', '4 Qui', '5 Sex', '6 Sáb', '7 Dom'];
 const GPLAT = ['YouTube', 'TikTok', 'Instagram', 'Blog'];
 const GFORM = ['Vídeo padrão', 'Shorts', 'Corte horizontal', 'Podcast', 'Carrossel', 'Reels', 'Blog', 'Outro'];
-const GMOTIVO = {permissao:'Só o Ismael e o Rômulo mudam a grade.', campos:'Escolha plataforma, formato e dia.', horario:'Esse horário mudou. A grade foi atualizada.', cliente:'Escolha um cliente ativo.', acesso: MOTIVO.acesso};
+const GMOTIVO = { bloqueio:'Esse cliente não está com você.',permissao:'Só o Ismael e o Rômulo mudam a grade.', campos:'Escolha plataforma, formato e dia.', horario:'Esse horário mudou. A grade foi atualizada.', cliente:'Escolha um cliente ativo.', acesso: MOTIVO.acesso};
 async function carregarGrade(){
   if (carregarGrade.indo) return; carregarGrade.indo = true;
   try { const r = await api('euforia-painel-grade', { acao: 'listar' }); if (r && r.ok) { G = r; if (['grade', 'geral', 'fila'].includes(view) && !ocupado && !$('#layer').innerHTML) render(); } else if (r && r.motivo === 'acesso') { PIN = ''; carregar(); } }

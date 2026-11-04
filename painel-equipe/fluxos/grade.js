@@ -50,6 +50,9 @@ const acessoOk = !!r.token && r.token === p.u && r.ativo === true && String(r.pi
 const teste = r.papel === 'teste';
 const muda = ['revisor', 'calls', 'teste', 'diretor'].includes(r.papel);
 const TESTE = '40598c0cdde081c78b98f3984e7009e8';
+// Cliente que a pessoa não pode atender (decisão da diretoria 04/11: Victor fora da Ana Mangia).
+const BLOQUEIO = { '3ea98c0cdde08182a952f3d9a5b73575': ['3ea98c0cdde081578305ec053b215822'] };
+
 const ap = atual.properties || {};
 const daGrade = sem((atual.parent || {}).database_id) === '2d21b7a7166240f5afaa4d697c3d1ae8';
 const cliAtual = sem((((ap['Cliente'] || {}).relation || [])[0] || {}).id);
@@ -62,6 +65,7 @@ else if (p.acao === 'salvar' && (!s.cliente || sem((cli.parent || {}).database_i
 else if (p.acao === 'salvar' && (!s.plataforma || !s.formato || !s.dia)) erro = 'campos';
 else if (teste && p.acao !== 'listar' && ((s.cliente && s.cliente !== TESTE) || (s.id && cliAtual !== TESTE))) erro = 'permissao';
 else if ((p.acao === 'pausar' || p.acao === 'reativar' || p.acao === 'marcar') && !s.id) erro = 'horario';
+if (!erro && p.acao !== 'listar' && (BLOQUEIO[r.ficha] || []).some(c => c === cliAtual || c === s.cliente)) erro = 'bloqueio';
 const agora = DateTime.now().setZone(Z);
 // Marcar Programado / Postado: vale para o dia daquele horário, de 3 semanas atrás até 2 semanas à frente.
 if (!erro && p.acao === 'marcar') {
@@ -88,7 +92,7 @@ if (p.acao === 'salvar') {
 if (p.acao === 'pausar') props['Status do slot'] = { select: { name: '⏸️ Pausado' } };
 if (p.acao === 'reativar') props['Status do slot'] = { select: { name: '✅ Publicar' } };
 const cria = p.acao === 'salvar' && !s.id;
-return [{ json: { ok: !erro, listar: p.acao === 'listar', marcar: p.acao === 'marcar', podeMudar: muda, podeMarcar: true, teste, desde,
+return [{ json: { ok: !erro, listar: p.acao === 'listar', marcar: p.acao === 'marcar', podeMudar: muda, podeMarcar: true, teste, desde, bloq: BLOQUEIO[r.ficha] || [],
   marca: { chave: s.id + '|' + p.data, slot: s.id, dia: p.data, status: p.marca, por: r.nome || '', quando: agora.toFormat('dd/MM HH:mm') },
   metodo: cria ? 'POST' : 'PATCH', url: cria ? 'https://api.notion.com/v1/pages' : 'https://api.notion.com/v1/pages/' + s.id,
   body: JSON.stringify(cria ? { parent: { database_id: '2d21b7a7166240f5afaa4d697c3d1ae8' }, properties: props } : { properties: props }),
@@ -156,7 +160,7 @@ const horarios = [];
 for (const it of $('Horários da grade').all()) for (const p of (it.json.results || [])) {
   const pr = p.properties || {};
   const c = sem((((pr['Cliente'] || {}).relation || [])[0] || {}).id);
-  if (!cli[c]) continue;
+  if (!cli[c] || (v.bloq || []).includes(c)) continue;
   const obs = txt(pr['Obs']);
   horarios.push({ id: sem(p.id), cliente: c, plataforma: txt(pr['Plataforma']), formato: txt(pr['Formato']), dia: txt(pr['Dia']), horario: txt(pr['Horário']),
     qtd: (pr['Quantidade'] || {}).number || 1, status: txt(pr['Status do slot']), nota: obs.split('\\n').filter(l => !/^\\[Painel /.test(l)).join(' ').slice(0, 200) });

@@ -293,6 +293,8 @@ const PESSOA = { victor: ['3ea98c0cdde08182a952f3d9a5b73575', 'Victor', '1142062
   daniel: ['3ea98c0cdde0817e87aee637a96d4fd1', 'Daniel', '1470387767337816128'], ismael: ['3ea98c0cdde0812d9cb4c41ce70df4ae', 'Ismael', '1410287139169763471'],
   romulo: ['3ea98c0cdde081299709cf901fac7275', 'Rômulo', '1490768736876237082'] };
 const ESC = '3ea98c0cdde0812bba06cba7e4261426';
+// Cliente que a pessoa não pode atender (decisão da diretoria 04/11: Victor fora da Ana Mangia).
+const BLOQUEIO = { '3ea98c0cdde08182a952f3d9a5b73575': ['3ea98c0cdde081578305ec053b215822'] };
 const nomeCli = txt((fc.properties || {})['Cliente']);
 const cliOk = !!nomeCli && sem((fc.parent || {}).database_id) === '3ddc91b406be49e98e630c298d9162d8';
 const teste = v.papel === 'teste';
@@ -330,6 +332,7 @@ if (!erro) {
     if (alvo.tipo === 'pessoa' && !/^[0-9a-f]{32}$/.test(alvo.id)) erro = 'acesso';
   } else { const q = PESSOA[p.destino]; alvo = { tipo: 'pessoa', id: q[0], nome: q[1], discord: q[2] }; }
   if (!erro && alvo.tipo === 'pessoa' && resp.length === 1 && resp[0] === alvo.id) erro = 'pessoa';
+  if (!erro && alvo.tipo === 'pessoa' && (BLOQUEIO[alvo.id] || []).includes(sem(fc.id))) erro = 'bloqueio';
 }
 const hora = agora.toFormat('dd/MM HH:mm');
 const linha = '[Central ' + hora + '] ' + v.nome + (p.destino === 'eu' && alvo && alvo.tipo === 'pessoa' ? ' ficou com a demanda' : ' mandou para ' + (alvo ? alvo.nome : '')) + (p.nota ? ': ' + p.nota : '');
