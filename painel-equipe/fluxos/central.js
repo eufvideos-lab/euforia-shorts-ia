@@ -311,8 +311,8 @@ const PESSOA = { victor: ['3ea98c0cdde08182a952f3d9a5b73575', 'Victor', '1142062
   daniel: ['3ea98c0cdde0817e87aee637a96d4fd1', 'Daniel', '1470387767337816128'], ismael: ['3ea98c0cdde0812d9cb4c41ce70df4ae', 'Ismael', '1410287139169763471'],
   romulo: ['3ea98c0cdde081299709cf901fac7275', 'Rômulo', '1490768736876237082'] };
 const ESC = '3ea98c0cdde0812bba06cba7e4261426';
-// Cliente que a pessoa não pode atender (decisão da diretoria 04/11: Victor fora da Ana Mangia).
-const BLOQUEIO = { '3ea98c0cdde08182a952f3d9a5b73575': ['3ea98c0cdde081578305ec053b215822'] };
+// Cliente que a pessoa não pode atender (decisão da diretoria 04/11: Victor fora da Ana Mangia e da Além do CNPJ).
+const BLOQUEIO = { '3ea98c0cdde08182a952f3d9a5b73575': ['3ea98c0cdde081578305ec053b215822', '3ea98c0cdde081aaa244c92b808677f9'] };
 const nomeCli = txt((fc.properties || {})['Cliente']);
 const cliOk = !!nomeCli && sem((fc.parent || {}).database_id) === '3ddc91b406be49e98e630c298d9162d8';
 const teste = v.papel === 'teste';
