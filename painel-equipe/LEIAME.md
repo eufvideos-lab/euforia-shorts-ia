@@ -48,3 +48,4 @@ No painel o card aparece no topo da Minha fila (grupo "Falta informação para o
 - Para ligar: publicar o fluxo e trocar `ESTREIAS_NO_AR` para `true`.
 - "Clientes novos sem estreia marcada" (início nos últimos 60 dias, pela data do "Resumo do contrato" ou "Entrada (onboarding)")
   aparece na Visão geral da diretoria e no topo da Minha fila do Rômulo e do Ismael. Se o Vídeo 1 já saiu, marcar a data passada.
+- 04/11/2026 perfil novo `producao` (Victor e Daniel): fila igual à de calls (os seus + Aguardando cliente + o que vai ao ar até amanhã + fila de demandas), Postar/Agendei, Pedir ao escritório e Meus pedidos; sem Responder (WhatsApp), Próximas calls, Central, Clientes e Revisão. Rômulo vira `revisor` (aviso de revisão no #dia-a-dia marca o Rômulo); Lorena e Ismael ficam `calls`. "Passar para" agora inclui o Ismael.

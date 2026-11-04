@@ -34,7 +34,7 @@ if (ok) {
     { property: 'Status', select: { equals: 'Aguardando cliente' } },
     { and: [{ property: 'Status', select: { equals: 'Aprovado' } }, { property: 'Postar em', date: { on_or_before: amanha } }] },
     { and: [{ property: 'Status', select: { equals: 'Agendado' } }, { property: 'Postar em', date: { on_or_before: amanha } }] }, livre] };
-  else if (r.papel === 'calls') filtro = { or: [
+  else if (r.papel === 'calls' || r.papel === 'producao') filtro = { or: [
     { and: [{ property: 'Responsável', relation: { contains: r.ficha } }, ...naoFechado] },
     { property: 'Status', select: { equals: 'Aguardando cliente' } },
     { and: [{ property: 'Status', select: { equals: 'Aprovado' } }, { property: 'Postar em', date: { on_or_before: amanha } }] },
@@ -44,7 +44,7 @@ if (ok) {
 // Meus pedidos: tudo que foi pedido ao escritório pelo painel desde 26/10 (quando o painel entrou no ar). A página filtra por quem pediu.
 const desde = { timestamp: 'created_time', created_time: { on_or_after: '2026-10-26' } };
 let pedidos = { property: 'Entrega', title: { equals: '-' } };
-if (ok && ['revisor', 'calls', 'diretor'].includes(r.papel)) pedidos = { and: [{ property: 'Entrega', title: { contains: '(painel)' } }, { property: 'Entrega', title: { does_not_contain: 'TESTE PAINEL' } }, desde] };
+if (ok && ['revisor', 'calls', 'producao', 'diretor'].includes(r.papel)) pedidos = { and: [{ property: 'Entrega', title: { contains: '(painel)' } }, { property: 'Entrega', title: { does_not_contain: 'TESTE PAINEL' } }, desde] };
 else if (ok && r.papel === 'teste') pedidos = { and: [{ property: 'Entrega', title: { contains: 'TESTE PAINEL' } }, { property: 'Entrega', title: { contains: '(painel)' } }, desde] };
 return [{ json: { ok, nome: r.nome || '', ficha: r.ficha || '', papel: r.papel || '',
   consultaPedidos: JSON.stringify({ filter: pedidos, sorts: [{ timestamp: 'created_time', direction: 'descending' }], page_size: 100 }),
@@ -144,7 +144,7 @@ const devolver = node({ type: 'n8n-nodes-base.respondToWebhook', version: 1.5, c
 const recusar = node({ type: 'n8n-nodes-base.respondToWebhook', version: 1.5, config: { name: 'Recusar acesso', parameters: {
   respondWith: 'json', responseBody: '={{ JSON.stringify($json.resposta) }}', options: {} } } });
 
-const nota = sticky('## Painel da equipe · fila (V1)\nA página grupoeuforia.com.br/equipe?u=<token> pede aqui a fila da pessoa (token + PIN da tabela "Painel equipe · acesso").\nEditor: cards abertos em que ela é Responsável. Revisor (Ismael): os dele + tudo Em revisão, Aguardando cliente e o que vai ao ar até amanhã. Calls (Rômulo): os dele + Aguardando cliente e o que vai ao ar até amanhã. Teste: só cards com "TESTE PAINEL" no título.\nTodos (menos teste) recebem também a Fila de demandas: cards abertos sem Responsável de vídeo longo, shorts, podcast, carrossel e thumb (livre: true).\nSó leitura. Cliente sai só com faixa, atenção, padrões de edição e gosta/não gosta. Cards e clientes vêm página por página (sem limite de 100).\nMeus pedidos (Ismael, Rômulo, diretoria): todos os pedidos ao escritório feitos pelo painel desde 26/10 ("(painel)" no título), com quem pediu (da Obs), etapa e link do quadro da máquina. A página filtra por pessoa.', [], { color: 4 });
+const nota = sticky('## Painel da equipe · fila (V1)\nA página grupoeuforia.com.br/equipe?u=<token> pede aqui a fila da pessoa (token + PIN da tabela "Painel equipe · acesso").\nEditor: cards abertos em que ela é Responsável. Revisor (Ismael): os dele + tudo Em revisão, Aguardando cliente e o que vai ao ar até amanhã. Calls e produção: os dele + Aguardando cliente e o que vai ao ar até amanhã. Teste: só cards com "TESTE PAINEL" no título.\nTodos (menos teste) recebem também a Fila de demandas: cards abertos sem Responsável de vídeo longo, shorts, podcast, carrossel e thumb (livre: true).\nSó leitura. Cliente sai só com faixa, atenção, padrões de edição e gosta/não gosta. Cards e clientes vêm página por página (sem limite de 100).\nMeus pedidos (Ismael, Rômulo, diretoria): todos os pedidos ao escritório feitos pelo painel desde 26/10 ("(painel)" no título), com quem pediu (da Obs), etapa e link do quadro da máquina. A página filtra por pessoa.', [], { color: 4 });
 
 export default workflow('painel-fila', 'Painel | Fila da equipe (V1)')
   .add(pedir).to(ler).to(acesso).to(validar)

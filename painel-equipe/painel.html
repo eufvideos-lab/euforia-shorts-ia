@@ -422,7 +422,7 @@ const LIMITE = 8;
 let PANEXOS = [];
 function listaAnexos(){ const l = $('#palist'); if (l) l.innerHTML = PANEXOS.map((f, i) => `<li><span>📎 ${esc(f.name)} <span class="mono">${(f.size / 1048576).toFixed(1)} MB</span></span><button type="button" class="btn" data-tiraanexo="${i}">Tirar</button></li>`).join(''); }
 function juntarAnexos(lista){ for (const f of lista) if (PANEXOS.length < 10 && f.size > 0) PANEXOS.push(f); if (lista.length && PANEXOS.length >= 10) toast('Até 10 arquivos por pedido.'); listaAnexos(); }
-const PASSAR = [['victor', 'Victor'], ['lorena', 'Lorena'], ['daniel', 'Daniel'], ['escritorio', 'Escritório (máquinas)']];
+const PASSAR = [['victor', 'Victor'], ['lorena', 'Lorena'], ['daniel', 'Daniel'], ['ismael', 'Ismael'], ['escritorio', 'Escritório (máquinas)']];
 
 const $ = s => document.querySelector(s);
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -462,7 +462,7 @@ const cli = c => (D.clientes.find(x => x.id === c.cliente)) || { faixa: '', aten
 const papel = () => D.papel;
 const revisor = () => papel() === 'revisor' || papel() === 'teste' || papel() === 'diretor';
 const diretor = () => papel() === 'diretor';
-const posta = () => revisor() || papel() === 'calls';
+const posta = () => revisor() || papel() === 'calls' || papel() === 'producao';
 const ABERTO = ['A fazer', 'Fazendo', 'Ajustes'];
 
 async function carregar(silencioso){
@@ -595,7 +595,7 @@ const VIEWS = {
       ${hoje}
       <div class="two">
         <div style="display:flex;flex-direction:column;gap:12px">${(DEMO || CENTRAL_NO_AR) ? cargaEquipe('Carga de cada um') : `<section class="panel"><h2>Carga de cada um</h2><ul class="load">${DD.equipe.map(linhaCarga).join('')}</ul></section>`}
-          <p class="note">Na semana: <b>${postados}</b> peças foram ao ar. Em revisão com o Ismael: <b>${DD.cards.filter(c => c.status === 'Em revisão').length}</b>.</p></div>
+          <p class="note">Na semana: <b>${postados}</b> peças foram ao ar. Em revisão: <b>${DD.cards.filter(c => c.status === 'Em revisão').length}</b>.</p></div>
         <section class="panel"><h2>O que a equipe fez hoje</h2>${ativ.length ? `<ul class="ativ">${ativ.map(a => `<li><span class="mono">${esc(a.hora)}</span><button data-dcard="${a.card}"><b>${esc(a.quem)}</b> ${esc(a.oque)} <span class="sub">· ${esc(a.titulo)}</span></button></li>`).join('')}</ul>` : '<p class="empty">Ninguém mexeu em card pelo painel hoje ainda.</p>'}</section>
       </div>
       ${precisa.length ? `<section class="group"><h2>Precisa de você <span class="count">${precisa.length}</span></h2><div class="board" style="grid-template-columns:repeat(auto-fill,minmax(260px,1fr))">${precisa.map(mini).join('')}</div></section>` : ''}
@@ -957,7 +957,7 @@ const VIEWS = {
       </form>
       <aside class="panel" id="resumo" aria-live="polite"></aside></div>`;
     } },
-  pedidos: { nome: 'Meus pedidos', pode: () => ['revisor', 'calls', 'diretor', 'teste'].includes(papel()), badge: () => (D.pedidos || []).filter(p => p.por === D.nome && situacao(p).g === 'falta').length,
+  pedidos: { nome: 'Meus pedidos', pode: () => ['revisor', 'calls', 'producao', 'diretor', 'teste'].includes(papel()), badge: () => (D.pedidos || []).filter(p => p.por === D.nome && situacao(p).g === 'falta').length,
     html(){
       const l = D.pedidos || [];
       if (MP === null) MP = diretor() ? '' : 'eu';
@@ -1229,7 +1229,7 @@ function abrir(id){
       const r = await api('euforia-painel-acao', { card: c.id, acao, texto, link, fim, anexos, para: act === 'passar' ? $('#pp').value : '' });
       if (!r || !r.ok) throw new Error((r && r.motivo) || 'erro');
       ocupado = false; fechar();
-      toast({ comecar: 'Bom trabalho! Card em Fazendo.', revisao: 'Mandado para revisão. O Ismael foi avisado.', aprovar: 'Aprovado. Agora é com o cliente.', ajuste: 'Voltou para ajuste com o seu recado.', agendei: 'Marcado como agendado.', postei: 'Marcado como postado.', passar: 'Card passado. A pessoa foi avisada.', fim: 'Pronto, ficou registrado e a equipe foi avisada.', pegar: 'É seu! O card já está na sua fila.', completar: 'Pronto! O pedido voltou para a fila do escritório.', naogravou: 'Pronto. O card saiu da fila e está esperando o cliente gravar.', gravou: 'Voltou para a fila em A fazer.' }[act]);
+      toast({ comecar: 'Bom trabalho! Card em Fazendo.', revisao: 'Mandado para revisão. O Rômulo foi avisado.', aprovar: 'Aprovado. Agora é com o cliente.', ajuste: 'Voltou para ajuste com o seu recado.', agendei: 'Marcado como agendado.', postei: 'Marcado como postado.', passar: 'Card passado. A pessoa foi avisada.', fim: 'Pronto, ficou registrado e a equipe foi avisada.', pegar: 'É seu! O card já está na sua fila.', completar: 'Pronto! O pedido voltou para a fila do escritório.', naogravou: 'Pronto. O card saiu da fila e está esperando o cliente gravar.', gravou: 'Voltou para a fila em A fazer.' }[act]);
       await carregar(true);
     } catch (err) {
       ocupado = false;
@@ -1480,7 +1480,7 @@ async function abrirAcessos(k, editar){
     $('#layer').innerHTML = `<div class="scrim" data-x></div><aside class="drawer" role="dialog" aria-modal="true" aria-labelledby="ac-t"><div class="drawer-in">
       <button class="close" data-x>Fechar</button>
       <div><p class="eyebrow">Acessos do cliente</p><h2 id="ac-t" style="font-size:26px">${esc(k.nome)}</h2></div>
-      <p class="note">Logins e senhas que o cliente mandou. Só você, o ${papel() === 'calls' ? 'Ismael' : 'Rômulo'} e a diretoria veem. Não cole senha no Notion, no Discord nem em grupo.</p>
+      <p class="note">Logins e senhas que o cliente mandou. Só quem atende os clientes e a diretoria veem. Não cole senha no Notion, no Discord nem em grupo.</p>
       ${lista === null ? '<p class="sub">Carregando…</p>' : lista.length ? `<ul class="acs">${lista.map(item).join('')}</ul>` : '<p class="empty">Nenhum acesso guardado ainda.</p>'}
       <form id="facesso" style="display:flex;flex-direction:column;gap:12px;border-top:1px solid var(--line);padding-top:16px">
         <h3 style="font-size:16px;margin:0">${v.id ? 'Ajustar ' + esc(v.servico) : 'Guardar acesso novo'}</h3>
