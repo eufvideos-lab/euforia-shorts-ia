@@ -65,6 +65,11 @@ textarea{min-height:70px;resize:vertical}
 .datebar{display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap;margin-bottom:16px}
 .datebar label{margin:0 0 6px}
 .datebar input{width:auto;min-width:180px}
+.esp{margin-left:auto}
+.espbox{border:1px dashed var(--or);border-radius:12px;padding:12px;margin-top:6px}
+.espbox .row2 input{width:100%}
+.chk{display:flex;gap:8px;align-items:flex-start;margin-top:10px;font-size:13px;text-transform:none;letter-spacing:0}.chk input{width:auto;margin-top:2px}
+.sbtns .cv{border-color:var(--or);color:var(--or)}
 .dgroup{margin-bottom:22px}
 .dgroup h3{font:700 13px Inter,sans-serif;color:var(--mut);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px}
 .call{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--c,#7986cb);border-radius:12px;padding:14px;margin-bottom:10px}
@@ -230,6 +235,7 @@ textarea{min-height:70px;resize:vertical}
     <div class="datebar">
       <div><label for="dia">Ver um dia específico</label><input type="date" id="dia"></div>
       <button class="ghost" id="bProx" hidden>Voltar para os próximos dias</button>
+      <button class="ghost esp" id="bEsp" title="Quando o lead só pode fora da grade e o Diogo aprovou">+ Horário especial (fora da grade)</button>
     </div>
     <div id="dias" class="grid"><p class="load">Carregando horários…</p></div>
   </div>
@@ -282,6 +288,11 @@ textarea{min-height:70px;resize:vertical}
   <h2>Marcar call</h2>
   <p class="when" id="quando"></p>
   <form id="fMarcar">
+    <div id="boxEsp" class="espbox" hidden>
+      <div class="row2"><div><label for="espDia">Dia *</label><input type="date" id="espDia"></div><div><label for="espHora">Hora *</label><input type="time" id="espHora" step="300"></div></div>
+      <label class="chk"><input type="checkbox" id="espOk"> O Diogo aprovou esse horário fora da grade</label>
+      <p class="hint">A call fica com 30 min para o lead e o Diogo ganha mais 30 min de bloqueio, como sempre. Só não dá se bater em outra call ou compromisso.</p>
+    </div>
     <label>Tipo de call *</label>
     <div class="seg" id="segTipo"><button type="button" data-tipo="diagnostico">Diagnóstico (1ª call)</button><button type="button" data-tipo="fechamento">Fechamento (2ª call)</button></div>
     <label for="nome">Nome do lead *</label><input id="nome" required maxlength="80">
@@ -313,7 +324,7 @@ textarea{min-height:70px;resize:vertical}
 <script>
 (function(){
 var API='https://n8n.grupoeuforia.tech/webhook/sdr-agenda-painel';
-var tipoSel='', cred=null, escolhido=null, fontesOk=false, numsOk=false, diaSel='', aba='agenda', calls=[], semana=[], semIni='', evSel='', gestor=false, plIni='', ciclosSem={}, ultPlacar=null, ops=[], opsOk=false;
+var tipoSel='', cred=null, escolhido=null, esp=false, fontesOk=false, numsOk=false, diaSel='', aba='agenda', calls=[], semana=[], semIni='', evSel='', gestor=false, plIni='', ciclosSem={}, ultPlacar=null, ops=[], opsOk=false;
 var API2='https://n8n.grupoeuforia.tech/webhook/sdr-oportunidades';
 var API4='https://n8n.grupoeuforia.tech/webhook/sdr-editar-call';
 var API3='https://n8n.grupoeuforia.tech/webhook/sdr-calls-gravadas', grav=[];
@@ -390,7 +401,7 @@ function cardHTML(c){
       return '<div class="call" style="--c:'+corCall(c)+'"><div class="l1"><span class="h">'+esc(hora)+'</span><span class="n">'+esc(c.nome)+'</span>'+(tl?'<span class="ph">'+esc(tl)+'</span><button class="cp" data-cp="'+esc(c.whats)+'">Copiar</button>':'<span class="ph sem">sem número</span>')+igHTML(c.insta)+(c.numero?'<span class="eb" title="Número que marcou">'+esc(c.numero.replace(/ \(.*$/,''))+'</span>':'')+'<span class="st '+esc(c.status)+'">'+esc(s[0])+'</span>'+(c.tipo?'<span class="tp '+esc(c.tipo)+'">'+(c.tipo==='fechamento'?'Fechamento':'Diagnóstico')+'</span>':'<span class="tp sem">Tipo não marcado</span>')+(c.sdr?'<span class="who'+(c.sdr.toLowerCase()===cred.usuario?' eu':'')+'">Marcou: <b>'+esc(c.sdr)+'</b></span>':'<span class="who sem">Marcada direto na agenda</span>')+'</div>'
         +(meta.length?'<div class="meta">'+meta.join(' · ')+'</div>':'')
         +'<div class="trow">Tipo da call:<button data-tid="'+esc(c.id)+'" data-tipo="diagnostico" class="'+(c.tipo==='diagnostico'?'cur':'')+'">Diagnóstico</button><button data-tid="'+esc(c.id)+'" data-tipo="fechamento" class="'+(c.tipo==='fechamento'?'cur':'')+'">Fechamento</button></div>'
-        +'<div class="sbtns"><button class="wa" data-wa="'+esc(c.id)+'">Mensagem de confirmação</button><button class="edc" data-edc="'+esc(c.id)+'">Editar dados</button><button class="rmc" data-rmc="'+esc(c.id)+'">Remarcar</button><button class="apg" data-apg="'+esc(c.id)+'">Apagar</button>'+bts+'</div><div class="remar" data-rbox="'+esc(c.id)+'" hidden></div></div>';
+        +'<div class="sbtns"><button class="cv" data-cv="'+esc(c.id)+'">Copiar convite com link</button><button class="wa" data-wa="'+esc(c.id)+'">Mensagem de confirmação</button><button class="edc" data-edc="'+esc(c.id)+'">Editar dados</button><button class="rmc" data-rmc="'+esc(c.id)+'">Remarcar</button><button class="apg" data-apg="'+esc(c.id)+'">Apagar</button>'+bts+'</div><div class="remar" data-rbox="'+esc(c.id)+'" hidden></div></div>';
 }
 function mostrarCalls(){
   contaPend();
@@ -417,7 +428,7 @@ function trocaAba(t){
 }
 function sair(m){cred=null;guarda(null);$('vApp').hidden=true;$('vLogin').hidden=false;$('mLogin').textContent=m||'';fecha();}
 function abre(i,rot){
-  escolhido=i;$('quando').textContent=rot;$('fMarcar').hidden=false;$('done').hidden=true;$('mMarcar').textContent='';
+  escolhido=i;esp=!i;$('boxEsp').hidden=!esp;$('quando').textContent=rot;$('fMarcar').hidden=false;$('done').hidden=true;$('mMarcar').textContent='';
   $('panel').classList.add('on');$('panel').setAttribute('aria-hidden','false');setTimeout(function(){$('nome').focus()},250);
 }
 function fecha(){$('panel').classList.remove('on');$('panel').setAttribute('aria-hidden','true');}
@@ -425,6 +436,13 @@ $('fLogin').addEventListener('submit',function(e){e.preventDefault();$('mLogin')
   entrar({usuario:$('u').value.trim().toLowerCase(),senha:$('p').value},$('mLogin')).then(function(){if(cred)$('mLogin').textContent='';});});
 $('dias').addEventListener('click',function(e){var b=e.target.closest('.slot');if(!b||b.disabled)return;abre(b.getAttribute('data-i'),b.getAttribute('data-r'));});
 $('bFechar').onclick=fecha;
+// horário especial (04/11, pedido do Henrique): lead que só pode fora da grade, com o ok do Diogo
+$('bEsp').onclick=function(){$('espDia').min=iso(new Date());$('espOk').checked=false;abre(null,'Horário especial, combinado com o Diogo');};
+// copiar com plano B (dentro do painel unificado o navegador às vezes bloqueia a cópia direta)
+function copiar(t,b,rot){var ok=function(){if(b){b.textContent='Copiado!';setTimeout(function(){b.textContent=rot},1500)}};
+  var velho=function(){var a=document.createElement('textarea');a.value=t;a.style.position='fixed';a.style.opacity='0';document.body.appendChild(a);a.select();var f=false;try{f=document.execCommand('copy')}catch(e){}document.body.removeChild(a);if(f)ok();else prompt('Copie o texto:',t);};
+  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(t).then(ok,velho);else velho();}
+function convite(c){var p=String(c.nome).split(/[\s·]+/)[0];return 'Oi, '+p+'! Sua call com o Diogo, do Grupo Euforia, está confirmada para '+quandoTxt(c.inicio)+' (horário de Brasília).'+(c.meet?'\n\nO link da call é este: '+c.meet:'')+'\n\nSão 30 minutinhos. Até lá!';}
 [].forEach.call(document.querySelectorAll('.tab'),function(b){b.onclick=function(){trocaAba(b.getAttribute('data-t'))}});
 var LEG=[['Falta confirmar (azul clarinho)',ST.pendente[1]],['Confirmado (cor normal)',ST.confirmado[1]],['Não confirmou',ST.sem_resposta[1]],['Cancelou / remarcar',ST.cancelou[1]],['No-show',ST.no_show[1]],['Desqualificado',ST.desqualificado[1]],['Realizada · diagnóstico',ST.realizada[1]],['Realizada · venda',VERDE]].map(function(k){return '<span><i style="background:'+k[1]+'"></i>'+k[0]+'</span>'}).join('')+'<span>A mesma cor aparece na agenda do Diogo.</span>';$('legenda').innerHTML=LEG;$('legenda2').innerHTML=LEG;
 $('dia').addEventListener('change',function(){diaSel=this.value;$('bProx').hidden=!diaSel;$('dias').innerHTML='<p class="load">Carregando…</p>';carregar();});
@@ -435,8 +453,9 @@ function redesenha(){mostrarCalls();if(aba==='cal')mostrarCal();}
 function cliqueCall(e){
   var k=e.target.closest('[data-cp]');
   if(k){var n=k.getAttribute('data-cp').replace(/\D/g,'');if(n.indexOf('55')===0&&n.length>=12)n=n.slice(2);
-    var tx=k.textContent,ok=function(){k.textContent='Copiado!';setTimeout(function(){k.textContent=tx},1500)};
-    if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(n).then(ok,function(){prompt('Copie o número:',n)})}else{prompt('Copie o número:',n)}return;}
+    copiar(n,k,k.textContent);return;}
+  var cv=e.target.closest('[data-cv]');
+  if(cv){var c0=achar(cv.getAttribute('data-cv'));if(c0)copiar(convite(c0),cv,cv.textContent);return;}
   var w=e.target.closest('[data-wa]');
   if(w){var c=achar(w.getAttribute('data-wa'));if(!c)return;
     var p=String(c.nome).split(/[\s·]+/)[0];
@@ -803,8 +822,13 @@ $('fonte').addEventListener('change',function(){$('boxInd').hidden=this.value!==
 $('fMarcar').addEventListener('submit',function(e){
   e.preventDefault();
   if(!tipoSel){$('mMarcar').textContent='Escolha se é call de diagnóstico ou de fechamento.';return;}var bt=$('bMarcar');bt.disabled=true;bt.textContent='Marcando…';$('mMarcar').textContent='';
-  var nome=$('nome').value.trim(), whats=$('whats').value;
-  api({acao:'marcar',inicio:escolhido,nome:nome,whatsapp:whats,email:$('email').value.trim(),fonte:$('fonte').value,tipo:tipoSel,numero:$('num').value,empresa:$('emp').value.trim(),indicou:$('ind').value.trim(),hashtag:$('hash').value.trim(),obs:$('obs').value.trim()})
+  var nome=$('nome').value.trim(), whats=$('whats').value, inicio=escolhido;
+  if(esp){
+    if(!$('espDia').value||!$('espHora').value){$('mMarcar').textContent='Escolha o dia e a hora do horário especial.';bt.disabled=false;bt.textContent='Marcar call';return;}
+    if(!$('espOk').checked){$('mMarcar').textContent='Marque que o Diogo aprovou esse horário.';bt.disabled=false;bt.textContent='Marcar call';return;}
+    inicio=$('espDia').value+'T'+$('espHora').value+':00-03:00';
+  }
+  api({acao:'marcar',especial:esp,inicio:inicio,nome:nome,whatsapp:whats,email:$('email').value.trim(),fonte:$('fonte').value,tipo:tipoSel,numero:$('num').value,empresa:$('emp').value.trim(),indicou:$('ind').value.trim(),hashtag:$('hash').value.trim(),obs:$('obs').value.trim()})
   .then(function(r){
     bt.disabled=false;bt.textContent='Marcar call';
     if(!r.ok||!r.marcado){$('mMarcar').textContent=r.erro||'Não foi possível marcar.';if(r.dias)mostrarDias(r);return;}
@@ -818,9 +842,7 @@ $('fMarcar').addEventListener('submit',function(e){
     carregar();
   });
 });
-$('bCopiar').onclick=function(){var t=$('doneMsg').textContent,b=this;
-  (navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(function(){b.textContent='Copiado';setTimeout(function(){b.textContent='Copiar mensagem'},1500)})
-  .catch(function(){var r=document.createRange();r.selectNodeContents($('doneMsg'));var s=getSelection();s.removeAllRanges();s.addRange(r);});};
+$('bCopiar').onclick=function(){copiar($('doneMsg').textContent,this,'Copiar mensagem');};
 var HASH=["#aconselhamentodecarreira", "#altagestão", "#altaperformance", "#altaperformanceprofissional", "#analisecomportamental", "#autoconhecimento", "#autoliderança", "#autoridade", "#carreira", "#carreiracomproposito", "#carreirafeminina", "#cirurgiãoplástico", "#clevel", "#climaorganizacional", "#coachdeliderança", "#coachdenegocios", "#coachexecutivo", "#coachingdeliderança", "#coachingderelacionamento", "#coachingfinanceiro", "#coachinglevadoaserio", "#coachpalestrante", "#coachprofissional", "#comoliderar", "#comunicacaoassertiva", "#comunicacaointerna", "#comunicacaonaoviolenta", "#comunicaçãoassertiva", "#comunicaçãocorporativa", "#comunicaçãoempresarial", "#comunicaçãoestratégica", "#comunicaçãointerpessoal", "#comunicaçãonãoviolenta", "#conexõesquetransformam", "#conselheiro", "#conselheiroconsultivo", "#constelacaoorganizacional", "#constelaçãoempresarial", "#consultoria360", "#consultoriaambiental", "#consultoriacontabil", "#consultoriacorporativa", "#consultoriadeimagem", "#consultoriaderh", "#consultoriadevendas", "#consultoriaempresarial", "#consultoriaestrategica", "#consultoriaexecutiva", "#consultoriafinanceira", "#consultoriafiscal", "#consultoriagratuita", "#consultoriaorganizacional", "#consultoriarh", "#consultorias", "#consultóriodesucesso", "#contabilidade", "#contabilidadeconsultiva", "#contabilidadeestrategica", "#contabilidadeestratégica", "#costelaçãofamiliar", "#crescimentodenegócios", "#crescimentoempresarial", "#crescimentoprofissional", "#crescimentosustentável", "#culturacorporativa", "#culturaorganizacional", "#cursooratoria", "#desenvolvimentodeequipe", "#desenvolvimentodeliderança", "#desenvolvimentodelíderes", "#desenvolvimentohumano", "#desenvolvimentopessoaleprofissional", "#educacaocorporativa", "#educacaofinanceira", "#empoderamentofeminino", "#empreendedoradesucesso", "#empreendedorismoconsciente", "#empreendedorismofeminino", "#empreenderfeminino", "#empresaautogerenciavel", "#empresaria", "#empresariosbrasileiros", "#empresasquecrescem", "#empresasquecrescem (Instagram)", "#empresário", "#empresáriointeligente", "#equipeengajada", "#escritorianacional", "#esg", "#especialistaemvendas", "#estrategiaempresarial", "#estratégiaempresarial", "#eventopresencial", "#executivos", "#falarempublico", "#falarempúblico", "#faturamento", "#felicidadenotrabalho", "#formacaoemcoaching", "#genteegestao", "#genteegestao (Instagram)", "#genteegestão", "#gestaocomercial", "#gestaodecrise", "#gestaodeempresas", "#gestaodeescritorio", "#gestaodegente", "#gestaodenegocios", "#gestaodeprocessos", "#gestaodotempo", "#gestaodotempo (Instagram)", "#gestaoeficiente", "#gestaofinanceiraempresarial", "#gestaohumanizada", "#gestaomedica", "#gestãocompropósito", "#gestãocorporativa", "#gestãodeequipes", "#gestãodeprocessos", "#gestãoderiscos", "#gestãodetalentos", "#gestãoempresarial", "#gestãofinanceira", "#gestãoporcompetências", "#governançaempresarial", "#grandesempresas", "#ibccoaching", "#imersao8ps", "#imersãopresencial", "#indicação", "#influencia", "#inteligenciacomercial", "#inteligenciacomportamental", "#inteligenciaemocionalfeminina", "#inteligenciaespiritual", "#inteligênciademercado", "#inteligênciaemocional", "#inteligênciaestratégica", "#investimentoseguro", "#investimentosinteligentes", "#investimentosinteligentes (Instagram)", "#issodaumasorte", "#lançamentodigital", "#lançamentodolivro", "#liderancaconsciente", "#liderancafeminina", "#liderancahumanizada", "#liderancainspiradora", "#liderançacomvalores", "#liderançaconsciente", "#liderançadesucesso", "#liderançaempresarial", "#liderançaempática", "#liderançaestratégica", "#liderançafeminina", "#liderançainspiradora", "#liderançaisituacional", "#liderançanaprática", "#liderançapositiva", "#liderançatransformacional", "#liderdeequipe", "#liderdesimesmo", "#liderençaeducacional", "#longevidadesaudavel", "#maquinadevendas", "#medicoempreendedor", "#medodefalarempúblico", "#menopausa", "#mentalidadedesucesso", "#mentalidadeempresarial", "#mentor", "#mentoradecarreira", "#mentoradeemprendedoras", "#mentorademulheres", "#mentoradenegocios", "#mentordenegocios", "#mentoria", "#mentoriacomercial", "#mentoriacomportamental", "#mentoriacompropósito", "#mentoriaconsultiva", "#mentoriacristã", "#mentoriadecarreira", "#mentoriadeliderança", "#mentoriadenegócios", "#mentoriadesucesso", "#mentoriadevendas", "#mentoriaempreendedora", "#mentoriaempresarial", "#mentoriaempresarial (Instagram)", "#mentoriaexecutiva", "#mentoriafeminina", "#mentoriafinanceira", "#mentoriahighticket", "#mentoriaindividual", "#mentoriajuridica", "#mentoriajurídica", "#mentoriamédica", "#mentoriaonline", "#mentoriaparaempreendedoras", "#mentoriaparamulheres", "#mentoriasistêmica", "#mentoriatransformadora", "#mentoriavip", "#metodocis", "#mindsetágil", "#modaquetransforma", "#mundocorporativo", "#negocioscomproposito", "#negociosdesucesso", "#negóciosinteligentes", "#negóciosquecrescem#negóciosquecrescem", "#neurodiversidade", "#neurogestao", "#neurolinguistica", "#nr1", "#nutriconsultora", "#oratória", "#orientacaovocacional", "#otrabalhodevolve", "#palestramotivacional", "#palestrante", "#palestrantedevendas", "#palestranteexecutivo", "#palestranteinternacional", "#palestrantemotivacional", "#palestrascorporativas", "#palestrashow", "#palestrasmotivacionais", "#paulovieira", "#pedagogiaempresarial", "#planejamentoestratégico", "#planejamentofinanceiro", "#planejamentofinanceiropessoal", "#pnlnaprática", "#podcastbr", "#podcastbrasil", "#posturaprofissional", "#processos", "#produtividade", "#produtividadeempresarial", "#produtividadefeminina", "#profissionaisderh", "#propriedadeintelectual", "#protagonismo", "#psicanalista", "#psicologiadotrabalho", "#recolocacaoprofissional", "#registrodemarca", "#responsabilidadeemocional", "#retencaodetalentos", "#rhestrategico", "#riscospsicossociais", "#saudementalnotrabalho", "#saúdementalnotrabalho", "#segurançapsicológica", "#simplesnacional", "#sucessocompartilhado", "#sucessoempresarial", "#sucessonacarreira", "#sucessonosnegócios", "#sucessoprofissional", "#sucessosustentavel (Instagram)", "#sucessosustentável", "#sustentabilidadeempresarial", "#terapeuta", "#terapeutadecasal", "#terapeutasistemica", "#terapiacognitivocomportamental", "#trabalhocompropósito", "#transformaçãodevidas", "#transformaçãoempresarial", "#treinadoracomportamental", "#treinamentocomportamental", "#treinamentocorporativo", "#treinamentodeeqipe", "#treinamentodeequipe", "#treinamentodeequipes", "#treinamentodeliderança", "#treinamentodevendas", "#treinamentoedesenvolvimento", "#treinamentoempresarial", "#treinamentomental", "#treinamentomédico", "#treinamentoscorporativos", "#universidadecorporativa", "#valores", "#vendas2b2", "#vidadeempreendedor", "#vistoamericanoaprovado", "contador", "daniellefcaires", "fininhomentor", "Google Maps · coach em Ipatinga MG", "Google Maps · coach em Piracicaba SP", "Google Maps · coach em São Carlos SP", "Google Maps · constelação familiar em Birigui SP", "Google Maps · constelação familiar em Blumenau SC", "Google Maps · constelação familiar em Divinópolis MG", "Google Maps · constelação familiar em Ipatinga MG", "Google Maps · constelação familiar em Jaraguá do Sul SC", "Google Maps · constelação familiar em Presidente Prudente SP", "Google Maps · consultoria de gestão", "Google Maps · consultoria empresarial em Anápolis GO", "Google Maps · consultoria empresarial em Caraguatatuba SP", "Google Maps · consultoria empresarial em Dourados MS", "Google Maps · consultoria empresarial em Guarapuava PR", "Google Maps · consultoria empresarial em Guaratinguetá SP", "Google Maps · consultoria empresarial em Itu SP", "Google Maps · consultoria empresarial em Jacareí SP", "Google Maps · consultoria empresarial em Marília SP", "Google Maps · consultoria empresarial em São Carlos SP", "Google Maps · consultoria empresarial em Valinhos SP", "Google Maps · consultoria financeira em Taubaté SP", "Google Maps · contabilidade em Blumenau SC", "Google Maps · contabilidade em Guaratinguetá SP", "Google Maps · contabilidade em Ponta Grossa PR", "Google Maps · contabilidade em São José do Rio Preto SP", "Google Maps · contabilidade em Toledo PR", "Google Maps · contabilidade em Uberaba MG", "Google Maps · mentor de negócios em Divinópolis MG", "Google Maps · mentoria de negócios em Araçatuba SP", "Google Maps · mentoria empresarial em Chapecó SC", "Google Maps · mentoria empresarial em Nova Friburgo RJ", "Google Maps · mentoria empresarial em Pindamonhangaba SP", "Google Maps · mentoria empresarial em Santa Maria RS", "Google Maps · palestrante em Mogi Guaçu SP", "Google Maps · palestrante em Ribeirão Preto SP", "Google Maps · psicólogo em Anápolis GO", "Google Maps · psicólogo em Assis SP", "Google Maps · psicólogo em Montes Claros MG", "Google Maps · psicólogo em Piracicaba SP", "Google Maps · psicólogo em Poços de Caldas MG", "Google Maps · psicólogo em Varginha MG", "Google Maps · terapeuta em Americana SP", "Google Maps · terapeuta em Criciúma SC", "Google Maps · terapeuta em Divinópolis MG", "Google Maps · terapeuta em Franca SP", "Google Maps · terapeuta em Jundiaí SP", "Google Maps · terapeuta em Marília SP", "Google Maps · terapeuta em Patos de Minas MG", "Google Maps · terapeuta em Piracicaba SP", "Google Maps · terapeuta em Sete Lagoas MG", "Google Maps · terapeuta em Taubaté SP", "Thomaz Consultoria e Assessoria"];
 $('hashes').innerHTML=HASH.map(function(x){return '<option value="'+esc(x)+'">'}).join('');
 var salvo=lida(); if(salvo&&salvo.usuario) entrar(salvo,$('mLogin'));
