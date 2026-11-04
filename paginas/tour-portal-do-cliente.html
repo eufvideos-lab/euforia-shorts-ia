@@ -1,0 +1,823 @@
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="robots" content="noindex, nofollow"><style>html,body{margin:0}</style></head><body><title>Tour do Portal do Cliente</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* Layout: palco de apresentação para compartilhar tela na call. Esquerda: o que falar (letras grandes, pouco texto). Direita: réplica clicável do portal num navegador ou celular. Capa, recado beta e fim ocupam a tela toda. */
+/* Identidade do portal (Grupo Euforia): branco, preto e laranja em degradê; Barlow Condensed nos títulos, Inter no texto. Tema único e claro de propósito, igual ao portal real. */
+:root{
+  --bg:#FFFFFF; --paper:#FAF8F5; --surface:#FFFFFF; --surface-2:#F5F4F1; --line:#E6E3DE; --desk:#ECE8E2;
+  --ink:#141414; --muted:#5E5A54; --accent:#FF5A00; --accent-text:#C24100; --accent-soft:#FFE6D6;
+  --grad:linear-gradient(90deg,#FF7A1A,#FF4D00);
+  --ok:#1F7A4F; --ok-soft:#DDF0E6; --warn:#9A6200; --warn-soft:#FAEED5; --info:#2F55C0; --info-soft:#E2E8F8;
+  --f-display:'Barlow Condensed','Arial Narrow',Arial,sans-serif;
+  --f-body:'Inter','Segoe UI',Arial,sans-serif;
+  --f-mono:'JetBrains Mono',ui-monospace,Consolas,monospace;
+  color-scheme:light;
+}
+html,body{height:100%}
+body{background:var(--paper);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.45;margin:0}
+*{box-sizing:border-box}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.show{height:100%;display:flex;flex-direction:column;min-height:0}
+
+/* Barra de cima */
+.top{display:flex;align-items:center;gap:18px;background:var(--surface);border-bottom:1px solid var(--line);padding-block:10px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));min-width:0}
+.top .logo{width:104px;height:auto;flex:none}
+.steps{display:flex;gap:6px;overflow-x:auto;flex:1;min-width:0;scrollbar-width:none;padding:2px}
+.steps::-webkit-scrollbar{display:none}
+.steps button{flex:none;border:1px solid var(--line);background:var(--surface);border-radius:99px;padding:6px 12px;font-size:14px;font-weight:600;color:var(--muted);display:inline-flex;align-items:center;gap:6px}
+.steps button .ok{display:none;color:var(--ok)}
+.steps button.feito .ok{display:inline}
+.steps button[aria-current="step"]{background:var(--ink);border-color:var(--ink);color:#fff}
+.steps button[aria-current="step"] .ok{color:#7FE0AE}
+.tools{display:flex;gap:8px;flex:none}
+.tbtn{border:1px solid var(--line);background:var(--surface);border-radius:9px;padding:7px 12px;font-size:14px;font-weight:600}
+.tbtn:hover{border-color:var(--muted)}
+
+/* Palco */
+.stage{flex:1;min-height:0;display:grid;grid-template-columns:clamp(360px,33vw,560px) minmax(0,1fr)}
+.talk{display:flex;flex-direction:column;gap:22px;padding-block:clamp(24px,4vh,48px);padding-left:max(16px,env(safe-area-inset-left,0px),min(48px,4vw));padding-right:clamp(16px,2.5vw,40px);background:radial-gradient(70% 45% at 0% 0%,rgba(255,90,0,.13),transparent 75%),var(--paper);overflow-y:auto;min-width:0}
+.eyebrow{font-size:14px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--accent-text);margin:0}
+.talk h1{font-family:var(--f-display);font-weight:800;text-transform:uppercase;font-size:clamp(44px,4.6vw,84px);line-height:.92;letter-spacing:.005em;margin:0;text-wrap:balance}
+.lead{font-size:clamp(20px,1.6vw,27px);line-height:1.35;margin:0;max-width:24ch;text-wrap:pretty}
+.pts{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px;font-size:clamp(17px,1.25vw,21px);font-weight:600}
+.pts li{display:flex;gap:12px;align-items:baseline}
+.pts li::before{content:"";flex:none;width:10px;height:10px;border-radius:50%;background:var(--grad);transform:translateY(-2px)}
+.try{display:flex;gap:14px;align-items:flex-start;border:2px dashed color-mix(in srgb,var(--accent) 55%,transparent);background:var(--surface);border-radius:16px;padding:16px 18px;font-size:clamp(16px,1.15vw,19px)}
+.try .ic{flex:none;width:34px;height:34px;border-radius:50%;background:var(--grad);display:grid;place-items:center;color:#fff;font-weight:800}
+.try .lbl{display:block;font-size:13px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--accent-text);margin-bottom:2px}
+.try p b{color:var(--accent-text)}
+.try p{margin:0}
+.try.feito{border-style:solid;border-color:var(--ok);background:var(--ok-soft)}
+.try.feito .ic{background:var(--ok)}
+.try.feito .lbl{color:var(--ok)}
+.roles{display:flex;flex-direction:column;gap:10px}
+.role{display:flex;align-items:center;gap:14px;text-align:left;border:2px solid var(--line);background:var(--surface);border-radius:14px;padding:12px 14px}
+.role:hover{border-color:var(--muted)}
+.role[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft)}
+.role .av{flex:none;width:42px;height:42px;border-radius:50%;background:var(--grad);color:#fff;display:grid;place-items:center;font-weight:800}
+.role.eq .av{background:var(--ink)}
+.role strong{display:block;font-size:18px}
+.role span{color:var(--muted);font-size:15px}
+.pager{margin-top:auto;display:flex;gap:10px;align-items:center;padding-top:8px}
+.pbtn{border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:12px 18px;font-size:17px;font-weight:700}
+.pbtn.next{background:var(--grad);border-color:transparent;color:#fff;box-shadow:0 8px 22px color-mix(in srgb,var(--accent) 30%,transparent);flex:1}
+.pbtn.next.vai{animation:vai 1.4s ease-in-out infinite}
+.pbtn[disabled]{opacity:.4;cursor:default}
+.stage.cheio .pager{max-width:520px}
+.kbd{color:var(--muted);font-size:13px}
+@keyframes vai{50%{transform:translateX(4px)}}
+
+/* Área do dispositivo */
+.dev-area{display:flex;flex-direction:column;gap:12px;min-width:0;min-height:0;padding:clamp(14px,2.4vh,28px) max(16px,env(safe-area-inset-right,0px),min(32px,3vw)) clamp(14px,2.4vh,28px) clamp(16px,2vw,32px);background:radial-gradient(circle,color-mix(in srgb,var(--ink) 9%,transparent) 1px,transparent 1.5px) 0 0/22px 22px,var(--desk)}
+.dev-top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.seg{display:inline-flex;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:3px}
+.seg button{border:0;background:none;border-radius:8px;padding:6px 14px;font-size:14px;font-weight:600;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--ink);color:#fff}
+.tag{font-size:13px;color:var(--muted);background:color-mix(in srgb,var(--surface) 70%,transparent);border-radius:99px;padding:4px 10px}
+.holder{flex:1;min-height:0;display:grid;place-items:center}
+.device{background:var(--surface);border-radius:14px;box-shadow:0 30px 70px rgba(20,20,20,.18),0 0 0 1px rgba(20,20,20,.08);overflow:hidden;display:flex;flex-direction:column}
+.device .bar{height:40px;flex:none;display:flex;align-items:center;gap:14px;padding:0 14px;background:#F1EFEB;border-bottom:1px solid var(--line)}
+.dots{display:flex;gap:6px}.dots i{width:11px;height:11px;border-radius:50%;background:#D9D5CF;display:block}
+.url{flex:1;min-width:0;background:var(--surface);border-radius:8px;padding:5px 12px;font-family:var(--f-mono);font-size:12.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.url b{color:var(--ink);font-weight:500}
+.device.phone{border-radius:46px;padding:12px;background:#141414}
+.device.phone .bar{display:none}
+.device.phone .viewport{border-radius:36px}
+.viewport{position:relative;overflow:hidden;background:var(--bg);flex:none}
+.pt{position:absolute;top:0;left:0;transform-origin:0 0;container:pt/inline-size;overflow:hidden}
+.pt-scroll{position:absolute;inset:0;overflow:auto;overscroll-behavior:contain}
+
+/* Slides de tela cheia */
+.stage.cheio{grid-template-columns:minmax(0,1fr)}
+.stage.cheio .dev-area{display:none}
+.stage.cheio .talk{padding-left:max(16px,env(safe-area-inset-left,0px),min(96px,7vw));padding-right:max(16px,env(safe-area-inset-right,0px),min(96px,7vw));background:radial-gradient(55% 75% at 100% 0%,rgba(255,90,0,.24),rgba(255,90,0,.06) 55%,transparent 80%),var(--paper)}
+.hero{display:flex;flex-direction:column;gap:clamp(18px,3vh,32px);margin-block:auto}
+.hero h1{font-size:clamp(60px,9.5vw,176px);line-height:.86}
+.hero h1 span,.talk h1 span{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.hero .lead{max-width:30ch;font-size:clamp(22px,2.1vw,34px)}
+.tabs{display:flex;flex-wrap:wrap;gap:10px}
+.tabs span{border:2px solid var(--ink);border-radius:99px;padding:8px 18px;font-family:var(--f-display);font-weight:700;font-size:clamp(20px,1.7vw,28px);text-transform:uppercase;letter-spacing:.03em}
+.tabs span:first-child{background:var(--ink);color:#fff}
+.chipbeta{align-self:flex-start;background:var(--ink);color:#fff;border-radius:99px;padding:6px 14px;font-weight:700;font-size:14px;letter-spacing:.12em;text-transform:uppercase}
+.big-cta{align-self:flex-start;background:var(--grad);color:#fff;border:0;border-radius:14px;padding:16px 26px;font-size:clamp(18px,1.4vw,22px);font-weight:700;box-shadow:0 10px 28px color-mix(in srgb,var(--accent) 32%,transparent)}
+.ghost-cta{align-self:flex-start;background:var(--surface);border:2px solid var(--ink);border-radius:14px;padding:14px 24px;font-size:clamp(18px,1.4vw,22px);font-weight:700}
+.ctas{display:flex;flex-wrap:wrap;gap:12px}
+.beta{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:clamp(14px,1.6vw,24px)}
+.beta article{background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:clamp(20px,2vw,32px);display:flex;flex-direction:column;gap:12px;box-shadow:0 12px 30px rgba(20,20,20,.06)}
+.beta article.wa{background:var(--ink);color:#fff;border-color:var(--ink)}
+.beta h2{font-family:var(--f-display);font-weight:800;text-transform:uppercase;font-size:clamp(22px,1.9vw,30px);line-height:1;margin:0;color:var(--accent-text)}
+.beta article.wa h2{color:#FF8A3D}
+.beta p{margin:0;font-size:clamp(20px,1.75vw,30px);line-height:1.25;font-weight:600;text-wrap:pretty}
+.fim-logo{width:clamp(150px,14vw,220px);height:auto}
+
+@media (max-width:900px){
+  .stage{grid-template-columns:minmax(0,1fr);overflow-y:auto}
+  .show{height:auto;min-height:100%}
+  .talk{overflow:visible}
+  .dev-area{height:78vh;min-height:520px}
+  .pager{position:sticky;bottom:0;background:var(--paper);padding-block:10px}
+  .beta{grid-template-columns:1fr}
+  .tools .fs{display:none}
+}
+@media (max-width:600px){.steps{visibility:hidden}}
+@media (prefers-reduced-motion:reduce){.pbtn.next.vai{animation:none}}
+
+.pt{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5;min-height:100%}
+.pt *{box-sizing:border-box}
+.pt button,.pt input,.pt select,.pt textarea{font:inherit;color:inherit}
+.pt button{cursor:pointer}
+.pt :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.pt h1,.pt h2,.pt h3{font-family:var(--f-display);font-weight:700;line-height:1.1;text-wrap:balance;margin:0;letter-spacing:.01em}
+.pt h1{font-weight:800;text-transform:uppercase}
+.pt p{margin:0}
+.pt .mono{font-family:var(--f-mono);font-size:12px;letter-spacing:.02em}
+.pt .app{display:grid;grid-template-columns:232px minmax(0,1fr);min-height:100%}
+.pt .side{background:var(--surface);color:var(--muted);display:flex;flex-direction:column;gap:28px;padding:24px 16px;border-right:1px solid var(--line)}
+.pt .brand img{width:130px;height:auto;max-width:100%;display:block}
+.pt .nav{display:flex;flex-direction:column;gap:2px}
+.pt .nav button{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;text-align:left;background:none;border:0;border-radius:8px;padding:10px 12px;color:var(--muted);font-weight:500}
+.pt .nav button:hover{background:color-mix(in srgb,var(--ink) 8%,transparent)}
+.pt .nav button[aria-current="page"]{background:color-mix(in srgb,var(--ink) 12%,transparent);color:var(--ink)}
+.pt .badge{background:var(--grad);color:#fff;border-radius:99px;font-size:12px;font-weight:700;padding:1px 8px;min-width:22px;text-align:center}
+.pt .who{margin-top:auto;display:flex;gap:10px;align-items:center;font-size:13px}
+.pt .avatar{width:34px;height:34px;border-radius:50%;background:var(--grad);color:#fff;display:grid;place-items:center;font-weight:700;flex:none}
+.pt main{min-width:0;padding:32px 40px 48px}
+.pt .view{display:flex;flex-direction:column;gap:24px;max-width:1240px}
+.pt .head{display:flex;flex-wrap:wrap;align-items:end;justify-content:space-between;gap:12px}
+.pt .head h1{font-size:34px}
+.pt .sub{color:var(--muted)}
+.pt .eyebrow{font-size:12px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--accent-text)}
+.pt .tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.pt .tile{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:20px;display:flex;flex-direction:column;gap:8px;text-align:left;box-shadow:0 1px 2px rgba(20,20,20,.04)}
+.pt .tile.hot{border-color:var(--accent);background:linear-gradient(var(--accent-soft),var(--surface) 70%)}
+.pt .tile .big{font-family:var(--f-display);font-size:34px;font-weight:800;line-height:1}
+.pt .tile button{align-self:flex-start}
+.pt .btn{border:1px solid var(--line);background:var(--surface);border-radius:9px;padding:9px 14px;font-weight:600}
+.pt .btn:hover{border-color:var(--muted)}
+.pt .btn.primary{background:var(--grad);border-color:transparent;color:#fff;box-shadow:0 6px 18px color-mix(in srgb,var(--accent) 30%,transparent)}
+.pt .btn.ok{background:var(--ok);border-color:var(--ok);color:#fff}
+.pt .btn.ghost{background:transparent}
+.pt .btn[disabled]{opacity:.55;cursor:default}
+.pt .panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:20px;display:flex;flex-direction:column;gap:14px;min-width:0;box-shadow:0 1px 2px rgba(20,20,20,.04)}
+.pt .panel h2{font-size:19px}
+.pt .two{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:16px;align-items:start}
+.pt .feed{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.pt .feed li{display:grid;grid-template-columns:84px 1fr;gap:12px;padding-block:10px;border-top:1px solid var(--line)}
+.pt .feed li:first-child{border-top:0}
+.pt .feed time{color:var(--muted)}
+.pt .board-wrap{overflow-x:auto;padding:16px;margin:-12px -16px}
+.pt .board{display:grid;grid-template-columns:repeat(6,minmax(210px,1fr));gap:12px;min-width:1320px}
+.pt .col{background:var(--surface-2);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:10px;min-height:300px}
+.pt .col-h{display:flex;justify-content:space-between;align-items:center;font-weight:700;font-size:14px}
+.pt .col-h .count{color:var(--muted);font-family:var(--f-mono);font-size:12px}
+.pt .col.mine{background:var(--accent-soft)}
+.pt .card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:8px;text-align:left;width:100%;box-shadow:0 1px 2px rgba(20,20,20,.04)}
+.pt .card:hover{border-color:var(--muted)}
+.pt .card .t{font-weight:600;line-height:1.3}
+.pt .card.novo{animation:chega .9s ease-out}
+.pt .row{display:flex;flex-wrap:wrap;gap:6px;align-items:center;justify-content:space-between}
+.pt .chip{display:inline-flex;align-items:center;gap:6px;border-radius:99px;padding:2px 9px;font-size:12px;font-weight:600;background:var(--surface-2);color:var(--muted)}
+.pt .chip.red{background:var(--accent-soft);color:var(--accent-text)}
+.pt .chip.ok{background:var(--ok-soft);color:var(--ok)}
+.pt .chip.warn{background:var(--warn-soft);color:var(--warn)}
+.pt .chip.info{background:var(--info-soft);color:var(--info)}
+.pt .legend{display:flex;flex-wrap:wrap;gap:16px;color:var(--muted);font-size:13px}
+.pt .empty{color:var(--muted);font-size:13px;padding:8px 2px}
+.pt .scrim{position:absolute;inset:0;background:color-mix(in srgb,var(--ink) 45%,transparent);z-index:20}
+.pt .drawer{position:absolute;top:0;right:0;bottom:0;width:min(480px,100%);background:var(--surface);z-index:21;display:flex;flex-direction:column;box-shadow:-12px 0 40px color-mix(in srgb,var(--ink) 20%,transparent)}
+.pt .drawer-in{overflow-y:auto;padding:24px;display:flex;flex-direction:column;gap:18px}
+.pt .preview{aspect-ratio:16/9;max-width:100%;border-radius:12px;background:radial-gradient(circle at 70% 20%,rgba(255,90,0,.55),transparent 60%),#0A0A0A;display:grid;place-items:center;color:#fff;position:relative;overflow:hidden}
+.pt .preview .play{width:58px;height:58px;border-radius:50%;background:rgba(255,255,255,.18);display:grid;place-items:center;border:1px solid rgba(255,255,255,.35)}
+.pt .preview .tc{position:absolute;right:10px;bottom:10px;background:rgba(0,0,0,.55);border-radius:6px;padding:2px 6px;color:#fff}
+.pt .preview .ttl{position:absolute;left:14px;bottom:12px;font-family:var(--f-display);font-weight:800;font-size:22px;text-transform:uppercase;max-width:70%;line-height:1}
+.pt .rule{background:var(--surface-2);border-radius:10px;padding:12px 14px;font-size:14px;color:var(--muted)}
+.pt textarea,.pt input[type=text],.pt select{width:100%;background:var(--surface);border:1px solid var(--line);border-radius:9px;padding:10px 12px}
+.pt textarea{min-height:96px;resize:vertical}
+.pt label{font-weight:600;font-size:14px;display:flex;flex-direction:column;gap:6px}
+.pt .actions{display:flex;flex-wrap:wrap;gap:10px}
+.pt .list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.pt .list li{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:10px;padding-block:12px;border-top:1px solid var(--line)}
+.pt .list li:first-child{border-top:0}
+.pt .drop{border:2px dashed var(--line);border-radius:14px;padding:28px;text-align:center;display:flex;flex-direction:column;gap:10px;align-items:center;background:var(--surface);cursor:pointer;font-weight:400}
+.pt .drop.over,.pt .drop.cheio{border-color:var(--accent);background:var(--accent-soft)}
+.pt .check{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:8px}
+.pt .check li::before{content:"✓";color:var(--ok);font-weight:700;margin-right:8px}
+.pt .prog{height:8px;background:var(--surface-2);border-radius:99px;overflow:hidden}
+.pt .prog span{display:block;height:100%;width:0;background:var(--grad);transition:width .25s}
+.pt .rot-txt{display:flex;flex-direction:column;gap:12px;font-size:16px;line-height:1.6}
+.pt .rot-txt h3{font-size:18px;margin-top:10px;color:var(--accent-text)}
+.pt .rot-txt .nota{color:var(--muted);font-style:italic;font-size:14px}
+.pt .rot-txt ul{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:4px}
+.pt .temas{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px}
+.pt .tema{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:20px;display:flex;flex-direction:column;gap:10px;text-align:left;box-shadow:0 1px 2px rgba(20,20,20,.04)}
+.pt .tema.hot{border-color:var(--accent)}
+.pt .tema .tp{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.pt .tema h2{font-size:22px}
+.pt .tema .lbl{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0 0 4px}
+.pt .tema .gancho{background:var(--accent-soft);border-radius:10px;padding:10px 12px;font-size:14px}
+.pt .tema .tit{font-family:var(--f-display);font-size:18px;font-weight:700}
+.pt .tema .fim{margin-top:auto;display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between}
+.pt .fogo{color:var(--accent-text);font-weight:700;font-size:13px;white-space:nowrap}
+.pt .chat{display:flex;flex-direction:column;gap:12px;max-height:420px;overflow-y:auto;padding-right:4px}
+.pt .msg{max-width:78%;padding:10px 14px;border-radius:14px;background:var(--surface-2)}
+.pt .msg.me{align-self:flex-end;background:var(--grad);color:#fff}
+.pt .msg.novo{animation:chega .5s ease-out}
+.pt .msg .meta{font-size:12px;opacity:.75;margin-top:4px}
+.pt .msg .t{white-space:pre-wrap;word-wrap:break-word}
+.pt .digitando{color:var(--muted);font-size:13px;font-style:italic}
+.pt .composer{display:flex;gap:10px}
+.pt .composer input{flex:1;min-width:0}
+.pt .small{font-size:13px;color:var(--muted)}
+.pt .toast{position:absolute;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:12px 18px;border-radius:10px;font-weight:600;z-index:50;box-shadow:0 8px 24px color-mix(in srgb,var(--ink) 30%,transparent);max-width:calc(100% - 32px);text-align:center}
+.pt .full{position:absolute;inset:0;display:grid;place-items:center;padding:24px;background:var(--bg);z-index:60;text-align:center}
+.pt .full > div{max-width:440px;display:flex;flex-direction:column;gap:16px;align-items:center}
+.pt .full img{width:180px}
+.pt .linkbox{display:flex;flex-direction:column;gap:14px;align-items:stretch;width:100%;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:22px;text-align:left;box-shadow:0 18px 40px rgba(20,20,20,.08)}
+.pt .linkbox .url{font-family:var(--f-mono);font-size:13px;background:var(--surface-2);border-radius:9px;padding:10px 12px;word-break:break-all}
+.pt .linkbox input[type=password]{width:100%;background:var(--surface);border:1px solid var(--line);border-radius:9px;padding:10px 12px}
+.pt .linkbox .btn.primary{padding:13px;font-size:16px}
+.pt .spot{position:relative;z-index:5;animation:spot 1.6s ease-in-out infinite;border-radius:12px}
+@keyframes spot{0%,100%{box-shadow:0 0 0 3px var(--accent),0 0 0 8px color-mix(in srgb,var(--accent) 22%,transparent)}50%{box-shadow:0 0 0 3px var(--accent),0 0 0 14px color-mix(in srgb,var(--accent) 6%,transparent)}}
+@keyframes chega{from{background:var(--accent-soft);transform:scale(.97)}to{transform:none}}
+@media (prefers-reduced-motion:reduce){.pt .spot,.pt .card.novo,.pt .msg.novo{animation:none}
+.pt .spot{box-shadow:0 0 0 3px var(--accent)}}
+@container pt (max-width:860px){.pt .app{grid-template-columns:minmax(0,1fr);grid-template-rows:auto 1fr}
+.pt .side{flex-direction:row;flex-wrap:wrap;align-items:center;gap:12px;padding:14px 16px 10px;position:sticky;top:0;z-index:10;border-right:0;border-bottom:1px solid var(--line)}
+.pt .brand img{width:110px}
+.pt .who{display:none}
+.pt .nav{flex-direction:row;overflow-x:auto;width:100%;gap:4px;padding-bottom:4px}
+.pt .nav button{width:auto;white-space:nowrap;flex:none}
+.pt .tiles{grid-template-columns:1fr}
+.pt .two{grid-template-columns:1fr}
+.pt main{padding:20px 16px 40px}
+.pt .head h1{font-size:28px}
+.pt .msg{max-width:90%}}
+</style>
+
+<div class="show">
+  <header class="top">
+    <img class="logo" src="data:image/png;base64,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" alt="Grupo Euforia">
+    <nav class="steps" id="steps" aria-label="Partes do tour"></nav>
+    <div class="tools"><button class="tbtn" id="reset">Recomeçar demo</button><button class="tbtn fs" id="fs">Tela cheia</button></div>
+  </header>
+
+  <div class="stage" id="stage">
+    <section class="talk" id="talk" aria-live="polite"></section>
+
+    <section class="dev-area" aria-label="Portal de exemplo">
+      <div class="dev-top">
+        <div class="seg" role="group" aria-label="Ver no"><button id="m-desk" aria-pressed="true">Computador</button><button id="m-phone" aria-pressed="false">Celular</button></div>
+        <span class="tag">Exemplo com cliente fictícia. Nada aqui é enviado.</span>
+      </div>
+      <div class="holder" id="holder">
+        <div class="device" id="device">
+          <div class="bar"><span class="dots"><i></i><i></i><i></i></span><span class="url"><b>grupoeuforia.com.br</b>/portal?a=7f3c•••••••</span></div>
+          <div class="viewport" id="viewport">
+            <div class="pt" id="pt">
+              <div class="pt-scroll" id="pt-scroll">
+                <div class="app">
+                  <aside class="side">
+                    <div class="brand"><img src="data:image/png;base64,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" alt="Grupo Euforia"></div>
+                    <nav class="nav" aria-label="Seções do portal">
+                      <button data-view="inicio" aria-current="page">Início</button>
+                      <button data-view="entregas">Entregas <span class="badge" id="badge-aprovar" hidden>0</span></button>
+                      <button data-view="gravacoes">Gravações <span class="badge" id="badge-gravar" hidden>0</span></button>
+                      <button data-view="temas">Temas quentes <span class="badge" id="badge-temas" hidden>0</span></button>
+                      <button data-view="mensagens">Mensagens</button>
+                    </nav>
+                    <div class="who"><div class="avatar" id="avatar"></div><div><div style="color:var(--ink);font-weight:600" id="who-nome"></div><div id="who-fase"></div></div></div>
+                  </aside>
+                  <main>
+                    <section class="view" id="v-inicio">
+                      <div class="head"><div><p class="eyebrow" id="hoje"></p><h1 id="ola">Olá</h1></div><p class="sub" id="fase-sub"></p></div>
+                      <div class="tiles">
+                        <div class="tile" id="tile-a"><span class="chip red">Esperando você</span><span class="big" id="tile-aprovar">0 peças</span><p class="sub" id="tile-aprovar-sub"></p><button class="btn primary" data-go="entregas">Ver entregas</button></div>
+                        <div class="tile"><span class="chip warn">Gravação</span><span class="big" id="tile-gravar">Roteiro 08</span><p class="sub" id="tile-gravar-sub"></p><button class="btn" data-go="gravacoes">Ver roteiros</button></div>
+                        <div class="tile"><span class="chip ok">Próxima publicação</span><span class="big" id="tile-pub"></span><p class="sub" id="tile-pub-sub"></p><button class="btn" data-go="entregas">Ver calendário</button></div>
+                      </div>
+                      <div class="two">
+                        <div class="panel"><h2>Últimas atualizações</h2><ul class="feed" id="feed"></ul></div>
+                        <div class="panel"><h2>Como funciona a aprovação</h2>
+                          <p class="sub">Nada vai ao ar sem o seu OK. Quando uma peça fica pronta, ela aparece em <b>Entregas</b>, na coluna "Para você aprovar". Você aprova ou pede ajuste ali mesmo, e a equipe é avisada na hora.</p>
+                          <div class="rule" id="call-box"></div>
+                        </div>
+                      </div>
+                    </section>
+                    <section class="view" id="v-entregas" hidden>
+                      <div class="head"><div><p class="eyebrow">Acompanhamento</p><h1>Suas entregas</h1></div>
+                        <div class="legend"><span class="chip red">Esperando você</span><span class="chip warn">Em ajuste</span><span class="chip ok">Aprovado</span><span class="chip info">Publicado</span></div></div>
+                      <p class="sub">Toque em uma peça para ver, aprovar ou pedir ajuste. O quadro se atualiza sozinho quando a equipe avança.</p>
+                      <div class="board-wrap" id="board-wrap"><div class="board" id="board"></div></div>
+                    </section>
+                    <section class="view" id="v-gravacoes" hidden>
+                      <div class="head"><div><p class="eyebrow">Roteiros</p><h1>Gravações</h1></div><p class="sub">Leia o roteiro, grave e envie o vídeo aqui mesmo.</p></div>
+                      <div class="two">
+                        <div class="panel"><h2>Seus roteiros</h2><ul class="list" id="roteiros"></ul></div>
+                        <div class="panel"><h2>Enviar gravação</h2>
+                          <div class="drop" id="drop" role="button" tabindex="0"><b>Arraste o vídeo aqui ou toque para escolher</b><span class="sub" id="file-name">Direto do celular ou do computador. Pode ser arquivo grande.</span></div>
+                          <label for="rot">Qual roteiro é este?<select id="rot"></select></label>
+                          <div id="up-box" hidden><div class="prog"><span id="up-bar"></span></div><p class="small" id="up-txt"></p></div>
+                          <button class="btn primary" id="send-file">Enviar gravação</button>
+                          <p class="small">Deixe esta página aberta até terminar. Se a internet cair, toque em enviar de novo.</p>
+                          <h2>Antes de gravar</h2>
+                          <ul class="check"><li>Celular na horizontal, na altura dos olhos</li><li>Luz de frente (janela ou ring light)</li><li>Se errar uma frase, repita: a edição aproveita a melhor</li></ul>
+                        </div>
+                      </div>
+                    </section>
+                    <section class="view" id="v-temas" hidden>
+                      <div class="head"><div><p class="eyebrow">Ideias da semana</p><h1>Temas quentes</h1></div><p class="sub" id="temas-sub"></p></div>
+                      <div class="rule">Gostou de um tema? Toque em <b>Quero esse roteiro</b>. A equipe escreve o roteiro com as suas histórias e o seu negócio, e ele aparece em <b>Gravações</b> pronto para gravar. Você pode pedir 1 tema por mês, e ele entra como um dos roteiros do seu pacote.</div>
+                      <div class="temas" id="temas"></div>
+                    </section>
+                    <section class="view" id="v-mensagens" hidden>
+                      <div class="head"><div><p class="eyebrow">Fale com a equipe</p><h1>Mensagens</h1></div><p class="sub">Esta conversa é o seu grupo do WhatsApp. O que você escreve aqui chega lá, e as respostas aparecem aqui.</p></div>
+                      <div class="panel">
+                        <div class="chat" id="chat"></div>
+                        <form class="composer" id="composer"><input type="text" id="msg-in" placeholder="Escreva sua mensagem" aria-label="Mensagem" maxlength="600" autocomplete="off"><button class="btn primary" type="submit" id="msg-btn">Enviar</button></form>
+                      </div>
+                    </section>
+                  </main>
+                </div>
+              </div>
+              <div class="full" id="pt-link" hidden><div>
+                <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAARwAAABhCAMAAAAz4e55AAAAwFBMVEVjJAdWJw1ZJw3lVwEuGxCWOgiWOQNsLQsxHBCaOwetRQPTTAL5XgDMSgOyQgVxcQDvPAAkFiSWOge0QwUyHBD//wBVAFUAAAAUFBT6WQAuGxEYFBK0QwUWFBLNSgMYFBJOJQ4VExP/AAAVExMVExNnLAwZGBSPOAn8VQB/AAApFRL5VwB3MQv8WAD/fwD7WAA9IBCjPgf4VwArJQ0lGBGqVQAtGhCyQgX6WADNSgPNSQDeUAL9WAA7AQE9PQCvOgH3f+twAAAAQHRSTlMQW50Tmc8UzWtaGFn2ra0CBQueW8oBAwD9/f1Q/nD9L/2PAc6t/RL9BwIRTf1uApH+/c4MNANSz7DOD/4xBQQMM0ntsgAADNNJREFUeNrtnAlX6roWgAuoKIjzfQFrqR2sBRRUEMWJ//+vXpo5adKBVjzHe/c666htKcnXnZ09gQXqlch1XfAHSVRlQFZ94xi7jhcGiYSe4xa4cTTXHj1VD0g/Ix0Aw/1tr9yAvg2O6wR9UUJbnLornyQSeDaf1zgkR23lzg457iV/zEP9fcbqeHzXky8KnfFPwfE0QxZm6fYNEthUUcZBETjjIO8+5A1D3TXHPwFHNxQoTj4c+ESJ8sxNcDwJTph3HyS2nqE33j4c1/A4OZ0MOP3AzdYcCc48MN9nnFK2bIJbgeOaB+wUgNMPxyXghP18Ok7ee20PTpQx3v6iAByMsKDNyXozr8CbOduFYwvPzrGhOF658eJHPq8Op++qDytMDajvbhOOsH+wzVIw0K4MxyVuSRTZwt5vl4djU7/HdfibeZb0sPh+GXE83miLcGxpikROPVmNXd1zOw1F/ZqX28qFqz4dUQU/Q631dTZQnepwPO1qZrodnhrhcEsezqvAEcbgCjcNogLj/F44n4FEIaVQQQYcNuDkiY8rwGFHHUGTlftEbKDbg+PmjcXNgEPnHXwWhaPXL7aUHBm4/s3mW4Njm5ZyWACOLXgf8wpwBF+IcfKMjzHaOpzUgyoFZ1QbnCg0mRZZl7cKJ1QzDbaDZVxgWTmgmkEWllVkug1/aUk4p1FRSeVTbJMW61VaGthpWN7P0V4V8Z3IjMBo1DLhRF7QLyxe1tBLwnHEgKemrbxmOG4JNOmNcHM43FFcgEpwxtwJBDXDcfv9LcIJmQSKZ10SDgqakAhhiOdnmN1N4IT1wnFVGecFnjbYBI4p8KwVTknFyYNj6yNl87t4dBI1wHFAzXCceuE4JeHw5FN1OCjQ/E1w+kFY17LCQfivgsMGWyy2soIcH+O3wcEZ9mqaE7rgG+DY24XDt3IvlPO6m8MJQs8dge+AA4JqcFhs9T+SIKXSzw08bcE9Ke/nMF9h8akNL+064Nj1wEllSQpE5dRFDr/EoktmaSYKc2b4WW9U7tUCZ5N8jiPCAaZZlYPj15zPcYIKcKpkAmU4nn5WYgo0o90gnXo1nvgslbKIaO4lX7zUoAJ9LdHul4Xj6BPjMv18OLYhkf4TOWRDVv80LA3Hzb4RZpYPh1cf3B+vPggujG0uExWBw/dN7Y3wA8+HwyNpkc7Xz9SthOqrQ3esyOlvAMfTlE491Y/OhyNWPDUlWO8Ha+XQ8bAlC18cjiv2ajlKjZuULwvA+QqV+zhO+FO1cvCZ7QsUh5PVOkJhRAU8uT+pyyI/ASWMd5EFJ6OZxSnj5mb4td58y3DAQhfwLMvDAca0pPdVKgZwinppW4Cjy9HbbollxdyyyMtZCwUDJENPoBP9ABww9lLTccVZ5GjOp7DlpqcV2uWjx1MN5dAuOav6+pA9pcvWDbC4RLWS3xXHzMZXyP1EUaqhWXzccLfCL7LzB5R1n+3CQQ3jIW4Xt5EmzFGJlFSJSU1VNocWKaMqlWSftsKHnpNaCHNaei0wIOE+5ckwOK5dWLLdBDjqcU0LNYVyw0cGOY42fK0FjC3Wddj7v1usbNfr3w6nYibwd8MJ/4NjhFO1HPyr4Tj/wflNcEZQ/qVwPmWRndRjgcpI/WTZs/VscXmGsn5+ljH663W8Xq9P5KPTE0Hiv1NzfB85h2TyiI9f4GXHm6tZdYM8N3vTY8H5Vh3nseRxk6uWsuwvGw3mJcM5Wo1mu32DpN1uNCwg+r7PB5KcY+kkmkEY+uBt0u1OJpP7D8Cx/gM+7idM7idxnVu5nZ3ncgxR9EJK6aKrLiV5eLhOZJ8BsJoEzM0dljbEQ0/6YG/36vHxSpLh8Gq16kI+U4wPdAdY7uHvHM7r4UCQDxDX5wS62Z9Ecwyp2wJwHiQ4DYqG0bm93T0ARAd8sN59vH1MRMYDpfeG7zEV4EzZYgXxk8gGnovrCx8KwsnXHC2b60YyMR+qzfXNtcwGwrm9PbMwnURzUmgwm+Fw1UIwpjrNmYKJxGbw6vv1BZ4bwnFVOHo2CE7ChqMR2UA6e2gyZFlp2SA6vmFZ+WAmw3mKmUEqm7Jw3G+CY2CD4IyOmym1oXBuz9Ca0dkcxmb43nuDCEU4MWPTIqvqacaMzrS2ZJe7mUFW4BjQIDg+aMBfCJqbmyYUhgbKAV54CZw0FkqnCy96ZiuIw5mCD3qslTJI9cEJQlXQR9wL2hyCZUeVpgWHaHFb3EQujgU3dQZntwPRCHCOmPRWFM5g9QZ8HZyYHZv4r8TotKjVqQ+Ok10lKaY5S+09GhRNu8G9wYNdUXUQHMyG79Kg1aWaM5iAZ/2ymjFTM1ONzo/BWRSHwxSnDf0a7BX7MLzao3TO9oAIZz3aG2GBF1I6iQ3WaA7fyF9bXIfouvrz4YyARRWnIXrEFjigqrMHjqGf80LgdLj7C33j3jvUm/fhYAb8OA1HMDmAcZqBP2tZ7TM4o3Q6jqyqu6YlnvRHe2dsXUE4HQrnTYgNpkh13t8HBjgxuGd7lB9To0PX1Z8PZwSaOsWBESVVnauzZEcjcIYKnBZE8z4YGDWHGxoR1PQvgQMInLs7S4Wzh9g8QjiAw+nFCpzBO14r0zQcweRMBXYTcro6nEUlOJf5cIg9vmtbQEpR+NgkQ8/vKNGvtRaOD+FQ7yUNRzQ5sZ8yOj8M51KG87D8sr5EsSicJAhXxspizaujExOcmO3ecAt61sARVhKEQ4zOUwvf4mfhJG4fhwMd44VpJ0/g7GngoFjzZQ3XGIMDIwUixzGYCvPVOYGvgm8zVY0OhmN7hcU2wQnVrlw3F86lBCcJGpoNRRCcOxRQ6eBcYTgnEA62OcNh70S4pjUTYoLUshJMzj++LwTo5Dz6TpUqTdoMjqGpxgyHBAwYzsOlEE9hIW5fAucuAw4kQuAMUVC1ejt5O1m3Op3OW6v7OhBCghQc8cAUsRpIRqdye39dcB5ScK5RKMXh7JrhrAkcnJ9YrXpIDocsR4PsUAoOX0fYKWaeDokgqmcCN4VzqcC51rC5aR4zOLd6OFcUztuLEIQj14bJDBtYFY4PTmQYLLwiRqfyR4q+Dc5NCo5mK8dO8UuS6XtbpfIUZObQ+T0GWjh0Gb1OgWaZVf8wWh1wRmBfqzfisrrVwXkxw+G68/pBNncVjsoisdlsHfq11K3cb4DDsn5tEc6eCofGmi9xFhyoO/cozZGGw1aRH+PNn6UFEc/64ATqpu9uAKepCNnKUd4vDcesOe9yXhjS0MDxW9zkUJmJEUR1OJs6gVo4aZ/Uh3BIxi8Fh4ZTac1R4SBNUODw2GEwY/Ik0qxPc2qB0xgpUgxOK9mtCJxVF1U1J+g/VllINCEFRynKSAWaZIOrXg7eNNmlh6MLPHeFXLEWTs+HLyNw3ldT8ZpXs4c8VYsyA7nw6ddQDv52OKMzlvDz5ZRFh9QaeqjEsqKp9KS7AslU3o9kOLwoo5VE1Sp/RUweHNtwekni8P08OD44E2swQucIOGdw4GZENGdw2OIMY98MRzA5OkleYJUMrUobZNfwuh0Shy9BksNqmOE8s1zxmXxyBI5Ikaqb5Buo5ggVS2DWnGm2ycFGp/LXUuXBMXyae3xBGikWSUUzC86xmEgXyi5rsqogkNYGcHyQaXIGgxjDwe3iUTSOxkT4F5gpf2r66nOWFbNpYUpxkljz4hTpQCNrWXWEGoxFe23W0AUcXpE4HC+rpM5QAg7rrphJ8sSNTn1f3GqC4+h0Die3aIcJg3OjM8jc6DwmFSoYKKFupM4RYTPsoqJeAue9OBxucl7lt/tgaYtpfXDC9IfQXWld8S/0X+xQNmhVMTg3WjgjkkhP6gy7ByQ0X59TvUlWFYYzQL5fMTgxrzXgwIqlD2l49XRS61f+5kRXkMfFzs7+/s4F79xqkuk3SESlg8NVJ0nevBwdnZ8fHb3wfoFuAgPDGRSH4zMXaOLHYuMhTaxCT2cLcIjVuVSaTBIc7bkA58YMB1d+DX1bHR/DOcQ1mKdWETgnQI4xhZQ8T4BtAw76kKOu/+bSAhzOjREOPNYhPW3p/psVruEhOHK9Mmcr/5CyEyD9ktlW4EA6lzo27YVa8TXAQXT0fVu038/XaoIZTksxOSDdI/jU2goc4IaaNdW0QFE4SVnqLNUqKrAR4BTUnPg11chFPW92pjqcZaEPuC8vZDQPF42xMPUGaWgzwUkOHxw9qmharBNZeOAKnEMog0MC55D+BVcV/An/DWSTg7Luh+hFh/c11MrNNS7p2+iX3g6jc7GzlJ1JiyS3zMNBrs3BGYOz6nVbtI8Jl6juZ70edOLuW+KLWsS1m6Durw/y1wdgv94repNYI3pVjR+AzZX5YrHc399fLhbWJrXWJHT4p3N+ft6F/xIySQ3zW+X/CUWf3bxNiOsAAAAASUVORK5CYII=" alt="Grupo Euforia">
+                <div class="linkbox"><span class="small">Seu link do portal</span><span class="url">grupoeuforia.com.br/portal?a=7f3c•••••••</span><label for="pt-senha">Sua senha<input type="password" id="pt-senha" value="exemplo123" autocomplete="off"></label><button class="btn primary" id="abrir">Entrar</button><span class="small">Sem instalar nada.</span></div>
+              </div></div>
+              <div class="full" id="pt-load" hidden><div><img src="data:image/png;base64,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" alt="Grupo Euforia"><p class="sub">Carregando o seu portal…</p></div></div>
+              <div class="scrim" id="scrim" hidden></div>
+              <aside class="drawer" id="drawer" hidden role="dialog" aria-modal="true" aria-labelledby="d-title"><div class="drawer-in" id="drawer-in"></div></aside>
+              <div class="toast" id="toast" role="status" hidden></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<script>
+(function(){
+const $ = s => document.querySelector(s);
+const pt = $('#pt');
+const q = s => pt.querySelector(s);
+const qa = s => pt.querySelectorAll(s);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const espera = ms => new Promise(r => setTimeout(r, ms));
+
+/* ---------- Datas sempre atuais (só dias úteis) ---------- */
+const DIAS = ['domingo','segunda-feira','terça-feira','quarta-feira','quinta-feira','sexta-feira','sábado'];
+const DC = ['dom','seg','ter','qua','qui','sex','sáb'];
+const MESES = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+function util(n){ const d = new Date(); d.setHours(12,0,0,0); let k = Math.abs(n); const s = Math.sign(n); while (k){ d.setDate(d.getDate() + s); if (d.getDay() % 6) k--; } return d; }
+const dd = d => String(d.getDate()).padStart(2,'0') + '/' + String(d.getMonth()+1).padStart(2,'0');
+const curto = d => DC[d.getDay()] + ', ' + dd(d);
+
+/* ---------- Dados de exemplo ---------- */
+const PESSOAS = { dono:{nome:'Camila Rocha', papel:'Dona'}, socio:{nome:'Rafael Rocha', papel:'Sócio'}, equipe:{nome:'Júlia Mendes', papel:'Equipe'} };
+function dados(){
+  const h = new Date();
+  return {
+    role:'dono', fase:'Produção',
+    hoje: DIAS[h.getDay()] + ', ' + h.getDate() + ' de ' + MESES[h.getMonth()],
+    proximaCall: DIAS[util(2).getDay()] + ', ' + dd(util(2)) + ' às 15h00',
+    cards:[
+      {id:'1',t:'Longo 05 · Os 3 erros do café da manhã',tipo:'Longo',qtd:1,col:'aprovar',info:''},
+      {id:'2',t:'Carrossel · Mitos da proteína',tipo:'Carrossel',qtd:1,col:'aprovar',info:''},
+      {id:'3',t:'Carrossel · Água ao longo do dia',tipo:'Carrossel',qtd:1,col:'ajuste',info:''},
+      {id:'4',t:'Longo 06 · Jejum funciona?',tipo:'Longo',qtd:1,col:'producao',info:'Previsto para ir ao ar ' + curto(util(3))},
+      {id:'5',t:'Shorts do Roteiro 07',tipo:'Short',qtd:3,col:'afazer',info:''},
+      {id:'6',t:'Short · Café sem açúcar dá certo?',tipo:'Short',qtd:1,col:'aprovado',info:'Vai ao ar ' + curto(util(1))},
+      {id:'7',t:'Longo 04 · Lanche da tarde',tipo:'Longo',qtd:1,col:'publicado',info:'Publicado ' + curto(util(-2))},
+      {id:'8',t:'Shorts do Longo 04',tipo:'Short',qtd:3,col:'publicado',info:'Publicados até ' + curto(util(-1))}
+    ],
+    roteiros:[{id:'r8',n:8,t:'Lanche que sacia',status:'gravar'},{id:'r7',n:7,t:'Jejum funciona?',status:'gravado'}],
+    mensagens:[
+      {eu:false,t:'Oi, Camila! O Longo 05 já está no portal para você aprovar.',quem:'Érica · suporte',em:dd(util(0)) + ' 09:15'},
+      {eu:true,t:'Oba! Vou ver no almoço.',quem:'você',em:dd(util(0)) + ' 09:31'}
+    ],
+    temaDisponivel:true,
+    temas:[
+      {id:'t1',origem:'Em alta no Brasil',quente:3,novo:true,status:'livre',t:'Canetas para emagrecer na boca do povo',porque:'Todo mundo está falando das canetas para perder peso: notícia, meme, conversa de almoço.',gancho:'Você atende quem chega querendo atalho. Mostre o que acontece com a alimentação de quem usa a caneta sem acompanhamento.',titulo:'Usei a caneta e parei de comer: e agora?'},
+      {id:'t2',origem:'Data que vem aí',quente:2,novo:true,status:'livre',t:'Festas de fim de ano chegando',porque:'Começa a contagem para confraternizações e ceias. As buscas por "como não engordar nas festas" sobem nesta época.',gancho:'Conte como você mesma faz nas festas da sua família e dê um plano simples de 3 passos.',titulo:'Como eu como na ceia sem culpa (e sem dieta)'},
+      {id:'t3',origem:'Trend nas redes',quente:2,novo:true,status:'livre',t:'Receitas virais de doce de 3 ingredientes',porque:'Vídeos de receitas rápidas estão entre os mais vistos da semana.',gancho:'Teste uma receita viral e diga, como nutricionista, o que realmente tem nela. Funciona muito bem em short.',titulo:'Testei a receita viral: nutricionista reage'},
+      {id:'t4',origem:'Do seu nicho',quente:1,novo:false,status:'pronto',t:'Proteína em tudo: café, pão, sorvete',porque:'Produtos "proteicos" tomaram o mercado e geram muita dúvida.',gancho:'Compare rótulos de produtos do mercado com uma refeição comum.',titulo:'Vale pagar mais caro no "proteico"?'}
+    ],
+    feed:[
+      {em:dd(util(0)) + ' 09:14',t:'Longo 05 · Os 3 erros do café da manhã',col:'aprovar'},
+      {em:dd(util(-1)) + ' 18:02',t:'Carrossel · Água ao longo do dia',col:'ajuste'},
+      {em:dd(util(-2)) + ' 17:02',t:'Longo 04 · Lanche da tarde',col:'publicado'}
+    ]
+  };
+}
+const ROTEIRO = [
+  {k:'h',t:'Gancho · 0 a 20s'},
+  {k:'p',t:'Você come à tarde e uma hora depois já está com fome de novo? O problema pode não ser a quantidade.'},
+  {k:'n',t:'Notas de gravação: tom de conversa, olhando para a câmera.'},
+  {k:'h',t:'Bloco 1 · O que segura a fome'},
+  {k:'p',t:'Proteína e fibra são o que sustentam. Um lanche só de carboidrato some rápido.'},
+  {k:'li',t:'Iogurte natural com fruta e aveia'},
+  {k:'li',t:'Ovo cozido com uma fruta'},
+  {k:'li',t:'Pão integral com queijo branco'},
+  {k:'h',t:'Fechamento'},
+  {k:'p',t:'Testa essa semana e me conta nos comentários qual virou o seu lanche favorito.'}
+];
+
+/* ---------- Réplica do portal ---------- */
+const COLS = [{id:'afazer',nome:'A fazer'},{id:'producao',nome:'Em produção'},{id:'aprovar',nome:'Para você aprovar'},{id:'ajuste',nome:'Em ajuste'},{id:'aprovado',nome:'Aprovado'},{id:'publicado',nome:'Publicado'}];
+const CHIP = {aprovar:['red','Esperando você'],ajuste:['warn','Em ajuste'],aprovado:['ok','Aprovado'],publicado:['info','Publicado'],producao:['','Em produção'],afazer:['','A fazer']};
+const FEED = {aprovar:'está pronta para a sua aprovação',ajuste:'está em ajuste',aprovado:'foi aprovada',publicado:'foi publicada',producao:'está em produção',afazer:'entrou na fila'};
+let D = dados(), view = 'inicio', novoCard = null, arquivo = null, enviando = false, spotAlvo = null, ouvintes = [];
+const emit = (ev, x) => ouvintes.forEach(f => f(ev, x));
+const plural = (n, um, varios) => n + ' ' + (n === 1 ? um : varios);
+const nomeRot = r => 'Roteiro ' + String(r.n).padStart(2,'0') + ' · ' + r.t;
+const podeAprovar = () => D.role !== 'equipe';
+
+function toast(msg){ const t = q('#toast'); t.textContent = msg; t.hidden = false; clearTimeout(toast.h); toast.h = setTimeout(() => t.hidden = true, 3200); }
+
+function go(v){
+  view = v;
+  qa('.view').forEach(s => s.hidden = s.id !== 'v-' + v);
+  qa('.nav button').forEach(b => b.dataset.view === v ? b.setAttribute('aria-current','page') : b.removeAttribute('aria-current'));
+  q('#pt-scroll').scrollTop = 0;
+  if (v === 'mensagens') { const c = q('#chat'); c.scrollTop = c.scrollHeight; }
+  aplicarSpot(); emit('view', v);
+}
+qa('[data-view]').forEach(b => b.addEventListener('click', () => go(b.dataset.view)));
+qa('[data-go]').forEach(b => b.addEventListener('click', () => go(b.dataset.go)));
+
+function render(){
+  const p = PESSOAS[D.role];
+  q('#avatar').textContent = p.nome.split(' ').map(x => x[0]).join('');
+  q('#who-nome').textContent = p.nome; q('#who-fase').textContent = p.papel + ' · ' + D.fase;
+  q('#hoje').textContent = D.hoje; q('#ola').textContent = 'Olá, ' + p.nome.split(' ')[0];
+  q('#fase-sub').textContent = 'Fase atual: ' + D.fase;
+  const ap = D.cards.filter(k => k.col === 'aprovar');
+  q('#tile-aprovar').textContent = plural(ap.length, 'peça', 'peças');
+  q('#tile-aprovar-sub').textContent = ap.length ? ap.map(k => k.t).join(', ') : 'Nada esperando por você agora.';
+  q('#tile-a').classList.toggle('hot', ap.length > 0);
+  const bA = q('#badge-aprovar'); bA.textContent = ap.length; bA.hidden = !ap.length;
+  const gravar = D.roteiros.filter(r => r.status === 'gravar');
+  const bG = q('#badge-gravar'); bG.textContent = gravar.length; bG.hidden = !gravar.length;
+  q('#tile-gravar-sub').textContent = 'Lanche que sacia';
+  const pub = D.cards.find(k => k.id === '6');
+  q('#tile-pub').textContent = pub.info.replace('Vai ao ar ', '');
+  q('#tile-pub-sub').textContent = pub.t;
+  q('#call-box').innerHTML = 'Próxima call com a equipe: <b>' + esc(D.proximaCall) + '</b>. Dúvidas antes disso? Escreva em <b>Mensagens</b>.';
+  q('#feed').innerHTML = D.feed.slice(0, 4).map(f => `<li><time class="mono">${esc(f.em)}</time><span><b>${esc(f.t)}</b> ${FEED[f.col]}.</span></li>`).join('');
+  renderBoard(); renderRoteiros(); renderTemas(); renderChat(); aplicarSpot();
+}
+
+function renderBoard(){
+  q('#board').innerHTML = COLS.map(c => {
+    const list = D.cards.filter(k => k.col === c.id);
+    return `<div class="col ${c.id === 'aprovar' ? 'mine' : ''}"><div class="col-h"><span>${c.nome}</span><span class="count">${list.length}</span></div>
+    ${list.length ? list.map(k => { const ch = CHIP[k.col]; return `<button class="card ${novoCard === k.id ? 'novo' : ''}" data-card="${k.id}"><span class="t">${esc(k.t)}</span>
+      <span class="row"><span class="chip ${ch[0]}">${ch[1]}</span><span class="mono sub">${esc(k.tipo)}${k.qtd > 1 ? ' · ' + k.qtd + ' peças' : ''}</span></span>
+      ${k.info ? `<span class="sub" style="font-size:13px">${esc(k.info)}</span>` : ''}</button>`; }).join('') : '<p class="empty">Nada aqui agora.</p>'}</div>`;
+  }).join('');
+  qa('[data-card]').forEach(b => b.addEventListener('click', () => abrirCard(b.dataset.card)));
+}
+
+function abrirGaveta(html){ q('#drawer-in').innerHTML = html; q('#scrim').hidden = false; q('#drawer').hidden = false; const x = q('#close'); if (x) x.onclick = fechar; aplicarSpot(); }
+function fechar(){ q('#scrim').hidden = true; q('#drawer').hidden = true; aplicarSpot(); }
+q('#scrim').addEventListener('click', fechar);
+
+function abrirCard(id){
+  const k = D.cards.find(c => c.id === id); if (!k) return;
+  const ch = CHIP[k.col];
+  const temArquivo = ['aprovar','aprovado','publicado'].includes(k.col);
+  let acts = '';
+  if (k.col === 'aprovar' && !podeAprovar()) acts = '<div class="rule">Quem aprova as peças é o dono ou sócio da conta. Se quiser comentar algo, mande em Mensagens.</div>';
+  else if (k.col === 'aprovar') acts = `<div class="rule">Só publicamos depois do seu OK.</div>
+    <div class="actions"><button class="btn ok" id="approve">Aprovar</button><button class="btn" id="ask">Pedir ajuste</button></div>
+    <form id="adj" hidden style="display:flex;flex-direction:column;gap:10px">
+      <label for="adj-txt">O que você quer mudar?<textarea id="adj-txt" maxlength="600" placeholder="Ex.: no 1:20 tire a frase sobre suplemento; troque a música por algo mais calmo."></textarea></label>
+      <label for="adj-tc">Minuto do vídeo (opcional)<input type="text" id="adj-tc" maxlength="12" placeholder="01:20"></label>
+      <div class="actions"><button class="btn primary" type="submit" id="adj-send">Enviar pedido de ajuste</button><button class="btn ghost" type="button" id="adj-cancel">Cancelar</button></div></form>`;
+  else if (k.col === 'ajuste') acts = '<div class="rule">A equipe está fazendo o ajuste que você pediu. A nova versão volta para "Para você aprovar".</div>';
+  else if (k.col === 'aprovado') acts = `<div class="rule">Aprovado. ${esc(k.info || 'Entra no calendário de publicação')}.</div>`;
+  else if (k.col === 'producao') acts = '<div class="rule">A equipe está produzindo esta peça. Quando ficar pronta, ela vem para a sua aprovação.</div>';
+  else if (k.col === 'afazer') acts = '<div class="rule">Esta peça está na fila de produção.</div>';
+  abrirGaveta(`<div class="row"><span class="chip ${ch[0]}">${ch[1]}</span><button class="btn ghost" id="close" aria-label="Fechar">Fechar</button></div>
+    <h2 id="d-title" style="font-size:24px">${esc(k.t)}</h2>
+    <p class="sub">${esc(k.tipo)}${k.qtd > 1 ? ' · ' + k.qtd + ' peças' : ''}${k.info ? ' · ' + esc(k.info) : ''}</p>
+    ${temArquivo ? `<div class="actions"><button class="btn" id="abrir-peca">${k.col === 'publicado' ? 'Ver publicação' : 'Abrir a peça'}</button></div>` : ''}${acts}`);
+  emit('card', k);
+  if (k.col === 'aprovar' && !podeAprovar()) emit('regra-equipe', k);
+  const ab = q('#abrir-peca'); if (ab) ab.onclick = () => toast('No portal, a peça abre aqui para você assistir.');
+  const ap = q('#approve'); if (ap) ap.onclick = () => acao(k, 'aprovar', ap);
+  const ask = q('#ask'); if (ask) ask.onclick = () => { q('#adj').hidden = false; q('#adj-txt').focus(); emit('abriu-ajuste', k); aplicarSpot(); };
+  const cancel = q('#adj-cancel'); if (cancel) cancel.onclick = () => { q('#adj').hidden = true; aplicarSpot(); };
+  const adj = q('#adj');
+  if (adj) adj.onsubmit = e => { e.preventDefault(); const t = q('#adj-txt').value.trim(); if (t.length < 3) { q('#adj-txt').focus(); toast('Escreva o que você quer mudar.'); return; } acao(k, 'ajuste', q('#adj-send')); };
+}
+
+async function acao(k, tipo, btn){
+  btn.disabled = true; btn.textContent = 'Enviando…';
+  await espera(650);
+  k.col = tipo === 'aprovar' ? 'aprovado' : 'ajuste';
+  k.info = tipo === 'aprovar' ? 'Entra no calendário de publicação' : '';
+  D.feed.unshift({em: dd(new Date()) + ' ' + new Date().toTimeString().slice(0,5), t:k.t, col:k.col});
+  novoCard = k.id; fechar(); render();
+  const el = q('[data-card="' + k.id + '"]'); if (el) el.scrollIntoView({behavior:'smooth', block:'nearest', inline:'center'});
+  toast(tipo === 'aprovar' ? 'Aprovado! A equipe já foi avisada.' : 'Pedido de ajuste enviado. A equipe já foi avisada.');
+  emit(tipo === 'aprovar' ? 'aprovou' : 'ajuste', k);
+}
+
+function renderRoteiros(){
+  q('#roteiros').innerHTML = D.roteiros.map(r => `<li><div><b>${esc(nomeRot(r))}</b></div><span class="row" style="gap:8px"><span class="chip ${r.status === 'gravar' ? 'red' : 'ok'}">${r.status === 'gravar' ? 'Para gravar' : 'Gravado'}</span><button class="btn" data-rot="${r.id}">Ler</button></span></li>`).join('');
+  qa('[data-rot]').forEach(b => b.addEventListener('click', () => lerRoteiro(b.dataset.rot)));
+  const sel = q('#rot'), atual = sel.value;
+  sel.innerHTML = D.roteiros.filter(r => r.status === 'gravar').map(r => `<option>${esc(nomeRot(r))}</option>`).join('') + '<option value="">Outro vídeo</option>';
+  if (atual) sel.value = atual;
+}
+
+function lerRoteiro(id){
+  const r = D.roteiros.find(x => x.id === id);
+  const corpo = [], partes = ROTEIRO;
+  let lista = [];
+  const fechaLista = () => { if (lista.length) { corpo.push('<ul>' + lista.join('') + '</ul>'); lista = []; } };
+  partes.forEach(p => { if (p.k === 'li') { lista.push('<li>' + esc(p.t) + '</li>'); return; } fechaLista(); corpo.push(p.k === 'h' ? '<h3>' + esc(p.t) + '</h3>' : p.k === 'n' ? '<p class="nota">' + esc(p.t) + '</p>' : '<p>' + esc(p.t) + '</p>'); });
+  fechaLista();
+  abrirGaveta(`<div class="row"><span class="chip">Roteiro</span><button class="btn ghost" id="close" aria-label="Fechar">Fechar</button></div><h2 id="d-title" style="font-size:24px">${esc(nomeRot(r))}</h2>
+    <div class="actions"><button class="btn primary" id="rot-copiar">Copiar texto para o teleprompter</button><button class="btn" id="rot-txt">Baixar .txt</button><button class="btn" id="rot-pdf">Salvar em PDF</button></div>
+    <div class="rot-txt">${corpo.join('')}</div>`);
+  emit('leu', r);
+  const fala = partes.filter(p => p.k === 'p' || p.k === 'li').map(p => p.t).join('\n\n');
+  q('#rot-copiar').onclick = () => {
+    const ok = () => { toast('Texto copiado. Agora é só colar no app de teleprompter.'); emit('copiou'); };
+    try { navigator.clipboard.writeText(fala).then(ok, ok); } catch (e) { ok(); }
+  };
+  q('#rot-txt').onclick = () => toast('No portal, o roteiro baixa em .txt no seu aparelho.');
+  q('#rot-pdf').onclick = () => toast('No portal, abre a versão para imprimir ou salvar em PDF.');
+}
+
+function mostrarArquivo(nome, tam){ arquivo = {nome, tam}; q('#file-name').textContent = nome + ' · ' + tam; q('#drop').classList.add('cheio'); aplicarSpot(); emit('escolheu'); }
+const drop = q('#drop');
+drop.addEventListener('click', () => mostrarArquivo('roteiro-08-lanche-que-sacia.mp4', '2,4 GB'));
+drop.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); drop.click(); } });
+['dragenter','dragover'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add('over'); }));
+['dragleave','drop'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove('over'); }));
+drop.addEventListener('drop', e => { const f = e.dataTransfer.files[0]; if (f) mostrarArquivo(f.name, f.size >= 1073741824 ? (f.size / 1073741824).toFixed(1).replace('.', ',') + ' GB' : Math.max(1, Math.round(f.size / 1048576)) + ' MB'); });
+
+q('#send-file').addEventListener('click', async () => {
+  if (enviando) return;
+  if (!arquivo) { toast('Escolha o vídeo primeiro.'); return; }
+  enviando = true; const btn = q('#send-file'); btn.disabled = true; q('#up-box').hidden = false;
+  for (let p = 0; p <= 100; p += 4) { q('#up-bar').style.width = p + '%'; q('#up-txt').textContent = 'Enviando… ' + p + '%'; await espera(110); }
+  q('#up-txt').textContent = 'Conferindo…'; await espera(700);
+  q('#up-txt').textContent = 'Recebido! A equipe já foi avisada e a edição começa em seguida.';
+  toast('Gravação recebida. Obrigado!');
+  arquivo = null; q('#file-name').textContent = 'Tem outro vídeo? Escolha aqui.'; q('#drop').classList.remove('cheio');
+  enviando = false; btn.disabled = false; emit('enviou');
+});
+
+const TEMA_ST = {livre:['',''], pedido:['warn','Roteiro em preparo'], pronto:['ok','Roteiro pronto']};
+const fogo = n => ['', 'Em alta', 'Muito em alta', 'Bombando'][n] || 'Em alta';
+function segunda(){ const d = new Date(); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return DIAS[1] + ', ' + dd(d); }
+function renderTemas(){
+  const ts = D.temas;
+  const novos = D.temaDisponivel ? ts.filter(t => t.status === 'livre' && t.novo).length : 0;
+  const b = q('#badge-temas'); b.textContent = novos; b.hidden = !novos;
+  q('#temas-sub').textContent = 'Atualizado ' + segunda() + '. Assuntos em alta agora, já com o jeito de levar para o seu conteúdo.';
+  q('#temas').innerHTML = ts.map(t => {
+    const st = TEMA_ST[t.status];
+    const btn = t.status === 'livre' ? (D.temaDisponivel ? `<button class="btn primary" data-tema="${t.id}">Quero esse roteiro</button>` : '<span class="small">Você já usou o pedido deste mês. No mês que vem pode escolher de novo.</span>')
+      : t.status === 'pronto' ? '<button class="btn" data-ir="gravacoes">Ver em Gravações</button>' : '<span class="small">A equipe já está escrevendo.</span>';
+    return `<article class="tema${t.quente >= 3 && t.status === 'livre' ? ' hot' : ''}">
+      <div class="tp"><span class="chip">${esc(t.origem)}</span>${st[1] ? `<span class="chip ${st[0]}">${st[1]}</span>` : `<span class="fogo">${fogo(t.quente)}</span>`}</div>
+      <h2>${esc(t.t)}</h2><p class="sub">${esc(t.porque)}</p>
+      <div><p class="lbl">Como entra no seu conteúdo</p><p class="gancho">${esc(t.gancho)}</p></div>
+      <div><p class="lbl">Título sugerido</p><p class="tit">${esc(t.titulo)}</p></div>
+      <div class="fim">${btn}</div></article>`;
+  }).join('');
+  qa('[data-tema]').forEach(x => x.addEventListener('click', () => pedirTema(x.dataset.tema)));
+  qa('[data-ir]').forEach(x => x.addEventListener('click', () => go(x.dataset.ir)));
+}
+function pedirTema(id){
+  const t = D.temas.find(x => x.id === id); if (!t) return;
+  abrirGaveta(`<div class="row"><p class="eyebrow">Tema quente</p><button class="btn ghost" id="close" aria-label="Fechar">Fechar</button></div>
+    <h2 id="d-title" style="font-size:26px">${esc(t.titulo)}</h2>
+    <p class="sub">${esc(t.porque)}</p>
+    <p class="gancho" style="background:var(--accent-soft);border-radius:10px;padding:10px 12px">${esc(t.gancho)}</p>
+    ${podeAprovar() ? `<label for="tema-obs">Tem alguma história sua que combina com esse tema? (opcional)<textarea id="tema-obs" maxlength="600" placeholder="Ex.: um caso de cliente, algo que aconteceu com você, um número do seu negócio…"></textarea></label>
+    <p class="small">A equipe já usa o que sabe de você: sua trajetória, suas histórias e o seu negócio. Se quiser, conte algo a mais aqui.</p>
+    <p class="small">É o seu pedido do mês: este roteiro entra como um dos roteiros do seu pacote.</p>
+    <div class="actions"><button class="btn primary" id="tema-ok">Pedir roteiro</button></div>`
+    : '<div class="rule">Quem pede roteiros é o dono ou sócio da conta. Se gostou deste tema, avise em Mensagens.</div>'}`);
+  emit('abriu-tema', t);
+  const ok = q('#tema-ok'); if (!ok) return;
+  ok.onclick = async () => {
+    ok.disabled = true; ok.textContent = 'Enviando…'; await espera(650);
+    t.status = 'pedido'; D.temaDisponivel = false; fechar(); render();
+    toast('Pedido enviado. O roteiro aparece em Gravações assim que ficar pronto.'); emit('tema', t);
+  };
+}
+
+function renderChat(digitando){
+  const c = q('#chat');
+  c.innerHTML = D.mensagens.map((m, i) => `<div class="msg ${m.eu ? 'me' : ''} ${m.novo ? 'novo' : ''}"><div class="t">${esc(m.t)}</div><div class="meta">${esc(m.quem)} · ${esc(m.em)}</div></div>`).join('') + (digitando ? '<p class="digitando">Érica está digitando…</p>' : '');
+  c.scrollTop = c.scrollHeight;
+}
+q('#composer').addEventListener('submit', async e => {
+  e.preventDefault();
+  const v = q('#msg-in').value.trim(); if (!v) return;
+  const btn = q('#msg-btn'); btn.disabled = true;
+  const agora = () => dd(new Date()) + ' ' + new Date().toTimeString().slice(0,5);
+  D.mensagens.forEach(m => m.novo = false);
+  D.mensagens.push({eu:true, t:v, quem: D.role === 'dono' ? 'você' : PESSOAS[D.role].nome.split(' ')[0], em:agora(), novo:true});
+  q('#msg-in').value = ''; renderChat(); btn.disabled = false; emit('mensagem');
+  await espera(900); renderChat(true);
+  await espera(1600);
+  D.mensagens.push({eu:false, t:'Recebido! Já estamos vendo isso por aqui.', quem:'Érica · suporte', em:agora(), novo:true});
+  renderChat(); emit('resposta');
+});
+
+/* Destaque (anel laranja) no que o Rômulo deve clicar */
+function aplicarSpot(){
+  qa('.spot').forEach(el => el.classList.remove('spot'));
+  if (!spotAlvo) return;
+  const sels = typeof spotAlvo === 'function' ? spotAlvo() : spotAlvo;
+  [].concat(sels || []).forEach(s => { const el = q(s); if (el && !el.closest('[hidden]')) el.classList.add('spot'); });
+}
+function mirar(){
+  const el = q('.spot'); if (!el) return;
+  setTimeout(() => el.scrollIntoView({behavior:'smooth', block:'nearest', inline:'center'}), 120);
+}
+
+const P = {
+  on: f => ouvintes.push(f),
+  reset(){ D = dados(); novoCard = null; arquivo = null; q('#up-box').hidden = true; q('#file-name').textContent = 'Direto do celular ou do computador. Pode ser arquivo grande.'; q('#drop').classList.remove('cheio'); fechar(); render(); go('inicio'); },
+  telaLink(){ P.reset(); q('#pt-link').hidden = false; q('#pt-load').hidden = true; },
+  aberto: () => q('#pt-link').hidden && q('#pt-load').hidden,
+  abrirDireto(){ q('#pt-link').hidden = true; q('#pt-load').hidden = true; },
+  go, fechar, render, card: id => D.cards.find(c => c.id === id), dados: () => D,
+  spot(alvo){ spotAlvo = alvo; aplicarSpot(); mirar(); },
+  papel(r){ D.role = r; fechar(); render(); },
+  garantirAprovar(){ if (!D.cards.some(c => c.col === 'aprovar')) { const c = D.cards.find(x => x.id === '1'); c.col = 'aprovar'; c.info = ''; render(); } }
+};
+q('#abrir').addEventListener('click', async () => { q('#pt-link').hidden = true; q('#pt-load').hidden = false; await espera(1100); q('#pt-load').hidden = true; go('inicio'); emit('abriu'); });
+render(); go('inicio');
+
+/* ---------- Ajuste do dispositivo (computador ou celular) ---------- */
+let modo = 'desk';
+const device = $('#device'), vp = $('#viewport'), holder = $('#holder');
+function caber(){
+  const W = holder.clientWidth, H = holder.clientHeight;
+  if (!W || !H) return;
+  if (modo === 'desk') {
+    const LW = Math.max(1080, Math.min(W, 1280)), bar = 40, s = Math.min(1, W / LW);
+    device.style.width = LW * s + 'px'; device.style.height = H + 'px';
+    vp.style.width = LW * s + 'px'; vp.style.height = (H - bar) + 'px';
+    pt.style.width = LW + 'px'; pt.style.height = (H - bar) / s + 'px'; pt.style.transform = 'scale(' + s + ')';
+  } else {
+    const LW = 390, LH = 800, pad = 12, s = Math.min(1, (H - 2 * pad) / LH, (W - 2 * pad) / LW);
+    device.style.width = LW * s + 2 * pad + 'px'; device.style.height = LH * s + 2 * pad + 'px';
+    vp.style.width = LW * s + 'px'; vp.style.height = LH * s + 'px';
+    pt.style.width = LW + 'px'; pt.style.height = LH + 'px'; pt.style.transform = 'scale(' + s + ')';
+  }
+}
+function setModo(m){ modo = m; device.classList.toggle('phone', m === 'phone'); $('#m-desk').setAttribute('aria-pressed', m === 'desk'); $('#m-phone').setAttribute('aria-pressed', m === 'phone'); caber(); mirar(); }
+$('#m-desk').onclick = () => setModo('desk');
+$('#m-phone').onclick = () => setModo('phone');
+new ResizeObserver(caber).observe(holder);
+
+/* ---------- Roteiro do tour ---------- */
+const STEPS = [
+  {id:'capa', chip:'Capa', cheio:true, html:() => `<div class="hero">
+      <span class="chipbeta">Versão beta</span>
+      <h1>Portal do <span>Cliente</span></h1>
+      <p class="lead">Entregas, aprovações, roteiros, gravações e conversa com a equipe. Tudo num lugar só.</p>
+      <div class="tabs"><span>Início</span><span>Entregas</span><span>Gravações</span><span>Temas quentes</span><span>Mensagens</span></div>
+      <button class="big-cta" data-acao="proximo">Começar o tour →</button></div>`},
+  {id:'link', chip:'Seu link', titulo:'Um link<br><span>só seu</span>', lead:'Abre no navegador, no celular ou no computador.', pts:['Entra com a sua senha','Sem instalar nada','Cada pessoa da empresa tem o seu'],
+    tente:'Toque em <b>Entrar</b>.', feito:'Pronto. Esse é o portal da cliente.', ev:'abriu',
+    entrar(){ P.telaLink(); P.spot('#abrir'); }},
+  {id:'inicio', chip:'Início', titulo:'Tudo numa<br><span>olhada</span>', lead:'Logo na entrada você vê o que está esperando por você.', pts:['Peças para aprovar','Próximo roteiro para gravar','Próxima publicação e próxima call'],
+    tente:'Toque em <b>Ver entregas</b>.', feito:'É lá que ficam todas as peças.', ev:'view', se: v => v === 'entregas',
+    entrar(){ P.abrirDireto(); P.go('inicio'); P.spot(['.tiles']); }},
+  {id:'entregas', chip:'Entregas', titulo:'Cada peça<br><span>num quadro</span>', lead:'Da fila até publicado, com longos, shorts e carrosséis.', pts:['6 etapas, da fila ao ar','Atualiza sozinho quando a equipe avança'],
+    tente:'Toque em qualquer peça para ver os detalhes.', feito:'Cada peça mostra em que pé está.', ev:'card',
+    entrar(){ P.abrirDireto(); P.go('entregas'); P.spot(['#board-wrap']); }},
+  {id:'aprovar', chip:'Aprovar', titulo:'Aprovar<br><span>num toque</span>', lead:'Nada vai ao ar sem o seu OK.', pts:['O número laranja no menu mostra o que espera você','A equipe é avisada na hora'],
+    tente:'Abra o <b>Longo 05</b> e toque em <b>Aprovar</b>.', feito:'Foi para Aprovado e a equipe já foi avisada.', ev:'aprovou',
+    jaFeito: () => P.card('1').col !== 'aprovar',
+    entrar(){ P.abrirDireto(); P.go('entregas'); P.spot(() => ['[data-card="1"]', '#approve']); }},
+  {id:'ajuste', chip:'Pedir ajuste', titulo:'Pedir<br><span>ajuste</span>', lead:'Escreva o que quer mudar e, se quiser, o minuto do vídeo.', pts:['A peça vai para Em ajuste','A nova versão volta para você aprovar'],
+    tente:'Abra o <b>Carrossel Mitos da proteína</b>, toque em <b>Pedir ajuste</b> e envie.', feito:'Pedido enviado. A equipe já começa a ajustar.', ev:'ajuste',
+    jaFeito: () => P.card('2').col !== 'aprovar',
+    entrar(){ P.abrirDireto(); P.go('entregas'); P.spot(() => q('#adj') && !q('#adj').hidden ? ['#adj-txt', '#adj-send'] : ['[data-card="2"]', '#ask']); }},
+  {id:'roteiros', chip:'Roteiros', titulo:'Roteiro direto no<br><span>teleprompter</span>', lead:'Leia o roteiro e leve a fala para o app de teleprompter.', pts:['Copia só a fala, sem títulos nem anotações','Baixa em texto ou salva em PDF'],
+    tente:'Abra o <b>Roteiro 08</b> e toque em <b>Copiar texto para o teleprompter</b>.', feito:'Copiado. É só colar no app de teleprompter.', ev:'copiou',
+    entrar(){ P.abrirDireto(); P.go('gravacoes'); P.spot(['[data-rot="r8"]', '#rot-copiar']); }},
+  {id:'temas', chip:'Temas quentes', titulo:'Temas<br><span>quentes</span>', lead:'Toda semana, assuntos em alta já com o jeito de levar para o seu conteúdo.', pts:['A equipe escreve o roteiro com as suas histórias','1 tema por mês, dentro do pacote'],
+    tente:'Escolha um tema, toque em <b>Quero esse roteiro</b> e depois em <b>Pedir roteiro</b>.', feito:'Pedido feito. A equipe já começa a escrever.', ev:'tema',
+    jaFeito: () => !P.dados().temaDisponivel,
+    entrar(){ P.abrirDireto(); P.go('temas'); P.spot(() => q('#tema-ok') ? ['#tema-obs', '#tema-ok'] : ['.tema.hot [data-tema]']); }},
+  {id:'gravacao', chip:'Enviar gravação', titulo:'Gravou?<br><span>Envie aqui</span>', lead:'Do celular ou do computador. Pode ser arquivo grande.', pts:['A equipe é avisada na hora','A edição começa em seguida','O vídeo pronto volta em Entregas para aprovar'],
+    tente:'Toque na área do vídeo e depois em <b>Enviar gravação</b>.', feito:'Recebido! Depois chegam também os shorts e o carrossel desse conteúdo.', ev:'enviou',
+    entrar(){ P.abrirDireto(); P.go('gravacoes'); P.spot(() => q('#drop').classList.contains('cheio') ? ['#send-file'] : ['#drop']); }},
+  {id:'mensagens', chip:'Mensagens', titulo:'Fale com<br><span>a gente</span>', lead:'Esta conversa é o seu grupo do WhatsApp.', pts:['O que você escreve aqui chega no grupo','As respostas da equipe aparecem aqui'],
+    tente:'Escreva uma mensagem e toque em <b>Enviar</b>.', feito:'Chegou no grupo, e a resposta apareceu aqui.', ev:'resposta',
+    entrar(){ P.abrirDireto(); P.go('mensagens'); P.spot(['#composer']); }},
+  {id:'acesso', chip:'Quem acessa', titulo:'Cada pessoa,<br><span>seu acesso</span>', lead:'Cada pessoa da empresa recebe o próprio link.', roles:true,
+    tente:'Troque para <b>Equipe</b> e abra uma peça que está para aprovar.', feito:'A equipe acompanha, mas quem aprova e pede temas é o dono ou o sócio. Para incluir alguém, é só pedir no grupo.', ev:'regra-equipe',
+    entrar(){ P.abrirDireto(); P.garantirAprovar(); P.go('entregas'); P.spot(['.col.mine .card']); }},
+  {id:'celular', chip:'Celular', modo:'phone', titulo:'No celular<br><span>também</span>', lead:'O mesmo portal, no bolso. Salve o link nos favoritos.', pts:['Funciona no celular e no computador','Nada para instalar'],
+    tente:'Toque nas abas do portal no celular.', feito:'Tudo o que vimos funciona igual no celular.', ev:'view',
+    entrar(){ P.abrirDireto(); P.go('inicio'); P.spot(['.nav']); }},
+  {id:'beta', chip:'Versão beta', cheio:true, html:() => `<div class="hero">
+      <p class="eyebrow">Um recado importante</p>
+      <h1 style="font-size:clamp(52px,7vw,128px)">Estamos em <span>versão beta</span></h1>
+      <div class="beta">
+        <article><h2>Sempre evoluindo</h2><p>O portal recebe atualizações o tempo todo.</p></article>
+        <article><h2>Sua opinião conta</h2><p>O seu feedback é muito importante. Conte pra gente o que achou.</p></article>
+        <article class="wa"><h2>WhatsApp continua</h2><p>Até o lançamento ao público, as dúvidas seguem no WhatsApp.</p></article>
+      </div></div>`},
+  {id:'fim', chip:'Feedback', cheio:true, html:() => `<div class="hero">
+      <img class="fim-logo" src="${$('.top .logo').src}" alt="Grupo Euforia">
+      <h1 style="font-size:clamp(56px,8.5vw,150px)">O que você <span>achou?</span></h1>
+      <p class="lead">Conte pra gente o que ajudaria mais no seu dia a dia.</p>
+      <div class="ctas"><button class="big-cta" data-acao="livre">Explorar o portal à vontade</button><button class="ghost-cta" data-acao="inicio">Rever do começo</button></div></div>`},
+  {id:'livre', chip:'Explorar', oculto:true, titulo:'Explore à<br><span>vontade</span>', lead:'Tudo aqui é de exemplo. Pode clicar em tudo, nada é enviado.', pts:['Início, Entregas, Gravações e Mensagens','Troque entre computador e celular ali em cima'],
+    entrar(){ P.abrirDireto(); P.go('inicio'); P.spot(null); }}
+];
+const feitos = new Set();
+let atual = -1, entrando = false;
+const visiveis = STEPS.filter(s => !s.oculto);
+
+function chips(){
+  $('#steps').innerHTML = visiveis.map(s => `<button data-step="${s.id}" class="${feitos.has(s.id) ? 'feito' : ''}" ${STEPS[atual] && STEPS[atual].id === s.id ? 'aria-current="step"' : ''}>${s.chip}<span class="ok">✓</span></button>`).join('');
+  $('#steps').querySelectorAll('[data-step]').forEach(b => b.onclick = () => irPara(b.dataset.step));
+  const cur = $('#steps [aria-current]'); if (cur) cur.scrollIntoView({block:'nearest', inline:'nearest'});
+}
+
+function talk(){
+  const s = STEPS[atual], n = visiveis.indexOf(s), total = visiveis.length;
+  const ultimo = atual >= STEPS.length - 1 || s.id === 'fim';
+  const pager = `<nav class="pager"><button class="pbtn" data-acao="anterior" ${atual === 0 ? 'disabled' : ''} aria-label="Voltar">←</button><button class="pbtn next ${feitos.has(s.id) && !s.cheio ? 'vai' : ''}" data-acao="proximo" ${ultimo ? 'hidden' : ''}>${s.id === 'livre' ? 'Voltar ao fim' : 'Próximo →'}</button></nav>`;
+  if (s.cheio) { $('#talk').innerHTML = s.html() + (s.id === 'capa' ? '' : pager); }
+  else {
+    const feito = feitos.has(s.id);
+    $('#talk').innerHTML = `<p class="eyebrow">${n >= 0 ? 'Passo ' + n + ' de ' + (total - 3) + ' · ' + s.chip : 'Modo livre'}</p>
+      <h1>${s.titulo}</h1><p class="lead">${s.lead}</p>
+      ${s.pts ? '<ul class="pts">' + s.pts.map(p => '<li>' + p + '</li>').join('') + '</ul>' : ''}
+      ${s.roles ? `<div class="roles">${['dono','socio','equipe'].map(r => `<button class="role ${r === 'equipe' ? 'eq' : ''}" data-role="${r}" aria-pressed="${P.dados().role === r}"><span class="av">${PESSOAS[r].nome.split(' ').map(x => x[0]).join('')}</span><span><strong>${PESSOAS[r].papel} · ${PESSOAS[r].nome.split(' ')[0]}</strong><span>${r === 'equipe' ? 'Acompanha, manda mensagem e envia gravação' : 'Aprova, pede ajuste e pede temas'}</span></span></button>`).join('')}</div>` : ''}
+      ${s.tente ? `<div class="try ${feito ? 'feito' : ''}"><span class="ic">${feito ? '✓' : '→'}</span><div><span class="lbl">${feito ? 'Feito' : 'Experimente'}</span><p>${feito ? s.feito : s.tente}</p></div></div>` : ''}
+      ${pager}<p class="kbd">Setas do teclado também passam os passos.</p>`;
+    $('#talk').querySelectorAll('[data-role]').forEach(b => b.onclick = () => { P.papel(b.dataset.role); talk(); });
+  }
+  $('#talk').querySelectorAll('[data-acao]').forEach(b => b.onclick = () => acaoTour(b.dataset.acao));
+  $('#talk').scrollTop = 0;
+}
+
+function irPara(id){
+  const i = typeof id === 'number' ? id : STEPS.findIndex(s => s.id === id);
+  if (i < 0 || i >= STEPS.length) return;
+  atual = i; const s = STEPS[i];
+  $('#stage').classList.toggle('cheio', !!s.cheio);
+  if (!s.cheio) {
+    if (s.id !== 'acesso' && s.id !== 'livre' && P.dados().role !== 'dono') P.papel('dono');
+    setModo(s.modo || (innerWidth < 700 ? 'phone' : 'desk'));
+    q('#toast').hidden = true;
+    P.fechar();
+    entrando = true; try { if (s.entrar) s.entrar(); } finally { entrando = false; }
+    if (s.jaFeito && s.jaFeito()) feitos.add(s.id);
+  }
+  chips(); talk();
+  try { if (location.hash !== '#' + s.id) history.replaceState(null, '', '#' + s.id); } catch (e) {}
+}
+function acaoTour(a){
+  if (a === 'proximo') { const s = STEPS[atual]; irPara(s.id === 'livre' ? 'fim' : atual + 1); }
+  else if (a === 'anterior') irPara(Math.max(0, atual - 1));
+  else if (a === 'livre') irPara('livre');
+  else if (a === 'inicio') { reiniciar(); }
+}
+function reiniciar(){ feitos.clear(); P.reset(); irPara(0); }
+
+P.on((ev, x) => {
+  const s = STEPS[atual]; if (!s || s.cheio || entrando) return;
+  if (s.ev === ev && (!s.se || s.se(x)) && !feitos.has(s.id)) { feitos.add(s.id); chips(); talk(); }
+  if (['escolheu','abriu-ajuste','card','abriu-tema'].includes(ev)) { P.spot(s.id === 'livre' ? null : undefined); }
+});
+/* re-aplica o destaque do passo atual depois de mudanças na réplica */
+const spotOriginal = P.spot;
+P.spot = alvo => { if (alvo !== undefined) P._alvo = alvo; spotOriginal(P._alvo); };
+
+$('#reset').onclick = reiniciar;
+$('#fs').onclick = () => { try { const r = document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen(); if (r && r.catch) r.catch(() => {}); } catch (e) {} };
+document.addEventListener('keydown', e => {
+  if (e.target.closest('input,textarea,select')) return;
+  if (e.key === 'ArrowRight' || e.key === 'PageDown') { e.preventDefault(); if (STEPS[atual].id !== 'fim') acaoTour('proximo'); }
+  if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); acaoTour('anterior'); }
+});
+window.addEventListener('hashchange', () => { const id = location.hash.slice(1); if (id && STEPS[atual] && STEPS[atual].id !== id) irPara(id); });
+
+const inicial = location.hash.slice(1);
+irPara(STEPS.some(s => s.id === inicial) ? inicial : 0);
+})();
+</script>
+</body></html>
