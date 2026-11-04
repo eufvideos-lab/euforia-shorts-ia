@@ -14,7 +14,7 @@ const relogio = trigger({ type: 'n8n-nodes-base.scheduleTrigger', version: 1.2, 
   rule: { interval: [{ field: 'hours', hoursInterval: 1 }] } } } });
 
 // Dois alertas por dia, de segunda a sábado (Recife):
-// 14h = 1º aviso ao Ismael (quem posta); 17h = o que continua pendente vai ao Rômulo (resolve) e à diretoria.
+// 14h = 1º aviso ao Ismael e ao Daniel (quem posta); 17h = o que continua pendente vai ao Rômulo (resolve) e à diretoria.
 const hora = node({ type: 'n8n-nodes-base.code', version: 2, config: { name: 'Hora do alerta', parameters: { jsCode: `const agora = DateTime.now().setZone('America/Recife');
 const ETAPAS = { 14: 'ismael', 17: 'romulo' };
 const etapa = ETAPAS[agora.hour];
@@ -62,11 +62,11 @@ if (!pend.length) return [];
 pend.sort((a, b) => (b.foco - a.foco) || (a.hora || '99').localeCompare(b.hora || '99') || a.nome.localeCompare(b.nome));
 const linhas = pend.slice(0, 25).map(x => '• ' + (x.foco ? '⭐ ' : '') + '**' + x.nome + '** · ' + x.plat + ' ' + x.formato.toLowerCase() + (x.qtd > 1 ? ' ×' + x.qtd : '') + (x.hora ? ' · ' + x.hora : ''));
 if (pend.length > 25) linhas.push('… e mais ' + (pend.length - 25));
-const ISMAEL = '1410287139169763471', ROMULO = '1490768736876237082';
+const ISMAEL = '1410287139169763471', DANIEL = '1470387767337816128', ROMULO = '1490768736876237082';
 const equipe = h.etapa === 'ismael'
-  ? '📅 <@' + ISMAEL + '> postagens de hoje (' + h.hojeTexto + ') ainda sem **Programado** na Grade:\\n' + linhas.join('\\n') + '\\n\\nSe já programou ou postou, marque na aba Grade do painel. Se travou, avise o Rômulo.'
-  : '⚠️ <@' + ROMULO + '> estas postagens de hoje continuam sem Programado nem Postado:\\n' + linhas.join('\\n') + '\\n\\nResolva com o Ismael. O que não der para sair hoje, avise a diretoria.';
-const ids = h.etapa === 'ismael' ? [ISMAEL] : [ROMULO];
+  ? '📅 <@' + ISMAEL + '> <@' + DANIEL + '> postagens de hoje (' + h.hojeTexto + ') ainda sem **Programado** na Grade:\\n' + linhas.join('\\n') + '\\n\\nSe já programou ou postou, marque na aba Grade do painel. Se travou, avise o Rômulo.'
+  : '⚠️ <@' + ROMULO + '> estas postagens de hoje continuam sem Programado nem Postado:\\n' + linhas.join('\\n') + '\\n\\nResolva com o Ismael e o Daniel. O que não der para sair hoje, avise a diretoria.';
+const ids = h.etapa === 'ismael' ? [ISMAEL, DANIEL] : [ROMULO];
 const out = { equipe: JSON.stringify({ content: equipe.slice(0, 1990), allowed_mentions: { users: ids } }), diretoria: '', paraDiretoria: h.etapa === 'romulo' };
 if (out.paraDiretoria) out.diretoria = JSON.stringify({ content: ('📅 Postagem do dia (' + h.hojeTexto + ', 17h): ' + pend.length + ' horário(s) ainda sem Programado nem Postado. Rômulo foi chamado.\\n' + linhas.join('\\n')).slice(0, 1990), allowed_mentions: { parse: [] } });
 return [{ json: out }];
@@ -85,7 +85,7 @@ const avisarDiretoria = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4,
   method: 'POST', url: 'https://discord.com/api/v10/channels/1560627456837427250/messages', authentication: 'genericCredentialType', genericAuthType: 'httpHeaderAuth',
   sendBody: true, specifyBody: 'json', jsonBody: '={{ $("Montar alerta").first().json.diretoria }}', options: {} } } });
 
-const nota = sticky('## Painel · alerta da postagem do dia (V1)\nDe segunda a sábado, às 14h e às 17h (Recife). Lê os horários "✅ Publicar" de hoje na Grade de Postagem, tira cliente que não está Ativo e cliente com "🎥 Aguardando gravação", e confere a tabela "Painel · grade marcações" (botões Programado/Postado da aba Grade).\n14h: o que falta vai ao #dia-a-dia marcando o Ismael. 17h: o que continua faltando vai ao #dia-a-dia marcando o Rômulo e ao #avisos-escritório (diretoria). Cliente em foco (⭐ Foco até) vem primeiro. Sem pendência, não manda nada.', [], { color: 4 });
+const nota = sticky('## Painel · alerta da postagem do dia (V1)\nDe segunda a sábado, às 14h e às 17h (Recife). Lê os horários "✅ Publicar" de hoje na Grade de Postagem, tira cliente que não está Ativo e cliente com "🎥 Aguardando gravação", e confere a tabela "Painel · grade marcações" (botões Programado/Postado da aba Grade).\n14h: o que falta vai ao #dia-a-dia marcando o Ismael e o Daniel. 17h: o que continua faltando vai ao #dia-a-dia marcando o Rômulo e ao #avisos-escritório (diretoria). Cliente em foco (⭐ Foco até) vem primeiro. Sem pendência, não manda nada.', [], { color: 4 });
 
 export default workflow('painel-postagem-do-dia', 'Painel | Alerta da postagem do dia (V1)')
   .add(relogio).to(hora).to(grade).to(clientes).to(marcacoes).to(montar).to(avisarEquipe).to(praDiretoria.onTrue(avisarDiretoria))
