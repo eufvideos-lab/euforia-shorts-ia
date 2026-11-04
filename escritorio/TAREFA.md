@@ -61,10 +61,13 @@ card tenha sido editado depois da última anotação da máquina (a equipe respo
 Cards para atender: os com "🏢 Escritório IA" **vazio**, **Na fila** ou **Fazendo (IA)**, mais os ignorados acima que
 foram editados depois. Um card **Na fila** é para fazer mesmo que o Obs tenha uma pergunta antiga da máquina:
 alguém o recolocou na fila de propósito. Leia o Obs inteiro e siga a instrução mais recente.
-Ordem (desde 28/10, pedido do Henrique: **sempre o que vence primeiro**):
+Ordem (desde 28/10, pedido do Henrique: **sempre o que vence primeiro**; desde 04/11 o cliente em foco passa na frente):
+0. Cliente em foco da diretoria: ficha do cliente com "⭐ Foco até" igual ou depois de hoje (Recife). Dentro dele, a ordem abaixo.
+   Só abra a ficha quando houver mais cards do que a rodada atende.
 1. Atrasados e os que vencem hoje (Prazo ≤ hoje), do prazo mais antigo para o mais novo. Apresentação de call da
    agenda conta pela data da call.
-2. Pedidos do painel (Obs começa com "[Painel", título termina em "(painel)"), do prazo mais próximo.
+2. Pedidos do painel (Obs começa com "[Painel", título termina em "(painel)") e cards de promessa feita ao cliente
+   (Obs com uma linha "[Promessas"), do prazo mais próximo.
 3. Apresentações de call da agenda (título termina em "APRESENTAÇÃO DE CALL (agenda)"), a call mais próxima primeiro.
 4. Prioridade Urgente, depois cliente com 🔴 atenção redobrada.
 5. O resto pelo prazo mais próximo.
