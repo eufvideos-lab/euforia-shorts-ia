@@ -1172,6 +1172,10 @@ function abrir(id){
       <p class="note">O card sai da fila de quem edita e vai para Aguardando cliente. Quando o material chegar, qualquer um aperta "Cliente mandou o material" e ele volta para a fila.</p>
       <label for="ngnota">Recado (opcional)<input type="text" id="ngnota" maxlength="300" placeholder="Ex.: ela disse que grava na quinta"></label>
       <div class="actions"><button class="btn warn" data-act="naogravou">Cliente ainda não gravou</button></div></div></details>` : ''}
+    ${devolve && ABERTO.concat(['Em revisão', 'Aguardando cliente', 'Aprovado', 'Agendado']).includes(c.status) ? `<details class="passar"><summary>🚧 Travei, preciso de ajuda</summary><div style="display:flex;flex-direction:column;gap:12px;margin-top:12px">
+      <p class="note">O card continua com você. O guardião do cliente é chamado no #dia-a-dia para destravar hoje.</p>
+      <label for="trmot">O que travou (obrigatório)<textarea id="trmot" maxlength="1000" placeholder="Ex.: falta o vídeo bruto no Drive / não sei qual roteiro usar / o cliente não respondeu"></textarea></label>
+      <div class="actions"><button class="btn warn" data-act="travei">Travei</button></div></div></details>` : ''}
     ${devolve ? `<details class="passar"><summary>Não é comigo ou já foi feito</summary><div style="display:flex;flex-direction:column;gap:12px;margin-top:12px">
       <fieldset class="modo" style="grid-template-columns:1fr"><legend>O que aconteceu</legend>
         <label class="opt" for="f-nao"><input type="radio" name="fim" id="f-nao" value="naoemeu" checked><span><b>Não é comigo</b><small>Seu nome sai do card e o Ismael e o Rômulo passam para outra pessoa.</small></span></label>
@@ -1210,6 +1214,7 @@ function abrir(id){
     if (act === 'mostrar-ajuste') { $('#lmotivo').hidden = false; $('#motivo').focus(); return; }
     if (act === 'ajuste' && $('#motivo').value.trim().length < 3) { $('#motivo').focus(); toast('Escreva o ajuste antes de mandar.'); return; }
     if ((act === 'agendei' || act === 'postei') && !/^https:\/\//.test($('#lpost').value.trim())) { $('#lpost').focus(); toast('Cole o link da postagem (começa com https://).'); return; }
+    if (act === 'travei' && $('#trmot').value.trim().length < 3) { $('#trmot').focus(); toast('Escreva o que travou antes de pedir ajuda.'); return; }
     if (act === 'fim' && $('#fmot').value.trim().length < 3) { $('#fmot').focus(); toast('Explique o que aconteceu antes de confirmar.'); return; }
     if (act === 'passar' && !$('#pp').value) { $('#pp').focus(); toast('Escolha para quem passar.'); return; }
     if (act === 'revisao' && !arquivo && !/^https:\/\//.test($('#lk').value.trim())) { toast('Escolha o arquivo ou cole o link.'); return; }
@@ -1220,6 +1225,7 @@ function abrir(id){
       if (act === 'ajuste') texto = $('#motivo').value.trim();
       if (act === 'agendei' || act === 'postei') link = $('#lpost').value.trim();
       if (act === 'passar') texto = $('#pnota').value.trim();
+      if (act === 'travei') texto = $('#trmot').value.trim();
       if (act === 'naogravou') texto = $('#ngnota').value.trim();
       if (act === 'gravou') texto = $('#gnota').value.trim();
       const anexos = [];
@@ -1233,7 +1239,7 @@ function abrir(id){
       const r = await api('euforia-painel-acao', { card: c.id, acao, texto, link, fim, anexos, para: act === 'passar' ? $('#pp').value : '' });
       if (!r || !r.ok) throw new Error((r && r.motivo) || 'erro');
       ocupado = false; fechar();
-      toast({ comecar: 'Bom trabalho! Card em Fazendo.', revisao: 'Mandado para revisão. O Daniel e o Ismael foram avisados.', aprovar: 'Aprovado. Agora é com o cliente.', ajuste: 'Voltou para ajuste com o seu recado.', agendei: 'Marcado como agendado.', postei: 'Marcado como postado.', passar: 'Card passado. A pessoa foi avisada.', fim: 'Pronto, ficou registrado e a equipe foi avisada.', pegar: 'É seu! O card já está na sua fila.', completar: 'Pronto! O pedido voltou para a fila do escritório.', naogravou: 'Pronto. O card saiu da fila e está esperando o cliente gravar.', gravou: 'Voltou para a fila em A fazer.' }[act]);
+      toast({ comecar: 'Bom trabalho! Card em Fazendo.', revisao: 'Mandado para revisão. O Daniel e o Ismael foram avisados.', aprovar: 'Aprovado. Agora é com o cliente.', ajuste: 'Voltou para ajuste com o seu recado.', agendei: 'Marcado como agendado.', postei: 'Marcado como postado.', passar: 'Card passado. A pessoa foi avisada.', travei: 'Pedido de ajuda enviado. O guardião do cliente foi chamado.', fim: 'Pronto, ficou registrado e a equipe foi avisada.', pegar: 'É seu! O card já está na sua fila.', completar: 'Pronto! O pedido voltou para a fila do escritório.', naogravou: 'Pronto. O card saiu da fila e está esperando o cliente gravar.', gravou: 'Voltou para a fila em A fazer.' }[act]);
       await carregar(true);
     } catch (err) {
       ocupado = false;
@@ -2416,6 +2422,7 @@ function demoApi(path, b){
     if (b.acao === 'apagar') { DEMO_D.pedidos = (DEMO_D.pedidos || []).filter(x => x.id !== b.card); DEMO_D.cards = DEMO_D.cards.filter(x => x.id !== b.card); return wait({ ok: true, status: '' }); }
     if (b.acao === 'completar') { DEMO_D.cards = DEMO_D.cards.filter(x => x !== c); return wait({ ok: true, status: 'A fazer' }); }
     if (b.acao === 'pegar') { c.livre = false; c.meu = true; c.resp = [DEMO_D.nome]; return wait({ ok: true, status: c.status }); }
+    if (b.acao === 'travei') { c.obs = '[Painel ' + new Date().toTimeString().slice(0, 5) + '] ' + DEMO_D.nome + ' TRAVOU: ' + b.texto + (c.obs ? '\n' + c.obs : ''); return wait({ ok: true, status: c.status }); }
     if (b.acao === 'naoemeu' || b.acao === 'jafeito') { DEMO_D.cards = DEMO_D.cards.filter(x => x !== c); return wait({ ok: true, status: b.fim || c.status }); }
     if (b.acao === 'naogravou' || b.acao === 'gravou') { c.status = b.acao === 'gravou' ? 'A fazer' : 'Aguardando cliente'; delete c.naogravou; c.obs = '[Painel 27/10 ' + new Date().toTimeString().slice(0, 5) + '] ' + DEMO_D.nome + ' marcou: cliente ' + (b.acao === 'gravou' ? 'mandou o material' : 'ainda não gravou') + (b.texto ? ': ' + b.texto : '') + (c.obs ? '\n' + c.obs : ''); return wait({ ok: true, status: c.status }); }
     if (b.acao === 'passar') { const n = PASSAR.find(x => x[0] === b.para)[1]; c.resp = [n]; c.meu = false; c.obs = '[Painel 26/10 ' + new Date().toTimeString().slice(0, 5) + '] ' + DEMO_D.nome + ' passou para ' + n + (b.texto ? ': ' + b.texto : '') + (c.obs ? '\n' + c.obs : ''); return wait({ ok: true, status: c.status }); }

@@ -84,15 +84,15 @@ const abertas = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, config:
 const clientesV = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, config: { name: 'Clientes do vigia', credentials: NOTION, executeOnce: true, parameters: {
   method: 'POST', url: 'https://api.notion.com/v1/databases/3ddc91b406be49e98e630c298d9162d8/query', ...HTTP, sendBody: true, specifyBody: 'json',
   jsonBody: '={{ JSON.stringify({ page_size: 100 }) }}', options: PAGINAR } } });
-const lista = node({ type: 'n8n-nodes-base.code', version: 2, config: { name: 'Lista para conferir', parameters: { jsCode: TXT + `const nomes = {};
-for (const it of $('Clientes do vigia').all()) for (const p of (it.json.results || [])) nomes[sem(p.id)] = txt((p.properties || {})['Cliente']);
+const lista = node({ type: 'n8n-nodes-base.code', version: 2, config: { name: 'Lista para conferir', parameters: { jsCode: TXT + `const nomes = {}, guard = {};
+for (const it of $('Clientes do vigia').all()) for (const p of (it.json.results || [])) { nomes[sem(p.id)] = txt((p.properties || {})['Cliente']); guard[sem(p.id)] = rel((p.properties || {})['🛡️ Guardião']); }
 const out = [];
 for (const it of $('Promessas abertas').all()) for (const p of (it.json.results || [])) {
   const pr = p.properties || {}, card = rel(pr['Card'])[0];
   if (!card) continue;
   out.push({ json: { prom: sem(p.id), card, marco: txt(pr['Marco']), quando: txt(pr['Quando']), tipo: txt(pr['Tipo']), status: txt(pr['Status']),
     alerta: parseInt(txt(pr['Alerta às']), 10) || 14, depende: !!(pr['Depende do cliente'] || {}).checkbox, resp: rel(pr['Responsável']),
-    cliente: nomes[rel(pr['Cliente'])[0]] || '', codigo: txt(pr['Código']) } });
+    cliente: nomes[rel(pr['Cliente'])[0]] || '', guardiao: guard[rel(pr['Cliente'])[0]] || [], codigo: txt(pr['Código']) } });
 }
 return out;
 ` } } });
@@ -108,6 +108,8 @@ const SO_POSTADO = ['Vídeo longo', 'Shorts', 'Carrossel'];
 const DISC = { '3ea98c0cdde0812d9cb4c41ce70df4ae': '1410287139169763471', '3ea98c0cdde0817e87aee637a96d4fd1': '1470387767337816128',
   '3ea98c0cdde081299709cf901fac7275': '1490768736876237082', '3ea98c0cdde08182a952f3d9a5b73575': '1142062975071551528', '3ea98c0cdde08163bd16f0213b098cb5': '827882215185973279' };
 const ROMULO = '1490768736876237082';
+// Fase 3: o guardião do cliente (campo 🛡️ Guardião da ficha) é chamado; sem guardião, o Rômulo.
+const guardioes = p => { const g = (p.guardiao || []).map(id => DISC[id]).filter(Boolean); return g.length ? g : [ROMULO]; };
 const mudar = [], risco = [], atraso = [];
 base.forEach((b, i) => {
   const p = b.json, c = (cards[i] || {}).json || {};
@@ -124,19 +126,19 @@ base.forEach((b, i) => {
   if (novo === p.status) return;
   mudar.push({ json: { prom: p.prom, status: novo } });
   const resp = (p.resp.length ? p.resp : rel(c.properties['Responsável'])).map(id => DISC[id]).filter(Boolean);
-  const linha = { txt: '**' + (p.cliente || 'Cliente') + '** · ' + p.marco + ' · prometido para ' + dia.split('-').reverse().slice(0, 2).join('/') + ' · card em ' + (st || '?') + (p.depende ? ' · depende do cliente' : '') + ' · ' + (c.url || ''), resp, depende: p.depende };
+  const linha = { txt: '**' + (p.cliente || 'Cliente') + '** · ' + p.marco + ' · prometido para ' + dia.split('-').reverse().slice(0, 2).join('/') + ' · card em ' + (st || '?') + (p.depende ? ' · depende do cliente' : '') + ' · ' + (c.url || ''), resp, guard: guardioes(p), depende: p.depende };
   if (novo === 'Em risco') risco.push(linha);
   if (novo === 'Atrasado') atraso.push(linha);
 });
 const avisos = [];
-const ment = l => [...new Set([ROMULO, ...l.flatMap(x => x.depende ? [] : x.resp)])];
+const ment = l => [...new Set([...l.flatMap(x => x.guard), ...l.flatMap(x => x.depende ? [] : x.resp)])];
 const r = risco.filter(x => !x.depende);
 if (r.length) { const ids = ment(r);
-  avisos.push({ canal: '1556642691410956339', body: JSON.stringify({ content: ('⏰ ' + ids.map(i => '<@' + i + '>').join(' ') + ' promessa(s) para HOJE ainda não feitas:\\n' + r.map(x => '• ' + x.txt).join('\\n') + '\\n\\nSe já fez, mude o card. Se não vai dar, avise o Rômulo agora.').slice(0, 1990), allowed_mentions: { users: ids } }) }); }
+  avisos.push({ canal: '1556642691410956339', body: JSON.stringify({ content: ('⏰ ' + ids.map(i => '<@' + i + '>').join(' ') + ' promessa(s) para HOJE ainda não feitas:\\n' + r.map(x => '• ' + x.txt).join('\\n') + '\\n\\nSe já fez, mude o card. Se não vai dar, avise agora o guardião do cliente (o primeiro marcado aqui).').slice(0, 1990), allowed_mentions: { users: ids } }) }); }
 const a = atraso.filter(x => !x.depende);
 if (a.length) { const ids = ment(a);
-  avisos.push({ canal: '1556642691410956339', body: JSON.stringify({ content: ('🚨 ' + ids.map(i => '<@' + i + '>').join(' ') + ' promessa(s) ATRASADA(S):\\n' + a.map(x => '• ' + x.txt).join('\\n') + '\\n\\nRômulo, resolva hoje e registre o novo combinado na promessa.').slice(0, 1990), allowed_mentions: { users: ids } }) }); }
-if (atraso.length) avisos.push({ canal: '1560627456837427250', body: JSON.stringify({ content: ('🚨 Promessa(s) atrasada(s) (' + h.carimbo + ').' + (a.length ? ' Rômulo foi chamado.' : '') + '\\n' + atraso.map(x => '• ' + x.txt).join('\\n')).slice(0, 1990), allowed_mentions: { parse: [] } }) });
+  avisos.push({ canal: '1556642691410956339', body: JSON.stringify({ content: ('🚨 ' + ids.map(i => '<@' + i + '>').join(' ') + ' promessa(s) ATRASADA(S):\\n' + a.map(x => '• ' + x.txt).join('\\n') + '\\n\\nGuardião, resolva hoje e registre o novo combinado na promessa.').slice(0, 1990), allowed_mentions: { users: ids } }) }); }
+if (atraso.length) avisos.push({ canal: '1560627456837427250', body: JSON.stringify({ content: ('🚨 Promessa(s) atrasada(s) (' + h.carimbo + ').' + (a.length ? ' O guardião foi chamado.' : '') + '\\n' + atraso.map(x => '• ' + x.txt).join('\\n')).slice(0, 1990), allowed_mentions: { parse: [] } }) });
 return mudar.map((m, i) => ({ json: Object.assign({}, m.json, { avisos: i === 0 ? avisos : [] }) }));
 ` } } });
 const gravar = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, config: { name: 'Gravar status', credentials: NOTION, onError: 'continueRegularOutput', parameters: {
@@ -148,7 +150,7 @@ const avisar = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, config: 
   method: 'POST', url: '={{ "https://discord.com/api/v10/channels/" + $json.canal + "/messages" }}', authentication: 'genericCredentialType', genericAuthType: 'httpHeaderAuth',
   sendBody: true, specifyBody: 'json', jsonBody: '={{ $json.body }}', options: {} } } });
 
-const nota = sticky('## Painel · Promessas: gerador e vigia (V1)\nBanco 🗓️ Promessas (Esteira de Entregas). Segunda a sábado, 8h às 19h (Recife).\nGerador (:05): promessa "Prometido" sem card vira card no Entregas ("CLIENTE | MARCO | DD/MM", Origem Extra). Longo/shorts/carrossel: Postar em = Quando e Prazo = D-3. Resto: Prazo = Quando. A promessa fica "Com card".\nVigia (:25): lê o card de cada promessa aberta. Feito = Cumprido. No dia, depois do "Alerta às" = Em risco (aviso no #dia-a-dia marcando Rômulo e responsável). Passou do dia = Atrasado (#dia-a-dia + #avisos-escritório). Só avisa quando o status muda. "Depende do cliente" não chama a equipe.', [], { color: 4 });
+const nota = sticky('## Painel · Promessas: gerador e vigia (V1)\nBanco 🗓️ Promessas (Esteira de Entregas). Segunda a sábado, 8h às 19h (Recife).\nGerador (:05): promessa "Prometido" sem card vira card no Entregas ("CLIENTE | MARCO | DD/MM", Origem Extra). Longo/shorts/carrossel: Postar em = Quando e Prazo = D-3. Resto: Prazo = Quando. A promessa fica "Com card".\nVigia (:25): lê o card de cada promessa aberta. Feito = Cumprido. No dia, depois do "Alerta às" = Em risco (aviso no #dia-a-dia marcando o guardião do cliente, campo 🛡️ Guardião da ficha, ou o Rômulo se vazio, e o responsável). Passou do dia = Atrasado (#dia-a-dia + #avisos-escritório). Só avisa quando o status muda. "Depende do cliente" não chama a equipe.', [], { color: 4 });
 
 export default workflow('painel-promessas', 'Painel | Promessas: gerador e vigia (V1)')
   .add(relogioG).to(horaG).to(semCard).to(clientesG).to(montarCards).to(criarCard).to(ligarCard)
