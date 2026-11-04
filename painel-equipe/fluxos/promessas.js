@@ -126,7 +126,7 @@ base.forEach((b, i) => {
   else if (st === 'Cancelado') novo = p.status;
   else if (dia < h.hoje) novo = 'Atrasado';
   else if (dia === h.hoje && h.hora >= p.alerta) novo = p.status === 'Atrasado' ? 'Atrasado' : 'Em risco';
-  else if (p.status === 'Prometido') novo = 'Com card';
+  else if (p.status === 'Prometido' || ((p.status === 'Atrasado' || p.status === 'Em risco') && dia > h.hoje)) novo = 'Com card'; // remarcada para frente volta a Com card
   if (novo === p.status) return;
   mudar.push({ json: { prom: p.prom, status: novo } });
   const resp = (p.resp.length ? p.resp : rel(c.properties['Responsável'])).map(id => DISC[id]).filter(Boolean);

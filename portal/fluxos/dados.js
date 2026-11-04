@@ -169,7 +169,7 @@ const feed = cards.slice().sort((a, b) => String(b.editado).localeCompare(String
   em: DateTime.fromISO(c.editado).setZone(Z).setLocale('pt-BR').toFormat('dd/MM HH:mm'),
   t: c.t, col: c.col }));
 // Cronograma (Fase 4): o cliente vê o que foi combinado e quando. Nada de nome da equipe nem observação interna.
-// Feito = Cumprido. Sua vez = depende do cliente e ainda não feito. Previsto = data de hoje em diante. Em finalização = passou da data sem estar feito (o guardião já foi chamado).
+// Feito = Cumprido. Sua vez = depende do cliente e ainda não feito. Previsto = data de hoje em diante. Vencida sem estar feita: não aparece até ser remarcada (o guardião já foi chamado).
 const cronograma = [];
 for (const it of $('Promessas do cliente').all()) for (const p of (it.json.results || [])) {
   const pr = p.properties || {};
@@ -178,6 +178,8 @@ for (const it of $('Promessas do cliente').all()) for (const p of (it.json.resul
   const dia = quando.slice(0, 10);
   const depende = !!(pr['Depende do cliente'] || {}).checkbox;
   const estado = st === 'Cumprido' ? 'feito' : depende ? 'suavez' : dia >= hoje ? 'previsto' : 'finalizando';
+  // Decisão da diretoria (04/11): promessa vencida sem estar feita some do portal até a equipe pôr uma data nova.
+  if (estado === 'finalizando' || (estado === 'suavez' && dia < hoje)) continue;
   cronograma.push({ t: marco.replace(/^TESTE\\s*·\\s*/, ''), dia, quando: DateTime.fromISO(quando, { zone: Z }).setLocale('pt-BR').toFormat(quando.length > 10 ? "ccc, dd/MM 'às' HH'h'mm" : 'ccc, dd/MM'),
     mes: DateTime.fromISO(dia, { zone: Z }).setLocale('pt-BR').toFormat('LLLL'), estado, hoje: dia === hoje });
 }
