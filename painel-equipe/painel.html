@@ -461,7 +461,7 @@ const diff = s => { const a = dia(s), h = dia(D.hoje); return a ? Math.round((a 
 const fmt = s => { const a = dia(s); return a ? a.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit' }).replace('.', '') : '—'; };
 const cli = c => (D.clientes.find(x => x.id === c.cliente)) || { faixa: '', atencao: false };
 const papel = () => D.papel;
-const revisor = () => papel() === 'revisor' || papel() === 'teste' || papel() === 'diretor';
+const revisor = () => ['revisor', 'conferente', 'teste', 'diretor'].includes(papel());
 const diretor = () => papel() === 'diretor';
 const posta = () => revisor() || papel() === 'calls' || papel() === 'producao';
 const ABERTO = ['A fazer', 'Fazendo', 'Ajustes'];
@@ -961,7 +961,7 @@ const VIEWS = {
       </form>
       <aside class="panel" id="resumo" aria-live="polite"></aside></div>`;
     } },
-  pedidos: { nome: 'Meus pedidos', pode: () => ['revisor', 'calls', 'producao', 'diretor', 'teste'].includes(papel()), badge: () => (D.pedidos || []).filter(p => p.por === D.nome && situacao(p).g === 'falta').length,
+  pedidos: { nome: 'Meus pedidos', pode: () => ['revisor', 'conferente', 'calls', 'producao', 'diretor', 'teste'].includes(papel()), badge: () => (D.pedidos || []).filter(p => p.por === D.nome && situacao(p).g === 'falta').length,
     html(){
       const l = D.pedidos || [];
       if (MP === null) MP = diretor() ? '' : 'eu';
@@ -1233,7 +1233,7 @@ function abrir(id){
       const r = await api('euforia-painel-acao', { card: c.id, acao, texto, link, fim, anexos, para: act === 'passar' ? $('#pp').value : '' });
       if (!r || !r.ok) throw new Error((r && r.motivo) || 'erro');
       ocupado = false; fechar();
-      toast({ comecar: 'Bom trabalho! Card em Fazendo.', revisao: 'Mandado para revisão. O Rômulo foi avisado.', aprovar: 'Aprovado. Agora é com o cliente.', ajuste: 'Voltou para ajuste com o seu recado.', agendei: 'Marcado como agendado.', postei: 'Marcado como postado.', passar: 'Card passado. A pessoa foi avisada.', fim: 'Pronto, ficou registrado e a equipe foi avisada.', pegar: 'É seu! O card já está na sua fila.', completar: 'Pronto! O pedido voltou para a fila do escritório.', naogravou: 'Pronto. O card saiu da fila e está esperando o cliente gravar.', gravou: 'Voltou para a fila em A fazer.' }[act]);
+      toast({ comecar: 'Bom trabalho! Card em Fazendo.', revisao: 'Mandado para revisão. O Daniel e o Ismael foram avisados.', aprovar: 'Aprovado. Agora é com o cliente.', ajuste: 'Voltou para ajuste com o seu recado.', agendei: 'Marcado como agendado.', postei: 'Marcado como postado.', passar: 'Card passado. A pessoa foi avisada.', fim: 'Pronto, ficou registrado e a equipe foi avisada.', pegar: 'É seu! O card já está na sua fila.', completar: 'Pronto! O pedido voltou para a fila do escritório.', naogravou: 'Pronto. O card saiu da fila e está esperando o cliente gravar.', gravou: 'Voltou para a fila em A fazer.' }[act]);
       await carregar(true);
     } catch (err) {
       ocupado = false;

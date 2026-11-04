@@ -28,7 +28,7 @@ const livre = { and: [{ property: 'Responsável', relation: { is_empty: true } }
 let filtro = null;
 if (ok) {
   if (r.papel === 'teste') filtro = { and: [{ property: 'Entrega', title: { contains: 'TESTE PAINEL' } }, { property: 'Status', select: { does_not_equal: 'Postado' } }, { property: 'Status', select: { does_not_equal: 'Cancelado' } }] };
-  else if (r.papel === 'revisor' || r.papel === 'diretor') filtro = { or: [
+  else if (['revisor', 'conferente', 'diretor'].includes(r.papel)) filtro = { or: [
     { and: [{ property: 'Responsável', relation: { contains: r.ficha } }, ...naoFechado] },
     { property: 'Status', select: { equals: 'Em revisão' } },
     { property: 'Status', select: { equals: 'Aguardando cliente' } },
@@ -44,7 +44,7 @@ if (ok) {
 // Meus pedidos: tudo que foi pedido ao escritório pelo painel desde 26/10 (quando o painel entrou no ar). A página filtra por quem pediu.
 const desde = { timestamp: 'created_time', created_time: { on_or_after: '2026-10-26' } };
 let pedidos = { property: 'Entrega', title: { equals: '-' } };
-if (ok && ['revisor', 'calls', 'producao', 'diretor'].includes(r.papel)) pedidos = { and: [{ property: 'Entrega', title: { contains: '(painel)' } }, { property: 'Entrega', title: { does_not_contain: 'TESTE PAINEL' } }, desde] };
+if (ok && ['revisor', 'conferente', 'calls', 'producao', 'diretor'].includes(r.papel)) pedidos = { and: [{ property: 'Entrega', title: { contains: '(painel)' } }, { property: 'Entrega', title: { does_not_contain: 'TESTE PAINEL' } }, desde] };
 else if (ok && r.papel === 'teste') pedidos = { and: [{ property: 'Entrega', title: { contains: 'TESTE PAINEL' } }, { property: 'Entrega', title: { contains: '(painel)' } }, desde] };
 return [{ json: { ok, nome: r.nome || '', ficha: r.ficha || '', papel: r.papel || '',
   consultaPedidos: JSON.stringify({ filter: pedidos, sorts: [{ timestamp: 'created_time', direction: 'descending' }], page_size: 100 }),

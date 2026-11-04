@@ -67,7 +67,7 @@ const ficha = $('Ficha do cliente').first().json || {};
 let erro = '';
 if (!acessoOk) erro = 'acesso';
 else if (!p.etapa) erro = 'etapa';
-else if (pedido && !['revisor', 'calls', 'producao', 'diretor', 'teste'].includes(r.papel)) erro = 'permissao';
+else if (pedido && !['revisor', 'conferente', 'calls', 'producao', 'diretor', 'teste'].includes(r.papel)) erro = 'permissao';
 else if (pedido && sem((ficha.parent || {}).database_id) !== '3ddc91b406be49e98e630c298d9162d8') erro = 'cliente';
 else if (pedido && !cliente) erro = 'sem-pasta';
 else if (pedido) { if (p.etapa === 'iniciar' && (p.tamanho < 1 || p.tamanho > 5 * 1024 ** 3)) erro = 'tamanho'; else if (p.etapa === 'pronto' && !p.fileId) erro = 'arquivo'; }
