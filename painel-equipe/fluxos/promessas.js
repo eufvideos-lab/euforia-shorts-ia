@@ -85,7 +85,11 @@ const clientesV = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, confi
   method: 'POST', url: 'https://api.notion.com/v1/databases/3ddc91b406be49e98e630c298d9162d8/query', ...HTTP, sendBody: true, specifyBody: 'json',
   jsonBody: '={{ JSON.stringify({ page_size: 100 }) }}', options: PAGINAR } } });
 const lista = node({ type: 'n8n-nodes-base.code', version: 2, config: { name: 'Lista para conferir', parameters: { jsCode: TXT + `const nomes = {}, guard = {};
-for (const it of $('Clientes do vigia').all()) for (const p of (it.json.results || [])) { nomes[sem(p.id)] = txt((p.properties || {})['Cliente']); guard[sem(p.id)] = rel((p.properties || {})['🛡️ Guardião']); }
+// Guardião (decisão da diretoria 04/11): o campo 🛡️ Guardião manda; vazio = Rômulo para cliente em foco ⭐ ou faixa A, Lorena para faixa B ou C.
+const hojeV = $('Hora do vigia').first().json.hoje;
+const padrao = pp => { const foco = txt(pp['⭐ Foco até']).slice(0, 10) >= hojeV; const fx = String(((pp['Faixa'] || {}).formula || {}).string || txt(pp['Faixa base']) || '').replace(/[^ABC]/g, '').slice(0, 1);
+  return foco || fx === 'A' ? ['3ea98c0cdde081299709cf901fac7275'] : ['B', 'C'].includes(fx) ? ['3ea98c0cdde08163bd16f0213b098cb5'] : []; };
+for (const it of $('Clientes do vigia').all()) for (const p of (it.json.results || [])) { const pp = p.properties || {}; nomes[sem(p.id)] = txt(pp['Cliente']); const g = rel(pp['🛡️ Guardião']); guard[sem(p.id)] = g.length ? g : padrao(pp); }
 const out = [];
 for (const it of $('Promessas abertas').all()) for (const p of (it.json.results || [])) {
   const pr = p.properties || {}, card = rel(pr['Card'])[0];
@@ -150,7 +154,7 @@ const avisar = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, config: 
   method: 'POST', url: '={{ "https://discord.com/api/v10/channels/" + $json.canal + "/messages" }}', authentication: 'genericCredentialType', genericAuthType: 'httpHeaderAuth',
   sendBody: true, specifyBody: 'json', jsonBody: '={{ $json.body }}', options: {} } } });
 
-const nota = sticky('## Painel · Promessas: gerador e vigia (V1)\nBanco 🗓️ Promessas (Esteira de Entregas). Segunda a sábado, 8h às 19h (Recife).\nGerador (:05): promessa "Prometido" sem card vira card no Entregas ("CLIENTE | MARCO | DD/MM", Origem Extra). Longo/shorts/carrossel: Postar em = Quando e Prazo = D-3. Resto: Prazo = Quando. A promessa fica "Com card".\nVigia (:25): lê o card de cada promessa aberta. Feito = Cumprido. No dia, depois do "Alerta às" = Em risco (aviso no #dia-a-dia marcando o guardião do cliente, campo 🛡️ Guardião da ficha, ou o Rômulo se vazio, e o responsável). Passou do dia = Atrasado (#dia-a-dia + #avisos-escritório). Só avisa quando o status muda. "Depende do cliente" não chama a equipe.', [], { color: 4 });
+const nota = sticky('## Painel · Promessas: gerador e vigia (V1)\nBanco 🗓️ Promessas (Esteira de Entregas). Segunda a sábado, 8h às 19h (Recife).\nGerador (:05): promessa "Prometido" sem card vira card no Entregas ("CLIENTE | MARCO | DD/MM", Origem Extra). Longo/shorts/carrossel: Postar em = Quando e Prazo = D-3. Resto: Prazo = Quando. A promessa fica "Com card".\nVigia (:25): lê o card de cada promessa aberta. Feito = Cumprido. No dia, depois do "Alerta às" = Em risco (aviso no #dia-a-dia marcando o guardião do cliente: campo 🛡️ Guardião da ficha; vazio = Rômulo para foco ⭐ ou faixa A, Lorena para B/C, e o responsável). Passou do dia = Atrasado (#dia-a-dia + #avisos-escritório). Só avisa quando o status muda. "Depende do cliente" não chama a equipe.', [], { color: 4 });
 
 export default workflow('painel-promessas', 'Painel | Promessas: gerador e vigia (V1)')
   .add(relogioG).to(horaG).to(semCard).to(clientesG).to(montarCards).to(criarCard).to(ligarCard)
