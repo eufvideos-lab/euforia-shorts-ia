@@ -93,8 +93,8 @@ for (const it of $('Clientes ativos').all()) for (const p of (it.json.results ||
     foco: txt(pr['⭐ Foco até']).slice(0, 10) >= HOJE,
     padroes: txt(pr['Padrões de edição']).slice(0, 1200), gosta: txt(pr['Direção criativa (gosta / não gosta)']).slice(0, 1200) };
 }
-// Cliente que a pessoa não pode atender (decisão da diretoria 04/11: Victor fora da Ana Mangia).
-const BLOQUEIO = { '3ea98c0cdde08182a952f3d9a5b73575': ['3ea98c0cdde081578305ec053b215822'] };
+// Cliente que a pessoa não pode atender (decisão da diretoria 04/11: Victor fora da Ana Mangia e da Além do CNPJ).
+const BLOQUEIO = { '3ea98c0cdde08182a952f3d9a5b73575': ['3ea98c0cdde081578305ec053b215822', '3ea98c0cdde081aaa244c92b808677f9'] };
 const TIPOS_LIVRE = ['Vídeo longo', 'Shorts', 'Podcast', 'Carrossel', 'Thumbnail'];
 const cards = [];
 for (const it of $('Cards da pessoa').all()) for (const p of (it.json.results || [])) {

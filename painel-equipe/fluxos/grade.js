@@ -50,8 +50,8 @@ const acessoOk = !!r.token && r.token === p.u && r.ativo === true && String(r.pi
 const teste = r.papel === 'teste';
 const muda = ['revisor', 'calls', 'teste', 'diretor'].includes(r.papel);
 const TESTE = '40598c0cdde081c78b98f3984e7009e8';
-// Cliente que a pessoa não pode atender (decisão da diretoria 04/11: Victor fora da Ana Mangia).
-const BLOQUEIO = { '3ea98c0cdde08182a952f3d9a5b73575': ['3ea98c0cdde081578305ec053b215822'] };
+// Cliente que a pessoa não pode atender (decisão da diretoria 04/11: Victor fora da Ana Mangia e da Além do CNPJ).
+const BLOQUEIO = { '3ea98c0cdde08182a952f3d9a5b73575': ['3ea98c0cdde081578305ec053b215822', '3ea98c0cdde081aaa244c92b808677f9'] };
 
 const ap = atual.properties || {};
 const daGrade = sem((atual.parent || {}).database_id) === '2d21b7a7166240f5afaa4d697c3d1ae8';
