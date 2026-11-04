@@ -133,7 +133,7 @@ for (let k = 13; k >= 0; k--) {
     escalados: E.filter(e => e.evento === 'escalado').length, enviadas: E.filter(e => e.evento === 'resposta_enviada').length });
 }
 const tot = periodo(3650);
-return [{ json: { ok: true, agora: agora.toFormat('HH:mm'), p7: periodo(7), p30: periodo(30), serie,
+return [{ json: { ok: true, agora: agora.toFormat('HH:mm'), p1: periodo(1), p7: periodo(7), p30: periodo(30), serie,
   fase1b: { enviadas: tot.enviadas, pct: tot.pct_sem_correcao, pronto: tot.enviadas >= 30 && (tot.pct_sem_correcao || 0) >= 95 } } }];
 ` } } });
 

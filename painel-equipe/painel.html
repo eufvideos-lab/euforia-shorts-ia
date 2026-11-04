@@ -2265,14 +2265,14 @@ function aprovarGeral(){
   return `<section class="group" style="margin-bottom:18px"><h2>✍️ Respostas para aprovar <span class="count">${esperaGA().length}</span></h2><p class="sub">Rascunhos da Gerente IA. Enviar manda pelo suporte, assinado Érica, em até 1 minuto. Para corrigir, mude o texto e aperte Enviar.</p>
     <div style="display:flex;flex-direction:column;gap:12px">${L.map(cardGA).join('')}</div>${GA.abertos.length > L.length ? `<p style="margin-top:10px"><button class="btn" data-view="aprovar">Ver todas (${GA.abertos.length})</button></p>` : ''}</section>`;
 }
-// Etapa 3: como a Gerente está indo (7 ou 30 dias, sem os testes). Números do fluxo "Painel | Gerente IA · Aprovar" (acao: metricas).
+// Etapa 3: como a Gerente está indo (hoje, 7 ou 30 dias, sem os testes). Números do fluxo "Painel | Gerente IA · Aprovar" (acao: metricas).
 const horasGA = h => h == null ? '—' : h < 1 ? Math.round(h * 60) + ' min' : h < 48 ? h.toFixed(1).replace('.', ',') + ' h' : (h / 24).toFixed(1).replace('.', ',') + ' dias';
 function metricasGA(){
   const topo = `<section class="group" style="margin-top:18px"><div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap"><h2 style="margin:0">Como a Gerente está indo</h2>
-    <div style="display:flex;gap:6px">${[7, 30].map(d => `<button class="btn ${GMP === d ? 'primary' : ''}" data-gmp="${d}">${d} dias</button>`).join('')}</div></div>`;
+    <div style="display:flex;gap:6px">${[1, 7, 30].map(d => `<button class="btn ${GMP === d ? 'primary' : ''}" data-gmp="${d}">${d === 1 ? 'Hoje' : d + ' dias'}</button>`).join('')}</div></div>`;
   if (!GM) { carregarMetricas(); return topo + '<p class="sub">Carregando os números…</p></section>'; }
   if (GM.erro) return topo + '<p class="empty">Não consegui ler os números agora.</p></section>';
-  const m = GMP === 30 ? GM.p30 : GM.p7, f = GM.fase1b || {};
+  const m = (GMP === 30 ? GM.p30 : GMP === 1 ? GM.p1 : GM.p7) || GM.p7, f = GM.fase1b || {};
   const tile = (v, t, hot) => `<div class="stat ${hot ? 'hot' : ''}" style="background:${hot ? 'var(--bad-soft)' : 'var(--surface)'}"><span class="v">${v}</span><span>${t}</span></div>`;
   const NOME = { pedido: 'pedidos', ajuste: 'ajustes', status: 'dúvidas de prazo', material: 'materiais', serio: 'assuntos sérios', sem_acao: 'sem ação', indefinido: 'sem classe' };
   const cls = Object.entries(m.classes || {}).sort((a, b) => b[1] - a[1]).map(([k, v]) => `${v} ${NOME[k] || k}`).join(' · ');
@@ -2339,6 +2339,7 @@ document.addEventListener('click', async e => {
   ocupado = false; render(); setTimeout(() => carregarGerente(true), 75000);
 });
 const DEMO_GM = { ok: true, agora: '10:42', fase1b: { enviadas: 18, pct: 94, pronto: false }, serie: [],
+  p1: { dias: 1, lidas: 31, conversas: 9, demandas_criadas: 2, entregues: 1, abertas: 1, atrasadas: 0, tempo_resposta_min: 18, tempo_entrega_h: 6, escalados: 1, travas: 0, rascunhos: 4, enviadas: 3, sem_correcao: 3, pct_sem_correcao: 100, canceladas: 0, expiradas: 0, equipe_antes: 1, classes: { pedido: 2, status: 4, material: 1, sem_acao: 2 } },
   p7: { dias: 7, lidas: 214, conversas: 61, demandas_criadas: 14, entregues: 9, abertas: 5, atrasadas: 1, tempo_resposta_min: 23, tempo_entrega_h: 41.5, escalados: 3, travas: 2, rascunhos: 22, enviadas: 18, sem_correcao: 17, pct_sem_correcao: 94, canceladas: 2, expiradas: 1, equipe_antes: 1, classes: { pedido: 14, status: 20, material: 9, ajuste: 5, serio: 3, sem_acao: 10 } },
   p30: { dias: 30, lidas: 640, conversas: 190, demandas_criadas: 40, entregues: 31, abertas: 9, atrasadas: 2, tempo_resposta_min: 27, tempo_entrega_h: 44, escalados: 7, travas: 4, rascunhos: 60, enviadas: 50, sem_correcao: 46, pct_sem_correcao: 92, canceladas: 6, expiradas: 2, equipe_antes: 2, classes: { pedido: 40, status: 60 } } };
 const DEMO_GA = { ok: true, agora: '10:42', numeros: { total: 12, enviadas: 9, sem_correcao: 8, canceladas: 1, expiradas: 1, equipe: 1 },
