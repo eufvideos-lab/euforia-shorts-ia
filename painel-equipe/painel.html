@@ -2233,13 +2233,13 @@ function capacidadeCt(){
     <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;margin-top:12px">${CT.maquinas.map(card).join('')}</div>
     <p class="sub" style="font-size:12px;margin-top:8px">Cada rodada pega a quantidade da máquina e termina em até cerca de 1 hora. A fila ocupa as primeiras rodadas; "Livre" é o que ainda dá para mandar e receber pronto naquele horário.</p></section>`;
 }
-// Nível 1 = ⭐ cliente em foco da diretoria, 2 = postagem de hoje, 3 = o resto (a lista já chega nessa ordem).
-const quenteCt = x => x.nivel === 1 || x.nivel === 2 || x.score >= 100;
+// Nível 1 = ⭐ cliente em foco da diretoria, 2 = postagem de hoje, 3 = promessa vencendo, 4 = o resto (a lista já chega nessa ordem).
+const quenteCt = x => x.nivel === 1 || x.nivel === 2 || x.promessa || x.score >= 100;
 function focoCt(){
-  const F = CT.foco || [], hoje = CT.demandas.filter(x => x.nivel === 2 && !x.velho).length;
-  if (!F.length && !hoje) return '';
-  return `<section class="group foco-ct"><h2>Primeiro estes</h2><p class="meta" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">${F.map(k => `<span class="chip org">⭐ ${esc(k.nome)} · até ${esc(fmtCt(k.ate))}</span>`).join('')}${hoje ? `<span class="chip warn">📅 ${hoje} ${hoje > 1 ? 'demandas vão' : 'demanda vai'} ao ar hoje</span>` : ''}</p>
-    <p class="sub" style="font-size:13px;margin-top:6px">${F.length ? 'As demandas dos clientes em foco da diretoria vêm no topo, depois o que vai ao ar hoje, depois o resto pela prioridade.' : 'O que vai ao ar hoje vem no topo, depois o resto pela prioridade.'}${diretor() ? ' Para pôr ou tirar um cliente do foco, abra o cliente na aba Clientes.' : ''}</p></section>`;
+  const F = CT.foco || [], hoje = CT.demandas.filter(x => x.nivel === 2 && !x.velho).length, prom = CT.demandas.filter(x => x.promessa).length;
+  if (!F.length && !hoje && !prom) return '';
+  return `<section class="group foco-ct"><h2>Primeiro estes</h2><p class="meta" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">${F.map(k => `<span class="chip org">⭐ ${esc(k.nome)} · até ${esc(fmtCt(k.ate))}</span>`).join('')}${hoje ? `<span class="chip warn">📅 ${hoje} ${hoje > 1 ? 'demandas vão' : 'demanda vai'} ao ar hoje</span>` : ''}${prom ? `<span class="chip warn">🗓️ ${prom} ${prom > 1 ? 'promessas vencendo' : 'promessa vencendo'}</span>` : ''}</p>
+    <p class="sub" style="font-size:13px;margin-top:6px">${F.length ? 'As demandas dos clientes em foco da diretoria vêm no topo, depois o que vai ao ar hoje, depois as promessas feitas ao cliente que vencem em até 2 dias, depois o resto pela prioridade.' : 'O que vai ao ar hoje vem no topo, depois as promessas feitas ao cliente que vencem em até 2 dias, depois o resto pela prioridade.'}${diretor() ? ' Para pôr ou tirar um cliente do foco, abra o cliente na aba Clientes.' : ''}</p></section>`;
 }
 function filtraCt(x){
   if (CTQ && !(String(x.clienteNome) + ' ' + String(x.nome || x.tipoNome)).toLowerCase().includes(CTQ.toLowerCase())) return false;
@@ -2260,7 +2260,7 @@ function chipsCt(x){
 const diffCt = s => Math.round((dia(s) - dia(CT.hoje)) / 864e5);
 const fmtCt = s => { const a = dia(s); return a ? a.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit' }).replace('.', '') : '—'; };
 function linhaCt(x, prev){
-  const s = x.sugestao, k = prev ? x.chave : x.id, cls = x.nivel === 1 || x.score >= 100 ? 'late' : x.nivel === 2 || x.score >= 60 ? 'today' : '';
+  const s = x.sugestao, k = prev ? x.chave : x.id, cls = x.nivel === 1 || x.score >= 100 ? 'late' : x.nivel === 2 || x.promessa || x.score >= 60 ? 'today' : '';
   const titulo = prev ? `${esc(x.clienteNome)} · ${esc(x.tipoNome)}${x.qtd > 1 ? ' ×' + x.qtd : ''} para ${esc(fmtCt(x.postar))}` : `${esc(x.clienteNome)} · ${esc(x.nome)}`;
   const um = s && s.destino && !s.precisaLink && !(x.resp || []).includes(s.destino);
   const mexe = !prev && ['maquina', 'flau', 'pessoa'].includes(x.onde);
@@ -2546,7 +2546,7 @@ const DEMO_CT = (() => {
     semRitmo: 3, foco: [{ id: 'k21', nome: 'Dra. Helena (exemplo)', ate: iso(3) }] };
 })();
 // Demo: mesmos níveis do fluxo (⭐ foco, postagem de hoje, o resto) e na mesma ordem.
-for (const L of [DEMO_CT.demandas, DEMO_CT.previstas]) { for (const x of L) { x.foco = x.clienteNome === 'Dra. Helena (exemplo)'; x.nivel = x.foco ? 1 : x.postar === DEMO_CT.hoje ? 2 : 3;
+for (const L of [DEMO_CT.demandas, DEMO_CT.previstas]) { for (const x of L) { x.foco = x.clienteNome === 'Dra. Helena (exemplo)'; x.nivel = x.foco ? 1 : x.postar === DEMO_CT.hoje ? 2 : 4;
   if (x.foco) { x.motivos.unshift('⭐ Prioridade da diretoria'); x.velho = false; } } L.sort((a, b) => a.nivel - b.nivel || b.score - a.score); }
 const DEMO_FO = {"ok": true, "hoje": "2026-10-29", "formularios": [
  {"id": "f1", "nome": "Helena Duarte", "recebida": "28/10/2026 16:42", "dia": "2026-10-28", "dias": 0, "status": "🔗 Ligada ao cliente", "whatsapp": "+55 11 90000-0000", "canal": "Tenho um canal parado", "envio": "Por link (Google Drive / OneDrive / Dropbox)",

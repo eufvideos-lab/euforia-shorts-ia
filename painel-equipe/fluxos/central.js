@@ -85,6 +85,13 @@ const qCarrosseis = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, con
   jsonBody: '={{ JSON.stringify({ filter: { or: [{ property: "Status", select: { equals: "Criar" } }, { property: "Status", select: { equals: "Ajustar" } }, { property: "Status", select: { equals: "Em produção" } }, { property: "Status", select: { equals: "Erro" } }, { property: "Entregue em", date: { on_or_after: $("Validar acesso").first().json.seteDias } }] }, page_size: 100 }) }}',
   options: PAGINAR } } });
 
+// Fase 2 (04/11/2026): promessas abertas que vencem em até 2 dias (ou já passaram) sobem para o nível 3 da fila.
+const qPromessas = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, config: { name: 'Promessas vencendo', credentials: NOTION, executeOnce: true, onError: 'continueRegularOutput', alwaysOutputData: true, parameters: {
+  method: 'POST', url: 'https://api.notion.com/v1/databases/824c669471e5424d8c846936a63c16d4/query', authentication: 'genericCredentialType', genericAuthType: 'httpHeaderAuth',
+  sendHeaders: true, headerParameters: NOTION_HDR, sendBody: true, specifyBody: 'json',
+  jsonBody: '={{ JSON.stringify({ filter: { and: [{ property: "Quando", date: { on_or_before: $now.setZone("America/Recife").plus({ days: 2 }).toISODate() } }, { or: ["Prometido", "Com card", "Em risco", "Atrasado"].map(s => ({ property: "Status", select: { equals: s } })) }] }, page_size: 100 }) }}',
+  options: PAGINAR } } });
+
 const montar = node({ type: 'n8n-nodes-base.code', version: 2, config: { name: 'Montar central', parameters: { jsCode: `const Z = 'America/Recife';
 const quem = $('Validar acesso').first().json;
 const dir = quem.papel === 'diretor', teste = quem.papel === 'teste';
@@ -183,9 +190,15 @@ const maisLivre = ids => ids.map(i => carga[i]).sort((a, b) => (a.abertos + a.at
 const MAQ_DO_TIPO = { 'Vídeo longo': 'longos', 'Shorts': 'shorts', 'Carrossel': 'carrosseis' };
 ['Thumbnail', 'Arte', 'Banner', 'ID visual', 'Página', 'Funil', 'Blog', 'Roteiro', 'Copy', 'Apresentação', 'Relatório', 'Estratégia', 'Insta-Blindado'].forEach(t => MAQ_DO_TIPO[t] = 'escritorio');
 const fila = { longos: Q.longos.fila, shorts: Q.shorts.fila, carrosseis: Q.carrosseis.fila, escritorio: Q.escritorio.fila };
+const PROM = {};
+for (const it of $('Promessas vencendo').all()) for (const p of (it.json.results || [])) { const pr = p.properties || {};
+  for (const r of ((pr['Card'] || {}).relation || [])) { const q = { marco: txt(pr['Marco']), quando: txt(pr['Quando']).slice(0, 10), status: txt(pr['Status']) };
+    if (!PROM[sem(r.id)] || q.quando < PROM[sem(r.id)].quando) PROM[sem(r.id)] = q; } }
 function pontuar(c, k) {
-  const m = [], pz = dias(c.prazo), ar = dias(c.postar); let s = 0;
+  const m = [], pz = dias(c.prazo), ar = dias(c.postar), pr = c.id ? PROM[c.id] : null; let s = 0;
   if (k.foco) m.push('⭐ Prioridade da diretoria');
+  if (pr) { const d = dias(pr.quando); s += d < 0 ? 45 : d === 0 ? 40 : 30;
+    m.push('🗓️ Promessa ' + (d < 0 ? 'atrasada' : d === 0 ? 'de hoje' : d === 1 ? 'de amanhã' : 'em 2 dias') + ': ' + pr.marco); }
   if (pz !== null && pz < 0) { s += 40 + Math.min(30, -pz * 2); m.push(-pz === 1 ? 'Atrasado 1 dia' : 'Atrasado ' + (-pz) + ' dias'); }
   else if (pz === 0) { s += 35; m.push('Prazo hoje'); } else if (pz === 1) { s += 25; m.push('Prazo amanhã'); } else if (pz !== null && pz <= 6) s += 12 - pz;
   if (ar !== null && ar >= 0 && ar <= 3) { s += 25 - ar * 5; m.push(ar === 0 ? 'Vai ao ar hoje' : ar === 1 ? 'Vai ao ar amanhã' : 'Vai ao ar em ' + ar + ' dias'); }
@@ -197,8 +210,8 @@ function pontuar(c, k) {
   if (c.origem === 'Recuperação') { s += 10; m.push('Recuperação'); }
   if (c.origem === 'Treino (fila reserva)') s -= 40;
   if (k.fimDias !== null && k.fimDias >= 0 && k.fimDias <= 30) { s += 15; m.push(dir ? 'Contrato acaba em ' + k.fimDias + ' dias' : 'Fim de contrato perto'); }
-  // Nível: 1 = cliente em foco (diretoria), 2 = postagem de hoje, 3 = o resto. A fila ordena pelo nível e depois pelos pontos.
-  return { score: Math.max(0, Math.round(s)), motivos: m, nivel: k.foco ? 1 : ar === 0 ? 2 : 3 };
+  // Nível: 1 = cliente em foco (diretoria), 2 = postagem de hoje, 3 = promessa vencendo (até 2 dias ou atrasada), 4 = o resto.
+  return { score: Math.max(0, Math.round(s)), motivos: m, nivel: k.foco ? 1 : ar === 0 ? 2 : pr ? 3 : 4, promessa: !!pr };
 }
 // Sugestão: máquina quando ela entrega antes do prazo; senão a pessoa com menos carga.
 function sugerir(c, ondeK) {
@@ -214,8 +227,8 @@ function sugerir(c, ondeK) {
 const demandas = abertos.map(c => { const k = cli[c.cliente] || {}; const o = onde(c), pt = pontuar(c, k), pz = dias(c.prazo);
   return { id: c.id, cod: c.cod, url: c.url, cliente: c.cliente, clienteNome: c.clienteNome, nome: c.nome, tipo: c.tipo, qtd: c.qtd, status: c.status,
     prazo: c.prazo, postar: c.postar, link: /^https:/.test(c.link) ? c.link : '', obs1: c.obs1, faixa: k.faixa || '', atencao: !!k.atencao,
-    onde: o[0], ondeTexto: o[1], resp: c.resp.filter(r => PESSOAS[r]).map(r => PESSOAS[r][0]), score: pt.score, motivos: pt.motivos, nivel: pt.nivel, foco: !!k.foco,
-    velho: !k.foco && pz !== null && pz < -15, sugestao: ['maquina', 'flau'].includes(o[0]) ? null : sugerir(c, o[0]) }; })
+    onde: o[0], ondeTexto: o[1], resp: c.resp.filter(r => PESSOAS[r]).map(r => PESSOAS[r][0]), score: pt.score, motivos: pt.motivos, nivel: pt.nivel, promessa: pt.promessa, foco: !!k.foco,
+    velho: !pt.promessa && !k.foco && pz !== null && pz < -15, sugestao: ['maquina', 'flau'].includes(o[0]) ? null : sugerir(c, o[0]) }; })
   .sort((a, b) => a.nivel - b.nivel || b.score - a.score || String(a.prazo || '9').localeCompare(String(b.prazo || '9')));
 
 // ---------- Previstas: o ritmo da ficha (longos, shorts e carrosséis por semana) contra os cards que já existem na semana ----------
@@ -455,11 +468,11 @@ const recusarEnvio = node({ type: 'n8n-nodes-base.respondToWebhook', version: 1.
 const recusar = node({ type: 'n8n-nodes-base.respondToWebhook', version: 1.5, config: { name: 'Recusar', parameters: {
   respondWith: 'json', responseBody: '={{ JSON.stringify($json.resposta) }}', options: {} } } });
 
-const nota = sticky('## Painel · Central de Demandas (V1)\nAba "Central" do Ismael, do Rômulo e da diretoria (e do usuário de teste, só leitura de dados reais e envio só em cards TESTE PAINEL).\nver: cards abertos (A fazer, Fazendo, Ajustes) em 3 níveis (1 = ⭐ cliente em foco da diretoria, campo "⭐ Foco até" da ficha; 2 = postagem de hoje; 3 = o resto) e dentro do nível pela nota de prioridade (prazo, dia de ir ao ar, 🔴, clima, SOS, faixa A/B/C, urgente, recuperação, fim de contrato), onde cada um está, sugestão de destino; previstas = ritmo da ficha (longos, shorts e carrosséis por semana) menos os cards que já existem na semana; filas dos quadros de Longos, Shorts e Carrosséis e da Máquina do Escritório, com quanto cabe hoje pelos horários das rotinas e quando fica pronto um pedido novo; carga de cada pessoa.\nmandar: card (ou prevista, que vira card novo) vai para a máquina (longo e shorts pedem link; cria o pedido no quadro como o "Pedir ao escritório"), para Victor, Lorena, Daniel, Ismael, Rômulo (aviso no #dia-a-dia marcando a pessoa) ou "eu faço" (diretoria = À mão (Flau); Ismael/Rômulo = fica com quem mandou). Linha [Central] no topo da Obs.\nEquipe nunca recebe valores. Contrato e clima aparecem com nome só para a diretoria.', [], { color: 4 });
+const nota = sticky('## Painel · Central de Demandas (V1)\nAba "Central" do Ismael, do Rômulo e da diretoria (e do usuário de teste, só leitura de dados reais e envio só em cards TESTE PAINEL).\nver: cards abertos (A fazer, Fazendo, Ajustes) em 4 níveis (1 = ⭐ cliente em foco da diretoria, campo "⭐ Foco até" da ficha; 2 = postagem de hoje; 3 = promessa do banco 🗓️ Promessas que vence em até 2 dias ou já passou; 4 = o resto) e dentro do nível pela nota de prioridade (prazo, dia de ir ao ar, 🔴, clima, SOS, faixa A/B/C, urgente, recuperação, fim de contrato), onde cada um está, sugestão de destino; previstas = ritmo da ficha (longos, shorts e carrosséis por semana) menos os cards que já existem na semana; filas dos quadros de Longos, Shorts e Carrosséis e da Máquina do Escritório, com quanto cabe hoje pelos horários das rotinas e quando fica pronto um pedido novo; carga de cada pessoa.\nmandar: card (ou prevista, que vira card novo) vai para a máquina (longo e shorts pedem link; cria o pedido no quadro como o "Pedir ao escritório"), para Victor, Lorena, Daniel, Ismael, Rômulo (aviso no #dia-a-dia marcando a pessoa) ou "eu faço" (diretoria = À mão (Flau); Ismael/Rômulo = fica com quem mandou). Linha [Central] no topo da Obs.\nEquipe nunca recebe valores. Contrato e clima aparecem com nome só para a diretoria.', [], { color: 4 });
 
 export default workflow('painel-central', 'Painel | Central de Demandas (V1)')
   .add(pedir).to(ler).to(acesso).to(validar).to(caminho
-    .onCase(0, entregas.to(clientes).to(qLongos).to(qShorts).to(qCarrosseis).to(montar).to(devolverVer))
+    .onCase(0, entregas.to(clientes).to(qLongos).to(qShorts).to(qCarrosseis).to(qPromessas).to(montar).to(devolverVer))
     .onCase(1, cardAtual.to(ficha).to(checar).to(podeMandar
       .onTrue(ehPrevista.onTrue(criarCard.to(juntar)).onFalse(juntar))
       .onFalse(recusarEnvio)))
