@@ -72,8 +72,8 @@ if (out.paraDiretoria) out.diretoria = JSON.stringify({ content: ('📅 Postagem
 return [{ json: out }];
 ` } } });
 
-const avisarEquipe = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, config: { name: 'Avisar no #dia-a-dia', credentials: DISCORD, onError: 'continueRegularOutput', parameters: {
-  method: 'POST', url: 'https://discord.com/api/v10/channels/1556642691410956339/messages', authentication: 'genericCredentialType', genericAuthType: 'httpHeaderAuth',
+const avisarEquipe = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, config: { name: 'Avisar no #postagens-do-dia', credentials: DISCORD, onError: 'continueRegularOutput', parameters: {
+  method: 'POST', url: 'https://discord.com/api/v10/channels/1567577411489501374/messages', authentication: 'genericCredentialType', genericAuthType: 'httpHeaderAuth',
   sendBody: true, specifyBody: 'json', jsonBody: '={{ $("Montar alerta").first().json.equipe }}', options: {} } } });
 
 const praDiretoria = ifElse({ version: 2.2, config: { name: 'Também para a diretoria?', parameters: { conditions: {
@@ -85,7 +85,7 @@ const avisarDiretoria = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4,
   method: 'POST', url: 'https://discord.com/api/v10/channels/1560627456837427250/messages', authentication: 'genericCredentialType', genericAuthType: 'httpHeaderAuth',
   sendBody: true, specifyBody: 'json', jsonBody: '={{ $("Montar alerta").first().json.diretoria }}', options: {} } } });
 
-const nota = sticky('## Painel · alerta da postagem do dia (V1)\nDe segunda a sábado, às 14h e às 17h (Recife). Lê os horários "✅ Publicar" de hoje na Grade de Postagem, tira cliente que não está Ativo e cliente com "🎥 Aguardando gravação", e confere a tabela "Painel · grade marcações" (botões Programado/Postado da aba Grade).\n14h: o que falta vai ao #dia-a-dia marcando o Ismael e o Daniel. 17h: o que continua faltando vai ao #dia-a-dia marcando o Rômulo e ao #avisos-escritório (diretoria). Cliente em foco (⭐ Foco até) vem primeiro. Sem pendência, não manda nada.', [], { color: 4 });
+const nota = sticky('## Painel · alerta da postagem do dia (V1)\nDe segunda a sábado, às 14h e às 17h (Recife). Lê os horários "✅ Publicar" de hoje na Grade de Postagem, tira cliente que não está Ativo e cliente com "🎥 Aguardando gravação", e confere a tabela "Painel · grade marcações" (botões Programado/Postado da aba Grade).\n14h: o que falta vai ao #postagens-do-dia marcando o Ismael e o Daniel. 17h: o que continua faltando vai ao #postagens-do-dia marcando o Rômulo e ao #avisos-escritório (diretoria). Cliente em foco (⭐ Foco até) vem primeiro. Sem pendência, não manda nada.', [], { color: 4 });
 
 export default workflow('painel-postagem-do-dia', 'Painel | Alerta da postagem do dia (V1)')
   .add(relogio).to(hora).to(grade).to(clientes).to(marcacoes).to(montar).to(avisarEquipe).to(praDiretoria.onTrue(avisarDiretoria))
