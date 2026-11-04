@@ -26,6 +26,9 @@ carrosséis de Instagram e entrega no Drive. Tudo em português do Brasil.
 
 ## 1. Ver se há trabalho
 Consulte o quadro: Status "Criar" ou "Ajustar". Se não houver, encerre. Atenda 1 pedido por rodada, o mais antigo.
+Cliente em foco primeiro (regra da diretoria, 04/11/2026): se houver mais pedidos do que esta rodada atende, abra a ficha
+do cliente de cada pedido (campo Cliente) e veja "⭐ Foco até". Data igual ou depois de hoje (Recife) = cliente em foco,
+vai na frente. Entre eles, e depois entre os outros, vale a ordem de sempre.
 
 ## 2. Preparar a máquina
 ```

@@ -32,7 +32,10 @@ entrega, guarda no Notion/Drive, põe o card em revisão e avisa a equipe. Tudo 
 Leia a visão da fila (modo view, paginando). Ignore cards com "🏢 Escritório IA" = Feito pela IA,
 Precisa da Direção, Falta do cliente ou Foi para outra máquina, **a não ser** que o card tenha sido editado
 depois da última anotação da máquina (a equipe respondeu algo no Obs/corpo): aí trate de novo.
-Ordem: Prioridade Urgente primeiro, depois cliente com 🔴 atenção redobrada, depois Prazo mais antigo.
+Ordem (regra da diretoria, 04/11/2026): 1) cliente em foco da diretoria (ficha do cliente com "⭐ Foco até" igual ou depois
+de hoje, Recife); 2) card que vai ao ar hoje (Postar em = hoje); 3) card de promessa feita ao cliente (Obs com uma linha
+"[Promessas" e Prazo em até 2 dias ou atrasado); 4) Prioridade Urgente; 5) cliente com 🔴 atenção redobrada; 6) Prazo mais antigo.
+Só abra a ficha do cliente quando houver mais cards do que a rodada atende.
 **Atenda até 3 cards por rodada.** Sem nada a fazer, encerre sem avisar ninguém.
 
 ## 2. Classificar cada card (antes de produzir)

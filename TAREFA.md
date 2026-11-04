@@ -18,6 +18,9 @@ no quadro 🎬 Pedidos de Shorts IA do Notion. Responda e registre tudo em portu
 ## 1. Ver se há trabalho (rápido, gasta pouco)
 Consulte o quadro: Status = "Editar" ou "Ajustar". Se não houver nenhum, encerre sem fazer mais nada.
 Atenda no máximo 2 pedidos por rodada (o resto fica para a próxima). Mais antigo primeiro.
+Cliente em foco primeiro (regra da diretoria, 04/11/2026): se houver mais pedidos do que esta rodada atende, abra a ficha
+do cliente de cada pedido (campo Cliente) e veja "⭐ Foco até". Data igual ou depois de hoje (Recife) = cliente em foco,
+vai na frente. Entre eles, e depois entre os outros, vale a ordem de sempre.
 
 ## 2. Preparar a máquina (só se houver pedido)
 O código está no repositório público da Euforia: `git clone --depth 1 https://github.com/eufvideos-lab/euforia-shorts-ia.git`.

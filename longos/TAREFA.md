@@ -21,6 +21,9 @@ Status "Editar" ou "Ajustar" no quadro 🎞️ Pedidos de Vídeos Longos IA. Tud
 Consulte o quadro com notion-query-data-sources em modo view, SEM filtro (view://1f712af7-3e70-44b6-9dbc-d3a5f34134d3),
 e escolha você as linhas com Status "Editar" ou "Ajustar". Atenção: Status é um campo de seleção (select), não do tipo
 "status"; um filtro "status_is" volta vazio. Se não houver pedido, encerre. Atenda 1 pedido por rodada, o mais antigo.
+Cliente em foco primeiro (regra da diretoria, 04/11/2026): se houver mais pedidos do que esta rodada atende, abra a ficha
+do cliente de cada pedido (campo Cliente) e veja "⭐ Foco até". Data igual ou depois de hoje (Recife) = cliente em foco,
+vai na frente. Entre eles, e depois entre os outros, vale a ordem de sempre.
 
 ## 2. Preparar a máquina
 ```
