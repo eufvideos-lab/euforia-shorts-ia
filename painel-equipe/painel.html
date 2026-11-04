@@ -587,6 +587,7 @@ const VIEWS = {
       const hoje = hojeDiretor();
       return `<div class="head"><div><p class="eyebrow">${esc(DD.hojeTexto)} · atualizado às ${esc(DD.agora)}</p><h1>${saud()}, ${esc(primeiro())}</h1></div>
         <div class="actions"><button class="btn primary" id="d-novo">+ Novo card</button></div></div>
+      ${(DEMO || GERENTE_NO_AR) ? aprovarGeral() : ''}
       <div class="stats six">
         <button class="stat ${atr.length ? 'hot' : ''}" data-filtro="atrasados" style="text-align:left;background:${atr.length ? 'var(--bad-soft)' : 'var(--surface)'}"><span class="v">${atr.length}</span><span>atrasados</span></button>
         <button class="stat" data-filtro="hoje" style="text-align:left;background:var(--surface)"><span class="v">${hj.length}</span><span>prazo hoje</span></button>
@@ -2244,6 +2245,26 @@ const CLASSE_GA = { pedido: 'Pedido de conteúdo', ajuste: 'Ajuste', status: 'D�
 const URG_GA = { padrao: '', urgente: '⚠️ Urgente (24h)', hiperurgente: '⚡ Hiperurgente: o card só nasce quando você enviar' };
 const ST_GA = { enviado: ['Enviado', 'ok'], cancelado: ['Cancelado', ''], expirado: ['Expirou (24h)', ''], equipe_respondeu: ['Equipe respondeu antes', 'info'], erro_envio: ['Erro no WhatsApp', 'red'] };
 const esperaGA = () => GA && GA.abertos ? GA.abertos.filter(x => x.status === 'aguardando' && !x.painel_acao) : [];
+function cardGA(x){
+  const feito = !!x.painel_acao || x.status === 'aprovado_espera';
+  const situacao = x.status === 'aprovado_espera' ? '🌙 Aprovado. Sai às 7h (silêncio das 22h às 7h).' : x.painel_acao === 'enviar' ? '⏳ Aprovado. Sai pelo suporte no próximo minuto.' : '⏳ Cancelado. Nada sai.';
+  return `<section class="panel"><h2>${esc(x.cliente)} <span class="sub">· ${esc(CLASSE_GA[x.classe] || x.classe)} · ${esc(x.criado)}</span></h2>
+    ${URG_GA[x.urgencia] ? `<p><span class="chip ${x.urgencia === 'hiperurgente' ? 'red' : 'warn'}">${esc(URG_GA[x.urgencia])}</span></p>` : ''}
+    ${x.cliente_disse ? `<p class="sub" style="white-space:pre-wrap;border-left:3px solid var(--line);padding-left:10px">${esc(x.cliente_disse)}</p>` : ''}
+    ${x.card_url ? `<p class="note">📋 Card criado no Entregas (com o Ismael): <a href="${esc(x.card_url)}" target="_blank" rel="noopener">abrir</a></p>` : ''}
+    <label for="ga-t${x.id}">Resposta para o grupo<textarea id="ga-t${x.id}" rows="4" ${feito ? 'disabled' : ''}>${esc(GAE[x.id] != null ? GAE[x.id] : x.texto)}</textarea></label>
+    <p class="note">Sai com "Érica, time de suporte, Grupo Euforia" no fim.</p>
+    ${feito ? `<p class="note"><b>${situacao}</b></p>` : `<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn primary" data-gaenv="${x.id}">Enviar</button><button class="btn" data-gacan="${x.id}">Cancelar</button></div>`}
+  </section>`;
+}
+// Na Visão geral (a mesa da diretoria): os rascunhos esperando aparecem no topo, com Enviar e Cancelar ali mesmo.
+function aprovarGeral(){
+  if (!GA) { carregarGerente(true); return ''; }
+  if (GA.erro || !GA.abertos || !GA.abertos.length) return '';
+  const L = GA.abertos.slice(0, 5);
+  return `<section class="group" style="margin-bottom:18px"><h2>✍️ Respostas para aprovar <span class="count">${esperaGA().length}</span></h2><p class="sub">Rascunhos da Gerente IA. Enviar manda pelo suporte, assinado Érica, em até 1 minuto. Para corrigir, mude o texto e aperte Enviar.</p>
+    <div style="display:flex;flex-direction:column;gap:12px">${L.map(cardGA).join('')}</div>${GA.abertos.length > L.length ? `<p style="margin-top:10px"><button class="btn" data-view="aprovar">Ver todas (${GA.abertos.length})</button></p>` : ''}</section>`;
+}
 function aprovarHtml(){
   const topo = `<div class="head"><div><p class="eyebrow">Gerente IA${GA && GA.ok ? ' · atualizada às ' + esc(GA.agora) : ''}</p><h1>Aprovar respostas</h1></div><p class="sub">Rascunhos da Gerente IA para os grupos do piloto. Enviar manda pelo suporte, assinado Érica, em até 1 minuto. Para corrigir, mude o texto e aperte Enviar. Vale o primeiro toque, aqui ou no #aprovações-gerente.</p></div>`;
   if (!GA) { carregarGerente(); return topo + '<p class="sub">Carregando…</p>'; }
@@ -2253,21 +2274,9 @@ function aprovarHtml(){
   const stats = `<div class="stats s5">${[[esperaGA().length, 'esperando você'], [n.enviadas || 0, 'respostas enviadas'], [pct, 'enviadas sem correção (meta 95%)'], [n.canceladas || 0, 'canceladas'], [(n.expiradas || 0) + (n.equipe || 0), 'expiradas ou equipe respondeu antes']]
     .map(([v, t]) => `<div class="stat" style="background:var(--surface)"><span class="v">${v}</span><span>${t}</span></div>`).join('')}</div>
     <p class="note">Números sem os testes. Com 30 enviadas e 95% sem correção, as respostas simples (status, prazo, material recebido) podem passar a sair sem aprovação.</p>`;
-  const card = x => {
-    const feito = !!x.painel_acao || x.status === 'aprovado_espera';
-    const situacao = x.status === 'aprovado_espera' ? '🌙 Aprovado. Sai às 7h (silêncio das 22h às 7h).' : x.painel_acao === 'enviar' ? '⏳ Aprovado. Sai pelo suporte no próximo minuto.' : '⏳ Cancelado. Nada sai.';
-    return `<section class="panel"><h2>${esc(x.cliente)} <span class="sub">· ${esc(CLASSE_GA[x.classe] || x.classe)} · ${esc(x.criado)}</span></h2>
-      ${URG_GA[x.urgencia] ? `<p><span class="chip ${x.urgencia === 'hiperurgente' ? 'red' : 'warn'}">${esc(URG_GA[x.urgencia])}</span></p>` : ''}
-      ${x.cliente_disse ? `<p class="sub" style="white-space:pre-wrap;border-left:3px solid var(--line);padding-left:10px">${esc(x.cliente_disse)}</p>` : ''}
-      ${x.card_url ? `<p class="note">📋 Card criado no Entregas (com o Ismael): <a href="${esc(x.card_url)}" target="_blank" rel="noopener">abrir</a></p>` : ''}
-      <label for="ga-t${x.id}">Resposta para o grupo<textarea id="ga-t${x.id}" rows="4" ${feito ? 'disabled' : ''}>${esc(GAE[x.id] != null ? GAE[x.id] : x.texto)}</textarea></label>
-      <p class="note">Sai com "Érica, time de suporte, Grupo Euforia" no fim.</p>
-      ${feito ? `<p class="note"><b>${situacao}</b></p>` : `<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn primary" data-gaenv="${x.id}">Enviar</button><button class="btn" data-gacan="${x.id}">Cancelar</button></div>`}
-    </section>`;
-  };
   const st = x => ST_GA[x.status] || [x.status, ''];
   const rec = GA.recentes && GA.recentes.length ? `<div class="tbl"><table><thead><tr><th>Quando</th><th>Cliente</th><th>Como ficou</th><th>Texto</th></tr></thead><tbody>${GA.recentes.map(x => `<tr><td class="mono">${esc(x.quando)}</td><td>${esc(x.cliente)}</td><td><span class="chip ${st(x)[1]}">${esc(st(x)[0])}</span>${x.corrigida ? ' <span class="sub">corrigida</span>' : ''}${x.pelo_painel ? ' <span class="sub">pelo painel</span>' : ''}</td><td class="sub">${esc(String(x.texto || '').slice(0, 160))}</td></tr>`).join('')}</tbody></table></div>` : '<p class="empty">Nada decidido ainda.</p>';
-  return topo + stats + (GA.abertos.length ? `<div style="display:flex;flex-direction:column;gap:12px;margin-top:12px">${GA.abertos.map(card).join('')}</div>` : '<p class="empty">Nenhum rascunho esperando. Assunto sério (dinheiro, contrato, reclamação, jurídico) não ganha rascunho: continua só como alerta no #aprovações-gerente.</p>')
+  return topo + stats + (GA.abertos.length ? `<div style="display:flex;flex-direction:column;gap:12px;margin-top:12px">${GA.abertos.map(cardGA).join('')}</div>` : '<p class="empty">Nenhum rascunho esperando. Assunto sério (dinheiro, contrato, reclamação, jurídico) não ganha rascunho: continua só como alerta no #aprovações-gerente.</p>')
     + `<section class="group"><h2>Últimos decididos</h2>${rec}</section>`;
 }
 async function carregarGerente(silencioso){
@@ -2276,7 +2285,7 @@ async function carregarGerente(silencioso){
   catch (e) { if (!GA) GA = { erro: true }; }
   carregarGerente.indo = false;
   if (!D || ocupado || $('#layer').innerHTML) return;
-  if (view === 'aprovar' && !(silencioso && document.activeElement && document.activeElement.matches('[id^="ga-t"]'))) render();
+  if (['aprovar', 'geral'].includes(view) && !(silencioso && document.activeElement && document.activeElement.matches('[id^="ga-t"]'))) render();
 }
 setInterval(() => { if (D && diretor() && (DEMO || GERENTE_NO_AR) && !document.hidden) carregarGerente(true); }, 60000);
 setTimeout(() => { if (D && diretor() && (DEMO || GERENTE_NO_AR)) carregarGerente(true); }, 6000);
