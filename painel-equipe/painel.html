@@ -758,7 +758,7 @@ const VIEWS = {
       const sem = ordenar(resto.filter(c => !agora(c) && diff(c.prazo) > 1));
       const comigo = ordenar(D.cards.filter(c => c.meu && ['Em revisão', 'Aguardando cliente'].includes(c.status)));
       const atras = meus.filter(c => diff(c.prazo) < 0).length;
-      return `<div class="head"><div><p class="eyebrow">${esc(D.hojeTexto)}</p><h1>${saud()}, ${esc(primeiro())}</h1></div><p class="sub">Comece pelo primeiro da lista. A ordem já segue a regra de ouro.</p></div>
+      return `<div class="head"><div><p class="eyebrow">${esc(D.hojeTexto)}</p><h1>${saud()}, ${esc(primeiro())}</h1></div><p class="sub">Comece pelo primeiro da lista. A ordem já segue a regra de ouro.</p><div class="actions"><button class="btn primary" data-nova>+ Nova demanda</button></div></div>
       <div class="stats">
         <div class="stat ${atras ? 'hot' : ''}"><span class="v">${atras}</span><span>atrasados</span></div>
         <div class="stat"><span class="v">${meus.filter(c => diff(c.prazo) === 0).length}</span><span>com prazo hoje</span></div>
@@ -780,7 +780,7 @@ const VIEWS = {
       const lin = c => `<li class="item ${classe(c)}"><span class="stripe"></span>
         <button class="main" data-open="${c.id}"><span class="t">${esc(c.clienteNome)} · ${esc(c.nome)}</span><span class="meta">${chips(c)}</span></button>
         <span class="act"><button class="btn primary" data-pegar="${c.id}" ${cheio ? 'disabled' : ''}>Pegar</button></span></li>`;
-      return `<div class="head"><div><p class="eyebrow">Demandas sem dono</p><h1>Fila de demandas</h1></div><p class="sub">Escolha o que vai fazer. Quem aperta "Pegar" primeiro leva: o card vai para a sua fila e some daqui para todo mundo. Os atrasados e urgentes estão no topo.</p></div>
+      return `<div class="head"><div><p class="eyebrow">Demandas sem dono</p><h1>Fila de demandas</h1></div><p class="sub">Escolha o que vai fazer. Quem aperta "Pegar" primeiro leva: o card vai para a sua fila e some daqui para todo mundo. Os atrasados e urgentes estão no topo.</p><div class="actions"><button class="btn primary" data-nova>+ Nova demanda</button></div></div>
       <div class="stats"><div class="stat ${cheio ? 'hot' : ''}"><span class="v">${meus} de ${LIMITE}</span><span>cards em produção com você</span></div><div class="stat"><span class="v">${l.length}</span><span>esperando alguém</span></div></div>
       ${cheio ? `<p class="note">Você já está com ${LIMITE} cards em produção. Termine um para pegar outro.</p>` : ''}
       ${l.length ? `<section class="group"><ul class="rows">${l.map(lin).join('')}</ul></section>` : '<p class="empty">Nenhuma demanda sem dono agora.</p>'}`;
@@ -1248,6 +1248,50 @@ function abrir(id){
       if (m === 'acesso') { PIN = ''; try { localStorage.removeItem(KEY); } catch (e) {} fechar(); carregar(); return; }
       if (m === 'etapa' || m === 'permissao') { fechar(); carregar(true); return; }
       document.querySelectorAll('#layer .btn').forEach(b => b.disabled = false);
+    }
+  };
+}
+// Nova demanda (04/11/2026): qualquer pessoa cria um card no Entregas para si ou para outra pessoa da equipe.
+// O card guarda quem criou (✍️ Criada por) e para quem foi (Responsável), para a diretoria medir as duas pontas.
+const TIPOS_NOVA = ['Página', 'Funil', 'Vídeo longo', 'Shorts', 'Carrossel', 'Thumbnail', 'Arte', 'Banner', 'ID visual', 'Limpeza de canal', 'Podcast', 'Blog', 'Roteiro', 'Copy', 'Apresentação', 'Relatório', 'Estratégia', 'Insta-Blindado', 'Outro'];
+function abrirNova(){
+  const hoje = String(D.hoje || '').slice(0, 10);
+  const nomes = D.clientes.slice().sort((a, b) => a.nome.localeCompare(b.nome));
+  const outros = PASSAR.filter(p => p[0] !== 'escritorio' && p[1] !== primeiro());
+  $('#layer').innerHTML = `<div class="scrim" data-x></div><aside class="drawer" role="dialog" aria-modal="true" aria-labelledby="nd-t"><div class="drawer-in">
+    <button class="close" data-x>Fechar</button>
+    <div><p class="eyebrow">Card novo no Entregas</p><h2 id="nd-t" style="font-size:26px">Nova demanda</h2>
+      <p class="sub" style="margin-top:6px">Para você ou para outra pessoa da equipe. Fica registrado quem criou e para quem foi. Para pedir às máquinas, use Pedir ao escritório.</p></div>
+    <form id="fnd">
+      <label for="ndc">Cliente<select id="ndc" required><option value="">Escolha…</option>${nomes.map(x => `<option value="${x.id}">${esc(x.nome)}</option>`).join('')}</select></label>
+      <label for="ndn">O que é<input type="text" id="ndn" maxlength="80" placeholder="Subir a página na estrutura da cliente" required></label>
+      <div class="grid2"><label for="ndt">Tipo<select id="ndt">${TIPOS_NOVA.map(t => `<option>${t}</option>`).join('')}</select></label>
+        <label for="ndz">Prazo<input type="date" id="ndz" min="${esc(hoje)}" value="${esc(hoje)}" required></label></div>
+      <div class="grid2"><label for="ndp">Para quem<select id="ndp"><option value="eu">Para mim</option>${outros.map(p => `<option value="${p[0]}">${esc(p[1])}</option>`).join('')}</select></label>
+        <label for="ndu">Prioridade<select id="ndu"><option value="">Normal</option><option value="1">Urgente</option></select></label></div>
+      <label for="ndl">Link (opcional)<input type="url" id="ndl" placeholder="https://"></label>
+      <label for="ndo">Detalhes (opcional)<textarea id="ndo" maxlength="1200" placeholder="O que precisa, onde fica, o que já tem pronto."></textarea></label>
+      <div class="actions"><button class="btn primary" type="submit">Criar demanda</button></div>
+    </form></div></aside>`;
+  $('#layer').onclick = e => { if (e.target.closest('[data-x]') && !ocupado) fechar(); };
+  $('#ndc').focus();
+  $('#fnd').onsubmit = async e => {
+    e.preventDefault(); e.stopPropagation(); if (ocupado) return;
+    const lk = $('#ndl').value.trim();
+    if (!$('#ndc').value) { $('#ndc').focus(); toast('Escolha o cliente.'); return; }
+    if ($('#ndn').value.trim().length < 3) { $('#ndn').focus(); toast('Escreva o que é a demanda.'); return; }
+    if (!$('#ndz').value || $('#ndz').value < hoje) { $('#ndz').focus(); toast(MOTIVO.prazo); return; }
+    if (lk && !/^https:\/\//.test(lk)) { $('#ndl').focus(); toast('O link precisa começar com https://'); return; }
+    const para = $('#ndp').value;
+    ocupado = true; document.querySelectorAll('#layer .btn').forEach(b => b.disabled = true);
+    try {
+      const r = await api('euforia-painel-acao', { acao: 'criar', cliente: $('#ndc').value, nome: $('#ndn').value.trim(), tipo: $('#ndt').value, prazo: $('#ndz').value, para, urgente: $('#ndu').value === '1', link: lk, texto: $('#ndo').value.trim() });
+      if (!r || !r.ok) throw new Error((r && r.motivo) || 'erro');
+      ocupado = false; fechar(); toast(para === 'eu' ? 'Demanda criada. Já está na sua fila.' : 'Demanda criada e a pessoa foi avisada no #dia-a-dia.');
+      await carregar(true);
+    } catch (err) {
+      ocupado = false; document.querySelectorAll('#layer .btn').forEach(b => b.disabled = false);
+      toast({ campos: 'Preencha cliente, o que é e o tipo.', pessoa: 'Escolha para quem é.' }[err.message] || MOTIVO[err.message] || ERRO);
     }
   };
 }
@@ -1908,6 +1952,7 @@ document.addEventListener('click', async e => {
   }
   const dc = e.target.closest('#main [data-dcard]'); if (dc) { abrirDD(dc.dataset.dcard); return; }
   if (e.target.closest('#main #d-novo')) { abrirDD(''); return; }
+  if (e.target.closest('#main [data-nova]')) { abrirNova(); return; }
   const dp = e.target.closest('#main [data-pessoa]');
   if (dp) { view = 'pessoas'; PF = 'abertos'; PQ = ''; render(); const col = document.getElementById('col-' + dp.dataset.pessoa); if (col) col.scrollIntoView({ behavior: 'smooth', block: 'start' }); return; }
   const fl = e.target.closest('#main [data-filtro]'); if (fl) { view = 'todos'; TS = fl.dataset.filtro; TQ = ''; TP = ''; TT = ''; render(); window.scrollTo({ top: 0 }); return; }
@@ -2418,6 +2463,7 @@ function demoApi(path, b){
   }
   if (path === 'euforia-painel-pedido') return wait({ ok: true, quem: b.modo === 'mao' ? 'Escritório, à mão' : (TIPOS.find(t => t.id === b.tipo) || {}).maq });
   if (path === 'euforia-painel-acao') {
+    if (b.acao === 'criar') { const k = DEMO_D.clientes.find(x => x.id === b.cliente) || {}; if (b.para === 'eu') DEMO_D.cards.push({ id: 'n' + Date.now(), cod: 600, nome: b.nome.toUpperCase(), cliente: b.cliente, clienteNome: k.nome || '', tipo: b.tipo, status: 'A fazer', prazo: b.prazo, postar: '', prioridade: b.urgente ? 'Urgente' : 'Normal', meu: true, livre: false, resp: [DEMO_D.nome], obs: '[Painel] ' + DEMO_D.nome + ' criou pela Nova demanda' + (b.texto ? ': ' + b.texto : '') }); return wait({ ok: true, status: 'A fazer' }); }
     const c = DEMO_D.cards.find(x => x.id === b.card);
     if (b.acao === 'apagar') { DEMO_D.pedidos = (DEMO_D.pedidos || []).filter(x => x.id !== b.card); DEMO_D.cards = DEMO_D.cards.filter(x => x.id !== b.card); return wait({ ok: true, status: '' }); }
     if (b.acao === 'completar') { DEMO_D.cards = DEMO_D.cards.filter(x => x !== c); return wait({ ok: true, status: 'A fazer' }); }

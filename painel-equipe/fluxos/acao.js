@@ -12,13 +12,18 @@ const pedir = trigger({ type: 'n8n-nodes-base.webhook', version: 2.1, config: { 
 const ler = node({ type: 'n8n-nodes-base.code', version: 2, config: { name: 'Ler pedido', parameters: { jsCode: `const b = ($input.first().json.body) || {};
 const u = String(b.u || '').toLowerCase();
 const card = String(b.card || '').replace(/-/g, '').toLowerCase();
-const ACOES = ['comecar', 'revisao', 'aprovar', 'ajuste', 'agendei', 'postei', 'passar', 'naoemeu', 'jafeito', 'pegar', 'completar', 'apagar', 'naogravou', 'gravou', 'travei'];
-const PARA = ['victor', 'lorena', 'daniel', 'ismael', 'romulo', 'escritorio'];
+const ACOES = ['comecar', 'revisao', 'aprovar', 'ajuste', 'agendei', 'postei', 'passar', 'naoemeu', 'jafeito', 'pegar', 'completar', 'apagar', 'naogravou', 'gravou', 'travei', 'criar'];
+const PARA = ['victor', 'lorena', 'daniel', 'ismael', 'romulo', 'escritorio', 'eu'];
+const TIPOS = ['Vídeo longo', 'Shorts', 'Podcast', 'Carrossel', 'Thumbnail', 'Arte', 'Banner', 'ID visual', 'Limpeza de canal', 'Página', 'Funil', 'Blog', 'Roteiro', 'Copy', 'Apresentação', 'Relatório', 'Estratégia', 'Insta-Blindado', 'Outro'];
+const cli = String(b.cliente || '').replace(/-/g, '').toLowerCase();
 const link = String(b.link || '').trim().slice(0, 500);
 return [{ json: { u: /^[0-9a-f]{24}$/.test(u) ? u : 'x', pin: String(b.pin || '').replace(/[^0-9]/g, '').slice(0, 6),
   card: /^[0-9a-f]{32}$/.test(card) ? card : '00000000000000000000000000000000',
   acao: ACOES.includes(b.acao) ? b.acao : '', para: PARA.includes(b.para) ? b.para : '', fim: ['Postado', 'Cancelado'].includes(b.fim) ? b.fim : '', texto: String(b.texto || '').trim().slice(0, 1200),
   link: /^https:\\/\\/[^\\s]+$/.test(link) ? link : '',
+  // Nova demanda (04/11/2026): qualquer pessoa da equipe cria um card para si ou para outra pessoa.
+  cliente: /^[0-9a-f]{32}$/.test(cli) ? cli : '', nome: String(b.nome || '').replace(/[\\r\\n|]+/g, ' ').trim().slice(0, 80), tipo: TIPOS.includes(b.tipo) ? b.tipo : '',
+  prazo: /^\\d{4}-\\d{2}-\\d{2}$/.test(String(b.prazo || '')) ? b.prazo : '', urgente: b.urgente === true,
   anexos: (Array.isArray(b.anexos) ? b.anexos : []).slice(0, 20).map(a => ({ nome: String((a || {}).nome || 'Anexo').replace(/[\\r\\n]+/g, ' ').slice(0, 120), link: String((a || {}).link || '').trim().slice(0, 500) })).filter(a => /^https:\\/\\/[^\\s]+$/.test(a.link)) } }];
 ` } } });
 
@@ -39,7 +44,7 @@ const abertosNode = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, con
 
 // Fase 3 (04/11/2026): a ficha do cliente diz quem é o guardião (🛡️ Guardião) para o botão "Travei".
 const fichaNode = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, config: { name: 'Ficha do cliente', credentials: NOTION, onError: 'continueRegularOutput', alwaysOutputData: true, parameters: {
-  method: 'GET', url: '={{ "https://api.notion.com/v1/pages/" + ((((($("Card da entrega").first().json.properties || {})["Cliente"] || {}).relation || [])[0] || {}).id || "00000000000000000000000000000000") }}',
+  method: 'GET', url: '={{ "https://api.notion.com/v1/pages/" + ((((($("Card da entrega").first().json.properties || {})["Cliente"] || {}).relation || [])[0] || {}).id || $("Ler pedido").first().json.cliente || "00000000000000000000000000000000") }}',
   authentication: 'genericCredentialType', genericAuthType: 'httpHeaderAuth', sendHeaders: true, headerParameters: NOTION_HDR, options: {} } } });
 
 // Cada botão só vale para quem pode apertar e só na etapa certa. Fora disso, nada muda no Notion.
@@ -97,8 +102,23 @@ const REGRA = {
   passar: { pode: posta, de: ['A fazer', 'Fazendo', 'Em revisão', 'Ajustes', 'Aguardando cliente', 'Aprovado', 'Agendado'], para: '', verbo: 'passou para ' + (alvo ? alvo[1] : '') } };
 const g = REGRA[p.acao];
 if (g && confere) { g.para = 'Agendado'; g.verbo += ' (falta a conferência do Daniel ou do Ismael)'; }
+// Nova demanda: não tem card ainda; quem cria fica em ✍️ Criada por e quem faz em Responsável (para medir as duas pontas).
+const criar = p.acao === 'criar';
+const fichaC = $('Ficha do cliente').first().json || {};
+const fichaOk = sem((fichaC.parent || {}).database_id) === '3ddc91b406be49e98e630c298d9162d8';
+const nomeCli = fichaOk ? txt(Object.values(fichaC.properties || {}).find(v => v && v.type === 'title')) : '';
+const paraQuem = criar ? (p.para === 'eu' ? Object.values(QUEM).find(q => q[0] === r.ficha) || [r.ficha, r.nome, ''] : QUEM[p.para]) : null;
 let erro = '';
-if (!acessoOk) erro = 'acesso';
+if (criar) {
+  if (!acessoOk) erro = 'acesso';
+  else if (!r.ficha && !teste) erro = 'permissao';
+  else if (!fichaOk) erro = 'cliente';
+  else if (p.nome.length < 3 || !p.tipo) erro = 'campos';
+  else if (!p.prazo || p.prazo < DateTime.now().setZone(Z).toISODate()) erro = 'prazo';
+  else if (!paraQuem || p.para === 'escritorio') erro = 'pessoa';
+  else if ((BLOQUEIO[paraQuem[0]] || []).includes(p.cliente)) erro = 'bloqueio';
+}
+else if (!acessoOk) erro = 'acesso';
 else if (!g) erro = 'acao';
 else if (!card.id || !doEntregas) erro = 'card';
 else if (!g.pode) erro = 'permissao';
@@ -156,10 +176,21 @@ const faixaCli = String(((fp['Faixa'] || {}).formula || {}).string || txt(fp['Fa
 const guardioes = guard.length ? guard : (!focoCli && ['B', 'C'].includes(faixaCli)) ? ['827882215185973279'] : ['1490768736876237082'];
 if (p.acao === 'travei') aviso = '🚧 **' + titulo + '** travou com ' + r.nome + '. ' + guardioes.map(i => '<@' + i + '>').join(' ') + ', destrave hoje (o card continua com quem está).\\n> ' + p.texto + (card.url ? '\\n' + card.url : '');
 if (p.acao === 'ajuste') aviso = '🔁 **' + titulo + '** voltou para ajuste. O pedido está no card e no topo da fila de quem fez.';
-return [{ json: { ok: !erro, cardId: card.id || '', avisar: !!aviso && !teste,
+let criarBody = '';
+if (criar && !erro) {
+  const tituloN = (teste ? 'TESTE PAINEL | ' : '') + nomeCli.toUpperCase() + ' | ' + p.nome.toUpperCase();
+  const pr = { 'Entrega': { title: [{ type: 'text', text: { content: tituloN } }] }, 'Cliente': { relation: [{ id: p.cliente }] }, 'Tipo': { select: { name: p.tipo } },
+    'Status': { select: { name: 'A fazer' } }, 'Origem': { select: { name: 'Extra' } }, 'Prazo': { date: { start: p.prazo } }, 'Prioridade': { select: { name: p.urgente ? 'Urgente' : 'Normal' } },
+    'Obs': { rich_text: pedacos('[Painel ' + agora.toFormat('dd/MM HH:mm') + '] ' + r.nome + ' criou pela Nova demanda para ' + (p.para === 'eu' ? 'si mesmo(a)' : paraQuem[1]) + (p.texto ? ': ' + p.texto : '') + (p.link ? ' (' + p.link + ')' : '')) } };
+  if (p.link) pr['Link do arquivo'] = { url: p.link };
+  if (!teste) { pr['Responsável'] = { relation: [{ id: paraQuem[0] }] }; pr['✍️ Criada por'] = { relation: [{ id: r.ficha }] }; }
+  criarBody = JSON.stringify({ parent: { database_id: '74b3076a325749e3bac4ba6659215e48' }, properties: pr });
+  if (p.para !== 'eu' && paraQuem[2]) aviso = '🆕 **' + tituloN + '**: nova demanda de ' + r.nome + ' para <@' + paraQuem[2] + '>, prazo ' + DateTime.fromISO(p.prazo).setLocale('pt-BR').toFormat('ccc, dd/MM') + (p.urgente ? ' (urgente)' : '') + '. Está na fila do painel.' + (p.texto ? '\\n> ' + p.texto : '');
+}
+return [{ json: { ok: !erro, cardId: card.id || '', avisar: !!aviso && !teste, criar, criarBody,
   body: JSON.stringify(p.acao === 'apagar' ? { properties: { 'Obs': props['Obs'] }, archived: true } : { properties: props }), apagar: p.acao === 'apagar', quadroId,
-  discord: JSON.stringify({ content: (aviso + '\\n— Érica, time de suporte, Grupo Euforia').slice(0, 1990), allowed_mentions: { users: p.acao === 'travei' ? guardioes : confere ? ['1470387767337816128', '1410287139169763471'] : p.acao === 'naoemeu' ? ['1410287139169763471', '1490768736876237082'] : ['jafeito', 'pegar', 'naogravou'].includes(p.acao) ? [] : p.acao === 'gravou' ? editores.map(q => q[2]) : p.acao === 'revisao' ? ['1470387767337816128', '1410287139169763471'] : [p.acao === 'passar' ? (alvo && alvo[2]) || '' : '1490768736876237082'].filter(Boolean) } }),
-  resposta: erro ? { ok: false, motivo: erro, status } : { ok: true, status: g.para } } }];
+  discord: JSON.stringify({ content: (aviso + '\\n— Érica, time de suporte, Grupo Euforia').slice(0, 1990), allowed_mentions: { users: criar ? [paraQuem && paraQuem[2]].filter(Boolean) : p.acao === 'travei' ? guardioes : confere ? ['1470387767337816128', '1410287139169763471'] : p.acao === 'naoemeu' ? ['1410287139169763471', '1490768736876237082'] : ['jafeito', 'pegar', 'naogravou'].includes(p.acao) ? [] : p.acao === 'gravou' ? editores.map(q => q[2]) : p.acao === 'revisao' ? ['1470387767337816128', '1410287139169763471'] : [p.acao === 'passar' ? (alvo && alvo[2]) || '' : '1490768736876237082'].filter(Boolean) } }),
+  resposta: erro ? { ok: false, motivo: erro, status } : { ok: true, status: criar ? 'A fazer' : g.para } } }];
 ` } } });
 
 const podeSeguir = ifElse({ version: 2.2, config: { name: 'Botão válido?', parameters: { conditions: {
@@ -170,6 +201,15 @@ const podeSeguir = ifElse({ version: 2.2, config: { name: 'Botão válido?', par
 const atualizar = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, config: { name: 'Atualizar card no Entregas', credentials: NOTION, parameters: {
   method: 'PATCH', url: '=https://api.notion.com/v1/pages/{{ $("Validar botão").first().json.cardId }}', authentication: 'genericCredentialType', genericAuthType: 'httpHeaderAuth',
   sendHeaders: true, headerParameters: NOTION_HDR, sendBody: true, specifyBody: 'json', jsonBody: '={{ $("Validar botão").first().json.body }}', options: {} } } });
+
+const ehCriar = ifElse({ version: 2.2, config: { name: 'É nova demanda?', parameters: { conditions: {
+  options: { caseSensitive: true, leftValue: '', typeValidation: 'loose' },
+  conditions: [{ leftValue: '={{ $("Validar botão").first().json.criar }}', rightValue: '', operator: { type: 'boolean', operation: 'true', singleValue: true } }],
+  combinator: 'and' } } } });
+
+const criarCard = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, config: { name: 'Criar demanda no Entregas', credentials: NOTION, parameters: {
+  method: 'POST', url: 'https://api.notion.com/v1/pages', authentication: 'genericCredentialType', genericAuthType: 'httpHeaderAuth',
+  sendHeaders: true, headerParameters: NOTION_HDR, sendBody: true, specifyBody: 'json', jsonBody: '={{ $("Validar botão").first().json.criarBody }}', options: {} } } });
 
 const ehApagar = ifElse({ version: 2.2, config: { name: 'Foi apagar?', parameters: { conditions: {
   options: { caseSensitive: true, leftValue: '', typeValidation: 'loose' },
@@ -202,13 +242,15 @@ const confirmarSemAviso = node({ type: 'n8n-nodes-base.respondToWebhook', versio
 const recusar = node({ type: 'n8n-nodes-base.respondToWebhook', version: 1.5, config: { name: 'Recusar', parameters: {
   respondWith: 'json', responseBody: '={{ JSON.stringify($json.resposta) }}', options: {} } } });
 
-const nota = sticky('## Painel da equipe · botões (V1)\nComecei (A fazer → Fazendo), Mandar para revisão (link obrigatório → Em revisão + Link do arquivo + aviso ao Daniel e ao Ismael), Aprovar (Em revisão → Aguardando cliente), Pedir ajuste (texto obrigatório → Ajustes), Agendei / Postei (link obrigatório → Agendado / Postado + Link da postagem), Passar para (Ismael, Rômulo e diretoria trocam o Responsável para Victor, Lorena, Daniel, Ismael, Rômulo ou Escritório; aviso no #dia-a-dia marcando a pessoa), Não é comigo (quem é Responsável sai do card, motivo obrigatório, aviso ao Ismael e Rômulo), Já foi feito (Responsável marca Postado ou Cancelado, motivo obrigatório), Pegar (Fila de demandas: card sem Responsável de edição vira da pessoa; limite de 8 em produção), Apagar (quem pediu pelo painel ou a diretoria: card vai para a lixeira do Notion com a linha no histórico; o pedido no quadro da máquina também), Completar pedido (card que a Máquina do Escritório devolveu com 🏢 Escritório IA = Falta informação: texto obrigatório, links e anexos na Obs, volta para Escritório + Na fila), Cliente ainda não gravou (A fazer, Fazendo ou Ajustes → Aguardando cliente; o Responsável fica no card; aviso no #dia-a-dia) Cliente mandou o material (volta para A fazer e marca os editores do card) e Travei (texto obrigatório, status não muda, chama no #dia-a-dia o guardião do cliente, campo 🛡️ Guardião da ficha; vazio = Rômulo para foco ⭐ ou faixa A, Lorena para B/C).\nSó o Responsável mexe no próprio card; revisão é do Daniel (conferente) e do Ismael (revisor); postagem de revisor, calls e produção (Victor e Daniel). O que o Victor agenda ou posta fica em Agendado e avisa o Daniel e o Ismael; um dos dois confere e marca Postado. Victor não pega nem recebe card da Ana Mangia nem da Além do CNPJ (BLOQUEIO). Toda ação vira uma linha [Painel dd/mm] no topo da Obs. Teste só mexe em cards "TESTE PAINEL" e não avisa no Discord.', [], { color: 4 });
+const nota = sticky('## Painel da equipe · botões (V1)\nComecei (A fazer → Fazendo), Mandar para revisão (link obrigatório → Em revisão + Link do arquivo + aviso ao Daniel e ao Ismael), Aprovar (Em revisão → Aguardando cliente), Pedir ajuste (texto obrigatório → Ajustes), Agendei / Postei (link obrigatório → Agendado / Postado + Link da postagem), Passar para (Ismael, Rômulo e diretoria trocam o Responsável para Victor, Lorena, Daniel, Ismael, Rômulo ou Escritório; aviso no #dia-a-dia marcando a pessoa), Não é comigo (quem é Responsável sai do card, motivo obrigatório, aviso ao Ismael e Rômulo), Já foi feito (Responsável marca Postado ou Cancelado, motivo obrigatório), Pegar (Fila de demandas: card sem Responsável de edição vira da pessoa; limite de 8 em produção), Apagar (quem pediu pelo painel ou a diretoria: card vai para a lixeira do Notion com a linha no histórico; o pedido no quadro da máquina também), Completar pedido (card que a Máquina do Escritório devolveu com 🏢 Escritório IA = Falta informação: texto obrigatório, links e anexos na Obs, volta para Escritório + Na fila), Cliente ainda não gravou (A fazer, Fazendo ou Ajustes → Aguardando cliente; o Responsável fica no card; aviso no #dia-a-dia) Cliente mandou o material (volta para A fazer e marca os editores do card) Nova demanda (acao criar, 04/11/2026: qualquer pessoa com ficha cria card A fazer para si ou para Victor, Lorena, Daniel, Ismael ou Rômulo; cliente, nome, tipo e prazo obrigatórios; grava ✍️ Criada por + Responsável; avisa no #dia-a-dia só quando é para outra pessoa) e Travei (texto obrigatório, status não muda, chama no #dia-a-dia o guardião do cliente, campo 🛡️ Guardião da ficha; vazio = Rômulo para foco ⭐ ou faixa A, Lorena para B/C).\nSó o Responsável mexe no próprio card; revisão é do Daniel (conferente) e do Ismael (revisor); postagem de revisor, calls e produção (Victor e Daniel). O que o Victor agenda ou posta fica em Agendado e avisa o Daniel e o Ismael; um dos dois confere e marca Postado. Victor não pega nem recebe card da Ana Mangia nem da Além do CNPJ (BLOQUEIO). Toda ação vira uma linha [Painel dd/mm] no topo da Obs. Teste só mexe em cards "TESTE PAINEL" e não avisa no Discord.', [], { color: 4 });
 
 export default workflow('painel-acao', 'Painel | Botões da equipe (V1)')
   .add(pedir).to(ler).to(acesso).to(cardNode).to(abertosNode).to(fichaNode).to(validar)
   .to(podeSeguir
-    .onTrue(atualizar.to(ehApagar
-      .onTrue(apagarQuadro.to(confirmarApagar))
-      .onFalse(precisaAviso.onTrue(avisar.to(confirmar)).onFalse(confirmarSemAviso))))
+    .onTrue(ehCriar
+      .onTrue(criarCard.to(precisaAviso))
+      .onFalse(atualizar.to(ehApagar
+        .onTrue(apagarQuadro.to(confirmarApagar))
+        .onFalse(precisaAviso.onTrue(avisar.to(confirmar)).onFalse(confirmarSemAviso)))))
     .onFalse(recusar))
   .add(nota);
