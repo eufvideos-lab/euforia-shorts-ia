@@ -86,6 +86,7 @@ main{min-width:0;padding-block:32px 64px;padding-left:max(16px,min(40px,4vw));pa
 .chip{display:inline-flex;align-items:center;gap:5px;border-radius:99px;padding:2px 9px;font-size:12px;font-weight:600;background:var(--surface-2);color:var(--muted);white-space:nowrap}
 .chip.red{background:var(--bad-soft);color:var(--bad)}
 .chip.org{background:var(--accent-soft);color:var(--accent-text)}
+.foco-box{border:2px solid var(--accent);border-radius:12px;padding:14px 16px}
 .chip.ok{background:var(--ok-soft);color:var(--ok)}
 .chip.warn{background:var(--warn-soft);color:var(--warn)}
 .chip.info{background:var(--info-soft);color:var(--info)}
@@ -484,8 +485,8 @@ async function carregar(silencioso){
   }
 }
 
-// Regra de ouro: ajustes primeiro, depois o que vai ao ar antes, faixa A antes de B e C, depois o prazo.
-function ordenar(a){ return a.sort((x, y) => (y.status === 'Ajustes') - (x.status === 'Ajustes') || diff(x.postar) - diff(y.postar) || String(cli(x).faixa || 'Z').localeCompare(String(cli(y).faixa || 'Z')) || diff(x.prazo) - diff(y.prazo)); }
+// Regra de ouro: ⭐ cliente em foco da diretoria primeiro, depois o que vai ao ar hoje, ajustes, o que vai ao ar antes, faixa A antes de B e C, depois o prazo.
+function ordenar(a){ return a.sort((x, y) => (!!cli(y).foco - !!cli(x).foco) || ((diff(y.postar) === 0) - (diff(x.postar) === 0)) || (y.status === 'Ajustes') - (x.status === 'Ajustes') || diff(x.postar) - diff(y.postar) || String(cli(x).faixa || 'Z').localeCompare(String(cli(y).faixa || 'Z')) || diff(x.prazo) - diff(y.prazo)); }
 // A Máquina do Escritório devolve o pedido a quem pediu com "🏢 Escritório IA = Falta informação" e escreve na Obs o que falta.
 const falta = c => c.meu && c.escritorio === 'Falta informação' && ['A fazer', 'Fazendo', 'Ajustes'].includes(c.status);
 function oQueFalta(c){ const l = String(c.obs || '').split('\n').find(x => /Falta informação:/.test(x)); return l ? l.replace(/^.*Falta informação:\s*/, '') : 'Veja as observações do card.'; }
@@ -497,6 +498,7 @@ function ultimoAjuste(c){ const l = String(c.obs || '').split('\n').find(x => /p
 function chips(c){
   const cl = cli(c), k = diff(c.prazo); let h = '';
   if (falta(c)) h += `<span class="chip red">Falta informação</span>`;
+  if (cl.foco) h += `<span class="chip org">⭐ Prioridade da diretoria</span>`;
   h += `<span class="chip">${esc(c.tipo || 'Entrega')}${c.qtd > 1 ? ' ×' + c.qtd : ''}</span>`;
   if (cl.faixa) h += `<span class="chip">Faixa ${esc(cl.faixa)}</span>`;
   if (cl.atencao) h += `<span class="chip red">🔴 Atenção</span>`;
@@ -612,8 +614,8 @@ const VIEWS = {
       if (CT.erro) return topo + '<p class="empty">Não consegui montar a Central agora. Tente de novo em alguns minutos.</p>';
       const L = CT.demandas.filter(x => !x.velho), n = f => L.filter(f).length;
       const tipos = [...new Set(CT.demandas.map(x => x.tipo).filter(Boolean))].sort();
-      return topo + capacidadeCt() + `<div class="stats s5">
-        ${[['', L.length, 'demandas abertas'], ['ninguem', n(x => x.onde === 'ninguem'), 'sem ninguém'], ['travado', n(x => x.onde === 'travado'), 'máquina parou (precisa de alguém)'], ['quente', n(x => x.score >= 100), 'prioridade alta (100+)'], ['prev', CT.previstas.length, 'previstas na semana sem card']]
+      return topo + focoCt() + capacidadeCt() + `<div class="stats s5">
+        ${[['', L.length, 'demandas abertas'], ['ninguem', n(x => x.onde === 'ninguem'), 'sem ninguém'], ['travado', n(x => x.onde === 'travado'), 'máquina parou (precisa de alguém)'], ['quente', n(quenteCt), 'prioridade alta (⭐ foco, sai hoje ou 100+)'], ['prev', CT.previstas.length, 'previstas na semana sem card']]
           .map(([f, v, t]) => `<button class="stat ${f && v && f !== 'prev' ? 'hot' : ''}" data-ctf="${f}" style="text-align:left;background:${CTO === f && f ? 'var(--accent-soft)' : 'var(--surface)'}"><span class="v">${v}</span><span>${t}</span></button>`).join('')}</div>
       <div class="filtros">
         <label for="ctq">Buscar<input type="text" id="ctq" placeholder="Cliente ou demanda" value="${esc(CTQ)}"></label>
@@ -749,9 +751,11 @@ const VIEWS = {
       if (diretor()) return filaEscritorio();
       const meus = D.cards.filter(c => c.meu && ABERTO.includes(c.status));
       const faltas = ordenar(meus.filter(falta)), resto = meus.filter(c => !falta(c));
-      const ag = ordenar(resto.filter(c => c.status === 'Ajustes' || diff(c.prazo) <= 0));
-      const am = ordenar(resto.filter(c => c.status !== 'Ajustes' && diff(c.prazo) === 1));
-      const sem = ordenar(resto.filter(c => c.status !== 'Ajustes' && diff(c.prazo) > 1));
+      // ⭐ Cliente em foco da diretoria e o que vai ao ar hoje entram sempre em "Fazer agora".
+      const agora = c => c.status === 'Ajustes' || diff(c.prazo) <= 0 || !!cli(c).foco || diff(c.postar) === 0;
+      const ag = ordenar(resto.filter(agora));
+      const am = ordenar(resto.filter(c => !agora(c) && diff(c.prazo) === 1));
+      const sem = ordenar(resto.filter(c => !agora(c) && diff(c.prazo) > 1));
       const comigo = ordenar(D.cards.filter(c => c.meu && ['Em revisão', 'Aguardando cliente'].includes(c.status)));
       const atras = meus.filter(c => diff(c.prazo) < 0).length;
       return `<div class="head"><div><p class="eyebrow">${esc(D.hojeTexto)}</p><h1>${saud()}, ${esc(primeiro())}</h1></div><p class="sub">Comece pelo primeiro da lista. A ordem já segue a regra de ouro.</p></div>
@@ -770,7 +774,7 @@ const VIEWS = {
     } },
   demandas: { nome: 'Fila de demandas', pode: () => papel() !== 'teste' || D.cards.some(c => c.livre), badge: () => D.cards.filter(c => c.livre).length,
     html(){
-      const l = D.cards.filter(c => c.livre).sort((x, y) => (y.prioridade === 'Urgente') - (x.prioridade === 'Urgente') || diff(x.prazo) - diff(y.prazo) || diff(x.postar) - diff(y.postar));
+      const l = D.cards.filter(c => c.livre).sort((x, y) => (!!cli(y).foco - !!cli(x).foco) || (y.prioridade === 'Urgente') - (x.prioridade === 'Urgente') || diff(x.prazo) - diff(y.prazo) || diff(x.postar) - diff(y.postar));
       const meus = D.cards.filter(c => c.meu && ['A fazer', 'Fazendo', 'Ajustes'].includes(c.status)).length;
       const cheio = meus >= LIMITE;
       const lin = c => `<li class="item ${classe(c)}"><span class="stripe"></span>
@@ -1541,7 +1545,7 @@ function ritmoCl(k){
   }
   return out;
 }
-function peso(k){ return (k.clima === 'Em rescisão' ? 50 : k.clima === 'Sensível' ? 30 : 0) + (k.recuperacao === '🚨 SOS' ? 40 : 0) + (k.atencao ? 20 : 0) + (k.risco === 'Alto' ? 25 : k.risco === 'Médio' ? 10 : 0) + k.atrasados * 3 + (grupoParado(k) ? 8 : 0); }
+function peso(k){ return (k.foco ? 200 : 0) + (k.clima === 'Em rescisão' ? 50 : k.clima === 'Sensível' ? 30 : 0) + (k.recuperacao === '🚨 SOS' ? 40 : 0) + (k.atencao ? 20 : 0) + (k.risco === 'Alto' ? 25 : k.risco === 'Médio' ? 10 : 0) + k.atrasados * 3 + (grupoParado(k) ? 8 : 0); }
 function filtraCl(k){
   if (CLQ && !k.nome.toLowerCase().includes(CLQ.trim().toLowerCase())) return false;
   const c = k.contrato;
@@ -1554,7 +1558,7 @@ function tabelaClientes(){
   if (!l.length) return '<p class="empty">Nenhum cliente com esse filtro.</p>';
   return `<p class="sub" style="font-size:13px">${l.length} cliente${l.length > 1 ? 's' : ''}</p><div class="tbl"><table><thead><tr><th>Cliente</th><th>Clima</th><th>Contrato</th><th>Postado no painel</th><th>Atrasados</th><th>Última postagem</th><th>Grupo</th></tr></thead><tbody>
     ${l.map(k => { const c = k.contrato, r = ritmoCl(k), up = dcl(k.ultimaPostagem);
-      return `<tr class="click" data-cli="${k.id}"><td><b>${esc(k.nome)}</b><br><span class="sub" style="font-size:12px">${esc([k.fase, k.situacao !== 'Ativo' ? k.situacao : '', k.faixa ? 'Faixa ' + k.faixa : ''].filter(Boolean).join(' · '))}</span></td>
+      return `<tr class="click" data-cli="${k.id}"><td><b>${esc(k.nome)}</b>${k.foco ? ` <span class="chip org" title="Prioridade da diretoria até ${esc(fmt(k.foco))}">⭐ até ${esc(fmt(k.foco))}</span>` : ''}<br><span class="sub" style="font-size:12px">${esc([k.fase, k.situacao !== 'Ativo' ? k.situacao : '', k.faixa ? 'Faixa ' + k.faixa : ''].filter(Boolean).join(' · '))}</span></td>
         <td>${chipClima(k)}${k.recuperacao === '🚨 SOS' ? ' <span class="chip red">SOS</span>' : ''}${k.atencao ? ' <span class="chip red">🔴</span>' : ''}${k.risco ? `<br><span class="sub" style="font-size:12px">risco ${esc(k.risco.toLowerCase())}</span>` : ''}</td>
         <td>${c ? `<div class="cl-prog"><span style="font-size:13px">${mesCl(c)}</span>${c.pct !== null ? `<span class="bar"><span class="${c.faltamDias <= 30 ? 'mid' : ''}" style="width:${c.pct}%"></span></span><span class="sub" style="font-size:12px">${c.faltamDias < 0 ? 'acabou ' + fmtA(c.fim) : 'acaba ' + fmtA(c.fim)}</span>` : ''}</div>` : '<span class="sub" style="font-size:13px">sem contrato lido</span>'}</td>
         <td><div class="cl-ent">${r.tipos.filter(x => x.t !== 'thumbs').map(x => `<span class="chip" title="${esc(x.rot)}: ${x.feito} marcados como postados${x.total ? ' de ' + x.total + ' do contrato' : ''}">${x.rot.slice(0, 1)} ${x.feito}${x.total ? '/' + x.total : ''}</span>`).join('') || '<span class="sub" style="font-size:13px">—</span>'}</div></td>
@@ -1579,6 +1583,9 @@ function abrirCliente(id){
     <button class="close" data-x>Fechar</button>
     <div><p class="eyebrow">${esc([k.tipo, k.fase, k.situacao, k.faixa ? 'Faixa ' + k.faixa : ''].filter(Boolean).join(' · '))}</p><h2 id="d-t" style="font-size:26px">${esc(k.nome)}</h2>
       <p class="meta" style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">${chipClima(k)}${k.recuperacao ? `<span class="chip ${k.recuperacao === '🚨 SOS' ? 'red' : ''}">${esc(k.recuperacao)}</span>` : ''}${k.atencao ? '<span class="chip red">🔴 atenção redobrada</span>' : ''}${k.risco ? `<span class="chip ${k.risco === 'Alto' ? 'red' : k.risco === 'Médio' ? 'warn' : 'ok'}">risco ${esc(k.risco.toLowerCase())}</span>` : ''}</p></div>
+    <section class="foco-box"><h3 style="font-size:16px;margin-bottom:6px">⭐ Prioridade da diretoria</h3>
+      <p class="sub" style="margin:0 0 10px;font-size:14px">${k.foco ? `Em foco até <b>${esc(fmt(k.foco))}</b>. As demandas desse cliente passam na frente na Central e na fila de cada um.` : 'As demandas do cliente em foco passam na frente de todos os outros. No máximo 3 clientes ao mesmo tempo. A equipe é avisada no #dia-a-dia.'}</p>
+      <div class="actions" style="margin:0"><button type="button" class="btn ${k.foco ? '' : 'primary'}" data-foco="dia">Foco hoje</button><button type="button" class="btn ${k.foco ? '' : 'primary'}" data-foco="semana">Foco até sexta</button>${k.foco ? '<button type="button" class="btn" data-foco="">Tirar do foco</button>' : ''}</div></section>
     <form id="fcl">
       <div class="grid2"><label for="kc">Clima<select id="kc"><option value="">—</option>${op(Object.keys(CLIMA), k.clima)}</select></label><label for="kr">Risco de cancelamento<select id="kr"><option value="">—</option>${op(['Baixo', 'Médio', 'Alto'], k.risco)}</select></label></div>
       <div class="grid2"><label for="kp">Recuperação<select id="kp"><option value="">—</option>${op(['🚨 SOS', '⏸️ Travado no cliente', '🆕 Onboarding', '✅ Estável', '👔 Direção'], k.recuperacao)}</select></label><label for="ka">Próximo alinhamento<input type="date" id="ka" value="${esc(k.alinhamento || '')}"></label></div>
@@ -1598,7 +1605,7 @@ function abrirCliente(id){
     <section><h3 style="font-size:16px;margin-bottom:8px">Conversa no grupo</h3>${k.grupo ? `<p style="margin:0">${esc(k.grupo.nome)}: última mensagem ${fmt(k.grupo.ultima)} às ${esc(k.grupo.ultima.slice(11, 16))}, ${k.grupo.semana} mensagens nos últimos 7 dias.</p>` : '<p class="sub">Não achei o grupo do WhatsApp desse cliente.</p>'}</section>
     <div class="cl-links">${lk(k.drive, 'Drive')}${lk(k.canva, '🎨 Editáveis no Canva')}${lk(k.youtube, 'YouTube')}${lk(k.instagram, 'Instagram')}${lk(k.tiktok, 'TikTok')}</div>
   </div></aside>`;
-  $('#layer').onclick = e => { if (e.target.closest('[data-x]') && !ocupado) { fechar(); return; } const b = e.target.closest('[data-dcard2]'); if (b) abrirDD(b.dataset.dcard2); };
+  $('#layer').onclick = e => { if (e.target.closest('[data-x]') && !ocupado) { fechar(); return; } const fb = e.target.closest('[data-foco]'); if (fb) { marcarFoco(k, fb.dataset.foco); return; } const b = e.target.closest('[data-dcard2]'); if (b) abrirDD(b.dataset.dcard2); };
   $('#fcl').onsubmit = async e => {
     e.preventDefault(); e.stopPropagation(); if (ocupado) return;
     const novo = { clima: $('#kc').value, risco: $('#kr').value, recuperacao: $('#kp').value, alinhamento: $('#ka').value, atencao: $('#kt').checked };
@@ -1611,6 +1618,20 @@ function abrirCliente(id){
       Object.assign(k, novo); ocupado = false; fechar(); render(); toast('Ficha do cliente atualizada no Notion.');
     } catch (err) { ocupado = false; document.querySelectorAll('#layer .btn').forEach(b => b.disabled = false); toast({ cliente: 'Esse cliente não foi achado no Notion.', acesso: MOTIVO.acesso }[err.message] || ERRO); }
   };
+}
+// ⭐ Foco: "dia" vale hoje, "semana" até sexta, "" tira. O fluxo recusa o 4º cliente em foco.
+async function marcarFoco(k, foco){
+  if (ocupado) return;
+  ocupado = true; document.querySelectorAll('#layer .btn').forEach(b => b.disabled = true);
+  try {
+    const r = await api('euforia-painel-diretor', { acao: 'ficha', cliente: k.id, ficha: { foco } });
+    if (!r || !r.ok) { const er = new Error((r && r.motivo) || 'erro'); er.outros = (r && r.outros) || []; throw er; }
+    k.foco = r.foco || ''; CT = null; ocupado = false; fechar(); render();
+    toast(k.foco ? `⭐ ${k.nome} em foco até ${fmt(k.foco)}. A equipe foi avisada no #dia-a-dia.` : `${k.nome} saiu do foco.`);
+  } catch (err) {
+    ocupado = false; document.querySelectorAll('#layer .btn').forEach(b => b.disabled = false);
+    toast(err.message === 'foco-limite' ? `Já tem 3 clientes em foco (${err.outros.join(', ')}). Tire um do foco antes.` : ({ cliente: 'Esse cliente não foi achado no Notion.', acesso: MOTIVO.acesso }[err.message] || ERRO));
+  }
 }
 async function carregarMensagens(){
   if (carregarMensagens.indo) return; carregarMensagens.indo = true;
@@ -2212,10 +2233,18 @@ function capacidadeCt(){
     <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;margin-top:12px">${CT.maquinas.map(card).join('')}</div>
     <p class="sub" style="font-size:12px;margin-top:8px">Cada rodada pega a quantidade da máquina e termina em até cerca de 1 hora. A fila ocupa as primeiras rodadas; "Livre" é o que ainda dá para mandar e receber pronto naquele horário.</p></section>`;
 }
+// Nível 1 = ⭐ cliente em foco da diretoria, 2 = postagem de hoje, 3 = o resto (a lista já chega nessa ordem).
+const quenteCt = x => x.nivel === 1 || x.nivel === 2 || x.score >= 100;
+function focoCt(){
+  const F = CT.foco || [], hoje = CT.demandas.filter(x => x.nivel === 2 && !x.velho).length;
+  if (!F.length && !hoje) return '';
+  return `<section class="group foco-ct"><h2>Primeiro estes</h2><p class="meta" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">${F.map(k => `<span class="chip org">⭐ ${esc(k.nome)} · até ${esc(fmtCt(k.ate))}</span>`).join('')}${hoje ? `<span class="chip warn">📅 ${hoje} ${hoje > 1 ? 'demandas vão' : 'demanda vai'} ao ar hoje</span>` : ''}</p>
+    <p class="sub" style="font-size:13px;margin-top:6px">${F.length ? 'As demandas dos clientes em foco da diretoria vêm no topo, depois o que vai ao ar hoje, depois o resto pela prioridade.' : 'O que vai ao ar hoje vem no topo, depois o resto pela prioridade.'}${diretor() ? ' Para pôr ou tirar um cliente do foco, abra o cliente na aba Clientes.' : ''}</p></section>`;
+}
 function filtraCt(x){
   if (CTQ && !(String(x.clienteNome) + ' ' + String(x.nome || x.tipoNome)).toLowerCase().includes(CTQ.toLowerCase())) return false;
   if (CTT && (x.tipo !== CTT && x.tipoNome !== CTT)) return false;
-  if (CTO === 'quente') return x.score >= 100;
+  if (CTO === 'quente') return quenteCt(x);
   if (CTO && CTO !== 'prev' && x.onde !== CTO) return false;
   return true;
 }
@@ -2224,14 +2253,14 @@ function chipsCt(x){
   let h = `<span class="chip ${x.score >= 100 ? 'red' : x.score >= 60 ? 'org' : ''}">Prioridade ${x.score}</span><span class="chip">${esc(x.tipo || x.tipoNome || 'Entrega')}${x.qtd > 1 ? ' ×' + x.qtd : ''}</span>`;
   if (x.prazo && pz >= 0 && !x.motivos.some(m => /^Prazo/.test(m))) h += `<span class="chip">Prazo ${fmtCt(x.prazo)}</span>`;
   if (x.postar && !x.motivos.some(m => /^Vai ao ar/.test(m))) h += `<span class="chip">Vai ao ar ${fmtCt(x.postar)}</span>`;
-  h += x.motivos.map(m => `<span class="chip ${/Atrasado|🔴|🚨|😟/.test(m) ? 'red' : /hoje|amanhã|Urgente/.test(m) ? 'org' : ''}">${esc(m)}</span>`).join('');
+  h += x.motivos.map(m => `<span class="chip ${/Atrasado|🔴|🚨|😟/.test(m) ? 'red' : /⭐|hoje|amanhã|Urgente/.test(m) ? 'org' : ''}">${esc(m)}</span>`).join('');
   if (x.ondeTexto) h += `<span class="chip ${x.onde === 'travado' ? 'warn' : x.onde === 'ninguem' ? 'warn' : x.onde === 'maquina' ? 'info' : ''}">${esc(x.ondeTexto)}</span>`;
   return h;
 }
 const diffCt = s => Math.round((dia(s) - dia(CT.hoje)) / 864e5);
 const fmtCt = s => { const a = dia(s); return a ? a.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit' }).replace('.', '') : '—'; };
 function linhaCt(x, prev){
-  const s = x.sugestao, k = prev ? x.chave : x.id, cls = x.score >= 100 ? 'late' : x.score >= 60 ? 'today' : '';
+  const s = x.sugestao, k = prev ? x.chave : x.id, cls = x.nivel === 1 || x.score >= 100 ? 'late' : x.nivel === 2 || x.score >= 60 ? 'today' : '';
   const titulo = prev ? `${esc(x.clienteNome)} · ${esc(x.tipoNome)}${x.qtd > 1 ? ' ×' + x.qtd : ''} para ${esc(fmtCt(x.postar))}` : `${esc(x.clienteNome)} · ${esc(x.nome)}`;
   const um = s && s.destino && !s.precisaLink && !(x.resp || []).includes(s.destino);
   const mexe = !prev && ['maquina', 'flau', 'pessoa'].includes(x.onde);
@@ -2371,7 +2400,10 @@ function demoApi(path, b){
     if (b.acao === 'visao') return wait(JSON.parse(JSON.stringify(DEMO_DD)));
     if (b.acao === 'mensagens') return wait(DEMO_M);
     if (b.acao === 'clientes') return wait(JSON.parse(JSON.stringify(DEMO_CL)));
-    if (b.acao === 'ficha') { Object.assign(DEMO_CL.clientes.find(x => x.id === b.cliente), b.ficha); return wait({ ok: true }); }
+    if (b.acao === 'ficha') { const k = DEMO_CL.clientes.find(x => x.id === b.cliente), f = Object.assign({}, b.ficha); let foco;
+      if ('foco' in f) { const em = DEMO_CL.clientes.filter(x => x.foco && x.id !== b.cliente); if (f.foco && em.length >= 3) return wait({ ok: false, motivo: 'foco-limite', outros: em.map(x => x.nome) });
+        foco = f.foco === 'dia' ? DEMO_CL.hoje : f.foco === 'semana' ? '2026-10-30' : ''; f.foco = foco; }
+      Object.assign(k, f); return wait({ ok: true, foco }); }
     const hora = '[Painel 26/10 ' + new Date().toTimeString().slice(0, 5) + '] Flau ';
     if (b.acao === 'criar') { DEMO_DD.cards.push(Object.assign({ id: 'd' + Date.now(), cod: 500, nome: b.nome, cliente: b.cliente, clienteNome: b.clienteNome, linkPost: '', origem: 'Extra', escritorio: '', obs: hora + 'criou pelo painel do diretor' }, b.campos)); return wait({ ok: true }); }
     const c = DEMO_DD.cards.find(x => x.id === b.card); Object.assign(c, b.campos);
@@ -2409,7 +2441,7 @@ const DEMO_D = {"ok":true,"nome":"Ismael (exemplo)","papel":"revisor","hoje":"20
   {"id":"p2","cod":440,"quando":"26/10 17:58","por":"Ismael (exemplo)","modo":"Automático (Máquina de Longos)","clienteNome":"Instituto Aurora (exemplo)","nome":"VÍDEO LONGO","tipo":"Vídeo longo","status":"A fazer","escritorio":"Foi para outra máquina","prazo":"2026-10-28","resp":["Escritório"],"link":"https://drive.google.com/","quadro":"https://www.notion.so/","quadroNome":"quadro de Vídeos Longos IA","falta":"","texto":"Corte da palestra de sábado no modelo Nova Acrópole"},
   {"id":"p3","cod":436,"quando":"26/10 15:10","por":"Ismael (exemplo)","modo":"Automático (Máquina do Escritório)","clienteNome":"Dra. Helena (exemplo)","nome":"APRESENTAÇÃO DE CALL","tipo":"Apresentação","status":"Em revisão","escritorio":"Feito pela IA","prazo":"2026-10-27","resp":["Escritório"],"link":"https://drive.google.com/","quadro":"","quadroNome":"","falta":"","texto":"Apresentação da call de quinta com os números do mês"},
   {"id":"p4","cod":438,"quando":"26/10 16:40","por":"Rômulo (exemplo)","modo":"À MÃO em Canva","clienteNome":"Marcos Lima (exemplo)","nome":"ARTE","tipo":"Arte","status":"A fazer","escritorio":"À mão (Flau)","prazo":"2026-10-29","resp":["Escritório"],"link":"","quadro":"","quadroNome":"","falta":"","texto":"Banner do evento de novembro"}],
- "clientes":[{"id":"c1","nome":"Dra. Helena (exemplo)","faixa":"A","atencao":true,"padroes":"Legenda branca, destaque dourado. Rosto só quando olha para a câmera.","gosta":"Gosta de cortes secos. Não gosta de música alta."},
+ "clientes":[{"id":"c1","nome":"Dra. Helena (exemplo)","faixa":"A","atencao":true,"foco":true,"padroes":"Legenda branca, destaque dourado. Rosto só quando olha para a câmera.","gosta":"Gosta de cortes secos. Não gosta de música alta."},
   {"id":"c2","nome":"Instituto Aurora (exemplo)","faixa":"A","atencao":false,"padroes":"Modelo Nova Acrópole: citações com foto do autor, legenda amarela fixa.","gosta":""},
   {"id":"c3","nome":"Marcos Lima (exemplo)","faixa":"B","atencao":false,"padroes":"Cortes secos, sem música por baixo da fala.","gosta":""},
   {"id":"c4","nome":"Paula Reis (exemplo)","faixa":"B","atencao":true,"padroes":"Thumb com rosto à esquerda, máximo 4 palavras.","gosta":""}],
@@ -2465,7 +2497,7 @@ const DEMO_DD = {"ok":true,"nome":"Flau (exemplo)","hoje":"2026-10-26","hojeText
   {"id":"d12","cod":399,"nome":"VÍDEO 10","cliente":"c2","clienteNome":"Instituto Aurora (exemplo)","tipo":"Vídeo longo","qtd":1,"status":"Postado","prazo":"2026-10-20","postar":"2026-10-23","postado":"2026-10-23","prioridade":"","resp":["p1"],"obs":"[Painel 23/10 18:01] Ismael postou","link":"","linkPost":"https://youtu.be/demo","origem":"Pacote semanal","escritorio":""},
   {"id":"d13","cod":426,"nome":"SHORTS 16-18","cliente":"c1","clienteNome":"Dra. Helena (exemplo)","tipo":"Shorts","qtd":3,"status":"A fazer","prazo":"2026-10-29","postar":"2026-10-31","prioridade":"","resp":["p3"],"obs":"","link":"","linkPost":"","origem":"Pacote semanal","escritorio":""},
   {"id":"d14","cod":427,"nome":"CARROSSEL 09","cliente":"c4","clienteNome":"Paula Reis (exemplo)","tipo":"Carrossel","qtd":1,"status":"Fazendo","prazo":"2026-10-26","postar":"2026-10-28","prioridade":"","resp":["p6"],"obs":"","link":"","linkPost":"","origem":"Pacote semanal","escritorio":"Fazendo (IA)"}]};
-const DEMO_CL = {"ok": true, "hoje": "2026-10-26", "agora": "15:12", "clientes": [{"id": "c1", "canva": "https://www.canva.com/folder/exemplo", "nome": "Dra. Helena (exemplo)", "url": "https://app.notion.com/", "situacao": "Ativo", "fase": "3. Produção", "clima": "Sensível", "risco": "Médio", "recuperacao": "🚨 SOS", "atencao": true, "faixa": "A", "tipo": "CPNE - Padrão novo", "resumo": "Assessoria EDL, 6 meses, contrato de 10/05/2026. Total: 20 longos, 60 shorts, 20 carrosséis. (exemplo)", "obs": "Reclamou da demora nos ajustes em 20/10. (exemplo)", "extras": ["Página", "Funil"], "alinhamento": "2026-11-03", "ultimaPostagem": "2026-10-14", "canalDesde": "", "drive": "https://drive.google.com/", "youtube": "https://youtube.com/", "instagram": "", "tiktok": "", "contrato": {"inicio": "2026-05-10", "meses": 6, "fim": "2026-11-10", "mes": 6, "pct": 92, "faltamDias": 15, "semanas": 24}, "total": {"longos": 20, "shorts": 60, "carrosseis": 20}, "ritmo": {"longos": 1, "shorts": 3, "carrosseis": 1, "thumbs": 1}, "feito": {"longos": 9, "shorts": 25, "carrosseis": 6, "thumbs": 9}, "mes": {"longos": 2, "shorts": 6, "carrosseis": 1, "thumbs": 2}, "atrasados": 2, "abertos": [{"id": "d1", "nome": "VÍDEO 09", "tipo": "Vídeo longo", "qtd": 1, "status": "Ajustes", "prazo": "2026-10-23", "postar": "", "postado": "", "linkPost": "", "resp": ["Victor"]}], "postados": [{"id": "x1", "nome": "VÍDEO 08", "tipo": "Vídeo longo", "qtd": 1, "status": "Postado", "prazo": "2026-10-10", "postar": "", "postado": "2026-10-14", "linkPost": "https://youtube.com/", "resp": ["Ismael"]}], "grupo": {"nome": "Dra. Helena | Euforia", "ultima": "2026-10-26T10:12", "semana": 23}}, {"id": "c2", "nome": "Instituto Aurora (exemplo)", "url": "https://app.notion.com/", "situacao": "Ativo", "fase": "3. Produção", "clima": "Eufórico", "risco": "Baixo", "recuperacao": "✅ Estável", "atencao": false, "faixa": "A", "tipo": "CPNE - Padrão novo", "resumo": "Assessoria EDL, 12 meses, contrato de 02/03/2026. Total: 40 longos, 120 shorts, 40 carrosséis. (exemplo)", "obs": "", "extras": ["TikTok"], "alinhamento": "2026-11-03", "ultimaPostagem": "2026-10-24", "canalDesde": "", "drive": "https://drive.google.com/", "youtube": "https://youtube.com/", "instagram": "", "tiktok": "", "contrato": {"inicio": "2026-03-02", "meses": 12, "fim": "2027-03-02", "mes": 8, "pct": 65, "faltamDias": 127, "semanas": 34}, "total": {"longos": 40, "shorts": 120, "carrosseis": 40}, "ritmo": {"longos": 1, "shorts": 3, "carrosseis": 1, "thumbs": 1}, "feito": {"longos": 30, "shorts": 88, "carrosseis": 28, "thumbs": 30}, "mes": {"longos": 4, "shorts": 12, "carrosseis": 4, "thumbs": 4}, "atrasados": 0, "abertos": [], "postados": [{"id": "x2", "nome": "VÍDEO 31", "tipo": "Vídeo longo", "qtd": 1, "status": "Postado", "prazo": "2026-10-20", "postar": "", "postado": "2026-10-24", "linkPost": "https://youtube.com/", "resp": ["Ismael"]}], "grupo": {"nome": "Instituto Aurora", "ultima": "2026-10-25T18:40", "semana": 9}}, {"id": "c3", "nome": "Marcos Lima (exemplo)", "url": "https://app.notion.com/", "situacao": "Ativo", "fase": "3. Produção", "clima": "Neutro", "risco": "", "recuperacao": "✅ Estável", "atencao": false, "faixa": "B", "tipo": "CPNE - Padrão novo", "resumo": "Assessoria EDL, 6 meses, contrato de 15/04/2026. Total: 20 longos, 60 shorts, 20 carrosséis. (exemplo)", "obs": "", "extras": [], "alinhamento": "2026-11-03", "ultimaPostagem": "2026-10-22", "canalDesde": "", "drive": "https://drive.google.com/", "youtube": "https://youtube.com/", "instagram": "", "tiktok": "", "contrato": {"inicio": "2026-04-15", "meses": 6, "fim": "2026-10-15", "mes": 7, "pct": 106, "faltamDias": -11, "semanas": 27}, "total": {"longos": 20, "shorts": 60, "carrosseis": 20}, "ritmo": {"longos": 1, "shorts": 3, "carrosseis": 1, "thumbs": 1}, "feito": {"longos": 18, "shorts": 50, "carrosseis": 17, "thumbs": 18}, "mes": {"longos": 3, "shorts": 10, "carrosseis": 3, "thumbs": 3}, "atrasados": 0, "abertos": [], "postados": [], "grupo": {"nome": "Marcos Lima | Grupo Euforia", "ultima": "2026-10-23T09:05", "semana": 4}}, {"id": "c4", "nome": "Paula Reis (exemplo)", "url": "https://app.notion.com/", "situacao": "Ativo", "fase": "3. Produção", "clima": "Em rescisão", "risco": "Alto", "recuperacao": "👔 Direção", "atencao": true, "faixa": "B", "tipo": "CPNE - Padrão novo", "resumo": "Assessoria EDL, 6 meses, contrato de 01/07/2026. Total: 20 longos, 60 shorts, 20 carrosséis. (exemplo)", "obs": "Pediu reunião com a direção. (exemplo)", "extras": [], "alinhamento": "2026-11-03", "ultimaPostagem": "2026-10-05", "canalDesde": "", "drive": "https://drive.google.com/", "youtube": "https://youtube.com/", "instagram": "", "tiktok": "", "contrato": {"inicio": "2026-07-01", "meses": 6, "fim": "2027-01-01", "mes": 4, "pct": 64, "faltamDias": 67, "semanas": 16}, "total": {"longos": 20, "shorts": 60, "carrosseis": 20}, "ritmo": {"longos": 1, "shorts": 3, "carrosseis": 1, "thumbs": 1}, "feito": {"longos": 5, "shorts": 10, "carrosseis": 3, "thumbs": 5}, "mes": {"longos": 1, "shorts": 3, "carrosseis": 0, "thumbs": 1}, "atrasados": 3, "abertos": [], "postados": [], "grupo": {"nome": "Paula Reis", "ultima": "2026-10-26T08:30", "semana": 31}}, {"id": "c5", "nome": "Clínica Vida (exemplo)", "url": "https://app.notion.com/", "situacao": "Ativo", "fase": "3. Produção", "clima": "", "risco": "", "recuperacao": "", "atencao": false, "faixa": "C", "tipo": "CPNE - Padrão novo", "resumo": "Assessoria EDL, 10 meses, contrato de 20/01/2026. Total: 30 longos, 90 shorts, 30 carrosséis. (exemplo)", "obs": "", "extras": [], "alinhamento": "2026-11-03", "ultimaPostagem": "2026-10-21", "canalDesde": "", "drive": "https://drive.google.com/", "youtube": "https://youtube.com/", "instagram": "", "tiktok": "", "contrato": {"inicio": "2026-01-20", "meses": 10, "fim": "2026-11-20", "mes": 10, "pct": 92, "faltamDias": 25, "semanas": 39}, "total": {"longos": 30, "shorts": 90, "carrosseis": 30}, "ritmo": {"longos": 1, "shorts": 3, "carrosseis": 1, "thumbs": 1}, "feito": {"longos": 26, "shorts": 80, "carrosseis": 22, "thumbs": 26}, "mes": {"longos": 3, "shorts": 9, "carrosseis": 3, "thumbs": 3}, "atrasados": 1, "abertos": [], "postados": [], "grupo": null}]};
+const DEMO_CL = {"ok": true, "hoje": "2026-10-26", "agora": "15:12", "clientes": [{"id": "c1", "foco": "2026-10-30", "canva": "https://www.canva.com/folder/exemplo", "nome": "Dra. Helena (exemplo)", "url": "https://app.notion.com/", "situacao": "Ativo", "fase": "3. Produção", "clima": "Sensível", "risco": "Médio", "recuperacao": "🚨 SOS", "atencao": true, "faixa": "A", "tipo": "CPNE - Padrão novo", "resumo": "Assessoria EDL, 6 meses, contrato de 10/05/2026. Total: 20 longos, 60 shorts, 20 carrosséis. (exemplo)", "obs": "Reclamou da demora nos ajustes em 20/10. (exemplo)", "extras": ["Página", "Funil"], "alinhamento": "2026-11-03", "ultimaPostagem": "2026-10-14", "canalDesde": "", "drive": "https://drive.google.com/", "youtube": "https://youtube.com/", "instagram": "", "tiktok": "", "contrato": {"inicio": "2026-05-10", "meses": 6, "fim": "2026-11-10", "mes": 6, "pct": 92, "faltamDias": 15, "semanas": 24}, "total": {"longos": 20, "shorts": 60, "carrosseis": 20}, "ritmo": {"longos": 1, "shorts": 3, "carrosseis": 1, "thumbs": 1}, "feito": {"longos": 9, "shorts": 25, "carrosseis": 6, "thumbs": 9}, "mes": {"longos": 2, "shorts": 6, "carrosseis": 1, "thumbs": 2}, "atrasados": 2, "abertos": [{"id": "d1", "nome": "VÍDEO 09", "tipo": "Vídeo longo", "qtd": 1, "status": "Ajustes", "prazo": "2026-10-23", "postar": "", "postado": "", "linkPost": "", "resp": ["Victor"]}], "postados": [{"id": "x1", "nome": "VÍDEO 08", "tipo": "Vídeo longo", "qtd": 1, "status": "Postado", "prazo": "2026-10-10", "postar": "", "postado": "2026-10-14", "linkPost": "https://youtube.com/", "resp": ["Ismael"]}], "grupo": {"nome": "Dra. Helena | Euforia", "ultima": "2026-10-26T10:12", "semana": 23}}, {"id": "c2", "nome": "Instituto Aurora (exemplo)", "url": "https://app.notion.com/", "situacao": "Ativo", "fase": "3. Produção", "clima": "Eufórico", "risco": "Baixo", "recuperacao": "✅ Estável", "atencao": false, "faixa": "A", "tipo": "CPNE - Padrão novo", "resumo": "Assessoria EDL, 12 meses, contrato de 02/03/2026. Total: 40 longos, 120 shorts, 40 carrosséis. (exemplo)", "obs": "", "extras": ["TikTok"], "alinhamento": "2026-11-03", "ultimaPostagem": "2026-10-24", "canalDesde": "", "drive": "https://drive.google.com/", "youtube": "https://youtube.com/", "instagram": "", "tiktok": "", "contrato": {"inicio": "2026-03-02", "meses": 12, "fim": "2027-03-02", "mes": 8, "pct": 65, "faltamDias": 127, "semanas": 34}, "total": {"longos": 40, "shorts": 120, "carrosseis": 40}, "ritmo": {"longos": 1, "shorts": 3, "carrosseis": 1, "thumbs": 1}, "feito": {"longos": 30, "shorts": 88, "carrosseis": 28, "thumbs": 30}, "mes": {"longos": 4, "shorts": 12, "carrosseis": 4, "thumbs": 4}, "atrasados": 0, "abertos": [], "postados": [{"id": "x2", "nome": "VÍDEO 31", "tipo": "Vídeo longo", "qtd": 1, "status": "Postado", "prazo": "2026-10-20", "postar": "", "postado": "2026-10-24", "linkPost": "https://youtube.com/", "resp": ["Ismael"]}], "grupo": {"nome": "Instituto Aurora", "ultima": "2026-10-25T18:40", "semana": 9}}, {"id": "c3", "nome": "Marcos Lima (exemplo)", "url": "https://app.notion.com/", "situacao": "Ativo", "fase": "3. Produção", "clima": "Neutro", "risco": "", "recuperacao": "✅ Estável", "atencao": false, "faixa": "B", "tipo": "CPNE - Padrão novo", "resumo": "Assessoria EDL, 6 meses, contrato de 15/04/2026. Total: 20 longos, 60 shorts, 20 carrosséis. (exemplo)", "obs": "", "extras": [], "alinhamento": "2026-11-03", "ultimaPostagem": "2026-10-22", "canalDesde": "", "drive": "https://drive.google.com/", "youtube": "https://youtube.com/", "instagram": "", "tiktok": "", "contrato": {"inicio": "2026-04-15", "meses": 6, "fim": "2026-10-15", "mes": 7, "pct": 106, "faltamDias": -11, "semanas": 27}, "total": {"longos": 20, "shorts": 60, "carrosseis": 20}, "ritmo": {"longos": 1, "shorts": 3, "carrosseis": 1, "thumbs": 1}, "feito": {"longos": 18, "shorts": 50, "carrosseis": 17, "thumbs": 18}, "mes": {"longos": 3, "shorts": 10, "carrosseis": 3, "thumbs": 3}, "atrasados": 0, "abertos": [], "postados": [], "grupo": {"nome": "Marcos Lima | Grupo Euforia", "ultima": "2026-10-23T09:05", "semana": 4}}, {"id": "c4", "nome": "Paula Reis (exemplo)", "url": "https://app.notion.com/", "situacao": "Ativo", "fase": "3. Produção", "clima": "Em rescisão", "risco": "Alto", "recuperacao": "👔 Direção", "atencao": true, "faixa": "B", "tipo": "CPNE - Padrão novo", "resumo": "Assessoria EDL, 6 meses, contrato de 01/07/2026. Total: 20 longos, 60 shorts, 20 carrosséis. (exemplo)", "obs": "Pediu reunião com a direção. (exemplo)", "extras": [], "alinhamento": "2026-11-03", "ultimaPostagem": "2026-10-05", "canalDesde": "", "drive": "https://drive.google.com/", "youtube": "https://youtube.com/", "instagram": "", "tiktok": "", "contrato": {"inicio": "2026-07-01", "meses": 6, "fim": "2027-01-01", "mes": 4, "pct": 64, "faltamDias": 67, "semanas": 16}, "total": {"longos": 20, "shorts": 60, "carrosseis": 20}, "ritmo": {"longos": 1, "shorts": 3, "carrosseis": 1, "thumbs": 1}, "feito": {"longos": 5, "shorts": 10, "carrosseis": 3, "thumbs": 5}, "mes": {"longos": 1, "shorts": 3, "carrosseis": 0, "thumbs": 1}, "atrasados": 3, "abertos": [], "postados": [], "grupo": {"nome": "Paula Reis", "ultima": "2026-10-26T08:30", "semana": 31}}, {"id": "c5", "nome": "Clínica Vida (exemplo)", "url": "https://app.notion.com/", "situacao": "Ativo", "fase": "3. Produção", "clima": "", "risco": "", "recuperacao": "", "atencao": false, "faixa": "C", "tipo": "CPNE - Padrão novo", "resumo": "Assessoria EDL, 10 meses, contrato de 20/01/2026. Total: 30 longos, 90 shorts, 30 carrosséis. (exemplo)", "obs": "", "extras": [], "alinhamento": "2026-11-03", "ultimaPostagem": "2026-10-21", "canalDesde": "", "drive": "https://drive.google.com/", "youtube": "https://youtube.com/", "instagram": "", "tiktok": "", "contrato": {"inicio": "2026-01-20", "meses": 10, "fim": "2026-11-20", "mes": 10, "pct": 92, "faltamDias": 25, "semanas": 39}, "total": {"longos": 30, "shorts": 90, "carrosseis": 30}, "ritmo": {"longos": 1, "shorts": 3, "carrosseis": 1, "thumbs": 1}, "feito": {"longos": 26, "shorts": 80, "carrosseis": 22, "thumbs": 26}, "mes": {"longos": 3, "shorts": 9, "carrosseis": 3, "thumbs": 3}, "atrasados": 1, "abertos": [], "postados": [], "grupo": null}]};
 const DEMO_M = {"ok":true,"itens":[
   {"quem":"Rômulo","grupo":"EUFORIA | Dra. Helena","texto":"Boa tarde, doutora! A apresentação da call de quinta já está sendo preparada.","quando":"2026-10-26T14:44"},
   {"quem":"Ismael","grupo":"EUFORIA | Paula Reis","texto":"Oi, Paula! Já corrigimos a legenda do vídeo de ontem. Pode conferir?","quando":"2026-10-26T13:10"},
@@ -2500,7 +2532,7 @@ const DEMO_CT = (() => {
       { id: 'daniel', nome: 'Daniel', papel: 'Edição', abertos: 4, atrasados: 0, hoje: 0, fazendo: 0 }],
     demandas: [
       dm('d1', 'Dra. Helena (exemplo)', 'VÍDEO LONGO · seg', 'Vídeo longo', -2, 1, 164, ['Atrasado 2 dias', 'Vai ao ar amanhã', '🔴 Atenção redobrada', '😟 Cliente sensível'], 'pessoa', 'Com Victor', ['victor'], sg('maquina', 'longos', 'Máquina de Longos · começa hoje ~10h37', true), { atencao: true, obs1: 'Bruto na pasta VÍDEOS BRUTOS do Drive.' }),
-      dm('d2', 'Instituto Exemplo', 'SHORTS ×3 · ter', 'Shorts', 0, 2, 118, ['Prazo hoje', 'Vai ao ar em 2 dias', 'Faixa A'], 'travado', 'Máquina parou: erro', [], sg('maquina', 'shorts', 'Máquina de Shorts · começa hoje ~10h07', false), { qtd: 3, faixa: 'A', link: 'https://drive.google.com/' }),
+      dm('d2', 'Instituto Exemplo', 'SHORTS ×3 · hoje', 'Shorts', 0, 0, 138, ['Prazo hoje', 'Vai ao ar hoje', 'Faixa A'], 'travado', 'Máquina parou: erro', [], sg('maquina', 'shorts', 'Máquina de Shorts · começa hoje ~10h07', false), { qtd: 3, faixa: 'A', link: 'https://drive.google.com/' }),
       dm('d3', 'Mentor Exemplo', 'CARROSSEL · qua', 'Carrossel', 1, 3, 72, ['Prazo amanhã', 'Faixa A'], 'ninguem', 'Sem ninguém', [], sg('maquina', 'carrosseis', 'Máquina de Carrosséis · começa hoje ~09h47'), { faixa: 'A' }),
       dm('d4', 'Clínica Exemplo', 'LIMPEZA DE CANAL', 'Limpeza de canal', 2, null, 35, ['Fim de contrato perto'], 'ninguem', 'Sem ninguém', [], sg('daniel', '', 'Daniel (4 abertos)')),
       dm('d5', 'Dra. Helena (exemplo)', 'PÁGINA DE VENDAS', 'Página', 3, null, 50, ['🔴 Atenção redobrada'], 'maquina', 'Na Máquina do Escritório (na fila)', [], null, { atencao: true }),
@@ -2511,8 +2543,11 @@ const DEMO_CT = (() => {
       { chave: 'k5|shorts|' + iso(2), cliente: 'k5', clienteNome: 'Mentor Exemplo', tipo: 'shorts', tipoNome: 'Shorts', postar: iso(2), qtd: 3, faixa: 'A', atencao: false, score: 45, motivos: ['Vai ao ar em 2 dias', 'Faixa A'], sugestao: sg('maquina', 'shorts', 'Máquina de Shorts · começa hoje ~10h07', true) },
       { chave: 'k6|longo|' + iso(4), cliente: 'k6', clienteNome: 'Clínica Exemplo', tipo: 'longo', tipoNome: 'Vídeo longo', postar: iso(4), qtd: 1, faixa: 'B', atencao: false, score: 25, motivos: ['Fim de contrato perto'], sugestao: sg('maquina', 'longos', 'Máquina de Longos · começa hoje ~10h37', true) },
       { chave: 'k7|carrossel|' + iso(3), cliente: 'k7', clienteNome: 'Consultoria Exemplo', tipo: 'carrossel', tipoNome: 'Carrossel', postar: iso(3), qtd: 1, faixa: 'C', atencao: false, score: 10, motivos: [], sugestao: sg('maquina', 'carrosseis', 'Máquina de Carrosséis · começa hoje ~09h47') }],
-    semRitmo: 3 };
+    semRitmo: 3, foco: [{ id: 'k21', nome: 'Dra. Helena (exemplo)', ate: iso(3) }] };
 })();
+// Demo: mesmos níveis do fluxo (⭐ foco, postagem de hoje, o resto) e na mesma ordem.
+for (const L of [DEMO_CT.demandas, DEMO_CT.previstas]) { for (const x of L) { x.foco = x.clienteNome === 'Dra. Helena (exemplo)'; x.nivel = x.foco ? 1 : x.postar === DEMO_CT.hoje ? 2 : 3;
+  if (x.foco) { x.motivos.unshift('⭐ Prioridade da diretoria'); x.velho = false; } } L.sort((a, b) => a.nivel - b.nivel || b.score - a.score); }
 const DEMO_FO = {"ok": true, "hoje": "2026-10-29", "formularios": [
  {"id": "f1", "nome": "Helena Duarte", "recebida": "28/10/2026 16:42", "dia": "2026-10-28", "dias": 0, "status": "🔗 Ligada ao cliente", "whatsapp": "+55 11 90000-0000", "canal": "Tenho um canal parado", "envio": "Por link (Google Drive / OneDrive / Dropbox)",
   "cliente": {"id": "c1", "nome": "Dra. Helena (exemplo)", "faixa": "A", "drive": "https://drive.google.com/"},

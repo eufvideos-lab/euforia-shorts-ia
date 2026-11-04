@@ -86,9 +86,11 @@ const txt = v => { if (!v) return ''; const a = v.title || v.rich_text; if (a) r
 const EQUIPE = { '3ea98c0cdde08182a952f3d9a5b73575': 'Victor', '3ea98c0cdde08163bd16f0213b098cb5': 'Lorena', '3ea98c0cdde0817e87aee637a96d4fd1': 'Daniel', '3ea98c0cdde0812d9cb4c41ce70df4ae': 'Ismael', '3ea98c0cdde081299709cf901fac7275': 'Rômulo', '3ea98c0cdde0812bba06cba7e4261426': 'Escritório' };
 const sem = id => String(id || '').replace(/-/g, '');
 const cli = {};
+const HOJE = DateTime.now().setZone(Z).toISODate();
 for (const it of $('Clientes ativos').all()) for (const p of (it.json.results || [])) {
   const pr = p.properties || {};
   cli[sem(p.id)] = { id: sem(p.id), nome: txt(pr['Cliente']), faixa: txt(pr['Faixa']) || txt(pr['Faixa base']), atencao: !!(pr['🔴 Atenção redobrada'] || {}).checkbox,
+    foco: txt(pr['⭐ Foco até']).slice(0, 10) >= HOJE,
     padroes: txt(pr['Padrões de edição']).slice(0, 1200), gosta: txt(pr['Direção criativa (gosta / não gosta)']).slice(0, 1200) };
 }
 // Cliente que a pessoa não pode atender (decisão da diretoria 04/11: Victor fora da Ana Mangia).
@@ -138,7 +140,7 @@ const usados = new Set(cards.map(c => c.cliente));
 const hoje = DateTime.now().setZone(Z);
 return [{ json: { resposta: { ok: true, nome: quem.nome, papel: quem.papel, hoje: hoje.toISODate(),
   hojeTexto: hoje.setLocale('pt-BR').toFormat("cccc, dd 'de' LLLL"),
-  cards, pedidos, clientes: Object.values(cli).map(c => usados.has(c.id) ? c : { id: c.id, nome: c.nome, faixa: c.faixa, atencao: c.atencao }) } } }];
+  cards, pedidos, clientes: Object.values(cli).map(c => usados.has(c.id) ? c : { id: c.id, nome: c.nome, faixa: c.faixa, atencao: c.atencao, foco: c.foco }) } } }];
 ` } } });
 
 const devolver = node({ type: 'n8n-nodes-base.respondToWebhook', version: 1.5, config: { name: 'Devolver fila', parameters: {

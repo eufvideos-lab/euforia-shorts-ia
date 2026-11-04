@@ -1,6 +1,7 @@
 import { workflow, node, trigger, ifElse, switchCase, sticky } from '@n8n/workflow-sdk';
 
 const NOTION = { httpHeaderAuth: { id: 'VYOze6gUMvjy3QXF', name: 'Notion Euforia' } };
+const DISCORD = { httpHeaderAuth: { id: 'PY2ZcN5kAVFaS1io', name: 'Discord Bot' } };
 const PG = { postgres: { id: '2QBGXkxxr41tWTQw', name: 'Postgres account' } };
 const ORIGENS = 'https://lp.grupoeuforia.tech,https://grupoeuforia.com.br,https://www.grupoeuforia.com.br';
 const NOTION_HDR = { parameters: [{ name: 'Notion-Version', value: '2022-06-28' }] };
@@ -41,6 +42,8 @@ if (temK('risco') && ['Baixo', 'Médio', 'Alto', ''].includes(k.risco)) ficha.ri
 if (temK('recuperacao') && ['🚨 SOS', '⏸️ Travado no cliente', '🆕 Onboarding', '✅ Estável', '👔 Direção', ''].includes(k.recuperacao)) ficha.recuperacao = k.recuperacao;
 if (temK('atencao') && typeof k.atencao === 'boolean') ficha.atencao = k.atencao;
 if (temK('alinhamento')) ficha.alinhamento = data(k.alinhamento);
+// ⭐ Prioridade da diretoria: hoje, a semana (até sexta) ou tirar.
+if (temK('foco') && ['dia', 'semana', ''].includes(k.foco)) ficha.foco = k.foco;
 const ACOES = ['visao', 'editar', 'criar', 'mensagens', 'clientes', 'ficha'];
 return [{ json: { u: /^[0-9a-f]{24}$/.test(u) ? u : 'x', pin: String(b.pin || '').replace(/[^0-9]/g, '').slice(0, 6),
   acao: ACOES.includes(b.acao) ? b.acao : '', card: hex(b.card) || '00000000000000000000000000000000',
@@ -337,7 +340,7 @@ for (const it of $('Fichas dos clientes').all()) for (const p of (it.json.result
     const pont = grupos.map(g => ({ g, n: nn.filter(w => g.p.includes(w)).length, sobrenome: nn.slice(1).some(w => g.p.includes(w)) })).filter(x => x.n).sort((a, b) => b.n - a.n);
     if (pont.length && (pont[0].n >= 2 || (pont[0].n === 1 && pont.filter(x => x.n === 1).length === 1 && (nn.length === 1 || pont[0].sobrenome)))) grupo = pont[0].g;
   }
-  clientes.push({ id, nome, url: p.url, situacao: txt(pr['Situação']), fase: txt(pr['Fase']), clima: txt(pr['Clima']), risco: txt(pr['Risco de cancelamento']),
+  clientes.push({ id, nome, url: p.url, situacao: txt(pr['Situação']), foco: (d => d && d >= hoje.toISODate() ? d : '')(txt(pr['⭐ Foco até']).slice(0, 10)), fase: txt(pr['Fase']), clima: txt(pr['Clima']), risco: txt(pr['Risco de cancelamento']),
     recuperacao: txt(pr['Recuperação']), atencao: !!(pr['🔴 Atenção redobrada'] || {}).checkbox, faixa: txt(pr['Faixa']) || txt(pr['Faixa base']), tipo: txt(pr['Tipo de cliente']),
     resumo: resumo.slice(0, 1500), obs: txt(pr['Obs importante']).slice(0, 1500), extras: ((pr['Extras do contrato'] || {}).multi_select || []).map(x => x.name),
     alinhamento: txt(pr['Próximo alinhamento']).slice(0, 10), ultimaPostagem: txt(pr['Última postagem']).slice(0, 10), canalDesde: txt(pr['Canal no ar desde']).slice(0, 10),
@@ -356,8 +359,14 @@ const fichaAtual = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, conf
   method: 'GET', url: '=https://api.notion.com/v1/pages/{{ $("Ler pedido").first().json.cliente }}', authentication: 'genericCredentialType', genericAuthType: 'httpHeaderAuth',
   sendHeaders: true, headerParameters: NOTION_HDR, options: {} } } });
 
+// Quem já está em foco (para o limite de 3 clientes ao mesmo tempo).
+const emFoco = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, config: { name: 'Clientes em foco', credentials: NOTION, onError: 'continueRegularOutput', alwaysOutputData: true, parameters: {
+  method: 'POST', url: 'https://api.notion.com/v1/databases/3ddc91b406be49e98e630c298d9162d8/query', authentication: 'genericCredentialType', genericAuthType: 'httpHeaderAuth',
+  sendHeaders: true, headerParameters: NOTION_HDR, sendBody: true, specifyBody: 'json',
+  jsonBody: '={{ JSON.stringify({ filter: { property: "⭐ Foco até", date: { on_or_after: $now.setZone("America/Recife").toISODate() } }, page_size: 50 }) }}', options: {} } } });
+
 const montarFicha = node({ type: 'n8n-nodes-base.code', version: 2, config: { name: 'Montar ficha', parameters: { jsCode: `const p = $('Ler pedido').first().json;
-const pg = $input.first().json || {};
+const pg = $('Ficha atual').first().json || {};
 const sem = id => String(id || '').replace(/-/g, '');
 if (!pg.id || sem((pg.parent || {}).database_id) !== '3ddc91b406be49e98e630c298d9162d8') return [{ json: { ok: false, resposta: { ok: false, motivo: 'cliente' } } }];
 const f = p.ficha, props = {};
@@ -366,7 +375,21 @@ if (f.risco !== undefined) props['Risco de cancelamento'] = { select: f.risco ? 
 if (f.recuperacao !== undefined) props['Recuperação'] = { select: f.recuperacao ? { name: f.recuperacao } : null };
 if (f.atencao !== undefined) props['🔴 Atenção redobrada'] = { checkbox: f.atencao };
 if (f.alinhamento !== undefined) props['Próximo alinhamento'] = { date: f.alinhamento ? { start: f.alinhamento } : null };
-return [{ json: { ok: true, id: pg.id, body: JSON.stringify({ properties: props }), resposta: { ok: true } } }];
+// ⭐ Foco: "dia" vale até hoje; "semana" até sexta (marcado de sexta a domingo, vale até a sexta seguinte). No máximo 3 clientes ao mesmo tempo.
+let foco = null, discord = '';
+if (f.foco !== undefined) {
+  const hoje = DateTime.now().setZone('America/Recife').startOf('day');
+  const ate = f.foco === 'dia' ? hoje : f.foco === 'semana' ? (hoje.weekday >= 5 ? hoje.plus({ days: 12 - hoje.weekday }) : hoje.plus({ days: 5 - hoje.weekday })) : null;
+  const outros = [];
+  for (const it of $('Clientes em foco').all()) for (const x of (it.json.results || [])) if (sem(x.id) !== sem(pg.id)) {
+    const n = ((((x.properties || {})['Cliente'] || {}).title) || []).map(t => t.plain_text).join('').trim(); if (n) outros.push(n); }
+  if (ate && outros.length >= 3) return [{ json: { ok: false, resposta: { ok: false, motivo: 'foco-limite', outros } } }];
+  foco = ate ? ate.toISODate() : '';
+  props['⭐ Foco até'] = { date: ate ? { start: foco } : null };
+  const nome = ((((pg.properties || {})['Cliente'] || {}).title) || []).map(t => t.plain_text).join('').trim();
+  if (ate) discord = JSON.stringify({ content: '⭐ **' + nome + '** é prioridade da diretoria ' + (f.foco === 'dia' ? 'hoje' : 'até ' + ate.setLocale('pt-BR').toFormat('cccc dd/MM').replace('.', '')) + '. As demandas desse cliente passam na frente na Central e na fila de cada um.', allowed_mentions: { parse: [] } });
+}
+return [{ json: { ok: true, id: pg.id, body: JSON.stringify({ properties: props }), avisar: !!discord, discord, resposta: { ok: true, foco } } }];
 ` } } });
 
 const podeFicha = ifElse({ version: 2.2, config: { name: 'Ficha válida?', parameters: { conditions: {
@@ -378,8 +401,19 @@ const salvarFicha = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, con
   method: 'PATCH', url: '=https://api.notion.com/v1/pages/{{ $("Montar ficha").first().json.id }}', authentication: 'genericCredentialType', genericAuthType: 'httpHeaderAuth',
   sendHeaders: true, headerParameters: NOTION_HDR, sendBody: true, specifyBody: 'json', jsonBody: '={{ $("Montar ficha").first().json.body }}', options: {} } } });
 
+const avisaFoco = ifElse({ version: 2.2, config: { name: 'Avisar o foco?', parameters: { conditions: {
+  options: { caseSensitive: true, leftValue: '', typeValidation: 'loose' },
+  conditions: [{ leftValue: '={{ $("Montar ficha").first().json.avisar }}', rightValue: '', operator: { type: 'boolean', operation: 'true', singleValue: true } }],
+  combinator: 'and' } } } });
+
+const avisarFoco = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, config: { name: 'Avisar foco no #dia-a-dia', credentials: DISCORD, onError: 'continueRegularOutput', parameters: {
+  method: 'POST', url: 'https://discord.com/api/v10/channels/1556642691410956339/messages', authentication: 'genericCredentialType', genericAuthType: 'httpHeaderAuth',
+  sendBody: true, specifyBody: 'json', jsonBody: '={{ $("Montar ficha").first().json.discord }}', options: {} } } });
+
 const okFicha = node({ type: 'n8n-nodes-base.respondToWebhook', version: 1.5, config: { name: 'Confirmar ficha', parameters: {
-  respondWith: 'json', responseBody: '={{ JSON.stringify({ ok: true }) }}', options: {} } } });
+  respondWith: 'json', responseBody: '={{ JSON.stringify($("Montar ficha").first().json.resposta) }}', options: {} } } });
+const okFicha2 = node({ type: 'n8n-nodes-base.respondToWebhook', version: 1.5, config: { name: 'Confirmar ficha sem aviso', parameters: {
+  respondWith: 'json', responseBody: '={{ JSON.stringify($("Montar ficha").first().json.resposta) }}', options: {} } } });
 
 const erroFicha = node({ type: 'n8n-nodes-base.respondToWebhook', version: 1.5, config: { name: 'Recusar ficha', parameters: {
   respondWith: 'json', responseBody: '={{ JSON.stringify($json.resposta) }}', options: {} } } });
@@ -394,6 +428,6 @@ export default workflow('painel-diretor', 'Painel | Diretor (V1)')
     .onCase(2, montarCriacao.to(criar).to(okCriacao))
     .onCase(3, mensagens.to(montarMensagens).to(devolverMensagens))
     .onCase(4, fichas.to(doAno).to(conversas).to(montarClientes).to(devolverClientes))
-    .onCase(5, fichaAtual.to(montarFicha).to(podeFicha.onTrue(salvarFicha.to(okFicha)).onFalse(erroFicha)))
+    .onCase(5, fichaAtual.to(emFoco).to(montarFicha).to(podeFicha.onTrue(salvarFicha.to(avisaFoco.onTrue(avisarFoco.to(okFicha)).onFalse(okFicha2))).onFalse(erroFicha)))
     .onCase(6, recusar))
   .add(nota);

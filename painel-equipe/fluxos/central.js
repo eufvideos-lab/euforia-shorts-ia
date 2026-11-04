@@ -126,8 +126,11 @@ for (const it of $('Clientes ativos').all()) for (const p of (it.json.results ||
     situacao: txt(pr['Situação']), atencao: !!(pr['🔴 Atenção redobrada'] || {}).checkbox, clima: txt(pr['Clima']), recuperacao: txt(pr['Recuperação']),
     fimDias: fim ? Math.round(fim.diff(hoje, 'days').days) : null,
     ritmo: { longo: num(pr['Longos por semana']) || 0, shorts: num(pr['Shorts por semana']) || 0, carrossel: num(pr['Carrosséis por semana']) || 0 },
-    diasYT: ((pr['Dias YouTube'] || {}).multi_select || []).map(x => x.name) };
+    diasYT: ((pr['Dias YouTube'] || {}).multi_select || []).map(x => x.name),
+    // ⭐ Prioridade da diretoria: vale até a data do "⭐ Foco até" (inclusive).
+    foco: (d => d && d >= HOJE ? d : '')(txt(pr['⭐ Foco até']).slice(0, 10)) };
 }
+const FOCO = Object.values(cli).filter(k => k.foco).map(k => ({ id: k.id, nome: k.nome, ate: k.foco })).sort((a, b) => a.ate.localeCompare(b.ate));
 
 // ---------- Filas das máquinas ----------
 const lerQuadro = nome => { const out = { fila: 0, fazendo: 0, erro: 0, feitos7: 0, ok: true, itens: [], erros: [] };
@@ -182,6 +185,7 @@ const MAQ_DO_TIPO = { 'Vídeo longo': 'longos', 'Shorts': 'shorts', 'Carrossel':
 const fila = { longos: Q.longos.fila, shorts: Q.shorts.fila, carrosseis: Q.carrosseis.fila, escritorio: Q.escritorio.fila };
 function pontuar(c, k) {
   const m = [], pz = dias(c.prazo), ar = dias(c.postar); let s = 0;
+  if (k.foco) m.push('⭐ Prioridade da diretoria');
   if (pz !== null && pz < 0) { s += 40 + Math.min(30, -pz * 2); m.push(-pz === 1 ? 'Atrasado 1 dia' : 'Atrasado ' + (-pz) + ' dias'); }
   else if (pz === 0) { s += 35; m.push('Prazo hoje'); } else if (pz === 1) { s += 25; m.push('Prazo amanhã'); } else if (pz !== null && pz <= 6) s += 12 - pz;
   if (ar !== null && ar >= 0 && ar <= 3) { s += 25 - ar * 5; m.push(ar === 0 ? 'Vai ao ar hoje' : ar === 1 ? 'Vai ao ar amanhã' : 'Vai ao ar em ' + ar + ' dias'); }
@@ -193,7 +197,8 @@ function pontuar(c, k) {
   if (c.origem === 'Recuperação') { s += 10; m.push('Recuperação'); }
   if (c.origem === 'Treino (fila reserva)') s -= 40;
   if (k.fimDias !== null && k.fimDias >= 0 && k.fimDias <= 30) { s += 15; m.push(dir ? 'Contrato acaba em ' + k.fimDias + ' dias' : 'Fim de contrato perto'); }
-  return { score: Math.max(0, Math.round(s)), motivos: m };
+  // Nível: 1 = cliente em foco (diretoria), 2 = postagem de hoje, 3 = o resto. A fila ordena pelo nível e depois pelos pontos.
+  return { score: Math.max(0, Math.round(s)), motivos: m, nivel: k.foco ? 1 : ar === 0 ? 2 : 3 };
 }
 // Sugestão: máquina quando ela entrega antes do prazo; senão a pessoa com menos carga.
 function sugerir(c, ondeK) {
@@ -209,9 +214,9 @@ function sugerir(c, ondeK) {
 const demandas = abertos.map(c => { const k = cli[c.cliente] || {}; const o = onde(c), pt = pontuar(c, k), pz = dias(c.prazo);
   return { id: c.id, cod: c.cod, url: c.url, cliente: c.cliente, clienteNome: c.clienteNome, nome: c.nome, tipo: c.tipo, qtd: c.qtd, status: c.status,
     prazo: c.prazo, postar: c.postar, link: /^https:/.test(c.link) ? c.link : '', obs1: c.obs1, faixa: k.faixa || '', atencao: !!k.atencao,
-    onde: o[0], ondeTexto: o[1], resp: c.resp.filter(r => PESSOAS[r]).map(r => PESSOAS[r][0]), score: pt.score, motivos: pt.motivos,
-    velho: pz !== null && pz < -15, sugestao: ['maquina', 'flau'].includes(o[0]) ? null : sugerir(c, o[0]) }; })
-  .sort((a, b) => b.score - a.score || String(a.prazo || '9').localeCompare(String(b.prazo || '9')));
+    onde: o[0], ondeTexto: o[1], resp: c.resp.filter(r => PESSOAS[r]).map(r => PESSOAS[r][0]), score: pt.score, motivos: pt.motivos, nivel: pt.nivel, foco: !!k.foco,
+    velho: !k.foco && pz !== null && pz < -15, sugestao: ['maquina', 'flau'].includes(o[0]) ? null : sugerir(c, o[0]) }; })
+  .sort((a, b) => a.nivel - b.nivel || b.score - a.score || String(a.prazo || '9').localeCompare(String(b.prazo || '9')));
 
 // ---------- Previstas: o ritmo da ficha (longos, shorts e carrosséis por semana) contra os cards que já existem na semana ----------
 const ini = agora.weekday <= 4 ? hoje.minus({ days: agora.weekday - 1 }) : hoje.plus({ days: 8 - agora.weekday });
@@ -234,12 +239,12 @@ for (const k of Object.values(cli)) {
       if (dt < hoje.plus({ days: 1 }) || usados.has(s) || datas.includes(s)) continue; datas.push(s); }
     const mk = (postar, qtd) => { const fake = { tipo: TIPO_P[tp], prazo: '', postar, prioridade: '', origem: 'Pacote semanal', link: '' };
       const pt = pontuar(fake, k); return { chave: k.id + '|' + tp + '|' + postar, cliente: k.id, clienteNome: k.nome, tipo: tp, tipoNome: TIPO_P[tp], postar, qtd,
-        faixa: k.faixa, atencao: k.atencao, score: pt.score, motivos: pt.motivos, sugestao: sugerir(fake, 'ninguem') }; };
+        faixa: k.faixa, atencao: k.atencao, score: pt.score, motivos: pt.motivos, nivel: pt.nivel, foco: !!k.foco, sugestao: sugerir(fake, 'ninguem') }; };
     if (tp === 'shorts') { if (datas[0]) previstas.push(mk(datas[0], falta)); }
     else for (const d of datas.slice(0, falta)) previstas.push(mk(d, 1));
   }
 }
-previstas.sort((a, b) => b.score - a.score || a.postar.localeCompare(b.postar));
+previstas.sort((a, b) => a.nivel - b.nivel || b.score - a.score || a.postar.localeCompare(b.postar));
 
 // Capacidade por período no próximo dia útil com rodadas (hoje ou o próximo): cada rodada pega porRodada pedidos e
 // termina em até ~1 hora (é o tempo de uma rodada; a seguinte começa na hora cheia). A fila atual ocupa as primeiras rodadas.
@@ -268,7 +273,7 @@ const maquinas = Object.keys(MAQ).map(k => { const m = MAQ[k], q = Q[k], t = eta
 
 return [{ json: { resposta: { ok: true, nome: quem.nome, papel: quem.papel, hoje: HOJE, agora: agora.toFormat('HH:mm'),
   hojeTexto: agora.setLocale('pt-BR').toFormat("cccc, dd 'de' LLLL"), semana: { de: ini.toISODate(), ate: fimS.toISODate() },
-  maquinas, pessoas: Object.values(carga), demandas, previstas, semRitmo } } }];
+  maquinas, pessoas: Object.values(carga), demandas, previstas, semRitmo, foco: FOCO } } }];
 ` } } });
 
 const devolverVer = node({ type: 'n8n-nodes-base.respondToWebhook', version: 1.5, config: { name: 'Devolver central', parameters: {
@@ -450,7 +455,7 @@ const recusarEnvio = node({ type: 'n8n-nodes-base.respondToWebhook', version: 1.
 const recusar = node({ type: 'n8n-nodes-base.respondToWebhook', version: 1.5, config: { name: 'Recusar', parameters: {
   respondWith: 'json', responseBody: '={{ JSON.stringify($json.resposta) }}', options: {} } } });
 
-const nota = sticky('## Painel · Central de Demandas (V1)\nAba "Central" do Ismael, do Rômulo e da diretoria (e do usuário de teste, só leitura de dados reais e envio só em cards TESTE PAINEL).\nver: cards abertos (A fazer, Fazendo, Ajustes) com nota de prioridade (prazo, dia de ir ao ar, 🔴, clima, SOS, faixa A/B/C, urgente, recuperação, fim de contrato), onde cada um está, sugestão de destino; previstas = ritmo da ficha (longos, shorts e carrosséis por semana) menos os cards que já existem na semana; filas dos quadros de Longos, Shorts e Carrosséis e da Máquina do Escritório, com quanto cabe hoje pelos horários das rotinas e quando fica pronto um pedido novo; carga de cada pessoa.\nmandar: card (ou prevista, que vira card novo) vai para a máquina (longo e shorts pedem link; cria o pedido no quadro como o "Pedir ao escritório"), para Victor, Lorena, Daniel, Ismael, Rômulo (aviso no #dia-a-dia marcando a pessoa) ou "eu faço" (diretoria = À mão (Flau); Ismael/Rômulo = fica com quem mandou). Linha [Central] no topo da Obs.\nEquipe nunca recebe valores. Contrato e clima aparecem com nome só para a diretoria.', [], { color: 4 });
+const nota = sticky('## Painel · Central de Demandas (V1)\nAba "Central" do Ismael, do Rômulo e da diretoria (e do usuário de teste, só leitura de dados reais e envio só em cards TESTE PAINEL).\nver: cards abertos (A fazer, Fazendo, Ajustes) em 3 níveis (1 = ⭐ cliente em foco da diretoria, campo "⭐ Foco até" da ficha; 2 = postagem de hoje; 3 = o resto) e dentro do nível pela nota de prioridade (prazo, dia de ir ao ar, 🔴, clima, SOS, faixa A/B/C, urgente, recuperação, fim de contrato), onde cada um está, sugestão de destino; previstas = ritmo da ficha (longos, shorts e carrosséis por semana) menos os cards que já existem na semana; filas dos quadros de Longos, Shorts e Carrosséis e da Máquina do Escritório, com quanto cabe hoje pelos horários das rotinas e quando fica pronto um pedido novo; carga de cada pessoa.\nmandar: card (ou prevista, que vira card novo) vai para a máquina (longo e shorts pedem link; cria o pedido no quadro como o "Pedir ao escritório"), para Victor, Lorena, Daniel, Ismael, Rômulo (aviso no #dia-a-dia marcando a pessoa) ou "eu faço" (diretoria = À mão (Flau); Ismael/Rômulo = fica com quem mandou). Linha [Central] no topo da Obs.\nEquipe nunca recebe valores. Contrato e clima aparecem com nome só para a diretoria.', [], { color: 4 });
 
 export default workflow('painel-central', 'Painel | Central de Demandas (V1)')
   .add(pedir).to(ler).to(acesso).to(validar).to(caminho
