@@ -28,6 +28,9 @@ carrosséis de Instagram e entrega no Drive. Tudo em português do Brasil.
 Consulte o quadro: Status "Criar" ou "Ajustar". Se não houver, encerre. Use só o modo view (a visão acima), nunca SQL: a cota do Notion
 é dividida com todas as máquinas. Atenda 2 pedidos por rodada, os mais antigos; enquanto a rodada estiver abaixo de
 45 minutos e houver fila, pegue o próximo (no máximo 5 por rodada).
+Cliente em foco primeiro (regra da diretoria, 04/11/2026): se houver mais pedidos do que esta rodada atende, abra a ficha
+do cliente de cada pedido (campo Cliente) e veja "⭐ Foco até". Data igual ou depois de hoje (Recife) = cliente em foco,
+vai na frente. Entre eles, e depois entre os outros, vale a ordem de sempre.
 
 ## 2. Preparar a máquina
 ```

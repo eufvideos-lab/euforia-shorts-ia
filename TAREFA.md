@@ -22,6 +22,9 @@ Leia a visão "🤖 Fila da máquina" com notion-query-data-sources em modo view
 Notion é dividida com todas as máquinas e o painel, e quando acaba tudo para). Se vier vazia, encerre sem fazer mais nada.
 Atenda 3 pedidos por rodada, mais antigo primeiro. Enquanto a rodada estiver abaixo de 45 minutos e ainda
 houver fila, pegue mais 1 (no máximo 6 por rodada). O resto fica para a próxima.
+Cliente em foco primeiro (regra da diretoria, 04/11/2026): se houver mais pedidos do que esta rodada atende, abra a ficha
+do cliente de cada pedido (campo Cliente) e veja "⭐ Foco até". Data igual ou depois de hoje (Recife) = cliente em foco,
+vai na frente. Entre eles, e depois entre os outros, vale a ordem de sempre.
 
 ## 2. Preparar a máquina (só se houver pedido)
 O código está no repositório público da Euforia: `git clone --depth 1 https://github.com/eufvideos-lab/euforia-shorts-ia.git`.
