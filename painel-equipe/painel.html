@@ -435,7 +435,7 @@ let CE = null, CEQ = '', CEF = '';
 let FO = null, FOQ = '', FOF = '';
 let CT = null, CTQ = '', CTT = '', CTO = '', CTN = 40;
 let RS = null, RSC = '', RSP = '';
-let GA = null, GAE = {};
+let GA = null, GAE = {}, GM = null, GMP = 7;
 let ES = null;
 let CL = null, CLQ = '', CLF = '', CLO = 'atencao';
 let EV = null, EVJ = '', EVP = '1', EVT = '';
@@ -2265,19 +2265,52 @@ function aprovarGeral(){
   return `<section class="group" style="margin-bottom:18px"><h2>✍️ Respostas para aprovar <span class="count">${esperaGA().length}</span></h2><p class="sub">Rascunhos da Gerente IA. Enviar manda pelo suporte, assinado Érica, em até 1 minuto. Para corrigir, mude o texto e aperte Enviar.</p>
     <div style="display:flex;flex-direction:column;gap:12px">${L.map(cardGA).join('')}</div>${GA.abertos.length > L.length ? `<p style="margin-top:10px"><button class="btn" data-view="aprovar">Ver todas (${GA.abertos.length})</button></p>` : ''}</section>`;
 }
+// Etapa 3: como a Gerente está indo (7 ou 30 dias, sem os testes). Números do fluxo "Painel | Gerente IA · Aprovar" (acao: metricas).
+const horasGA = h => h == null ? '—' : h < 1 ? Math.round(h * 60) + ' min' : h < 48 ? h.toFixed(1).replace('.', ',') + ' h' : (h / 24).toFixed(1).replace('.', ',') + ' dias';
+function metricasGA(){
+  const topo = `<section class="group" style="margin-top:18px"><div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap"><h2 style="margin:0">Como a Gerente está indo</h2>
+    <div style="display:flex;gap:6px">${[7, 30].map(d => `<button class="btn ${GMP === d ? 'primary' : ''}" data-gmp="${d}">${d} dias</button>`).join('')}</div></div>`;
+  if (!GM) { carregarMetricas(); return topo + '<p class="sub">Carregando os números…</p></section>'; }
+  if (GM.erro) return topo + '<p class="empty">Não consegui ler os números agora.</p></section>';
+  const m = GMP === 30 ? GM.p30 : GM.p7, f = GM.fase1b || {};
+  const tile = (v, t, hot) => `<div class="stat ${hot ? 'hot' : ''}" style="background:${hot ? 'var(--bad-soft)' : 'var(--surface)'}"><span class="v">${v}</span><span>${t}</span></div>`;
+  const NOME = { pedido: 'pedidos', ajuste: 'ajustes', status: 'dúvidas de prazo', material: 'materiais', serio: 'assuntos sérios', sem_acao: 'sem ação', indefinido: 'sem classe' };
+  const cls = Object.entries(m.classes || {}).sort((a, b) => b[1] - a[1]).map(([k, v]) => `${v} ${NOME[k] || k}`).join(' · ');
+  const pctF = Math.min(100, Math.round((f.enviadas || 0) / 30 * 100));
+  return topo + `<div class="stats" style="margin-top:12px">
+      ${tile(m.lidas, 'mensagens lidas' + (m.conversas ? ` <span class="sub">(${m.conversas} conversas)</span>` : ''))}
+      ${tile(m.demandas_criadas, 'demandas criadas')}
+      ${tile(m.entregues, 'demandas entregues' + (m.atrasadas ? ` <span class="sub">· ${m.atrasadas} atrasadas</span>` : ''))}
+      ${tile(m.escalados, 'casos escalados para você', m.escalados > 0)}
+    </div>
+    <div class="stats" style="margin-top:12px">
+      ${tile(m.tempo_resposta_min == null ? '—' : horasGA(m.tempo_resposta_min / 60), 'tempo médio de resposta')}
+      ${tile(horasGA(m.tempo_entrega_h), 'tempo médio de entrega')}
+      ${tile(m.pct_sem_correcao == null ? '—' : m.pct_sem_correcao + '%', `respostas aprovadas sem correção <span class="sub">(${m.sem_correcao} de ${m.enviadas})</span>`)}
+      ${tile(m.rascunhos, `rascunhos <span class="sub">· ${m.canceladas} cancelados · ${m.expiradas} expirados · ${m.equipe_antes} a equipe respondeu antes</span>`)}
+    </div>
+    ${cls ? `<p class="note">O que chegou nos grupos: ${esc(cls)}.</p>` : ''}
+    <p class="note"><b>Liberar respostas simples sem aprovação:</b> ${f.pronto ? '✅ critério batido (30 enviadas e 95% sem correção). Me avise e eu libero status, prazo e material recebido.' : `${f.enviadas || 0} de 30 respostas enviadas${f.pct != null ? ', ' + f.pct + '% sem correção (meta 95%)' : ''}.`}
+      <span style="display:block;height:8px;border-radius:6px;background:var(--line);margin-top:8px;overflow:hidden"><span style="display:block;height:100%;width:${pctF}%;background:var(--accent)"></span></span></p>
+    <p class="note">Tempo de resposta: da última mensagem do cliente até a resposta sair no grupo. Tempo de entrega: do card criado pela Gerente até ficar pronto. Sem os testes.</p></section>`;
+}
+async function carregarMetricas(){
+  if (carregarMetricas.indo) return; carregarMetricas.indo = true;
+  try { const r = await api('euforia-painel-gerente', { acao: 'metricas' }); GM = r && r.ok ? r : (GM && GM.p7 ? GM : { erro: true }); }
+  catch (e) { if (!GM) GM = { erro: true }; }
+  carregarMetricas.indo = false;
+  if (view === 'aprovar' && !ocupado && !$('#layer').innerHTML && !(document.activeElement && document.activeElement.matches('[id^="ga-t"]'))) render();
+}
+document.addEventListener('click', e => { const b = e.target.closest('#main [data-gmp]'); if (b) { GMP = Number(b.dataset.gmp) || 7; render(); } });
+setInterval(() => { if (D && diretor() && view === 'aprovar' && !document.hidden) { GM = GM && GM.p7 ? GM : null; carregarMetricas(); } }, 300000);
 function aprovarHtml(){
   const topo = `<div class="head"><div><p class="eyebrow">Gerente IA${GA && GA.ok ? ' · atualizada às ' + esc(GA.agora) : ''}</p><h1>Aprovar respostas</h1></div><p class="sub">Rascunhos da Gerente IA para os grupos do piloto. Enviar manda pelo suporte, assinado Érica, em até 1 minuto. Para corrigir, mude o texto e aperte Enviar. Vale o primeiro toque, aqui ou no #aprovações-gerente.</p></div>`;
   if (!GA) { carregarGerente(); return topo + '<p class="sub">Carregando…</p>'; }
   if (GA.erro) return topo + '<p class="empty">Não consegui ler os rascunhos agora. Tente de novo em alguns minutos.</p>';
-  const n = GA.numeros || {};
-  const pct = n.enviadas ? Math.round((n.sem_correcao || 0) / n.enviadas * 100) + '%' : '—';
-  const stats = `<div class="stats s5">${[[esperaGA().length, 'esperando você'], [n.enviadas || 0, 'respostas enviadas'], [pct, 'enviadas sem correção (meta 95%)'], [n.canceladas || 0, 'canceladas'], [(n.expiradas || 0) + (n.equipe || 0), 'expiradas ou equipe respondeu antes']]
-    .map(([v, t]) => `<div class="stat" style="background:var(--surface)"><span class="v">${v}</span><span>${t}</span></div>`).join('')}</div>
-    <p class="note">Números sem os testes. Com 30 enviadas e 95% sem correção, as respostas simples (status, prazo, material recebido) podem passar a sair sem aprovação.</p>`;
   const st = x => ST_GA[x.status] || [x.status, ''];
   const rec = GA.recentes && GA.recentes.length ? `<div class="tbl"><table><thead><tr><th>Quando</th><th>Cliente</th><th>Como ficou</th><th>Texto</th></tr></thead><tbody>${GA.recentes.map(x => `<tr><td class="mono">${esc(x.quando)}</td><td>${esc(x.cliente)}</td><td><span class="chip ${st(x)[1]}">${esc(st(x)[0])}</span>${x.corrigida ? ' <span class="sub">corrigida</span>' : ''}${x.pelo_painel ? ' <span class="sub">pelo painel</span>' : ''}</td><td class="sub">${esc(String(x.texto || '').slice(0, 160))}</td></tr>`).join('')}</tbody></table></div>` : '<p class="empty">Nada decidido ainda.</p>';
-  return topo + stats + (GA.abertos.length ? `<div style="display:flex;flex-direction:column;gap:12px;margin-top:12px">${GA.abertos.map(cardGA).join('')}</div>` : '<p class="empty">Nenhum rascunho esperando. Assunto sério (dinheiro, contrato, reclamação, jurídico) não ganha rascunho: continua só como alerta no #aprovações-gerente.</p>')
-    + `<section class="group"><h2>Últimos decididos</h2>${rec}</section>`;
+  return topo + (GA.abertos.length ? `<div style="display:flex;flex-direction:column;gap:12px;margin-top:12px">${GA.abertos.map(cardGA).join('')}</div>` : '<p class="empty">Nenhum rascunho esperando. Assunto sério (dinheiro, contrato, reclamação, jurídico) não ganha rascunho: continua só como alerta no #aprovações-gerente.</p>')
+    + metricasGA() + `<section class="group"><h2>Últimos decididos</h2>${rec}</section>`;
 }
 async function carregarGerente(silencioso){
   if (carregarGerente.indo) return; carregarGerente.indo = true;
@@ -2305,6 +2338,9 @@ document.addEventListener('click', async e => {
   } catch (er) { toast(er.message === 'decidido' ? 'Esse rascunho já foi decidido (aqui ou no Discord).' : ERRO); GA = null; }
   ocupado = false; render(); setTimeout(() => carregarGerente(true), 75000);
 });
+const DEMO_GM = { ok: true, agora: '10:42', fase1b: { enviadas: 18, pct: 94, pronto: false }, serie: [],
+  p7: { dias: 7, lidas: 214, conversas: 61, demandas_criadas: 14, entregues: 9, abertas: 5, atrasadas: 1, tempo_resposta_min: 23, tempo_entrega_h: 41.5, escalados: 3, travas: 2, rascunhos: 22, enviadas: 18, sem_correcao: 17, pct_sem_correcao: 94, canceladas: 2, expiradas: 1, equipe_antes: 1, classes: { pedido: 14, status: 20, material: 9, ajuste: 5, serio: 3, sem_acao: 10 } },
+  p30: { dias: 30, lidas: 640, conversas: 190, demandas_criadas: 40, entregues: 31, abertas: 9, atrasadas: 2, tempo_resposta_min: 27, tempo_entrega_h: 44, escalados: 7, travas: 4, rascunhos: 60, enviadas: 50, sem_correcao: 46, pct_sem_correcao: 92, canceladas: 6, expiradas: 2, equipe_antes: 2, classes: { pedido: 40, status: 60 } } };
 const DEMO_GA = { ok: true, agora: '10:42', numeros: { total: 12, enviadas: 9, sem_correcao: 8, canceladas: 1, expiradas: 1, equipe: 1 },
   abertos: [{ id: 1, criado: '04/11 10:31', cliente: 'Cliente Exemplo A', classe: 'pedido', urgencia: 'urgente', texto: 'Ana, recebemos o pedido do carrossel sobre imposto de renda! Já entrou na produção e avisamos assim que estiver pronto.', card_url: 'https://www.notion.so/', status: 'aguardando', painel_acao: null, cliente_disse: '10:27 Ana: Preciso de um carrossel sobre imposto de renda, é urgente, consegue até amanhã?' },
     { id: 2, criado: '04/11 10:12', cliente: 'Cliente Exemplo B', classe: 'status', urgencia: 'padrao', texto: 'Carlos, o vídeo desta semana está em revisão final e fica pronto até 06/11.', card_url: null, status: 'aguardando', painel_acao: null, cliente_disse: '10:08 Carlos: Como está o vídeo desta semana?' }],
@@ -2468,7 +2504,7 @@ async function carregarCentral(silencioso){
 function demoApi(path, b){
   const wait = v => new Promise(r => setTimeout(() => r(v), 350));
   if (path === 'euforia-painel-fila') return wait(DEMO_D);
-  if (path === 'euforia-painel-gerente') return wait(b.acao === 'decidir' ? { ok: true } : JSON.parse(JSON.stringify(DEMO_GA)));
+  if (path === 'euforia-painel-gerente') return wait(b.acao === 'decidir' ? { ok: true } : b.acao === 'metricas' ? JSON.parse(JSON.stringify(DEMO_GM)) : JSON.parse(JSON.stringify(DEMO_GA)));
   if (path === 'euforia-painel-whatsapp') {
     if (b.acao === 'conectar') { demoApi.n = 0; return wait({ ok: true, estado: 'aguardando', qr: DEMO_QR }); }
     if (b.acao === 'desconectar') return wait({ ok: true, estado: 'desconectado' });
