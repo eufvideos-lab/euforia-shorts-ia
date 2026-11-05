@@ -86,7 +86,9 @@ const gravar = node({ type: 'n8n-nodes-base.postgres', version: 2.6, config: { n
   INSERT INTO notion_cache (db, id, props, criado, editado, arquivado, visto_em)
   SELECT x.db, x.id, x.props, x.criado, x.editado, false, now()
   FROM jsonb_to_recordset($1::jsonb) AS x(db text, id text, props jsonb, criado timestamptz, editado timestamptz)
-  ON CONFLICT (db, id) DO UPDATE SET props = EXCLUDED.props, criado = EXCLUDED.criado, editado = EXCLUDED.editado, arquivado = false, visto_em = now()
+  ON CONFLICT (db, id) DO UPDATE SET
+    props = CASE WHEN notion_cache.editado IS NULL OR EXCLUDED.editado IS NULL OR EXCLUDED.editado >= notion_cache.editado THEN EXCLUDED.props ELSE notion_cache.props END,
+    editado = GREATEST(notion_cache.editado, EXCLUDED.editado), criado = EXCLUDED.criado, arquivado = false, visto_em = now()
   RETURNING 1)
 SELECT (SELECT count(*) FROM ins) AS gravadas, to_char(now() AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS gravado;`,
   options: { queryReplacement: '={{ [ $json.linhas ] }}' } } } });

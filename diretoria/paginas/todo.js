@@ -8,9 +8,14 @@ var MAQS = [['carrossel', 'Carrossel'], ['shorts', 'Shorts'], ['longo', 'Vídeo 
   ['relatorio', 'Relatório'], ['situacao', 'Situação completa'], ['cronograma', 'Cronograma'], ['estrategia', 'Estratégia'], ['recuperacao', 'Estratégia de recuperação'],
   ['alinhamento', 'Apresentação de alinhamento'], ['call', 'Apresentação de call'], ['setup', 'Setup'], ['outro', 'Outro (mín. 40 letras)']];
 
+// Mudanças feitas aqui ficam valendo na tela por 3 min, mesmo que um recarregamento traga a versão de antes (a cópia do Notion atrasa).
+var PEND = {};
 function carregar() {
   return api('todo').then(function (r) {
     if (!r.ok) { $('lista').innerHTML = '<p class="erro">' + esc(r.erro || 'Não carregou.') + '</p>'; return; }
+    var agora = Date.now();
+    Object.keys(PEND).forEach(function (id) { if (agora - PEND[id].em > 180000) delete PEND[id]; });
+    (r.itens || []).forEach(function (i) { var p = PEND[i.id]; if (p) Object.assign(i, p.campos); });
     D = r; desenhar();
   });
 }
@@ -136,8 +141,10 @@ function mudar(i, campos, msg) {
   if (campos.status) i.st = campos.status; if ('data' in campos) i.d = campos.data; if ('prio' in campos) i.pr = campos.prio;
   if ('setor' in campos) i.se = campos.setor; if (campos.texto) i.t = campos.texto; if ('contexto' in campos) i.cx = campos.contexto;
   i.e = new Date().toISOString(); desenhar();
+  var loc = { st: i.st, d: i.d, pr: i.pr, se: i.se, t: i.t, cx: i.cx, e: i.e };
+  PEND[i.id] = { em: Date.now(), campos: loc };
   return api('todo_mudar', { id: i.id, campos: campos }).then(function (r) {
-    if (!r.ok) { Object.assign(i, JSON.parse(antes)); desenhar(); aviso(r.erro || 'Não salvou.', true); return false; }
+    if (!r.ok) { delete PEND[i.id]; var v = (D.itens || []).filter(function (x) { return x.id === i.id; })[0] || i; Object.assign(v, JSON.parse(antes)); desenhar(); aviso(r.erro || 'Não salvou.', true); return false; }
     if (msg) aviso(msg); return true;
   });
 }
