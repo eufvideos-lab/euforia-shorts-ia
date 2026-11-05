@@ -311,6 +311,8 @@ const ler_rascunho = node({
       jsCode: `// Lê o rascunho do Claude, calcula o prazo (padrão 72h, urgente 24h, hiperurgente hoje e só com aprovação) e monta o card.
 const TIPOS = ['Vídeo longo', 'Shorts', 'Carrossel', 'Thumbnail', 'Arte', 'Banner', 'Página', 'Roteiro', 'Copy', 'Blog', 'Outro'];
 const ISMAEL = '3ea98c0c-dde0-812d-9cb4-c41ce70df4ae';
+// Roteiro (Henrique 05/11): quem faz é o Rômulo; a Lorena está aprendendo. Urgente e hiperurgente com o Rômulo, padrão com a Lorena.
+const ROMULO = '3ea98c0c-dde0-8129-9709-cf901fac7275', LORENA = '3ea98c0c-dde0-8163-bd16-f0213b098cb5';
 const GERENTE = '40e98c0c-dde0-817e-b798-f6e045686b7c';
 const ENTREGAS_DB = '74b3076a-3257-49e3-bac4-ba6659215e48';
 const mascara = s => String(s || '').replace(/r\\$\\s*[\\d.,]+(\\s*(mil|k))?/gi, '[valor]').replace(/\\b\\d{1,3}(\\.\\d{3})+(,\\d{1,2})?\\b/g, '[valor]');
@@ -337,6 +339,8 @@ return $input.all().map((it, i) => {
   const tipo = TIPOS.includes(c.tipo) ? c.tipo : 'Outro';
   const ligado = d.classe === 'ajuste' ? (base.cards || []).find(x => x.codigo && x.codigo === r.card_ligado) : null;
   const titulo = (d.cliente.toUpperCase() + ' | ' + (d.classe === 'ajuste' ? 'AJUSTE ' : '') + tipo.toUpperCase() + ' | ' + String(c.titulo || d.resumo || 'pedido do grupo').toUpperCase()).slice(0, 180);
+  const resp_id = tipo === 'Roteiro' ? (urg === 'padrao' ? LORENA : ROMULO) : ISMAEL;
+  const resp_nome = resp_id === LORENA ? 'a Lorena' : resp_id === ROMULO ? 'o Rômulo' : 'o Ismael';
   const quando = DateTime.fromJSDate(new Date(d.ultima)).setZone('America/Recife').toFormat('dd/MM HH:mm');
   const obs = ('[Gerente IA ' + agora.toFormat('dd/MM HH:mm') + '] Pedido no grupo em ' + quando + ' (' + (urg === 'padrao' ? 'prazo padrão 72h' : urg) + ').\\n' + mascara(c.obs || d.resumo || '') + (ligado ? '\\nAjuste do card ' + ligado.codigo + ': ' + ligado.url : '')).slice(0, 1900);
   const props = {
@@ -347,7 +351,7 @@ return $input.all().map((it, i) => {
     'Prioridade': { select: { name: urg === 'padrao' ? 'Normal' : 'Urgente' } },
     'Prazo': { date: { start: prazo } },
     'Origem': { select: { name: 'Extra' } },
-    'Responsável': { relation: [{ id: ISMAEL }] },
+    'Responsável': { relation: [{ id: resp_id }] },
     '✍️ Criada por': { relation: [{ id: GERENTE }] },
     'Obs': { rich_text: [{ text: { content: obs } }] }
   };
@@ -357,7 +361,7 @@ return $input.all().map((it, i) => {
   // Fato que só a equipe sabe (acesso, bruto, entrega hoje): a mensagem espera o sim do Rômulo ou do Ismael (Henrique 05/11).
   const confirmar = mascara(String(r.confirmar || '').trim()).slice(0, 220);
   const confirmar_quem = confirmar ? (r.confirmar_quem === 'romulo' ? 'romulo' : 'ismael') : '';
-  return { json: { dados: d, cards: base.cards, resposta, urgencia: urg, prazo, tipo, titulo, ok: !!resposta, confirmar, confirmar_quem,
+  return { json: { dados: d, cards: base.cards, resposta, urgencia: urg, prazo, tipo, titulo, ok: !!resposta, confirmar, confirmar_quem, resp_nome,
     criar_agora: precisaCard && urg !== 'hiperurgente' && !!resposta, card_corpo, card_id: '', card_url: '', card_codigo: '' } };
 });
 `
@@ -416,7 +420,7 @@ return $input.all().map(it => {
   const selo = (d.faixa ? d.faixa : '') + (d.foco ? ' ⭐' : '') + (d.atencao ? ' 🔴' : '');
   const trecho = String(d.textos || '').split('\\n').slice(-4).join('\\n').slice(-450).replace(/\\n/g, '\\n> ');
   let linhaCard = '';
-  if (x.card_url) linhaCard = '📋 Card criado: [' + (x.card_codigo || 'abrir') + '](<' + x.card_url + '>) · ' + x.tipo + ' · pronto até ' + ddmm(x.prazo) + ' · ' + URG[x.urgencia] + ' · com o Ismael';
+  if (x.card_url) linhaCard = '📋 Card criado: [' + (x.card_codigo || 'abrir') + '](<' + x.card_url + '>) · ' + x.tipo + ' · pronto até ' + ddmm(x.prazo) + ' · ' + URG[x.urgencia] + ' · com ' + (x.resp_nome || 'o Ismael');
   else if (x.card_corpo && x.urgencia === 'hiperurgente') linhaCard = '⚡ **Hiperurgente:** o card (' + x.tipo + ', pronto hoje) só nasce quando você enviar.';
   else if (x.card_corpo && x.card_erro) linhaCard = '⚠️ ' + x.card_erro + ' (crio de novo quando você enviar).';
   else if (d.classe === 'pedido' || d.classe === 'ajuste') linhaCard = '📋 Sem card novo (não achei peça concreta no pedido).';
