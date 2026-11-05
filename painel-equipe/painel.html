@@ -385,6 +385,12 @@ const DEMO = Q.get('demo') === '1';
 const U = DEMO ? 'demo' : (Q.get('u') || '').toLowerCase().replace(/[^0-9a-f]/g, '');
 const KEY = 'painel-pin-' + U;
 const ETAPAS = ['A fazer','Fazendo','Em revisão','Ajustes','Aguardando cliente','Aprovado','Agendado','Postado'];
+// Feito (05/11/2026): fim do que não vai ao ar (roteiro, página, apresentação...). Fica logo depois de Aprovado.
+const ETAPAS_TODAS = ['A fazer','Fazendo','Em revisão','Ajustes','Aguardando cliente','Aprovado','Feito','Agendado','Postado'];
+const NAO_POSTA = ['Roteiro','Página','Funil','Copy','Apresentação','Relatório','Estratégia','Insta-Blindado','ID visual','Limpeza de canal'];
+const naoPosta = c => c.status === 'Feito' || NAO_POSTA.includes(c.tipo);
+const FECHADO = ['Postado','Feito','Cancelado'];
+const etapasDo = c => naoPosta(c) ? ['A fazer','Fazendo','Em revisão','Ajustes','Aguardando cliente','Aprovado','Feito'] : ETAPAS;
 const PAPEL = {editor:'Edição', revisor:'Revisão e postagem', calls:'Calls e canal', teste:'Usuário de teste', diretor:'Diretoria'};
 // Mesmos ids do fluxo "Painel | Pedido ao escritório": quem faz, o que lê e o que volta.
 const TIPOS = [
@@ -507,7 +513,7 @@ function chips(c){
   if (cl.atencao) h += `<span class="chip red">🔴 Atenção</span>`;
   if (ABERTO.includes(c.status) && c.prazo) h += k < 0 ? `<span class="chip red">Atrasado ${-k}d</span>` : k === 0 ? `<span class="chip org">Prazo hoje</span>` : `<span class="chip">Prazo ${fmt(c.prazo)}</span>`;
   if (c.postar) h += `<span class="chip">Vai ao ar ${fmt(c.postar)}</span>`;
-  const sc = { 'Fazendo':'info', 'Em revisão':'info', 'Ajustes':'warn', 'Aprovado':'ok', 'Agendado':'ok', 'Aguardando cliente':'warn' }[c.status];
+  const sc = { 'Fazendo':'info', 'Em revisão':'info', 'Ajustes':'warn', 'Aprovado':'ok', 'Feito':'ok', 'Agendado':'ok', 'Aguardando cliente':'warn' }[c.status];
   if (naoGravou(c)) h += `<span class="chip warn">Cliente ainda não gravou</span>`;
   else if (c.status !== 'A fazer') h += `<span class="chip ${sc || ''}">${esc(c.status)}</span>`;
   if (!c.meu && c.resp && c.resp.length) h += `<span class="chip">${esc(c.resp.join(', '))}</span>`;
@@ -519,6 +525,7 @@ function proximo(c){
   if (c.meu && c.status === 'Fazendo') return { label: 'Mandar para revisão', cls: 'primary' };
   if (c.meu && c.status === 'Ajustes') return { label: 'Mandar o ajuste', cls: 'primary' };
   if (revisor() && c.status === 'Em revisão') return { label: 'Revisar', cls: 'primary' };
+  if (posta() && c.status === 'Aprovado' && naoPosta(c)) return { label: 'Marcar como feito', cls: 'ok' };
   if (posta() && ['Aprovado', 'Agendado'].includes(c.status)) return { label: c.status === 'Agendado' ? 'Postei' : 'Agendei / postei', cls: 'ok' };
   return null;
 }
@@ -576,13 +583,13 @@ const VIEWS = {
       if (!DD) return `<div class="head"><div><p class="eyebrow">Diretoria</p><h1>Visão geral</h1></div></div><p class="sub">Carregando a operação…</p>`;
       const ab = DD.cards.filter(c => ABERTO.includes(c.status));
       const atr = ab.filter(c => dd(c.prazo) < 0), hj = ab.filter(c => dd(c.prazo) === 0);
-      const ar = DD.cards.filter(c => c.postar && dd(c.postar) === 0 && !['Postado'].includes(c.status));
+      const ar = DD.cards.filter(c => c.postar && dd(c.postar) === 0 && !FECHADO.includes(c.status));
       const postados = DD.cards.filter(c => c.status === 'Postado').length;
       const max = Math.max(1, ...DD.equipe.map(p => carga(p.id).abertos));
       const linhaCarga = p => { const k = carga(p.id), w = Math.round(k.abertos / max * 100);
         return `<li><button data-pessoa="${p.id}">${esc(p.nome)}</button><span class="bar"><span class="${k.atrasados > 2 ? 'hi' : k.atrasados ? 'mid' : ''}" style="width:${w}%"></span></span>
           <span class="n">${k.abertos} abertos${k.atrasados ? ` · <b>${k.atrasados} atras.</b>` : ''}</span></li>`; };
-      const precisa = DD.cards.filter(c => ['Precisa da Direção', 'À mão (Flau)'].includes(c.escritorio) && !['Postado', 'Aprovado', 'Agendado'].includes(c.status));
+      const precisa = DD.cards.filter(c => ['Precisa da Direção', 'À mão (Flau)'].includes(c.escritorio) && !['Postado', 'Feito', 'Cancelado', 'Aprovado', 'Agendado'].includes(c.status));
       const vermelhos = DD.clientes.filter(c => c.atencao).map(c => ({ c, ab: ab.filter(x => x.cliente === c.id), atr: atr.filter(x => x.cliente === c.id) }))
         .sort((a, b) => b.atr.length - a.atr.length || b.ab.length - a.ab.length);
       const ativ = atividade().slice(0, 40);
@@ -715,7 +722,7 @@ const VIEWS = {
     html(){
       if (!DD) return `<div class="head"><div><p class="eyebrow">Diretoria</p><h1>Por pessoa</h1></div></div><p class="sub">Carregando…</p>`;
       const filtros = { abertos: ['A fazer', 'Fazendo', 'Ajustes'], revisao: ['Em revisão', 'Aguardando cliente', 'Aprovado', 'Agendado'], tudo: null };
-      const ok = c => (!filtros[PF] || filtros[PF].includes(c.status)) && c.status !== 'Postado' && (!PQ || c.cliente === PQ);
+      const ok = c => (!filtros[PF] || filtros[PF].includes(c.status)) && !['Postado', 'Feito'].includes(c.status) && (!PQ || c.cliente === PQ);
       const ids = DD.equipe.map(p => p.id);
       const cols = DD.equipe.map(p => ({ id: p.id, nome: p.nome, papel: p.papel, l: ordDD(DD.cards.filter(c => ok(c) && (c.resp || []).includes(p.id))) }));
       cols.push({ id: '', nome: 'Sem responsável', papel: 'ninguém pegou', l: ordDD(DD.cards.filter(c => ok(c) && !(c.resp || []).some(r => ids.includes(r)))) });
@@ -735,7 +742,7 @@ const VIEWS = {
       return `<div class="head"><div><p class="eyebrow">Diretoria · ${DD.cards.length} cards abertos ou postados na semana</p><h1>Todos os cards</h1></div><div class="actions"><button class="btn primary" id="d-novo">+ Novo card</button></div></div>
       <div class="filtros">
         <label for="tq">Buscar<input type="text" id="tq" placeholder="Cliente ou entrega" value="${esc(TQ)}"></label>
-        <label for="ts">Etapa<select id="ts"><option value="">Todas</option><option value="atrasados" ${TS === 'atrasados' ? 'selected' : ''}>⚠️ Atrasados</option><option value="hoje" ${TS === 'hoje' ? 'selected' : ''}>Prazo hoje</option><option value="aranhoje" ${TS === 'aranhoje' ? 'selected' : ''}>Vai ao ar hoje</option>${ETAPAS.map(e => `<option ${e === TS ? 'selected' : ''}>${e}</option>`).join('')}</select></label>
+        <label for="ts">Etapa<select id="ts"><option value="">Todas</option><option value="atrasados" ${TS === 'atrasados' ? 'selected' : ''}>⚠️ Atrasados</option><option value="hoje" ${TS === 'hoje' ? 'selected' : ''}>Prazo hoje</option><option value="aranhoje" ${TS === 'aranhoje' ? 'selected' : ''}>Vai ao ar hoje</option>${ETAPAS_TODAS.map(e => `<option ${e === TS ? 'selected' : ''}>${e}</option>`).join('')}</select></label>
         <label for="tp">Pessoa<select id="tp"><option value="">Todas</option>${DD.equipe.map(p => `<option value="${p.id}" ${p.id === TP ? 'selected' : ''}>${esc(p.nome)}</option>`).join('')}<option value="sem" ${TP === 'sem' ? 'selected' : ''}>Sem responsável</option></select></label>
         <label for="tt">Tipo<select id="tt"><option value="">Todos</option>${tipos.map(t => `<option ${t === TT ? 'selected' : ''}>${esc(t)}</option>`).join('')}</select></label>
       </div>
@@ -1001,7 +1008,7 @@ function apresDaCall(k){
 }
 function hojeDiretor(){
   const calls = CC && !CC.erro ? CC.calls.filter(k => { const d = Math.round((dia(k.dia) - dia(CC.hoje)) / 864e5); return (d === 0 && k.fimHora > CC.agora) || d === 1; }) : [];
-  const pend = DD.cards.filter(c => ehApresCall(c) && !apresPronta(c) && !['Cancelado', 'Postado'].includes(c.status)).sort((a, b) => dd(a.prazo) - dd(b.prazo));
+  const pend = DD.cards.filter(c => ehApresCall(c) && !apresPronta(c) && !FECHADO.includes(c.status)).sort((a, b) => dd(a.prazo) - dd(b.prazo));
   const falta = (D.pedidos || []).filter(p => situacao(p).g === 'falta');
   const chipApres = k => { const a = apresDaCall(k);
     if (!a && /^https:\/\//.test(k.apresentacao || '')) return `<a class="chip ok" style="text-decoration:none" href="${esc(k.apresentacao)}" target="_blank" rel="noopener">Abrir apresentação</a>`;
@@ -1036,7 +1043,7 @@ function situacao(p){
   const aberto = ['A fazer', 'Fazendo', 'Ajustes'].includes(p.status);
   if (p.status === 'Cancelado') return { g: 'cancelado', t: 'Cancelado', c: '' };
   if (p.escritorio === 'Falta informação' && aberto) return { g: 'falta', t: 'Falta informação', c: 'red' };
-  if (['Postado', 'Aprovado', 'Agendado'].includes(p.status)) return { g: 'pronto', t: p.status === 'Postado' ? 'Pronto · postado' : 'Pronto · aprovado', c: 'ok' };
+  if (['Postado', 'Feito', 'Aprovado', 'Agendado'].includes(p.status)) return { g: 'pronto', t: p.status === 'Postado' ? 'Pronto · postado' : p.status === 'Feito' ? 'Pronto · feito' : 'Pronto · aprovado', c: 'ok' };
   if (['Em revisão', 'Aguardando cliente'].includes(p.status) || p.escritorio === 'Feito pela IA') return { g: 'pronto', t: p.status === 'Aguardando cliente' ? 'Pronto · com o cliente' : 'Pronto · em revisão', c: 'ok' };
   if (p.status === 'Ajustes') return { g: 'andando', t: 'Em ajuste', c: 'warn' };
   if (p.quadro || p.escritorio === 'Foi para outra máquina') return { g: 'andando', t: 'Na ' + (p.quadroNome ? p.quadroNome.replace(/^quadro de /, 'máquina de ') : 'máquina'), c: 'info' };
@@ -1056,7 +1063,7 @@ function listaPedidos(){
     const links = [p.quadro ? `<a class="btn" style="text-decoration:none" href="${esc(p.quadro)}" target="_blank" rel="noopener">Ver na máquina</a>` : '', s.g === 'pronto' && p.link ? (docPdf(p) ? `<a class="btn primary" style="text-decoration:none" href="${esc(baixar(p.link))}" target="_blank" rel="noopener">Baixar PDF</a>` : `<a class="btn" style="text-decoration:none" href="${esc(p.link)}" target="_blank" rel="noopener">Abrir arquivo</a>`) : ''].join('');
     return `<li class="item ${s.g === 'falta' ? 'late' : ''}"><span class="stripe"></span>
       ${abre ? `<button class="main" data-open="${p.id}">${corpo}</button>` : `<div class="main" style="cursor:default">${corpo}</div>`}
-      <span class="act">${s.g === 'falta' && abre ? `<button class="btn primary" data-go="${p.id}">Completar pedido</button>` : links}${(p.por === D.nome || diretor()) && p.status !== 'Postado' ? `<button class="btn" data-apagaped="${p.id}" title="Apagar este pedido">Apagar</button>` : ''}</span></li>`; };
+      <span class="act">${s.g === 'falta' && abre ? `<button class="btn primary" data-go="${p.id}">Completar pedido</button>` : links}${(p.por === D.nome || diretor()) && !['Postado', 'Feito'].includes(p.status) ? `<button class="btn" data-apagaped="${p.id}" title="Apagar este pedido">Apagar</button>` : ''}</span></li>`; };
   const g = (titulo, k, vazio) => { const x = l.filter(p => situacao(p).g === k); return !x.length && !vazio ? '' : `<section class="group"><h2>${titulo} <span class="count">${x.length}</span></h2>${x.length ? `<ul class="rows">${x.map(item).join('')}</ul>` : `<p class="empty">${vazio}</p>`}</section>`; };
   if (!l.length) return `<p class="empty">${MP === 'eu' ? 'Você ainda não mandou nenhum pedido ao escritório pelo painel.' : 'Nenhum pedido encontrado.'}</p>`;
   return g('Falta informação', 'falta', '') + g('Em andamento', 'andando', 'Nada em andamento.') + g('Prontos', 'pronto', 'Nada pronto ainda.') + g('Cancelados', 'cancelado', '');
@@ -1130,9 +1137,12 @@ function render(){
 // Gaveta do card: dados, passo a passo, histórico e só os botões que a pessoa pode apertar nesta etapa.
 function abrir(id){
   const c = D.cards.find(x => x.id === id); if (!c) return;
-  const cl = cli(c), i = ETAPAS.indexOf(c.status);
-  const passa = posta() && !['Postado', 'Cancelado'].includes(c.status);
-  const devolve = c.meu && !['Postado', 'Cancelado'].includes(c.status);
+  const cl = cli(c), ETP = etapasDo(c), i = ETP.indexOf(c.status);
+  const passa = posta() && !FECHADO.includes(c.status);
+  const devolve = c.meu && !FECHADO.includes(c.status);
+  // Feito: quem posta ou o Responsável marca quando a entrega está pronta e não vai ao ar.
+  const podeFeito = (posta() || c.meu) && ['Em revisão', 'Aguardando cliente', 'Aprovado'].includes(c.status);
+  const blocoFeito = `<div class="actions"><button class="btn ok" data-act="feito">Marcar como feito</button></div><p class="note">Para o que não vai ao ar (roteiro, página, apresentação, relatório…). O card vai para Feito, sai da fila e não conta como atrasado.</p>`;
   const parar = (c.meu || posta()) && ABERTO.includes(c.status) && !falta(c) && !c.livre;
   let acoes = '';
   if (falta(c)) acoes = `
@@ -1160,14 +1170,17 @@ function abrir(id){
     <p class="note">Arquivo: ${c.link ? `<a href="${esc(c.link)}" target="_blank" rel="noopener"><b>abrir</b></a>` : '<b>sem link</b>'}</p>
     <div class="actions"><button class="btn ok" data-act="aprovar">Aprovar e mandar ao cliente</button><button class="btn warn" data-act="mostrar-ajuste">Pedir ajuste</button></div>
     <label for="motivo" id="lmotivo" hidden>Qual ajuste? (obrigatório)<textarea id="motivo" maxlength="1000" placeholder="Ex.: legenda do minuto 2 cobre o rosto"></textarea><button class="btn warn" data-act="ajuste" type="button">Mandar de volta</button></label>`;
-  if (posta() && ['Aprovado', 'Agendado'].includes(c.status)) acoes = `
+  if (posta() && c.status === 'Aprovado' && naoPosta(c)) acoes = `
+    ${c.link ? `<p class="note">Arquivo aprovado: <a href="${esc(c.link)}" target="_blank" rel="noopener"><b>abrir</b></a></p>` : ''}${blocoFeito}`;
+  else if (posta() && ['Aprovado', 'Agendado'].includes(c.status)) acoes = `
     ${c.link ? `<p class="note">Arquivo aprovado: <a href="${esc(c.link)}" target="_blank" rel="noopener"><b>abrir</b></a></p>` : ''}
     <label for="lpost">Link do YouTube ou Instagram<input type="url" id="lpost" placeholder="https://youtu.be/…" value="${esc(c.linkPost || '')}"></label>
-    <div class="actions">${c.status === 'Aprovado' ? '<button class="btn" data-act="agendei">Agendei</button>' : ''}<button class="btn ok" data-act="postei">Postei</button></div>`;
+    <div class="actions">${c.status === 'Aprovado' ? '<button class="btn" data-act="agendei">Agendei</button>' : ''}<button class="btn ok" data-act="postei">Postei</button>${c.status === 'Aprovado' ? '<button class="btn" data-act="feito">Feito (não vai ao ar)</button>' : ''}</div>`;
+  else if (podeFeito && naoPosta(c)) acoes += blocoFeito;
   $('#layer').innerHTML = `<div class="scrim" data-x></div><aside class="drawer" role="dialog" aria-modal="true" aria-labelledby="d-t"><div class="drawer-in">
     <button class="close" data-x>Fechar</button>
     <div><p class="eyebrow">${c.cod ? '#' + c.cod + ' · ' : ''}${esc(c.tipo || 'Entrega')}</p><h2 id="d-t" style="font-size:26px">${esc(c.clienteNome)} · ${esc(c.nome)}</h2></div>
-    <ol class="steps">${ETAPAS.map((e, j) => `<li class="${j < i ? 'done' : j === i ? 'now' : ''}">${e}</li>`).join('')}</ol>
+    <ol class="steps">${ETP.map((e, j) => `<li class="${j < i ? 'done' : j === i ? 'now' : ''}">${e}</li>`).join('')}</ol>
     <dl class="dl"><dt>Responsável</dt><dd>${esc((c.resp || []).join(', ') || 'ninguém ainda')}</dd><dt>Prazo</dt><dd>${fmt(c.prazo)}</dd><dt>Vai ao ar</dt><dd>${fmt(c.postar)}</dd>
     ${cl.faixa || cl.atencao ? `<dt>Cliente</dt><dd>${cl.faixa ? 'Faixa ' + esc(cl.faixa) : ''}${cl.atencao ? ' · 🔴 atenção redobrada' : ''}</dd>` : ''}
     ${cl.padroes ? `<dt>Como editar</dt><dd>${esc(cl.padroes)}</dd>` : ''}${cl.gosta ? `<dt>Gosta / não gosta</dt><dd>${esc(cl.gosta)}</dd>` : ''}
@@ -1189,6 +1202,7 @@ function abrir(id){
       <fieldset class="modo" style="grid-template-columns:1fr"><legend>O que aconteceu</legend>
         <label class="opt" for="f-nao"><input type="radio" name="fim" id="f-nao" value="naoemeu" checked><span><b>Não é comigo</b><small>Seu nome sai do card e o Ismael e o Rômulo passam para outra pessoa.</small></span></label>
         <label class="opt" for="f-post"><input type="radio" name="fim" id="f-post" value="Postado"><span><b>Já foi postado</b><small>O card vai para Postado.</small></span></label>
+        <label class="opt" for="f-feito"><input type="radio" name="fim" id="f-feito" value="Feito"><span><b>Já foi feito (não vai ao ar)</b><small>Roteiro, página, apresentação… O card vai para Feito.</small></span></label>
         <label class="opt" for="f-canc"><input type="radio" name="fim" id="f-canc" value="Cancelado"><span><b>Foi cancelado</b><small>O cliente ou a diretoria cancelou essa entrega.</small></span></label></fieldset>
       <label for="fmot">Explique (obrigatório)<textarea id="fmot" maxlength="1000" placeholder="Ex.: esse vídeo é do Daniel / postei na sexta / o cliente desistiu desse corte"></textarea></label>
       <label for="flk">Link da postagem (se tiver)<input type="url" id="flk" placeholder="https://"></label>
@@ -1248,7 +1262,7 @@ function abrir(id){
       const r = await api('euforia-painel-acao', { card: c.id, acao, texto, link, fim, anexos, para: act === 'passar' ? $('#pp').value : '' });
       if (!r || !r.ok) throw new Error((r && r.motivo) || 'erro');
       ocupado = false; fechar();
-      toast({ comecar: 'Bom trabalho! Card em Fazendo.', revisao: 'Mandado para revisão. O Daniel e o Ismael foram avisados.', aprovar: 'Aprovado. Agora é com o cliente.', ajuste: 'Voltou para ajuste com o seu recado.', agendei: 'Marcado como agendado.', postei: 'Marcado como postado.', passar: 'Card passado. A pessoa foi avisada.', travei: 'Pedido de ajuda enviado. O guardião do cliente foi chamado.', fim: 'Pronto, ficou registrado e a equipe foi avisada.', pegar: 'É seu! O card já está na sua fila.', completar: 'Pronto! O pedido voltou para a fila do escritório.', naogravou: 'Pronto. O card saiu da fila e está esperando o cliente gravar.', gravou: 'Voltou para a fila em A fazer.' }[act]);
+      toast({ comecar: 'Bom trabalho! Card em Fazendo.', revisao: 'Mandado para revisão. O Daniel e o Ismael foram avisados.', aprovar: 'Aprovado. Agora é com o cliente.', ajuste: 'Voltou para ajuste com o seu recado.', agendei: 'Marcado como agendado.', postei: 'Marcado como postado.', feito: 'Marcado como feito.', passar: 'Card passado. A pessoa foi avisada.', travei: 'Pedido de ajuda enviado. O guardião do cliente foi chamado.', fim: 'Pronto, ficou registrado e a equipe foi avisada.', pegar: 'É seu! O card já está na sua fila.', completar: 'Pronto! O pedido voltou para a fila do escritório.', naogravou: 'Pronto. O card saiu da fila e está esperando o cliente gravar.', gravou: 'Voltou para a fila em A fazer.' }[act]);
       await carregar(true);
     } catch (err) {
       ocupado = false;
@@ -1338,10 +1352,10 @@ function classeDD(c){ const k = dd(c.prazo); if (c.status === 'Ajustes') return 
 function carga(id){ const l = DD.cards.filter(c => (c.resp || []).includes(id) && ABERTO.includes(c.status)); return { abertos: l.length, atrasados: l.filter(c => dd(c.prazo) < 0).length }; }
 function chipsDD(c){
   const cl = cliDD(c.cliente), k = dd(c.prazo); let h = '';
-  const sc = { 'Fazendo':'info', 'Em revisão':'info', 'Ajustes':'warn', 'Aprovado':'ok', 'Agendado':'ok', 'Postado':'ok', 'Aguardando cliente':'warn' }[c.status];
+  const sc = { 'Fazendo':'info', 'Em revisão':'info', 'Ajustes':'warn', 'Aprovado':'ok', 'Feito':'ok', 'Agendado':'ok', 'Postado':'ok', 'Aguardando cliente':'warn' }[c.status];
   h += naoGravou(c) ? `<span class="chip warn">Cliente ainda não gravou</span>` : `<span class="chip ${sc || ''}">${esc(c.status || 'sem etapa')}</span>`;
   if (ABERTO.includes(c.status) && c.prazo) h += k < 0 ? `<span class="chip red">Atrasado ${-k}d</span>` : k === 0 ? `<span class="chip org">Prazo hoje</span>` : `<span class="chip">Prazo ${fmt(c.prazo)}</span>`;
-  if (c.postar && c.status !== 'Postado') h += `<span class="chip">Ar ${fmt(c.postar)}</span>`;
+  if (c.postar && !FECHADO.includes(c.status)) h += `<span class="chip">Ar ${fmt(c.postar)}</span>`;
   if (c.prioridade === 'Urgente') h += `<span class="chip red">Urgente</span>`;
   if (cl.atencao) h += `<span class="chip red">🔴</span>`;
   if (cl.faixa) h += `<span class="chip">${esc(cl.faixa)}</span>`;
@@ -1351,7 +1365,7 @@ const mini = c => `<button class="mini ${classeDD(c)}" data-dcard="${c.id}"><b>$
 function passaFiltro(c, f){
   if (f === 'atrasados') return ABERTO.includes(c.status) && dd(c.prazo) < 0;
   if (f === 'hoje') return ABERTO.includes(c.status) && dd(c.prazo) === 0;
-  if (f === 'aranhoje') return c.postar && dd(c.postar) === 0 && c.status !== 'Postado';
+  if (f === 'aranhoje') return c.postar && dd(c.postar) === 0 && !FECHADO.includes(c.status);
   return !f || c.status === f;
 }
 function tabelaTodos(){
@@ -1714,7 +1728,7 @@ function abrirDD(id){
     <form id="fdd">
       ${c ? '' : `<label for="dc">Cliente<select id="dc" required><option value="">Escolha…</option>${nomes.map(x => `<option value="${x.id}">${esc(x.nome)}</option>`).join('')}</select></label>
       <label for="dn">Nome da entrega<input type="text" id="dn" maxlength="80" placeholder="VÍDEO 07, SHORTS 19-21, THUMB 05…" required></label>`}
-      <div class="grid2"><label for="ds">Etapa<select id="ds">${op(ETAPAS.concat('Cancelado'), v.status)}</select></label><label for="dt">Tipo<select id="dt">${op(TIPOS_E, v.tipo)}</select></label></div>
+      <div class="grid2"><label for="ds">Etapa<select id="ds">${op(ETAPAS_TODAS.concat('Cancelado'), v.status)}</select></label><label for="dt">Tipo<select id="dt">${op(TIPOS_E, v.tipo)}</select></label></div>
       <fieldset class="modo" style="grid-template-columns:1fr"><legend>Responsável</legend><div class="pessoas">${DD.equipe.map(p => `<label><input type="checkbox" name="dr" value="${p.id}" ${(v.resp || []).includes(p.id) ? 'checked' : ''}>${esc(p.nome)}</label>`).join('')}</div></fieldset>
       <div class="grid2"><label for="dz">Prazo<input type="date" id="dz" value="${esc(String(v.prazo || '').slice(0, 10))}"></label><label for="da">Vai ao ar<input type="date" id="da" value="${esc(String(v.postar || '').slice(0, 10))}"></label></div>
       <div class="grid2"><label for="dp">Prioridade<select id="dp"><option value="" ${!v.prioridade ? 'selected' : ''}>—</option><option ${v.prioridade === 'Normal' ? 'selected' : ''}>Normal</option><option ${v.prioridade === 'Urgente' ? 'selected' : ''}>Urgente</option></select></label><label for="dq">Quantidade<input type="text" id="dq" inputmode="numeric" maxlength="2" value="${v.qtd || 1}"></label></div>
@@ -2670,11 +2684,11 @@ function demoApi(path, b){
     if (b.acao === 'naoemeu' || b.acao === 'jafeito') { DEMO_D.cards = DEMO_D.cards.filter(x => x !== c); return wait({ ok: true, status: b.fim || c.status }); }
     if (b.acao === 'naogravou' || b.acao === 'gravou') { c.status = b.acao === 'gravou' ? 'A fazer' : 'Aguardando cliente'; delete c.naogravou; c.obs = '[Painel 27/10 ' + new Date().toTimeString().slice(0, 5) + '] ' + DEMO_D.nome + ' marcou: cliente ' + (b.acao === 'gravou' ? 'mandou o material' : 'ainda não gravou') + (b.texto ? ': ' + b.texto : '') + (c.obs ? '\n' + c.obs : ''); return wait({ ok: true, status: c.status }); }
     if (b.acao === 'passar') { const n = PASSAR.find(x => x[0] === b.para)[1]; c.resp = [n]; c.meu = false; c.obs = '[Painel 26/10 ' + new Date().toTimeString().slice(0, 5) + '] ' + DEMO_D.nome + ' passou para ' + n + (b.texto ? ': ' + b.texto : '') + (c.obs ? '\n' + c.obs : ''); return wait({ ok: true, status: c.status }); }
-    const para = { comecar: 'Fazendo', revisao: 'Em revisão', aprovar: 'Aguardando cliente', ajuste: 'Ajustes', agendei: 'Agendado', postei: 'Postado' }[b.acao];
-    const verbo = { comecar: 'começou', revisao: 'mandou para revisão', aprovar: 'aprovou na revisão', ajuste: 'pediu ajuste', agendei: 'agendou', postei: 'postou' }[b.acao];
+    const para = { comecar: 'Fazendo', revisao: 'Em revisão', aprovar: 'Aguardando cliente', ajuste: 'Ajustes', agendei: 'Agendado', postei: 'Postado', feito: 'Feito' }[b.acao];
+    const verbo = { comecar: 'começou', revisao: 'mandou para revisão', aprovar: 'aprovou na revisão', ajuste: 'pediu ajuste', agendei: 'agendou', postei: 'postou', feito: 'marcou como feito' }[b.acao];
     c.status = para; c.obs = '[Painel 26/10 ' + new Date().toTimeString().slice(0, 5) + '] ' + DEMO_D.nome + ' ' + verbo + (b.texto ? ': ' + b.texto : '') + (c.obs ? '\n' + c.obs : '');
     if (b.acao === 'revisao') c.link = b.link;
-    if (para === 'Postado') DEMO_D.cards = DEMO_D.cards.filter(x => x !== c);
+    if (para === 'Postado' || para === 'Feito') DEMO_D.cards = DEMO_D.cards.filter(x => x !== c);
     return wait({ ok: true, status: para });
   }
 }

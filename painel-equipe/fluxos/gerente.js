@@ -104,7 +104,7 @@ for (const it of $('Cards da Gerente').all()) for (const p of (it.json.results |
   const fim = (txt(pr['Concluído em']) || txt(pr['Postado em']) || '').slice(0, 19);
   cards.push({ criado: p.created_time, status: txt(pr['Status']), fim, prazo: txt(pr['Prazo']).slice(0, 10) });
 }
-const ENTREGUE = ['Aprovado', 'Agendado', 'Postado'];
+const ENTREGUE = ['Aprovado', 'Feito', 'Agendado', 'Postado'];
 const media = a => a.length ? a.reduce((x, y) => x + y, 0) / a.length : null;
 const periodo = dias => {
   const desde = agora.minus({ days: dias - 1 }).toISODate();

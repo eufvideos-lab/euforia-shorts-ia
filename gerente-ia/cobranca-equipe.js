@@ -132,7 +132,7 @@ const vencidos = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, config
   sendHeaders: true, headerParameters: { parameters: [{ name: 'Notion-Version', value: '2022-06-28' }] }, sendBody: true, specifyBody: 'json',
   jsonBody: `={{ JSON.stringify({ page_size: 100, sorts: [{ property: 'Prazo', direction: 'ascending' }], filter: { and: [
     { property: 'Prazo', date: { before: $now.setZone('America/Recife').toISODate() } },
-    { property: 'Status', select: { does_not_equal: 'Postado' } }, { property: 'Status', select: { does_not_equal: 'Cancelado' } },
+    { property: 'Status', select: { does_not_equal: 'Postado' } }, { property: 'Status', select: { does_not_equal: 'Feito' } }, { property: 'Status', select: { does_not_equal: 'Cancelado' } },
     { property: 'Status', select: { does_not_equal: 'Aprovado' } }, { property: 'Status', select: { does_not_equal: 'Agendado' } },
     { property: 'Status', select: { does_not_equal: 'Aguardando cliente' } },
     { or: [ { property: 'Responsável', relation: { contains: '3ea98c0c-dde0-8129-9709-cf901fac7275' } }, { property: 'Responsável', relation: { contains: '3ea98c0c-dde0-812d-9cb4-c41ce70df4ae' } } ] } ] } }) }}`,

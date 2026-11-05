@@ -77,7 +77,7 @@ if (!ficha.id || !nome || ficha.object !== 'page' || ['Encerrado'].includes(situ
 
 const agora = DateTime.now().setZone(Z);
 const hoje = agora.toISODate();
-const COL = { 'A fazer': 'afazer', 'Fazendo': 'producao', 'Em revisão': 'producao', 'Aguardando cliente': 'aprovar', 'Ajustes': 'ajuste', 'Aprovado': 'aprovado', 'Agendado': 'aprovado', 'Postado': 'publicado' };
+const COL = { 'A fazer': 'afazer', 'Fazendo': 'producao', 'Em revisão': 'producao', 'Aguardando cliente': 'aprovar', 'Ajustes': 'ajuste', 'Aprovado': 'aprovado', 'Agendado': 'aprovado', 'Feito': 'aprovado', 'Postado': 'publicado' };
 const ESCONDER = ['Roteiro', 'Copy', 'Outro', 'Limpeza de canal'];
 const TIPO = { 'Vídeo longo': 'Longo', 'Shorts': 'Short', 'Podcast': 'Podcast', 'Carrossel': 'Carrossel', 'Thumbnail': 'Thumb', 'Arte': 'Arte', 'Banner': 'Banner', 'ID visual': 'Identidade visual', 'Página': 'Página', 'Funil': 'Funil', 'Blog': 'Blog' };
 const fmtData = iso => iso ? DateTime.fromISO(iso, { zone: Z }).setLocale('pt-BR').toFormat("ccc, dd/MM") : '';
@@ -94,11 +94,15 @@ for (const it of $('Entregas do cliente').all()) for (const p of (it.json.result
   const postarEm = txt(pr['Postar em']);
   const postadoEm = txt(pr['Postado em']);
   if (col === 'publicado' && (postadoEm || postarEm) && (postadoEm || postarEm) < agora.minus({ days: 45 }).toISODate()) continue;
+  // Feito (05/11/2026): entregue e não vai ao ar (roteiro, página...). Aparece como entregue por 45 dias.
+  const concluidoEm = txt(pr['Concluído em']);
+  if (status === 'Feito' && concluidoEm && concluidoEm < agora.minus({ days: 45 }).toISODate()) continue;
   const linkArq = txt(pr['Link do arquivo']);
   const linkPost = txt(pr['Link da postagem']);
   const qtd = (pr['Quantidade'] || {}).number || 1;
   let info = '';
   if (col === 'publicado') info = 'Publicado ' + (postadoEm ? fmtData(postadoEm) : (postarEm ? fmtData(postarEm) : ''));
+  else if (status === 'Feito') info = 'Entregue' + (concluidoEm ? ' ' + fmtData(concluidoEm) : '');
   else if (col === 'aprovado') info = postarEm ? 'Vai ao ar ' + fmtData(postarEm) : 'Aprovado';
   else if (postarEm) info = 'Previsto para ir ao ar ' + fmtData(postarEm);
   cards.push({ id: p.id, t: limparTitulo(txt(pr['Entrega'])), tipo: TIPO[tipo] || tipo || 'Entrega', qtd, col, info,

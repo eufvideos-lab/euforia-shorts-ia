@@ -19,7 +19,7 @@ const u = String(b.u || '').toLowerCase();
 const hex = v => { const s = String(v || '').replace(/-/g, '').toLowerCase(); return /^[0-9a-f]{32}$/.test(s) ? s : ''; };
 const data = v => /^\\d{4}-\\d{2}-\\d{2}$/.test(String(v || '')) ? String(v) : '';
 const url = v => { const s = String(v || '').trim().slice(0, 500); return /^https:\\/\\/[^\\s]+$/.test(s) ? s : ''; };
-const STATUS = ['A fazer', 'Fazendo', 'Em revisão', 'Ajustes', 'Aguardando cliente', 'Aprovado', 'Agendado', 'Postado', 'Cancelado'];
+const STATUS = ['A fazer', 'Fazendo', 'Em revisão', 'Ajustes', 'Aguardando cliente', 'Aprovado', 'Feito', 'Agendado', 'Postado', 'Cancelado'];
 const TIPOS = ['Vídeo longo', 'Shorts', 'Podcast', 'Carrossel', 'Thumbnail', 'Arte', 'Banner', 'ID visual', 'Limpeza de canal', 'Página', 'Funil', 'Blog', 'Roteiro', 'Copy', 'Apresentação', 'Relatório', 'Estratégia', 'Insta-Blindado', 'Outro'];
 const c = b.campos || {};
 const tem = k => Object.prototype.hasOwnProperty.call(c, k);
@@ -89,7 +89,7 @@ const caminho = switchCase({ version: 3.2, config: { name: 'O que fazer', parame
 const entregas = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, config: { name: 'Cards abertos e da semana', credentials: NOTION, parameters: {
   method: 'POST', url: 'https://api.notion.com/v1/databases/74b3076a325749e3bac4ba6659215e48/query', authentication: 'genericCredentialType', genericAuthType: 'httpHeaderAuth',
   sendHeaders: true, headerParameters: NOTION_HDR, sendBody: true, specifyBody: 'json',
-  jsonBody: '={{ JSON.stringify({ filter: { and: [{ property: "Status", select: { does_not_equal: "Cancelado" } }, { or: [{ property: "Status", select: { does_not_equal: "Postado" } }, { property: "Postado em", date: { on_or_after: $json.semana } }] }] }, sorts: [{ property: "Prazo", direction: "ascending" }], page_size: 100 }) }}',
+  jsonBody: '={{ JSON.stringify({ filter: { and: [{ property: "Status", select: { does_not_equal: "Cancelado" } }, { or: [{ and: [{ property: "Status", select: { does_not_equal: "Postado" } }, { property: "Status", select: { does_not_equal: "Feito" } }] }, { property: "Postado em", date: { on_or_after: $json.semana } }, { and: [{ property: "Status", select: { equals: "Feito" } }, { property: "Concluído em", date: { on_or_after: $json.semana } }] }] }] }, sorts: [{ property: "Prazo", direction: "ascending" }], page_size: 100 }) }}',
   options: PAGINAR } } });
 
 const clientes = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, config: { name: 'Clientes ativos', credentials: NOTION, executeOnce: true, parameters: {
@@ -174,6 +174,7 @@ if (c.resp !== undefined) {
 }
 const agora = DateTime.now().setZone(Z);
 if (c.status === 'Postado' && txt(cp['Status']) !== 'Postado' && !txt(cp['Postado em'])) props['Postado em'] = { date: { start: agora.toISODate() } };
+if (c.status === 'Feito' && txt(cp['Status']) !== 'Feito' && !txt(cp['Concluído em'])) props['Concluído em'] = { date: { start: agora.toISODate() } };
 if (!mud.length && !p.nota) return [{ json: { ok: false, resposta: { ok: false, motivo: 'nada' } } }];
 const linha = '[Painel ' + agora.toFormat('dd/MM HH:mm') + '] ' + quem + (mud.length ? ' mudou ' + mud.join('; ') : ' anotou') + (p.nota ? ': ' + p.nota : '');
 const obs = txt(cp['Obs']);
@@ -265,7 +266,7 @@ const fichas = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, config: 
 const doAno = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, config: { name: 'Entregas do ano', credentials: NOTION, executeOnce: true, parameters: {
   method: 'POST', url: 'https://api.notion.com/v1/databases/74b3076a325749e3bac4ba6659215e48/query', authentication: 'genericCredentialType', genericAuthType: 'httpHeaderAuth',
   sendHeaders: true, headerParameters: NOTION_HDR, sendBody: true, specifyBody: 'json',
-  jsonBody: '={{ JSON.stringify({ filter: { and: [{ property: "Status", select: { does_not_equal: "Cancelado" } }, { or: [{ property: "Status", select: { does_not_equal: "Postado" } }, { property: "Postado em", date: { on_or_after: $("Validar acesso").first().json.ano } }] }] }, sorts: [{ property: "Postado em", direction: "descending" }], page_size: 100 }) }}',
+  jsonBody: '={{ JSON.stringify({ filter: { and: [{ property: "Status", select: { does_not_equal: "Cancelado" } }, { or: [{ and: [{ property: "Status", select: { does_not_equal: "Postado" } }, { property: "Status", select: { does_not_equal: "Feito" } }] }, { property: "Postado em", date: { on_or_after: $("Validar acesso").first().json.ano } }, { and: [{ property: "Status", select: { equals: "Feito" } }, { property: "Concluído em", date: { on_or_after: $("Validar acesso").first().json.ano } }] }] }] }, sorts: [{ property: "Postado em", direction: "descending" }], page_size: 100 }) }}',
   options: { pagination: { pagination: { paginationMode: 'updateAParameterInEachRequest',
     parameters: { parameters: [{ type: 'body', name: 'start_cursor', value: '={{ $response.body.next_cursor }}' }] },
     paginationCompleteWhen: 'other', completeExpression: '={{ !$response.body.has_more }}', limitPagesFetched: true, maxRequests: 50 } } } } } });

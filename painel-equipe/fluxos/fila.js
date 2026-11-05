@@ -22,12 +22,12 @@ const r = $input.first().json || {};
 const ok = !!r.token && r.token === p.u && r.ativo === true && String(r.pin) === p.pin;
 const hoje = DateTime.now().setZone('America/Recife');
 const amanha = hoje.plus({ days: hoje.weekday === 5 ? 3 : 1 }).toISODate();
-const naoFechado = ['Postado', 'Cancelado', 'Aprovado', 'Agendado'].map(s => ({ property: 'Status', select: { does_not_equal: s } }));
+const naoFechado = ['Postado', 'Feito', 'Cancelado', 'Aprovado', 'Agendado'].map(s => ({ property: 'Status', select: { does_not_equal: s } }));
 // Fila de demandas: cards abertos sem Responsável. Quem é de edição escolhe e aperta "Pegar".
-const livre = { and: [{ property: 'Responsável', relation: { is_empty: true } }, ...['Postado', 'Cancelado', 'Aprovado', 'Agendado', 'Em revisão', 'Aguardando cliente'].map(s => ({ property: 'Status', select: { does_not_equal: s } }))] };
+const livre = { and: [{ property: 'Responsável', relation: { is_empty: true } }, ...['Postado', 'Feito', 'Cancelado', 'Aprovado', 'Agendado', 'Em revisão', 'Aguardando cliente'].map(s => ({ property: 'Status', select: { does_not_equal: s } }))] };
 let filtro = null;
 if (ok) {
-  if (r.papel === 'teste') filtro = { and: [{ property: 'Entrega', title: { contains: 'TESTE PAINEL' } }, { property: 'Status', select: { does_not_equal: 'Postado' } }, { property: 'Status', select: { does_not_equal: 'Cancelado' } }] };
+  if (r.papel === 'teste') filtro = { and: [{ property: 'Entrega', title: { contains: 'TESTE PAINEL' } }, { property: 'Status', select: { does_not_equal: 'Postado' } }, { property: 'Status', select: { does_not_equal: 'Feito' } }, { property: 'Status', select: { does_not_equal: 'Cancelado' } }] };
   else if (['revisor', 'conferente', 'diretor'].includes(r.papel)) filtro = { or: [
     { and: [{ property: 'Responsável', relation: { contains: r.ficha } }, ...naoFechado] },
     { property: 'Status', select: { equals: 'Em revisão' } },
