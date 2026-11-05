@@ -1,0 +1,672 @@
+{
+ "name": "Portal | Dados do cliente (V1)",
+ "nodes": [
+  {
+   "id": "69db57a2-3898-4a3e-ae97-66dd25537d0d",
+   "name": "Pedir dados do portal",
+   "type": "n8n-nodes-base.webhook",
+   "typeVersion": 2.1,
+   "position": [
+    0,
+    0
+   ],
+   "parameters": {
+    "httpMethod": "GET",
+    "path": "euforia-portal-dados",
+    "responseMode": "responseNode",
+    "options": {
+     "allowedOrigins": "https://lp.grupoeuforia.tech,https://grupoeuforia.com.br,https://www.grupoeuforia.com.br"
+    }
+   },
+   "webhookId": "e66afaaf-a824-4209-b1e2-9d513b8f303c"
+  },
+  {
+   "id": "f1539f55-422c-497c-a0ab-0b2bc997c38e",
+   "name": "Ler cliente do link",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    224,
+    0
+   ],
+   "parameters": {
+    "jsCode": "const q = ($input.first().json.query) || {};\nconst id = String(q.a || '').replace(/-/g, '').toLowerCase();\nreturn [{ json: { id: /^[0-9a-f]{32}$/.test(id) ? id : '00000000000000000000000000000000', fresco: String(q.fresco || '') === '1' ? 'sim' : 'nao' } }];\n"
+   }
+  },
+  {
+   "id": "0781df08-6173-4b95-a5ff-49fa64f35dec",
+   "name": "Ler cache",
+   "type": "n8n-nodes-base.postgres",
+   "typeVersion": 2.6,
+   "position": [
+    448,
+    0
+   ],
+   "parameters": {
+    "operation": "executeQuery",
+    "query": "SELECT dados FROM portal_cache WHERE chave = $1 AND $2 <> 'sim' AND em > now() - interval '5 minutes';",
+    "options": {
+     "queryReplacement": "={{ [ $(\"Ler cliente do link\").first().json.id, $(\"Ler cliente do link\").first().json.fresco ] }}"
+    }
+   },
+   "credentials": {
+    "postgres": {
+     "id": "2QBGXkxxr41tWTQw",
+     "name": "Postgres account"
+    }
+   },
+   "alwaysOutputData": true,
+   "onError": "continueRegularOutput"
+  },
+  {
+   "id": "e44c5d5c-9d55-4c99-a10a-ced1013e9951",
+   "name": "Tem cache?",
+   "type": "n8n-nodes-base.if",
+   "typeVersion": 2.2,
+   "position": [
+    672,
+    0
+   ],
+   "parameters": {
+    "conditions": {
+     "options": {
+      "caseSensitive": true,
+      "leftValue": "",
+      "typeValidation": "loose"
+     },
+     "conditions": [
+      {
+       "leftValue": "={{ !!$json.dados }}",
+       "operator": {
+        "type": "boolean",
+        "operation": "true",
+        "singleValue": true
+       },
+       "rightValue": ""
+      }
+     ],
+     "combinator": "and"
+    }
+   }
+  },
+  {
+   "id": "2e4ffb23-91cf-4500-ac77-348b8fb698a7",
+   "name": "Acesso da pessoa",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.4,
+   "position": [
+    896,
+    0
+   ],
+   "parameters": {
+    "method": "GET",
+    "url": "=https://api.notion.com/v1/pages/{{ $(\"Ler cliente do link\").first().json.id }}",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "sendHeaders": true,
+    "headerParameters": {
+     "parameters": [
+      {
+       "name": "Notion-Version",
+       "value": "2022-06-28"
+      }
+     ]
+    },
+    "options": {}
+   },
+   "credentials": {
+    "httpHeaderAuth": {
+     "id": "VYOze6gUMvjy3QXF",
+     "name": "Notion Euforia"
+    }
+   },
+   "alwaysOutputData": true,
+   "onError": "continueRegularOutput"
+  },
+  {
+   "id": "8b1929e0-3f95-4b37-a477-9d4800fb2c11",
+   "name": "Conferir acesso",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    1120,
+    0
+   ],
+   "parameters": {
+    "jsCode": "const a = $input.first().json || {};\nconst pr = a.properties || {};\nconst txt = v => { if (!v) return ''; const t = v.title || v.rich_text; if (t) return t.map(x => x.plain_text).join('').trim(); if (v.select) return v.select.name; return ''; };\nconst valido = a.object === 'page' && !a.archived && !a.in_trash && ((a.parent || {}).database_id || '') === 'a95cdc41-6645-47f5-8c0f-99a85e31fb4e' && (pr['Ativo'] || {}).checkbox === true;\nconst cliente = valido ? ((((pr['Cliente'] || {}).relation || [])[0] || {}).id || '').replace(/-/g, '') : '';\nconst papel = txt(pr['Papel']) || 'Equipe';\nreturn [{ json: { id: /^[0-9a-f]{32}$/.test(cliente) ? cliente : '00000000000000000000000000000000', pessoa: valido ? txt(pr['Pessoa']).replace(/\\s*\\(.*?\\)\\s*$/, '') : '', papel, podeAprovar: ['Dono', 'Sócio'].includes(papel), fone8: String((pr['WhatsApp'] || {}).phone_number || '').replace(/[^0-9]/g, '').slice(-8) } }];\n"
+   }
+  },
+  {
+   "id": "b578a71b-8460-4f27-a961-2ae086490ca3",
+   "name": "Ficha do cliente",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.4,
+   "position": [
+    1344,
+    0
+   ],
+   "parameters": {
+    "method": "GET",
+    "url": "=https://api.notion.com/v1/pages/{{ $(\"Conferir acesso\").first().json.id }}",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "sendHeaders": true,
+    "headerParameters": {
+     "parameters": [
+      {
+       "name": "Notion-Version",
+       "value": "2022-06-28"
+      }
+     ]
+    },
+    "options": {}
+   },
+   "credentials": {
+    "httpHeaderAuth": {
+     "id": "VYOze6gUMvjy3QXF",
+     "name": "Notion Euforia"
+    }
+   },
+   "alwaysOutputData": true,
+   "onError": "continueRegularOutput"
+  },
+  {
+   "id": "f96251ad-b3a6-491f-a67e-82bda84faade",
+   "name": "Entregas do cliente",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.4,
+   "position": [
+    1568,
+    0
+   ],
+   "parameters": {
+    "method": "POST",
+    "url": "https://api.notion.com/v1/databases/74b3076a325749e3bac4ba6659215e48/query",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "sendHeaders": true,
+    "headerParameters": {
+     "parameters": [
+      {
+       "name": "Notion-Version",
+       "value": "2022-06-28"
+      }
+     ]
+    },
+    "sendBody": true,
+    "specifyBody": "json",
+    "jsonBody": "={{ JSON.stringify({ filter: { and: [ { property: \"Cliente\", relation: { contains: $(\"Conferir acesso\").first().json.id } }, { property: \"Status\", select: { does_not_equal: \"Cancelado\" } } ] }, sorts: [{ timestamp: \"last_edited_time\", direction: \"descending\" }], page_size: 100 }) }}",
+    "options": {
+     "pagination": {
+      "pagination": {
+       "paginationMode": "updateAParameterInEachRequest",
+       "parameters": {
+        "parameters": [
+         {
+          "type": "body",
+          "name": "start_cursor",
+          "value": "={{ $response.body.next_cursor }}"
+         }
+        ]
+       },
+       "paginationCompleteWhen": "other",
+       "completeExpression": "={{ !$response.body.has_more }}",
+       "limitPagesFetched": true,
+       "maxRequests": 10
+      }
+     }
+    }
+   },
+   "credentials": {
+    "httpHeaderAuth": {
+     "id": "VYOze6gUMvjy3QXF",
+     "name": "Notion Euforia"
+    }
+   },
+   "alwaysOutputData": true,
+   "onError": "continueRegularOutput",
+   "executeOnce": true
+  },
+  {
+   "id": "7a66f0bf-263d-4075-ae20-5cd6bbc4bfcd",
+   "name": "Roteiros do cliente",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.4,
+   "position": [
+    1792,
+    0
+   ],
+   "parameters": {
+    "method": "POST",
+    "url": "https://api.notion.com/v1/databases/076dd702dd1844bab3ca03a536d4a21e/query",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "sendHeaders": true,
+    "headerParameters": {
+     "parameters": [
+      {
+       "name": "Notion-Version",
+       "value": "2022-06-28"
+      }
+     ]
+    },
+    "sendBody": true,
+    "specifyBody": "json",
+    "jsonBody": "={{ JSON.stringify({ filter: { and: [ { property: \"Cliente\", relation: { contains: $(\"Conferir acesso\").first().json.id } }, { property: \"Tipo\", select: { equals: \"Roteiro\" } } ] }, sorts: [{ property: \"Nº\", direction: \"ascending\" }], page_size: 100 }) }}",
+    "options": {
+     "pagination": {
+      "pagination": {
+       "paginationMode": "updateAParameterInEachRequest",
+       "parameters": {
+        "parameters": [
+         {
+          "type": "body",
+          "name": "start_cursor",
+          "value": "={{ $response.body.next_cursor }}"
+         }
+        ]
+       },
+       "paginationCompleteWhen": "other",
+       "completeExpression": "={{ !$response.body.has_more }}",
+       "limitPagesFetched": true,
+       "maxRequests": 10
+      }
+     }
+    }
+   },
+   "credentials": {
+    "httpHeaderAuth": {
+     "id": "VYOze6gUMvjy3QXF",
+     "name": "Notion Euforia"
+    }
+   },
+   "alwaysOutputData": true,
+   "onError": "continueRegularOutput",
+   "executeOnce": true
+  },
+  {
+   "id": "2deec475-736f-4830-a7cc-4a06c08caf6a",
+   "name": "Temas quentes do cliente",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.4,
+   "position": [
+    2016,
+    0
+   ],
+   "parameters": {
+    "method": "POST",
+    "url": "https://api.notion.com/v1/databases/c963e3f9e0064f1ca7be64cdc55e868d/query",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "sendHeaders": true,
+    "headerParameters": {
+     "parameters": [
+      {
+       "name": "Notion-Version",
+       "value": "2022-06-28"
+      }
+     ]
+    },
+    "sendBody": true,
+    "specifyBody": "json",
+    "jsonBody": "={{ JSON.stringify({ filter: { and: [ { property: \"Cliente\", relation: { contains: $(\"Conferir acesso\").first().json.id } }, { property: \"Status\", select: { does_not_equal: \"Expirado\" } }, { or: [ { property: \"Semana\", date: { on_or_after: $now.setZone(\"America/Recife\").minus({ days: 21 }).toISODate() } }, { property: \"Pedido em\", date: { on_or_after: $now.setZone(\"America/Recife\").minus({ days: 60 }).toISODate() } } ] } ] }, sorts: [{ property: \"Semana\", direction: \"descending\" }], page_size: 50 }) }}",
+    "options": {}
+   },
+   "credentials": {
+    "httpHeaderAuth": {
+     "id": "VYOze6gUMvjy3QXF",
+     "name": "Notion Euforia"
+    }
+   },
+   "alwaysOutputData": true,
+   "onError": "continueRegularOutput",
+   "executeOnce": true
+  },
+  {
+   "id": "7a450684-5f11-4b4b-aba9-121603ff5628",
+   "name": "Promessas do cliente",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.4,
+   "position": [
+    2240,
+    0
+   ],
+   "parameters": {
+    "method": "POST",
+    "url": "https://api.notion.com/v1/databases/824c669471e5424d8c846936a63c16d4/query",
+    "authentication": "genericCredentialType",
+    "genericAuthType": "httpHeaderAuth",
+    "sendHeaders": true,
+    "headerParameters": {
+     "parameters": [
+      {
+       "name": "Notion-Version",
+       "value": "2022-06-28"
+      }
+     ]
+    },
+    "sendBody": true,
+    "specifyBody": "json",
+    "jsonBody": "={{ JSON.stringify({ filter: { and: [ { property: \"Cliente\", relation: { contains: $(\"Conferir acesso\").first().json.id } }, { property: \"Status\", select: { does_not_equal: \"Cancelado\" } }, { property: \"Quando\", date: { on_or_after: $now.setZone(\"America/Recife\").minus({ days: 60 }).toISODate() } } ] }, sorts: [{ property: \"Quando\", direction: \"ascending\" }], page_size: 100 }) }}",
+    "options": {}
+   },
+   "credentials": {
+    "httpHeaderAuth": {
+     "id": "VYOze6gUMvjy3QXF",
+     "name": "Notion Euforia"
+    }
+   },
+   "alwaysOutputData": true,
+   "onError": "continueRegularOutput",
+   "executeOnce": true
+  },
+  {
+   "id": "7ac7b7b7-1ba0-43cc-a95c-6ca9ca882b36",
+   "name": "Juntar fontes",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    2464,
+    0
+   ],
+   "parameters": {
+    "jsCode": "const enxuto = p => ({ id: p.id, last_edited_time: p.last_edited_time, properties: p.properties || {} });\nconst lista = nome => { const out = []; for (const it of $(nome).all()) for (const p of (it.json.results || [])) out.push(enxuto(p)); return out; };\nconst f = $('Ficha do cliente').first().json || {};\nconst acesso = $('Conferir acesso').first().json;\nconst dados = {\n  acesso,\n  ficha: f.object === 'page' ? { id: f.id, object: f.object, properties: f.properties || {} } : {},\n  entregas: lista('Entregas do cliente'), roteiros: lista('Roteiros do cliente'),\n  temas: lista('Temas quentes do cliente'), promessas: lista('Promessas do cliente') };\n// Só guarda quando o acesso é válido e a leitura do Notion veio inteira (erro do Notion não fica preso no cache).\nconst leuTudo = ['Entregas do cliente', 'Roteiros do cliente', 'Temas quentes do cliente', 'Promessas do cliente'].every(n => $(n).all().every(i => Array.isArray(i.json.results)));\nconst cachear = acesso.id !== '00000000000000000000000000000000' && f.object === 'page' && leuTudo;\nreturn [{ json: { chave: $('Ler cliente do link').first().json.id, cachear: cachear ? 'sim' : 'nao', dados: JSON.stringify(dados) } }];\n"
+   }
+  },
+  {
+   "id": "94098aa0-ad77-4b3e-ab84-d1d19c6ba7e5",
+   "name": "Salvar cache",
+   "type": "n8n-nodes-base.postgres",
+   "typeVersion": 2.6,
+   "position": [
+    2688,
+    0
+   ],
+   "parameters": {
+    "operation": "executeQuery",
+    "query": "WITH g AS (INSERT INTO portal_cache (chave, dados, em) SELECT $1, $3::jsonb, now() WHERE $2 = 'sim' ON CONFLICT (chave) DO UPDATE SET dados = EXCLUDED.dados, em = EXCLUDED.em RETURNING 1) SELECT $3::jsonb AS dados, (SELECT count(*) FROM g) AS guardou;",
+    "options": {
+     "queryReplacement": "={{ [ $json.chave, $json.cachear, $json.dados ] }}"
+    }
+   },
+   "credentials": {
+    "postgres": {
+     "id": "2QBGXkxxr41tWTQw",
+     "name": "Postgres account"
+    }
+   }
+  },
+  {
+   "id": "71e9a396-fc35-45a9-ad79-a42857255300",
+   "name": "Fontes do portal",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    2912,
+    0
+   ],
+   "parameters": {
+    "jsCode": "let d = $input.first().json.dados;\nif (typeof d === 'string') d = JSON.parse(d);\nreturn [{ json: d || {} }];\n"
+   }
+  },
+  {
+   "id": "9e14a400-0bc5-4bab-a4d1-96d4758d5567",
+   "name": "Mensagens do grupo",
+   "type": "n8n-nodes-base.postgres",
+   "typeVersion": 2.6,
+   "position": [
+    3136,
+    0
+   ],
+   "parameters": {
+    "operation": "executeQuery",
+    "query": "SELECT DISTINCT ON (m.msg_id) m.msg_id, m.autor_jid, m.autor_nome, m.from_me, m.origem, m.tipo, m.texto, m.enviado_em, (SELECT count(DISTINCT x.chat_id) FROM mensagens x WHERE x.autor_jid = m.autor_jid AND x.is_group AND x.enviado_em > now() - interval '60 days') AS grupos FROM mensagens m WHERE m.chat_id = $1 AND m.texto IS NOT NULL AND m.texto <> '' AND coalesce(m.tipo, '') <> 'reactionMessage' AND m.enviado_em > now() - interval '45 days' ORDER BY m.msg_id, m.from_me DESC, m.enviado_em DESC;",
+    "options": {
+     "queryReplacement": "={{ [ (((($(\"Fontes do portal\").first().json.ficha || {}).properties || {})[\"Grupo WhatsApp (ID)\"] || {}).rich_text || []).map(t => t.plain_text).join(\"\").trim() || \"nenhum\" ] }}"
+    }
+   },
+   "credentials": {
+    "postgres": {
+     "id": "2QBGXkxxr41tWTQw",
+     "name": "Postgres account"
+    }
+   },
+   "alwaysOutputData": true,
+   "onError": "continueRegularOutput",
+   "executeOnce": true
+  },
+  {
+   "id": "0a4b74a4-974b-4aec-adc0-16cf96770813",
+   "name": "Montar dados do portal",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    3360,
+    0
+   ],
+   "parameters": {
+    "jsCode": "const Z = 'America/Recife';\nconst F = $('Fontes do portal').first().json;\nconst fonte = k => [{ json: { results: F[k] || [] } }];\nconst ficha = F.ficha || {};\nconst props = ficha.properties || {};\nconst txt = p => { if (!p) return ''; const a = p.title || p.rich_text; if (a) return a.map(t => t.plain_text).join('').trim(); if (p.select) return p.select ? p.select.name : ''; if (p.date) return p.date ? p.date.start : ''; if (p.url !== undefined) return p.url || ''; if (p.phone_number !== undefined) return p.phone_number || ''; return ''; };\nconst nome = txt(props['Cliente']);\nconst situacao = txt(props['Situação']);\nif (!ficha.id || !nome || ficha.object !== 'page' || ['Encerrado'].includes(situacao)) return [{ json: { resposta: { ok: false, motivo: 'link' } } }];\n\nconst agora = DateTime.now().setZone(Z);\nconst hoje = agora.toISODate();\nconst COL = { 'A fazer': 'afazer', 'Fazendo': 'producao', 'Em revisão': 'producao', 'Aguardando cliente': 'aprovar', 'Ajustes': 'ajuste', 'Aprovado': 'aprovado', 'Agendado': 'aprovado', 'Feito': 'aprovado', 'Postado': 'publicado' };\nconst ESCONDER = ['Roteiro', 'Copy', 'Outro', 'Limpeza de canal'];\nconst TIPO = { 'Vídeo longo': 'Longo', 'Shorts': 'Short', 'Podcast': 'Podcast', 'Carrossel': 'Carrossel', 'Thumbnail': 'Thumb', 'Arte': 'Arte', 'Banner': 'Banner', 'ID visual': 'Identidade visual', 'Página': 'Página', 'Funil': 'Funil', 'Blog': 'Blog' };\nconst fmtData = iso => iso ? DateTime.fromISO(iso, { zone: Z }).setLocale('pt-BR').toFormat(\"ccc, dd/MM\") : '';\nconst limparTitulo = t => { const partes = String(t).split('|').map(s => s.trim()).filter(Boolean); return partes.length > 1 ? partes.slice(1).join(' · ') : String(t).trim(); };\n\nconst cards = [];\nfor (const it of fonte('entregas')) for (const p of (it.json.results || [])) {\n  const pr = p.properties || {};\n  const status = txt(pr['Status']);\n  const tipo = txt(pr['Tipo']);\n  const origem = txt(pr['Origem']);\n  const col = COL[status];\n  if (!col || !TIPO[tipo] || ESCONDER.includes(tipo) || origem === 'Treino (fila reserva)') continue;\n  const postarEm = txt(pr['Postar em']);\n  const postadoEm = txt(pr['Postado em']);\n  if (col === 'publicado' && (postadoEm || postarEm) && (postadoEm || postarEm) < agora.minus({ days: 45 }).toISODate()) continue;\n  // Feito (05/11/2026): entregue e não vai ao ar (roteiro, página...). Aparece como entregue por 45 dias.\n  const concluidoEm = txt(pr['Concluído em']);\n  if (status === 'Feito' && concluidoEm && concluidoEm < agora.minus({ days: 45 }).toISODate()) continue;\n  const linkArq = txt(pr['Link do arquivo']);\n  const linkPost = txt(pr['Link da postagem']);\n  const qtd = (pr['Quantidade'] || {}).number || 1;\n  let info = '';\n  if (col === 'publicado') info = 'Publicado ' + (postadoEm ? fmtData(postadoEm) : (postarEm ? fmtData(postarEm) : ''));\n  else if (status === 'Feito') info = 'Entregue' + (concluidoEm ? ' ' + fmtData(concluidoEm) : '');\n  else if (col === 'aprovado') info = postarEm ? 'Vai ao ar ' + fmtData(postarEm) : 'Aprovado';\n  else if (postarEm) info = 'Previsto para ir ao ar ' + fmtData(postarEm);\n  cards.push({ id: p.id, t: limparTitulo(txt(pr['Entrega'])), tipo: TIPO[tipo] || tipo || 'Entrega', qtd, col, info,\n    link: ['aprovar', 'ajuste', 'aprovado'].includes(col) ? linkArq : (col === 'publicado' ? (linkPost || '') : ''),\n    postarEm, editado: p.last_edited_time });\n}\n\nconst ROT = { '📤 Enviado ao cliente': 'gravar', '👍 Aprovado pelo cliente': 'gravar', '🎬 Gravado': 'gravado' };\nconst rots = [];\nfor (const it of fonte('roteiros')) for (const p of (it.json.results || [])) {\n  const pr = p.properties || {};\n  const st = ROT[txt(pr['Status'])];\n  if (!st) continue;\n  const n = (pr['Nº'] || {}).number;\n  rots.push({ id: p.id, n: n == null ? null : n, t: txt(pr['Título']), status: st });\n}\n\n// Temas quentes (aba do portal). Pedido: 1 por mês. Pronto: o roteiro ligado já foi enviado ao cliente.\nconst QUENTE = { 'Em alta': 1, 'Muito em alta': 2, 'Bombando': 3 };\nconst rotSt = {}; for (const r of rots) rotSt[String(r.id).replace(/-/g, '')] = r.status;\nconst inicioMes = agora.startOf('month').toISODate();\nconst brutos = [];\nfor (const it of fonte('temas')) for (const p of (it.json.results || [])) brutos.push(p);\nconst semanas = brutos.filter(p => txt((p.properties || {})['Status']) === 'Sugerido').map(p => txt((p.properties || {})['Semana'])).filter(Boolean).sort();\nconst ultimaSemana = semanas[semanas.length - 1] || '';\nlet pediuMes = false;\nconst temasOut = [];\nfor (const p of brutos) {\n  const pr = p.properties || {};\n  const st = txt(pr['Status']);\n  const semana = txt(pr['Semana']);\n  const pedidoEm = txt(pr['Pedido em']);\n  if (pedidoEm && pedidoEm >= inicioMes) pediuMes = true;\n  const ligados = ((pr['Roteiro'] || {}).relation || []).map(r => r.id.replace(/-/g, ''));\n  const pronto = st === 'Roteiro pronto' || ligados.some(id => rotSt[id]);\n  const status = pronto ? 'pronto' : (st === 'Pedido pelo cliente' ? 'pedido' : (st === 'Sugerido' && semana === ultimaSemana ? 'livre' : ''));\n  if (!status) continue;\n  temasOut.push({ id: p.id.replace(/-/g, ''), t: txt(pr['Tema']).replace(/^TESTE\\s*·\\s*/, ''), porque: txt(pr['Por que está quente']), gancho: txt(pr['Como entra no conteúdo']),\n    titulo: txt(pr['Título sugerido']), origem: txt(pr['Origem']) || 'Em alta', quente: QUENTE[txt(pr['Calor'])] || 1, status,\n    novo: status === 'livre' && semana >= agora.minus({ days: 7 }).toISODate() });\n}\ntemasOut.sort((a, b) => ({ livre: 0, pedido: 1, pronto: 2 }[a.status] - { livre: 0, pedido: 1, pronto: 2 }[b.status]) || b.quente - a.quente);\n\nconst acc = F.acesso || {};\nconst fone = acc.fone8 || (acc.papel === 'Dono' ? String(txt(props['WhatsApp do cliente'])).replace(/[^0-9]/g, '').slice(-8) : '');\nconst PREFIXO = '💬 Pelo portal';\nconst MIDIA = { imageMessage: '📷 Imagem', audioMessage: '🎤 Áudio', videoMessage: '🎬 Vídeo', documentMessage: '📄 Documento', documentWithCaptionMessage: '📄 Documento', stickerMessage: '🙂 Figurinha' };\nconst vistos = new Set();\nconst msgs = $('Mensagens do grupo').all().map(i => i.json).filter(m => m.msg_id && m.texto)\n  .sort((a, b) => new Date(a.enviado_em) - new Date(b.enviado_em))\n  .filter(m => { const k = String(m.texto).slice(0, 80) + '|' + Math.round(new Date(m.enviado_em) / 60000); if (vistos.has(k)) return false; vistos.add(k); return true; })\n  .slice(-60)\n  .map(m => {\n    let t = MIDIA[m.tipo] || String(m.texto);\n    const equipe = m.from_me || Number(m.grupos) >= 3 || /euforia|suporte/i.test(m.autor_nome || '');\n    let eu = !equipe && !!fone && String(m.autor_jid || '').replace(/@.*/, '').replace(/[^0-9]/g, '').slice(-8) === fone;\n    let autor = m.autor_nome || 'Cliente';\n    if (String(m.texto).startsWith(PREFIXO)) { autor = String(m.texto).slice(PREFIXO.length, String(m.texto).indexOf(':')).replace(/^[,\\s]+/, '').trim(); eu = autor === acc.pessoa; t = String(m.texto).slice(String(m.texto).indexOf(':') + 1).trim(); }\n    const doCliente = !equipe || String(m.texto).startsWith(PREFIXO);\n    const quem = eu ? 'você' : (doCliente ? autor : ((m.from_me && m.origem === 'suporte') || /suporte/i.test(m.autor_nome || '') ? 'Érica · suporte' : (m.from_me ? 'Equipe Euforia' : (m.autor_nome || 'Equipe Euforia'))));\n    return { eu, cli: doCliente, t: t.slice(0, 2000), quem, em: DateTime.fromJSDate(new Date(m.enviado_em)).setZone(Z).setLocale('pt-BR').toFormat(\"dd/MM HH:mm\") };\n  });\n\nconst aprovar = cards.filter(c => c.col === 'aprovar');\nconst proxPub = cards.filter(c => c.col === 'aprovado' && c.postarEm && c.postarEm >= hoje).sort((a, b) => a.postarEm.localeCompare(b.postarEm))[0] || null;\nconst proxGravar = rots.find(r => r.status === 'gravar') || null;\nconst feed = cards.slice().sort((a, b) => String(b.editado).localeCompare(String(a.editado))).slice(0, 5).map(c => ({\n  em: DateTime.fromISO(c.editado).setZone(Z).setLocale('pt-BR').toFormat('dd/MM HH:mm'),\n  t: c.t, col: c.col }));\n// Cronograma (Fase 4): o cliente vê o que foi combinado e quando. Nada de nome da equipe nem observação interna.\nconst cronograma = [];\nfor (const it of fonte('promessas')) for (const p of (it.json.results || [])) {\n  const pr = p.properties || {};\n  const st = txt(pr['Status']), quando = txt(pr['Quando']), marco = txt(pr['Marco']);\n  if (!marco || !quando || st === 'Cancelado') continue;\n  const dia = quando.slice(0, 10);\n  const depende = !!(pr['Depende do cliente'] || {}).checkbox;\n  const estado = st === 'Cumprido' ? 'feito' : depende ? 'suavez' : dia >= hoje ? 'previsto' : 'finalizando';\n  // Decisão da diretoria (04/11): promessa vencida sem estar feita some do portal até a equipe pôr uma data nova.\n  if (estado === 'finalizando' || (estado === 'suavez' && dia < hoje)) continue;\n  cronograma.push({ t: marco.replace(/^TESTE\\s*·\\s*/, ''), dia, quando: DateTime.fromISO(quando, { zone: Z }).setLocale('pt-BR').toFormat(quando.length > 10 ? \"ccc, dd/MM 'às' HH'h'mm\" : 'ccc, dd/MM'),\n    mes: DateTime.fromISO(dia, { zone: Z }).setLocale('pt-BR').toFormat('LLLL'), estado, hoje: dia === hoje });\n}\ncronograma.sort((a, b) => a.dia.localeCompare(b.dia));\nconst feitosCr = cronograma.filter(c => c.estado === 'feito').length;\nconst proxMarco = cronograma.find(c => c.estado !== 'feito' && c.dia >= hoje) || null;\nconst alinh = txt(props['Próximo alinhamento']);\nconst resposta = { ok: true, nome, primeiro: (acc.pessoa || nome).split(' ')[0], pessoa: acc.pessoa, papel: acc.papel, podeAprovar: acc.podeAprovar, fase: txt(props['Fase']).replace(/^[0-9]+\\.\\s*/, ''),\n  hoje: agora.setLocale('pt-BR').toFormat(\"cccc, dd 'de' LLLL\"),\n  proximaCall: alinh && alinh >= hoje ? DateTime.fromISO(alinh, { zone: Z }).setLocale('pt-BR').toFormat(alinh.length > 10 ? \"cccc, dd/MM 'às' HH'h'mm\" : 'cccc, dd/MM') : '',\n  temGrupo: !!txt(props['Grupo WhatsApp (ID)']), temDrive: !!txt(props['Drive']),\n  resumo: { aprovar: aprovar.length, proxPub: proxPub ? { t: proxPub.t, quando: fmtData(proxPub.postarEm) } : null, proxGravar },\n  cards: cards.map(({ editado, ...c }) => c), roteiros: rots, mensagens: msgs, feed,\n  temas: temasOut, temasSemana: ultimaSemana ? DateTime.fromISO(ultimaSemana, { zone: Z }).setLocale('pt-BR').toFormat('cccc, dd/MM') : '', temaDisponivel: !pediuMes,\n  cronograma: cronograma.map(({ dia, ...c }) => c), cronoPct: cronograma.length ? Math.round(feitosCr / cronograma.length * 100) : null,\n  proxMarco: proxMarco ? { t: proxMarco.t, quando: proxMarco.quando } : null };\nreturn [{ json: { resposta } }];\n"
+   }
+  },
+  {
+   "id": "38d8796d-1e59-46d8-a0c1-aba611798076",
+   "name": "Devolver dados",
+   "type": "n8n-nodes-base.respondToWebhook",
+   "typeVersion": 1.5,
+   "position": [
+    3584,
+    0
+   ],
+   "parameters": {
+    "respondWith": "json",
+    "responseBody": "={{ JSON.stringify($json.resposta) }}",
+    "options": {}
+   }
+  },
+  {
+   "id": "ae863e34-95bb-4709-a5ad-9e74f9627868",
+   "name": "Nota 1",
+   "type": "n8n-nodes-base.stickyNote",
+   "typeVersion": 1,
+   "position": [
+    0,
+    260
+   ],
+   "parameters": {
+    "content": "## Portal do cliente · dados (V1)\nA página do portal pede aqui tudo o que mostra: entregas, roteiros enviados, temas quentes, cronograma e mensagens do grupo (45 dias). Só leitura.\n\n**Cache (05/11/2026):** guarda o que veio do Notion por 5 min no Postgres (portal_cache), por pessoa. Assim o Notion não é chamado a cada minuto por cliente. Mensagens do grupo sempre ao vivo. fresco=1 pula o cache (depois de aprovar/ajuste/tema).",
+    "width": 640,
+    "height": 220,
+    "color": 4
+   }
+  }
+ ],
+ "connections": {
+  "Pedir dados do portal": {
+   "main": [
+    [
+     {
+      "node": "Ler cliente do link",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Ler cliente do link": {
+   "main": [
+    [
+     {
+      "node": "Ler cache",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Tem cache?": {
+   "main": [
+    [
+     {
+      "node": "Fontes do portal",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "Acesso da pessoa",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Ler cache": {
+   "main": [
+    [
+     {
+      "node": "Tem cache?",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Acesso da pessoa": {
+   "main": [
+    [
+     {
+      "node": "Conferir acesso",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Conferir acesso": {
+   "main": [
+    [
+     {
+      "node": "Ficha do cliente",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Ficha do cliente": {
+   "main": [
+    [
+     {
+      "node": "Entregas do cliente",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Entregas do cliente": {
+   "main": [
+    [
+     {
+      "node": "Roteiros do cliente",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Roteiros do cliente": {
+   "main": [
+    [
+     {
+      "node": "Temas quentes do cliente",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Temas quentes do cliente": {
+   "main": [
+    [
+     {
+      "node": "Promessas do cliente",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Promessas do cliente": {
+   "main": [
+    [
+     {
+      "node": "Juntar fontes",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Juntar fontes": {
+   "main": [
+    [
+     {
+      "node": "Salvar cache",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Salvar cache": {
+   "main": [
+    [
+     {
+      "node": "Fontes do portal",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Fontes do portal": {
+   "main": [
+    [
+     {
+      "node": "Mensagens do grupo",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Mensagens do grupo": {
+   "main": [
+    [
+     {
+      "node": "Montar dados do portal",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Montar dados do portal": {
+   "main": [
+    [
+     {
+      "node": "Devolver dados",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  }
+ },
+ "settings": {
+  "executionOrder": "v1",
+  "availableInMCP": true
+ }
+}
