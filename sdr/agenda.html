@@ -215,7 +215,7 @@ textarea{min-height:70px;resize:vertical}
     <div><h1><span class="ge"><svg class="ge-ic" viewBox="0 0 150 122" aria-hidden="true"><path fill="#FF6518" d="M15,0L79.28,0A8,8 0 0 1 83.77,1.38L106.08,16.5A7.39,7.39 0 0 1 101.94,30L15,30A15,15 0 0 1 15,0Z M15,46L125.41,46A8,8 0 0 1 129.9,47.38L140.23,54.38A8,8 0 0 1 140.23,67.62L129.9,74.62A8,8 0 0 1 125.41,76L15,76A15,15 0 0 1 15,46Z M15,92L101.94,92A7.39,7.39 0 0 1 106.08,105.5L83.77,120.62A8,8 0 0 1 79.28,122L15,122A15,15 0 0 1 15,92Z"/></svg>Grupo Euforia</span>Painel <b>Comercial</b></h1><p class="sub" id="ola"></p></div>
     <div class="chips">
       <span class="chip">Lead vê <b id="rLead">30 min</b></span>
-      <span class="chip">Diogo fica com <b id="rBloq">1h</b> livre</span>
+      <span class="chip">Agenda do Diogo: <b id="rBloq">30 min</b> por call</span>
       <button class="ghost" id="bAtualizar">Atualizar</button>
       <button class="ghost" id="bSair">Sair</button>
     </div>
@@ -291,7 +291,7 @@ textarea{min-height:70px;resize:vertical}
     <div id="boxEsp" class="espbox" hidden>
       <div class="row2"><div><label for="espDia">Dia *</label><input type="date" id="espDia"></div><div><label for="espHora">Hora *</label><input type="time" id="espHora" step="300"></div></div>
       <label class="chk"><input type="checkbox" id="espOk"> O Diogo aprovou esse horário fora da grade</label>
-      <p class="hint">A call fica com 30 min para o lead e o Diogo ganha mais 30 min de bloqueio, como sempre. Só não dá se bater em outra call ou compromisso.</p>
+      <p class="hint">A call fica com 30 min. Só não dá se bater em outra call ou compromisso do Diogo.</p>
     </div>
     <label>Tipo de call *</label>
     <div class="seg" id="segTipo"><button type="button" data-tipo="diagnostico">Diagnóstico (1ª call)</button><button type="button" data-tipo="fechamento">Fechamento (2ª call)</button></div>
@@ -487,11 +487,11 @@ function cliqueCall(e){
   if(rm){var rid=rm.getAttribute('data-rmc'),box=rm.closest('.call').querySelector('[data-rbox]'),cr=achar(rid);if(!box||!cr)return;
     if(!box.hidden&&box.getAttribute('data-modo')!=='ed'){box.hidden=true;return;}box.setAttribute('data-modo','rm');
     var hj=isoDia(recife(Date.now())),d0=isoDia(recife(new Date(cr.inicio).getTime()));
-    box.innerHTML='<b>Remarcar '+esc(cr.nome)+'</b><p class="hint">O lead recebe o convite com o novo horário. O bloqueio do Diogo e o CRM mudam junto.</p><div class="rrow"><input type="date" data-rdia min="'+hj+'" value="'+(d0<hj?hj:d0)+'"><button class="ghost" data-rfecha>Fechar</button></div><div class="rslots" data-rslots><p class="load">Escolha o dia.</p></div><p class="msg" data-rmsg></p>';
+    box.innerHTML='<b>Remarcar '+esc(cr.nome)+'</b><p class="hint">O lead recebe o convite com o novo horário. O CRM muda junto.</p><div class="rrow"><input type="date" data-rdia min="'+hj+'" value="'+(d0<hj?hj:d0)+'"><button class="ghost" data-rfecha>Fechar</button></div><div class="rslots" data-rslots><p class="load">Escolha o dia.</p></div><p class="msg" data-rmsg></p>';
     box.hidden=false;carregaSlots(box);return;}
   var ap=e.target.closest('[data-apg]');
   if(ap){var aid=ap.getAttribute('data-apg'),ca=achar(aid);if(!ca)return;
-    if(!confirm('Apagar a call de '+ca.nome+' ('+quandoTxt(ca.inicio)+')?\n\nO lead recebe o aviso de cancelamento e o bloqueio do Diogo sai junto. Não dá para desfazer.'))return;
+    if(!confirm('Apagar a call de '+ca.nome+' ('+quandoTxt(ca.inicio)+')?\n\nO lead recebe o aviso de cancelamento. Não dá para desfazer.'))return;
     ap.disabled=true;ap.textContent='Apagando…';
     api({acao:'apagar',evento:aid,antes:ca.inicio,nome:ca.nome}).then(function(r){
       if(!r.ok){$('mApp').textContent=r.erro||'Não consegui apagar.';ap.disabled=false;ap.textContent='Apagar';return;}
