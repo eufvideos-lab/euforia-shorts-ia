@@ -423,7 +423,7 @@ if (!SITUACAO_NO_AR && !DEMO) for (let i = TIPOS.length - 1; i >= 0; i--) if (TI
 // Erros que a pessoa consegue resolver sozinha; o resto vira o aviso padrão.
 const MOTIVO = {acesso:'Seu acesso mudou. Entre de novo com o PIN.', permissao:'Esse card não está no seu nome.', etapa:'Esse card mudou de etapa. A fila foi atualizada.',
   link:'Cole o link antes de mandar.', texto:'Escreva o que precisa antes de mandar.', prazo:'Escolha um prazo de hoje em diante.', cliente:'Escolha um cliente ativo.',
-  tema:'Escreva o tema da thumb ou cole o link do vídeo (a máquina tira o texto do roteiro).', pessoa:'Esse card já está com essa pessoa. Escolha outra.', bloqueio:'Essa pessoa não atende esse cliente. Escolha outra.', fim:'Escolha o que aconteceu.', pego:'Alguém pegou esse card antes. A fila foi atualizada.', limite:'Você já está com 8 cards em produção. Termine um para pegar outro.', direcao:'Esse assunto é da diretoria. Não responda por aqui.', grupo:'Esse grupo não é de cliente do suporte.', whatsapp:'O WhatsApp não mandou. Tente de novo ou responda direto no grupo.', tamanho:'Arquivo vazio ou maior que 20 GB.', 'sem-pasta':'A pasta do cliente no Drive não foi achada. Cole o link do arquivo no lugar.'};
+  tema:'Escreva o tema da thumb ou cole o link do vídeo (a máquina tira o texto do roteiro).', pessoa:'Esse card já está com essa pessoa. Escolha outra.', bloqueio:'Essa pessoa não atende esse cliente. Escolha outra.', fim:'Escolha o que aconteceu.', nada:'Esse já é o prazo do card.', postar:'O prazo não pode passar do dia de ir ao ar. Mude primeiro o Vai ao ar com a diretoria.', pego:'Alguém pegou esse card antes. A fila foi atualizada.', limite:'Você já está com 8 cards em produção. Termine um para pegar outro.', direcao:'Esse assunto é da diretoria. Não responda por aqui.', grupo:'Esse grupo não é de cliente do suporte.', whatsapp:'O WhatsApp não mandou. Tente de novo ou responda direto no grupo.', tamanho:'Arquivo vazio ou maior que 20 GB.', 'sem-pasta':'A pasta do cliente no Drive não foi achada. Cole o link do arquivo no lugar.'};
 const ERRO = 'Deu erro, a diretoria está resolvendo.';
 const LIMITE = 8;
 let PANEXOS = [], PMODELO = [];
@@ -1147,6 +1147,8 @@ function abrir(id){
   const c = D.cards.find(x => x.id === id); if (!c) return;
   const cl = cli(c), ETP = etapasDo(c), i = ETP.indexOf(c.status);
   const passa = posta() && !FECHADO.includes(c.status);
+  // Mudar prazo (05/11/2026): Ismael, Daniel, Rômulo, Lorena e diretoria, em qualquer card aberto.
+  const mudaPrazo = ['revisor', 'conferente', 'calls', 'diretor', 'teste'].includes(papel()) && !FECHADO.includes(c.status);
   const devolve = c.meu && !FECHADO.includes(c.status);
   // Feito: quem posta ou o Responsável marca quando a entrega está pronta e não vai ao ar.
   const podeFeito = (posta() || c.meu) && ['Em revisão', 'Aguardando cliente', 'Aprovado'].includes(c.status);
@@ -1198,6 +1200,10 @@ function abrir(id){
       <label for="pp">Para quem<select id="pp"><option value="">Escolha</option>${PASSAR.map(([v, n]) => `<option value="${v}">${n}</option>`).join('')}</select></label>
       <label for="pnota">Recado (opcional)<input type="text" id="pnota" maxlength="300" placeholder="Ex.: o Victor está com menos cards hoje"></label>
       <div class="actions"><button class="btn" data-act="passar">Passar o card</button></div><p class="note">Sai da fila de quem está e entra na fila de quem você escolher. A pessoa é avisada no #dia-a-dia.</p></div></details>` : ''}
+    ${mudaPrazo ? `<details class="passar"><summary>📅 Mudar prazo</summary><div style="display:flex;flex-direction:column;gap:12px;margin-top:12px">
+      <label for="npz">Prazo novo<input type="date" id="npz" min="${esc(String(D.hoje || '').slice(0, 10))}"${c.postar ? ` max="${esc(String(c.postar).slice(0, 10))}"` : ''} value="${esc(String(c.prazo || '').slice(0, 10))}"></label>
+      <label for="pzmot">Motivo (opcional)<input type="text" id="pzmot" maxlength="300" placeholder="Ex.: cliente mandou o bruto só hoje"></label>
+      <div class="actions"><button class="btn" data-act="prazo">Salvar prazo</button></div><p class="note">Fica registrado no card com seu nome e a hora.${(c.resp || []).length ? ' Quem está no card é avisado no #dia-a-dia.' : ''}${c.postar ? ' Não pode passar do dia de ir ao ar (' + fmt(c.postar) + ').' : ''}</p></div></details>` : ''}
     ${parar ? `<details class="passar"><summary>Cliente ainda não gravou</summary><div style="display:flex;flex-direction:column;gap:12px;margin-top:12px">
       <p class="note">O card sai da fila de quem edita e vai para Aguardando cliente. Quando o material chegar, qualquer um aperta "Cliente mandou o material" e ele volta para a fila.</p>
       <label for="ngnota">Recado (opcional)<input type="text" id="ngnota" maxlength="300" placeholder="Ex.: ela disse que grava na quinta"></label>
@@ -1247,6 +1253,7 @@ function abrir(id){
     if ((act === 'agendei' || act === 'postei') && !/^https:\/\//.test($('#lpost').value.trim())) { $('#lpost').focus(); toast('Cole o link da postagem (começa com https://).'); return; }
     if (act === 'travei' && $('#trmot').value.trim().length < 3) { $('#trmot').focus(); toast('Escreva o que travou antes de pedir ajuda.'); return; }
     if (act === 'fim' && $('#fmot').value.trim().length < 3) { $('#fmot').focus(); toast('Explique o que aconteceu antes de confirmar.'); return; }
+    if (act === 'prazo' && (!$('#npz').value || $('#npz').value < String(D.hoje || '').slice(0, 10))) { $('#npz').focus(); toast(MOTIVO.prazo); return; }
     if (act === 'passar' && !$('#pp').value) { $('#pp').focus(); toast('Escolha para quem passar.'); return; }
     if (act === 'revisao' && !arquivo && !/^https:\/\//.test($('#lk').value.trim())) { toast('Escolha o arquivo ou cole o link.'); return; }
     ocupado = true; document.querySelectorAll('#layer .btn').forEach(b => b.disabled = true);
@@ -1259,6 +1266,7 @@ function abrir(id){
       if (act === 'travei') texto = $('#trmot').value.trim();
       if (act === 'naogravou') texto = $('#ngnota').value.trim();
       if (act === 'gravou') texto = $('#gnota').value.trim();
+      if (act === 'prazo') texto = $('#pzmot').value.trim();
       const anexos = [];
       if (act === 'completar') {
         texto = $('#ctx').value.trim();
@@ -1267,10 +1275,10 @@ function abrir(id){
       }
       let acao = act, fim = '';
       if (act === 'fim') { const v = document.querySelector('input[name=fim]:checked').value; acao = v === 'naoemeu' ? 'naoemeu' : 'jafeito'; fim = acao === 'jafeito' ? v : ''; texto = $('#fmot').value.trim(); link = /^https:\/\//.test($('#flk').value.trim()) ? $('#flk').value.trim() : ''; }
-      const r = await api('euforia-painel-acao', { card: c.id, acao, texto, link, fim, anexos, para: act === 'passar' ? $('#pp').value : '' });
+      const r = await api('euforia-painel-acao', { card: c.id, acao, texto, link, fim, anexos, para: act === 'passar' ? $('#pp').value : '', prazo: act === 'prazo' ? $('#npz').value : '' });
       if (!r || !r.ok) throw new Error((r && r.motivo) || 'erro');
       ocupado = false; fechar();
-      toast({ comecar: 'Bom trabalho! Card em Fazendo.', revisao: 'Mandado para revisão. O Daniel e o Ismael foram avisados.', aprovar: 'Aprovado. Agora é com o cliente.', ajuste: 'Voltou para ajuste com o seu recado.', agendei: 'Marcado como agendado.', postei: 'Marcado como postado.', feito: 'Marcado como feito.', passar: 'Card passado. A pessoa foi avisada.', travei: 'Pedido de ajuda enviado. O guardião do cliente foi chamado.', fim: 'Pronto, ficou registrado e a equipe foi avisada.', pegar: 'É seu! O card já está na sua fila.', completar: 'Pronto! O pedido voltou para a fila do escritório.', naogravou: 'Pronto. O card saiu da fila e está esperando o cliente gravar.', gravou: 'Voltou para a fila em A fazer.' }[act]);
+      toast({ comecar: 'Bom trabalho! Card em Fazendo.', revisao: 'Mandado para revisão. O Daniel e o Ismael foram avisados.', aprovar: 'Aprovado. Agora é com o cliente.', ajuste: 'Voltou para ajuste com o seu recado.', agendei: 'Marcado como agendado.', postei: 'Marcado como postado.', feito: 'Marcado como feito.', prazo: 'Prazo mudado.', passar: 'Card passado. A pessoa foi avisada.', travei: 'Pedido de ajuda enviado. O guardião do cliente foi chamado.', fim: 'Pronto, ficou registrado e a equipe foi avisada.', pegar: 'É seu! O card já está na sua fila.', completar: 'Pronto! O pedido voltou para a fila do escritório.', naogravou: 'Pronto. O card saiu da fila e está esperando o cliente gravar.', gravou: 'Voltou para a fila em A fazer.' }[act]);
       await carregar(true);
     } catch (err) {
       ocupado = false;
@@ -2619,7 +2627,12 @@ function abrirMandar(x, prev){
       <label for="ct-l" id="ct-lw" ${precisaLink ? '' : 'hidden'}>Link do vídeo no Drive (a máquina precisa)<input type="url" id="ct-l" maxlength="500" placeholder="https://drive.google.com/..." autocomplete="off" spellcheck="false"></label>
       <label for="ct-n">Recado (opcional)<textarea id="ct-n" rows="2" maxlength="600" placeholder="Ex.: capricha na thumb, cliente reclamou no grupo."></textarea></label>
       <div class="actions"><button class="btn primary" type="submit">${prev ? 'Criar card e mandar' : 'Mandar'}</button></div>
-    </form></div></aside>`;
+    </form>
+    ${!prev && ['revisor', 'conferente', 'calls', 'diretor', 'teste'].includes(papel()) ? `<details class="passar"><summary>📅 Mudar prazo${x.prazo ? ' (hoje: ' + esc(fmtCt(x.prazo)) + ')' : ''}</summary><div style="display:flex;flex-direction:column;gap:12px;margin-top:12px">
+      <label for="ct-pz">Prazo novo<input type="date" id="ct-pz" min="${esc(CT.hoje)}"${x.postar ? ` max="${esc(String(x.postar).slice(0, 10))}"` : ''} value="${esc(String(x.prazo || '').slice(0, 10))}"></label>
+      <label for="ct-pzm">Motivo (opcional)<input type="text" id="ct-pzm" maxlength="300" placeholder="Ex.: cliente mandou o bruto só hoje"></label>
+      <div class="actions"><button class="btn" type="button" id="ct-pzb">Salvar prazo</button></div><p class="note">Fica registrado no card com seu nome e a hora. Quem está no card é avisado no #dia-a-dia.</p></div></details>` : ''}
+    </div></aside>`;
   const mostraLink = () => { const v = (document.querySelector('input[name="ctd"]:checked') || {}).value; $('#ct-lw').hidden = !(v === 'maquina' && precisaLink); };
   mostraLink();
   $('#fct').onchange = mostraLink;
@@ -2634,6 +2647,16 @@ function abrirMandar(x, prev){
     catch (er) { ocupado = false; b.disabled = false; b.textContent = prev ? 'Criar card e mandar' : 'Mandar'; toast(MOTIVO_CT[er.message] || MOTIVO[er.message] || ERRO); if (['etapa', 'card'].includes(er.message)) carregarCentral(true); }
   };
   $('#layer').onclick = e => { if (e.target.closest('[data-x]') && !ocupado) fechar(); };
+  const pzb = $('#ct-pzb');
+  if (pzb) pzb.onclick = async () => {
+    if (ocupado) return;
+    const v = $('#ct-pz').value;
+    if (!v || v < CT.hoje) { $('#ct-pz').focus(); toast(MOTIVO.prazo); return; }
+    ocupado = true; pzb.disabled = true; pzb.textContent = 'Salvando…';
+    try { const r = await api('euforia-painel-acao', { card: x.id, acao: 'prazo', prazo: v, texto: $('#ct-pzm').value.trim() }); if (!r || !r.ok) throw new Error((r && r.motivo) || 'erro');
+      x.prazo = v; ocupado = false; fechar(); render(); toast('Prazo mudado.'); setTimeout(() => carregarCentral(true), 2500); }
+    catch (er) { ocupado = false; pzb.disabled = false; pzb.textContent = 'Salvar prazo'; toast(MOTIVO[er.message] || ERRO); if (['etapa', 'card'].includes(er.message)) carregarCentral(true); }
+  };
 }
 async function carregarCentral(silencioso){
   if (carregarCentral.indo) return; carregarCentral.indo = true;

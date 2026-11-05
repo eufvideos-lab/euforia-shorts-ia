@@ -12,7 +12,7 @@ const pedir = trigger({ type: 'n8n-nodes-base.webhook', version: 2.1, config: { 
 const ler = node({ type: 'n8n-nodes-base.code', version: 2, config: { name: 'Ler pedido', parameters: { jsCode: `const b = ($input.first().json.body) || {};
 const u = String(b.u || '').toLowerCase();
 const card = String(b.card || '').replace(/-/g, '').toLowerCase();
-const ACOES = ['comecar', 'revisao', 'aprovar', 'ajuste', 'agendei', 'postei', 'passar', 'naoemeu', 'jafeito', 'pegar', 'completar', 'apagar', 'naogravou', 'gravou', 'travei', 'criar', 'feito'];
+const ACOES = ['comecar', 'revisao', 'aprovar', 'ajuste', 'agendei', 'postei', 'passar', 'naoemeu', 'jafeito', 'pegar', 'completar', 'apagar', 'naogravou', 'gravou', 'travei', 'criar', 'feito', 'prazo'];
 const PARA = ['victor', 'lorena', 'daniel', 'ismael', 'romulo', 'escritorio', 'eu'];
 const TIPOS = ['Vídeo longo', 'Shorts', 'Podcast', 'Carrossel', 'Thumbnail', 'Arte', 'Banner', 'ID visual', 'Limpeza de canal', 'Página', 'Funil', 'Blog', 'Roteiro', 'Copy', 'Apresentação', 'Relatório', 'Estratégia', 'Insta-Blindado', 'Outro'];
 const cli = String(b.cliente || '').replace(/-/g, '').toLowerCase();
@@ -102,6 +102,11 @@ const REGRA = {
   // Travei: o card continua com quem está; o guardião do cliente é chamado no #dia-a-dia para destravar hoje.
   travei: { pode: meu || posta, de: ['A fazer', 'Fazendo', 'Ajustes', 'Em revisão', 'Aguardando cliente', 'Aprovado', 'Agendado'], para: '', verbo: 'TRAVOU, pediu ajuda', precisaTexto: true },
   passar: { pode: posta, de: ['A fazer', 'Fazendo', 'Em revisão', 'Ajustes', 'Aguardando cliente', 'Aprovado', 'Agendado'], para: '', verbo: 'passou para ' + (alvo ? alvo[1] : '') } };
+// Mudar prazo (05/11/2026, pedido da diretoria): Ismael, Daniel, Rômulo e Lorena (papéis revisor, conferente e calls) e a diretoria mudam o Prazo de qualquer card aberto.
+const prazoAntes = String(((cp['Prazo'] || {}).date || {}).start || '').slice(0, 10);
+const postarEm = String(((cp['Postar em'] || {}).date || {}).start || '').slice(0, 10);
+const dm = s => s ? DateTime.fromISO(s).toFormat('dd/MM') : 'sem prazo';
+REGRA.prazo = { pode: teste ? /TESTE PAINEL/.test(titulo) : ['revisor', 'conferente', 'calls', 'diretor'].includes(r.papel), de: ['A fazer', 'Fazendo', 'Ajustes', 'Em revisão', 'Aguardando cliente', 'Aprovado', 'Agendado'], para: '', verbo: 'mudou o prazo de ' + dm(prazoAntes) + ' para ' + dm(p.prazo) };
 const g = REGRA[p.acao];
 if (g && confere) { g.para = 'Agendado'; g.verbo += ' (falta a conferência do Daniel ou do Ismael)'; }
 // Nova demanda: não tem card ainda; quem cria fica em ✍️ Criada por e quem faz em Responsável (para medir as duas pontas).
@@ -128,6 +133,9 @@ else if (!g.de.includes(status)) erro = 'etapa';
 else if (g.precisaLink && !p.link) erro = 'link';
 else if (g.precisaTexto && p.texto.length < 3) erro = 'texto';
 else if (p.acao === 'jafeito' && !p.fim) erro = 'fim';
+else if (p.acao === 'prazo' && (!p.prazo || p.prazo < DateTime.now().setZone(Z).toISODate())) erro = 'prazo';
+else if (p.acao === 'prazo' && p.prazo === prazoAntes) erro = 'nada';
+else if (p.acao === 'prazo' && postarEm && p.prazo > postarEm) erro = 'postar';
 else if (p.acao === 'completar' && txt(cp['🏢 Escritório IA']) !== 'Falta informação') erro = 'etapa';
 else if (p.acao === 'gravou' && !naoGravou) erro = 'etapa';
 else if (p.acao === 'pegar' && !teste && (resp.length || !TIPOS_LIVRE.includes(txt(cp['Tipo'])))) erro = 'pego';
@@ -156,6 +164,7 @@ if (p.acao === 'passar' && alvo && !teste) {
   props['Responsável'] = { relation: [{ id: alvo[0] }] };
   props['🏢 Escritório IA'] = p.para === 'escritorio' ? { select: { name: 'Na fila' } } : { select: null };
 }
+if (p.acao === 'prazo') props['Prazo'] = { date: { start: p.prazo } };
 if (p.acao === 'completar') props['🏢 Escritório IA'] = teste ? { select: null } : { select: { name: 'Na fila' } };
 if (p.acao === 'completar' && !teste) props['Responsável'] = { relation: [{ id: QUEM.escritorio[0] }] };
 let aviso = '';
@@ -178,6 +187,9 @@ const focoCli = String(((fp['⭐ Foco até'] || {}).date || {}).start || '').sli
 const faixaCli = String(((fp['Faixa'] || {}).formula || {}).string || txt(fp['Faixa base']) || '').replace(/[^ABC]/g, '').slice(0, 1);
 const guardioes = guard.length ? guard : (!focoCli && ['B', 'C'].includes(faixaCli)) ? ['827882215185973279'] : ['1490768736876237082'];
 if (p.acao === 'travei') aviso = '🚧 **' + titulo + '** travou com ' + r.nome + '. ' + guardioes.map(i => '<@' + i + '>').join(' ') + ', destrave hoje (o card continua com quem está).\\n> ' + p.texto + (card.url ? '\\n' + card.url : '');
+// Prazo mudado por outra pessoa: quem está no card é marcado no #dia-a-dia.
+const outrosResp = editores.filter(q => q[0] !== r.ficha);
+if (p.acao === 'prazo' && outrosResp.length) aviso = '📅 **' + titulo + '**: ' + r.nome + ' mudou o prazo de ' + dm(prazoAntes) + ' para ' + DateTime.fromISO(p.prazo).setLocale('pt-BR').toFormat('ccc, dd/MM') + '. ' + outrosResp.map(q => '<@' + q[2] + '>').join(' ') + ', o card já está com a data nova.' + (p.texto ? '\\n> ' + p.texto : '');
 if (p.acao === 'ajuste') aviso = '🔁 **' + titulo + '** voltou para ajuste. O pedido está no card e no topo da fila de quem fez.';
 let criarBody = '';
 if (criar && !erro) {
@@ -192,7 +204,7 @@ if (criar && !erro) {
 }
 return [{ json: { ok: !erro, cardId: card.id || '', avisar: !!aviso && !teste, criar, criarBody,
   body: JSON.stringify(p.acao === 'apagar' ? { properties: { 'Obs': props['Obs'] }, archived: true } : { properties: props }), apagar: p.acao === 'apagar', quadroId,
-  discord: JSON.stringify({ content: (aviso + '\\n— Érica, time de suporte, Grupo Euforia').slice(0, 1990), allowed_mentions: { users: criar ? [paraQuem && paraQuem[2]].filter(Boolean) : p.acao === 'travei' ? guardioes : confere ? ['1470387767337816128', '1410287139169763471'] : p.acao === 'naoemeu' ? ['1410287139169763471', '1490768736876237082'] : ['jafeito', 'pegar', 'naogravou'].includes(p.acao) ? [] : p.acao === 'gravou' ? editores.map(q => q[2]) : p.acao === 'revisao' ? ['1470387767337816128', '1410287139169763471'] : [p.acao === 'passar' ? (alvo && alvo[2]) || '' : '1490768736876237082'].filter(Boolean) } }),
+  discord: JSON.stringify({ content: (aviso + '\\n— Érica, time de suporte, Grupo Euforia').slice(0, 1990), allowed_mentions: { users: criar ? [paraQuem && paraQuem[2]].filter(Boolean) : p.acao === 'travei' ? guardioes : confere ? ['1470387767337816128', '1410287139169763471'] : p.acao === 'naoemeu' ? ['1410287139169763471', '1490768736876237082'] : ['jafeito', 'pegar', 'naogravou'].includes(p.acao) ? [] : p.acao === 'gravou' ? editores.map(q => q[2]) : p.acao === 'prazo' ? outrosResp.map(q => q[2]) : p.acao === 'revisao' ? ['1470387767337816128', '1410287139169763471'] : [p.acao === 'passar' ? (alvo && alvo[2]) || '' : '1490768736876237082'].filter(Boolean) } }),
   resposta: erro ? { ok: false, motivo: erro, status } : { ok: true, status: criar ? 'A fazer' : g.para } } }];
 ` } } });
 
@@ -245,7 +257,7 @@ const confirmarSemAviso = node({ type: 'n8n-nodes-base.respondToWebhook', versio
 const recusar = node({ type: 'n8n-nodes-base.respondToWebhook', version: 1.5, config: { name: 'Recusar', parameters: {
   respondWith: 'json', responseBody: '={{ JSON.stringify($json.resposta) }}', options: {} } } });
 
-const nota = sticky('## Painel da equipe · botões (V1)\nComecei (A fazer → Fazendo), Mandar para revisão (link obrigatório → Em revisão + Link do arquivo + aviso ao Daniel e ao Ismael), Aprovar (Em revisão → Aguardando cliente), Pedir ajuste (texto obrigatório → Ajustes), Agendei / Postei (link obrigatório → Agendado / Postado + Link da postagem), Passar para (Ismael, Rômulo e diretoria trocam o Responsável para Victor, Lorena, Daniel, Ismael, Rômulo ou Escritório; aviso no #dia-a-dia marcando a pessoa), Não é comigo (quem é Responsável sai do card, motivo obrigatório, aviso ao Ismael e Rômulo), Já foi feito (Responsável marca Postado, Feito ou Cancelado, motivo obrigatório), Feito (05/11/2026: o que não vai ao ar, como roteiro, página e apresentação; de Em revisão, Aguardando cliente ou Aprovado → Feito, grava Concluído em; quem posta ou o Responsável), Pegar (Fila de demandas: card sem Responsável de edição vira da pessoa; limite de 8 em produção), Apagar (quem pediu pelo painel ou a diretoria: card vai para a lixeira do Notion com a linha no histórico; o pedido no quadro da máquina também), Completar pedido (card que a Máquina do Escritório devolveu com 🏢 Escritório IA = Falta informação: texto obrigatório, links e anexos na Obs, volta para Escritório + Na fila), Cliente ainda não gravou (A fazer, Fazendo ou Ajustes → Aguardando cliente; o Responsável fica no card; aviso no #dia-a-dia) Cliente mandou o material (volta para A fazer e marca os editores do card) Nova demanda (acao criar, 04/11/2026: qualquer pessoa com ficha cria card A fazer para si ou para Victor, Lorena, Daniel, Ismael ou Rômulo; cliente, nome, tipo e prazo obrigatórios; grava ✍️ Criada por + Responsável; avisa no #dia-a-dia só quando é para outra pessoa) e Travei (texto obrigatório, status não muda, chama no #dia-a-dia o guardião do cliente, campo 🛡️ Guardião da ficha; vazio = Rômulo para foco ⭐ ou faixa A, Lorena para B/C).\nSó o Responsável mexe no próprio card; revisão é do Daniel (conferente) e do Ismael (revisor); postagem de revisor, calls e produção (Victor e Daniel). O que o Victor agenda ou posta fica em Agendado e avisa o Daniel e o Ismael; um dos dois confere e marca Postado. Victor não pega nem recebe card da Ana Mangia nem da Além do CNPJ (BLOQUEIO). Toda ação vira uma linha [Painel dd/mm] no topo da Obs. Teste só mexe em cards "TESTE PAINEL" e não avisa no Discord.', [], { color: 4 });
+const nota = sticky('## Painel da equipe · botões (V1)\nComecei (A fazer → Fazendo), Mandar para revisão (link obrigatório → Em revisão + Link do arquivo + aviso ao Daniel e ao Ismael), Aprovar (Em revisão → Aguardando cliente), Pedir ajuste (texto obrigatório → Ajustes), Agendei / Postei (link obrigatório → Agendado / Postado + Link da postagem), Passar para (Ismael, Rômulo e diretoria trocam o Responsável para Victor, Lorena, Daniel, Ismael, Rômulo ou Escritório; aviso no #dia-a-dia marcando a pessoa), Não é comigo (quem é Responsável sai do card, motivo obrigatório, aviso ao Ismael e Rômulo), Já foi feito (Responsável marca Postado, Feito ou Cancelado, motivo obrigatório), Feito (05/11/2026: o que não vai ao ar, como roteiro, página e apresentação; de Em revisão, Aguardando cliente ou Aprovado → Feito, grava Concluído em; quem posta ou o Responsável), Pegar (Fila de demandas: card sem Responsável de edição vira da pessoa; limite de 8 em produção), Apagar (quem pediu pelo painel ou a diretoria: card vai para a lixeira do Notion com a linha no histórico; o pedido no quadro da máquina também), Completar pedido (card que a Máquina do Escritório devolveu com 🏢 Escritório IA = Falta informação: texto obrigatório, links e anexos na Obs, volta para Escritório + Na fila), Cliente ainda não gravou (A fazer, Fazendo ou Ajustes → Aguardando cliente; o Responsável fica no card; aviso no #dia-a-dia) Cliente mandou o material (volta para A fazer e marca os editores do card) Nova demanda (acao criar, 04/11/2026: qualquer pessoa com ficha cria card A fazer para si ou para Victor, Lorena, Daniel, Ismael ou Rômulo; cliente, nome, tipo e prazo obrigatórios; grava ✍️ Criada por + Responsável; avisa no #dia-a-dia só quando é para outra pessoa) e Mudar prazo (05/11/2026: Ismael, Daniel, Rômulo, Lorena e diretoria, papéis revisor, conferente, calls e diretor; qualquer card aberto; data de hoje em diante e nunca depois do Vai ao ar; motivo opcional; avisa no #dia-a-dia quem está no card, se não for quem mudou) e Travei (texto obrigatório, status não muda, chama no #dia-a-dia o guardião do cliente, campo 🛡️ Guardião da ficha; vazio = Rômulo para foco ⭐ ou faixa A, Lorena para B/C).\nSó o Responsável mexe no próprio card; revisão é do Daniel (conferente) e do Ismael (revisor); postagem de revisor, calls e produção (Victor e Daniel). O que o Victor agenda ou posta fica em Agendado e avisa o Daniel e o Ismael; um dos dois confere e marca Postado. Victor não pega nem recebe card da Ana Mangia nem da Além do CNPJ (BLOQUEIO). Toda ação vira uma linha [Painel dd/mm] no topo da Obs. Teste só mexe em cards "TESTE PAINEL" e não avisa no Discord.', [], { color: 4 });
 
 export default workflow('painel-acao', 'Painel | Botões da equipe (V1)')
   .add(pedir).to(ler).to(acesso).to(cardNode).to(abertosNode).to(fichaNode).to(validar)
