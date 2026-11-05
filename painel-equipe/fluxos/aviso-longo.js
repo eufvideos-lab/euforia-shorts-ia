@@ -22,7 +22,7 @@ const avisados = node({ type: 'n8n-nodes-base.dataTable', version: 1.1, config: 
 
 const candidatos = node({ type: 'n8n-nodes-base.code', version: 2, config: { name: 'Candidatos', parameters: { jsCode: `const Z = 'America/Recife';
 const MODO = 'primeiro'; // ver topo do arquivo
-const DESDE = DateTime.fromISO('2026-11-05T23:59', { zone: 'America/Recife' }); // só marcações feitas depois de ligar (atualizar ao publicar)
+const DESDE = DateTime.fromISO('2026-11-05T11:46', { zone: 'America/Recife' }); // só marcações feitas depois de ligar (atualizar ao publicar)
 const agora = DateTime.now().setZone(Z);
 if (agora.hour >= 22 || agora.hour < 7) return [];
 const feitos = {};
@@ -42,7 +42,7 @@ for (const it of $('Marcações recentes').all()) {
   if (MODO === 'agendado' && (tipo !== 'agendado' || ja.length)) continue;
   if (MODO === 'postado' && (tipo !== 'postado' || ja.length)) continue;
   if (MODO === 'ambos' && ja.includes(tipo)) continue;
-  out.push({ json: { chave: m.chave, slot: m.slot, dia: m.dia, tipo } });
+  out.push({ json: { chave: m.chave, slot: m.slot, dia: m.dia, tipo, link: /studio\\.youtube\\.com/i.test(m.link || '') ? '' : String(m.link || '') } });
 }
 return out;
 ` } } });
@@ -84,9 +84,9 @@ return $input.all().map((it, i) => {
   let texto;
   if (tipo === 'agendado') {
     const quando = dif === 0 ? 'hoje' : dif === 1 ? 'amanhã (' + d.toFormat('dd/MM') + ')' : d.toFormat('cccc') + ' (' + d.toFormat('dd/MM') + ')';
-    texto = 'Oi, pessoal! 🎬\\n\\n' + oque + ' já está agendado no YouTube para ' + quando + (hr ? ' às ' + hr : '') + '.\\n\\nJá dá para avisar a sua audiência nos stories para dar aquele impulso inicial.' + ASS;
+    texto = 'Oi, pessoal! 🎬\\n\\n' + oque + ' já está agendado no YouTube para ' + quando + (hr ? ' às ' + hr : '') + '.' + (c.link ? ' O link já é este: ' + c.link : '') + '\\n\\nJá dá para avisar a sua audiência nos stories para dar aquele impulso inicial.' + ASS;
   } else {
-    texto = 'Oi, pessoal! 🎬\\n\\n' + oque + ' já está no ar no YouTube.\\n\\nVale compartilhar nos stories para dar aquele impulso inicial.' + ASS;
+    texto = 'Oi, pessoal! 🎬\\n\\n' + oque + ' já está no ar no YouTube' + (c.link ? ': ' + c.link : '.') + '\\n\\nVale compartilhar nos stories para dar aquele impulso inicial.' + ASS;
   }
   return { json: { ...c, tipo, cliente: nome, grupo, texto, mandar: !motivo, motivo } };
 });

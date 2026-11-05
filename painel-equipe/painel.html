@@ -898,7 +898,7 @@ const VIEWS = {
         return `<div class="slot ${esc(h.plataforma)} ${es ? 'estreia' : ''} ${h.status.includes('Pausado') ? 'pausado' : ''} ${h.status.includes('Confirmar') ? 'confirmar' : ''} ${st === 'postado' ? 'post' : st === 'programado' ? 'prog' : ''}">
         ${es ? '<span class="chip estreia">🚀 Vídeo 1 · estreia' + (es.hora ? ' ' + esc(es.hora) : '') + '</span>' : ''}<button type="button" class="abre" data-slot="${h.id}"><b>${esc(nome(h.cliente))}</b><span class="sub">${esc(h.plataforma)} · ${esc(h.formato)}${h.qtd > 1 ? ' ×' + h.qtd : ''}</span>
         <span class="sub">${h.horario ? esc(h.horario) : 'sem horário'}${h.status.includes('Pausado') ? ' · pausado' : h.status.includes('Confirmar') ? ' · ❓ confirmar' : ''}</span></button>
-        ${m ? `<span class="quem">${st === 'postado' ? '✓ Postado' : '🕒 Programado'} · ${esc(m.por)} ${esc(m.quando)}</span>` : ''}
+        ${m ? `<span class="quem">${st === 'postado' ? '✓ Postado' : '🕒 Programado'} · ${esc(m.por)} ${esc(m.quando)}${m.link ? ` · <a href="${esc(m.link)}" target="_blank" rel="noopener">link</a>` : ''}</span>` : ''}
         ${G.podeMarcar !== false ? `<div class="marcar">${bt('programado', 'Programado')}${bt('postado', 'Postado')}</div>` : ''}</div>`; };
       const soEstreia = i => GP !== 'YouTube' ? [] : EST.filter(e => e.data === iso(i) && (!GC || e.cliente === GC) && !hs.some(h => h.cliente === e.cliente && h.dia === GDIAS[i] && h.formato !== 'Shorts'));
       const cartaoEstreia = e => `<div class="slot YouTube estreia"><span class="chip estreia">🚀 Vídeo 1 · estreia</span><b>${esc(nome(e.cliente) || e.clienteNome)}</b><span class="sub">YouTube · Vídeo 1 · ${esc(e.hora || 'sem horário')}</span></div>`;
@@ -934,7 +934,7 @@ const VIEWS = {
       ${sem.length ? `<section class="group"><h2>${GP === 'YouTube' ? 'Clientes ativos sem dia no YouTube' : 'Com ' + esc(GP) + ' na ficha e sem dia na grade'} <span class="count">${sem.length}</span></h2><ul class="rows">${sem.map(c => `<li class="item"><span class="stripe"></span>
         <div class="main" style="cursor:default"><span class="t">${esc(c.nome)}</span><span class="meta">${c.faixa ? `<span class="chip">Faixa ${esc(c.faixa)}</span>` : ''}${c.atencao ? '<span class="chip red">🔴 Atenção</span>' : ''}${c.yt ? `<span class="chip">Ficha: YouTube ${esc(c.yt)}</span>` : ''}${c.tt ? `<span class="chip">Ficha: TikTok ${esc(c.tt)}</span>` : ''}</span></div>
         <span class="act">${G.podeMudar ? `<button class="btn" data-definir="${c.id}">Definir dia</button>` : ''}</span></li>`).join('')}</ul></section>` : ''}
-      <p class="note">Agendou ou postou? Aperte "Programado" ou "Postado" no horário: fica cinza ou laranja para todo mundo. Apertou errado? Clique de novo e volta ao normal. A grade é o combinado fixo de cada cliente. A data de cada peça continua no card ("Vai ao ar"). ${G.podeMudar ? 'Toda mudança fica registrada com seu nome e a hora.' : 'Quem ajusta a grade é o Ismael ou o Rômulo.'}</p>`;
+      <p class="note">Agendou ou postou? Aperte "Programado" ou "Postado" no horário e cole o link da publicação: fica cinza ou laranja para todo mundo. Sem o link não marca. Apertou errado? Clique de novo e volta ao normal. A grade é o combinado fixo de cada cliente. A data de cada peça continua no card ("Vai ao ar"). ${G.podeMudar ? 'Toda mudança fica registrada com seu nome e a hora.' : 'Quem ajusta a grade é o Ismael ou o Rômulo.'}</p>`;
     } },
   pedir: { nome: 'Pedir ao escritório', pode: () => papel() !== 'editor',
     html(){
@@ -1775,21 +1775,44 @@ async function carregarGrade(){
   carregarGrade.indo = false;
 }
 // Programado / Postado: muda na tela na hora e grava; se der erro, volta como estava.
-async function marcarSlot(b){
+// Henrique 05/11: para marcar é obrigatório colar o link da publicação (desmarcar não pede).
+function marcarSlot(b){
   if (b.disabled) return;
   const chave = b.dataset.ms + '|' + b.dataset.md, antes = (G.marcas || {})[chave];
   const nova = antes && antes.status === b.dataset.marca ? '' : b.dataset.marca;
+  if (!nova) { gravarSlot(b, nova, ''); return; }
+  const h = (G.horarios || []).find(x => x.id === b.dataset.ms) || {};
+  const nomeC = ((G.clientes || []).find(c => c.id === h.cliente) || {}).nome || '';
+  const qual = nova === 'postado' ? 'Postado' : 'Programado';
+  $('#layer').innerHTML = `<div class="scrim" data-x></div><aside class="drawer" role="dialog" aria-modal="true" aria-labelledby="lk-t"><div class="drawer-in">
+    <button class="close" data-x>Fechar</button>
+    <div><p class="eyebrow">Marcar como ${qual} · ${esc(fmt(b.dataset.md))}</p><h2 id="lk-t" style="font-size:26px">${esc(nomeC)}</h2><p class="sub">${esc(h.plataforma || '')} · ${esc(h.formato || '')}${h.horario ? ' · ' + esc(h.horario) : ''}</p></div>
+    <form id="flink"><label for="lk-url"><b>Link da publicação</b></label>
+      <input id="lk-url" type="url" inputmode="url" required placeholder="https://youtu.be/..." value="${esc((antes && antes.link) || '')}" style="width:100%">
+      <p class="note">Cole o link do próprio vídeo ${nova === 'postado' ? 'publicado' : 'agendado'} (youtu.be/… ou youtube.com/watch…), não o do YouTube Studio. Sem o link não dá para marcar.</p>
+      <div class="actions"><button class="btn primary" type="submit">Marcar como ${qual}</button></div></form></div></aside>`;
+  setTimeout(() => { const i = $('#lk-url'); if (i) i.focus(); }, 50);
+  $('#layer').onclick = ev => { if (ev.target.closest('[data-x]')) fechar(); };
+  $('#layer').onsubmit = ev => {
+    if (ev.target.id !== 'flink') return; ev.preventDefault();
+    const link = $('#lk-url').value.trim();
+    if (!/^https?:\/\/[^\s<>"']+\.[^\s<>"']+$/i.test(link)) { toast('Cole o link completo, começando com https://'); return; }
+    fechar(); gravarSlot(b, nova, link);
+  };
+}
+async function gravarSlot(b, nova, link){
+  const chave = b.dataset.ms + '|' + b.dataset.md, antes = (G.marcas || {})[chave];
   const agora = new Date(), q = String(agora.getDate()).padStart(2, '0') + '/' + String(agora.getMonth() + 1).padStart(2, '0') + ' ' + agora.toTimeString().slice(0, 5);
   G.marcas = G.marcas || {};
-  if (nova) G.marcas[chave] = { status: nova, por: (D && D.nome) || '', quando: q }; else delete G.marcas[chave];
+  if (nova) G.marcas[chave] = { status: nova, por: (D && D.nome) || '', quando: q, link }; else delete G.marcas[chave];
   marcarSlot.n = (marcarSlot.n || 0) + 1; render();
   try {
-    const r = await api('euforia-painel-grade', { acao: 'marcar', marca: nova, data: b.dataset.md, slot: { id: b.dataset.ms } });
+    const r = await api('euforia-painel-grade', { acao: 'marcar', marca: nova, data: b.dataset.md, link, slot: { id: b.dataset.ms } });
     if (!r || !r.ok) throw new Error((r && r.motivo) || 'erro');
-    if (r.marca && nova) G.marcas[chave] = { status: r.marca.status, por: r.marca.por, quando: r.marca.quando };
+    if (r.marca && nova) G.marcas[chave] = { status: r.marca.status, por: r.marca.por, quando: r.marca.quando, link: r.marca.link || link };
   } catch (err) {
     if (antes) G.marcas[chave] = antes; else delete G.marcas[chave];
-    toast(err.message === 'data' ? 'Essa data não bate com o dia do horário.' : GMOTIVO[err.message] || ERRO);
+    toast(err.message === 'data' ? 'Essa data não bate com o dia do horário.' : err.message === 'link' ? 'Cole o link da publicação para marcar.' : GMOTIVO[err.message] || ERRO);
   }
   marcarSlot.n--; if (view === 'grade' && !$('#layer').innerHTML) render();
 }
@@ -2609,7 +2632,7 @@ function demoApi(path, b){
   if (path === 'euforia-painel-respostas') { if (b && b.acao === 'dispensar') return wait({ ok: true }); return wait(DEMO_R); }
   if (path === 'euforia-painel-grade') {
     if (b.acao === 'listar') return wait(JSON.parse(JSON.stringify(DEMO_G)));
-    if (b.acao === 'marcar') { const k = b.slot.id + '|' + b.data, m = { status: b.marca, por: DEMO_D.nome, quando: '26/10 ' + new Date().toTimeString().slice(0, 5) }; if (b.marca) DEMO_G.marcas[k] = m; else delete DEMO_G.marcas[k]; return wait({ ok: true, marca: Object.assign({ chave: k, slot: b.slot.id, dia: b.data }, m) }); }
+    if (b.acao === 'marcar') { const k = b.slot.id + '|' + b.data, m = { status: b.marca, por: DEMO_D.nome, quando: '26/10 ' + new Date().toTimeString().slice(0, 5), link: b.link || '' }; if (b.marca) DEMO_G.marcas[k] = m; else delete DEMO_G.marcas[k]; return wait({ ok: true, marca: Object.assign({ chave: k, slot: b.slot.id, dia: b.data }, m) }); }
     const s = b.slot, h = DEMO_G.horarios.find(x => x.id === s.id);
     if (b.acao === 'pausar') h.status = '⏸️ Pausado';
     else if (b.acao === 'reativar') h.status = '✅ Publicar';

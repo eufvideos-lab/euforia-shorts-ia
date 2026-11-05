@@ -20,6 +20,7 @@ const hora = String(s.horario || '').trim();
 return [{ json: { u: /^[0-9a-f]{24}$/.test(u) ? u : 'x', pin: String(b.pin || '').replace(/[^0-9]/g, '').slice(0, 6),
   acao: ['salvar', 'pausar', 'reativar', 'marcar'].includes(b.acao) ? b.acao : 'listar',
   marca: ['programado', 'postado'].includes(b.marca) ? b.marca : '', data: /^\\d{4}-\\d{2}-\\d{2}$/.test(String(b.data || '')) ? String(b.data) : '',
+  link: (l => /^https?:\\/\\/[^\\s<>"']+\\.[^\\s<>"']+$/i.test(l) ? l.slice(0, 500) : '')(String(b.link || '').trim()),
   slot: { id: id(s.id), cliente: id(s.cliente), plataforma: PLAT.includes(s.plataforma) ? s.plataforma : '', formato: FORM.includes(s.formato) ? s.formato : '',
     dia: DIAS.includes(s.dia) ? s.dia : '', horario: (m => m && Number(m[1]) < 24 && Number(m[2] || 0) < 60 ? m[1].padStart(2, '0') + ':' + (m[2] || '00') : '')(hora.toLowerCase().match(/^(\\d{1,2})(?:[:h](\\d{2})?)?$/)),
     qtd: Math.max(1, Math.min(10, parseInt(s.qtd, 10) || 1)), obs: String(s.obs || '').trim().slice(0, 300) } } }];
@@ -73,6 +74,8 @@ if (!erro && p.acao === 'marcar') {
   const diaSlot = txt(ap['Dia']);
   const dif = d.isValid ? Math.round(d.startOf('day').diff(agora.startOf('day'), 'days').days) : 99;
   if (!d.isValid || !diaSlot || Number(diaSlot[0]) !== d.weekday || dif < -21 || dif > 14) erro = 'data';
+  // Henrique 05/11: só marca Programado/Postado com o link da publicação.
+  else if (p.marca && !p.link) erro = 'link';
 }
 const desde = agora.startOf('day').minus({ days: (agora.weekday - 1) + 14 }).toISODate();
 const nomeCli = txt((cli.properties || {})['Cliente']);
@@ -93,7 +96,7 @@ if (p.acao === 'pausar') props['Status do slot'] = { select: { name: '⏸️ Pau
 if (p.acao === 'reativar') props['Status do slot'] = { select: { name: '✅ Publicar' } };
 const cria = p.acao === 'salvar' && !s.id;
 return [{ json: { ok: !erro, listar: p.acao === 'listar', marcar: p.acao === 'marcar', podeMudar: muda, podeMarcar: true, teste, desde, bloq: BLOQUEIO[r.ficha] || [],
-  marca: { chave: s.id + '|' + p.data, slot: s.id, dia: p.data, status: p.marca, por: r.nome || '', quando: agora.toFormat('dd/MM HH:mm') },
+  marca: { chave: s.id + '|' + p.data, slot: s.id, dia: p.data, status: p.marca, por: r.nome || '', quando: agora.toFormat('dd/MM HH:mm'), link: p.marca ? p.link : '' },
   metodo: cria ? 'POST' : 'PATCH', url: cria ? 'https://api.notion.com/v1/pages' : 'https://api.notion.com/v1/pages/' + s.id,
   body: JSON.stringify(cria ? { parent: { database_id: '2d21b7a7166240f5afaa4d697c3d1ae8' }, properties: props } : { properties: props }),
   resposta: { ok: false, motivo: erro } } }];
@@ -168,7 +171,7 @@ for (const it of $('Horários da grade').all()) for (const p of (it.json.results
 const lista = Object.values(cli).map(c => ({ id: c.id, nome: c.nome, faixa: c.faixa, atencao: c.atencao, ativo: c.situacao === 'Ativo', pausado: c.situacao === 'Pausado', yt: c.yt, tt: c.tt }));
 const ids = new Set(horarios.map(h => h.id));
 const marcas = {};
-for (const it of $('Marcações da grade').all()) { const m = it.json || {}; if (m.chave && m.status && ids.has(m.slot)) marcas[m.chave] = { status: m.status, por: m.por || '', quando: m.quando || '' }; }
+for (const it of $('Marcações da grade').all()) { const m = it.json || {}; if (m.chave && m.status && ids.has(m.slot)) marcas[m.chave] = { status: m.status, por: m.por || '', quando: m.quando || '', link: m.link || '' }; }
 return [{ json: { ok: true, podeMudar: v.podeMudar, podeMarcar: v.podeMarcar, clientes: lista, horarios, marcas } }];
 ` } } });
 
@@ -187,13 +190,14 @@ const gravarMarca = node({ type: 'n8n-nodes-base.dataTable', version: 1.1, confi
   filters: { conditions: [{ keyName: 'chave', condition: 'eq', keyValue: '={{ $json.marca.chave }}' }] },
   columns: { mappingMode: 'defineBelow', value: {
     chave: '={{ $json.marca.chave }}', slot: '={{ $json.marca.slot }}', dia: '={{ $json.marca.dia }}', status: '={{ $json.marca.status }}',
-    por: '={{ $json.marca.por }}', quando: '={{ $json.marca.quando }}' }, matchingColumns: [], schema: [
+    por: '={{ $json.marca.por }}', quando: '={{ $json.marca.quando }}', link: '={{ $json.marca.link }}' }, matchingColumns: [], schema: [
     { id: 'chave', displayName: 'chave', type: 'string', display: true, required: false, defaultMatch: false },
     { id: 'slot', displayName: 'slot', type: 'string', display: true, required: false, defaultMatch: false },
     { id: 'dia', displayName: 'dia', type: 'string', display: true, required: false, defaultMatch: false },
     { id: 'status', displayName: 'status', type: 'string', display: true, required: false, defaultMatch: false },
     { id: 'por', displayName: 'por', type: 'string', display: true, required: false, defaultMatch: false },
-    { id: 'quando', displayName: 'quando', type: 'string', display: true, required: false, defaultMatch: false }] }, options: {} } } });
+    { id: 'quando', displayName: 'quando', type: 'string', display: true, required: false, defaultMatch: false },
+    { id: 'link', displayName: 'link', type: 'string', display: true, required: false, defaultMatch: false }] }, options: {} } } });
 
 const confirmarMarca = node({ type: 'n8n-nodes-base.respondToWebhook', version: 1.5, config: { name: 'Confirmar marcação', parameters: {
   respondWith: 'json', responseBody: '={{ JSON.stringify({ ok: true, marca: $("Validar pedido").first().json.marca }) }}', options: {} } } });
@@ -204,7 +208,7 @@ const devolver = node({ type: 'n8n-nodes-base.respondToWebhook', version: 1.5, c
 const recusar = node({ type: 'n8n-nodes-base.respondToWebhook', version: 1.5, config: { name: 'Recusar', parameters: {
   respondWith: 'json', responseBody: '={{ JSON.stringify($json.resposta) }}', options: {} } } });
 
-const nota = sticky('## Painel da equipe · grade de postagem (V1)\nLê o banco Grade de Postagem (horários fixos de cada cliente: plataforma, formato, dia, horário, quantidade) e devolve a semana para a aba Grade.\nTodos veem. Ismael (revisor), Rômulo (calls) e o teste podem criar, ajustar, pausar e reativar um horário. Toda mudança vira uma linha [Painel dd/mm] no topo da Obs do horário. Nunca encerra nem apaga.\nTodos marcam Programado ou Postado em cada data (tabela Painel · grade marcações; desmarcar grava status vazio).', [], { color: 4 });
+const nota = sticky('## Painel da equipe · grade de postagem (V1)\nLê o banco Grade de Postagem (horários fixos de cada cliente: plataforma, formato, dia, horário, quantidade) e devolve a semana para a aba Grade.\nTodos veem. Ismael (revisor), Rômulo (calls) e o teste podem criar, ajustar, pausar e reativar um horário. Toda mudança vira uma linha [Painel dd/mm] no topo da Obs do horário. Nunca encerra nem apaga.\nTodos marcam Programado ou Postado em cada data, sempre com o link da publicação (tabela Painel · grade marcações; desmarcar grava status vazio).', [], { color: 4 });
 
 export default workflow('painel-grade', 'Painel | Grade de postagem (V1)')
   .add(pedir).to(ler).to(acesso).to(slotAtual).to(clienteNode).to(validar)
