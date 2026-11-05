@@ -122,7 +122,9 @@ for (const it of fonte('entregas')) for (const p of (it.json.results || [])) {
   const linkArq = txt(pr['Link do arquivo']);
   // Um portal só (05/11/2026): só vai para aprovação peça com arquivo (link https) e conferida pela equipe.
   // Sem isso o cliente vê "Em revisão final". O campo Conferido só passa a valer quando existir no Entregas.
-  const conferido = !pr['✔️ Conferido pela equipe'] || pr['✔️ Conferido pela equipe'].checkbox === true;
+  // Peça que veio das máquinas já aprovada pela equipe (Obs "[Máquina ...] ... aprovado pela equipe") conta como conferida.
+  const daMaquina = /^\\[Máquina [^\\]]+\\][^\\n]*aprovad[oa] pela equipe/.test(txt(pr['Obs']));
+  const conferido = !pr['✔️ Conferido pela equipe'] || pr['✔️ Conferido pela equipe'].checkbox === true || daMaquina;
   if (col === 'aprovar' && (!/^https:[/][/]/.test(linkArq) || !conferido)) col = 'revisao';
   const linkPost = txt(pr['Link da postagem']);
   const qtd = (pr['Quantidade'] || {}).number || 1;
