@@ -3,7 +3,7 @@ import { workflow, node, trigger, sticky } from '@n8n/workflow-sdk';
 // Revisora IA | Relatório diário e painel (05/11/2026). Pedido do Henrique: relatório diário de melhorias para as máquinas e para a Gerente,
 // no Painel Central › Minha mesa ("Revisora IA", abaixo do "Gerente IA").
 // 1) Seg a sáb às 18h30 (Recife): lê os achados do dia (tabela "Revisora IA · achados", só clientes do escopo), Claude escreve o resumo e
-//    as mudanças sugeridas (texto pronto da regra), grava em "Revisora IA · relatórios" e avisa curto no #aprovações-gerente.
+//    as mudanças sugeridas (texto pronto da regra), grava em "Revisora IA · relatórios" e avisa curto no #revisora-ia.
 //    Nada muda sozinho: o Henrique escolhe o que aplicar.
 // 2) Webhook euforia-painel-revisora (só papel diretor, token + PIN da tabela de acesso): devolve os últimos relatórios e os achados de hoje
 //    para a aba "Revisora IA" do painel.
@@ -79,8 +79,8 @@ const salvar = node({ type: 'n8n-nodes-base.dataTable', version: 1.1, config: { 
     schema: [ { id: 'dia', displayName: 'dia', type: 'string', display: true }, { id: 'criado', displayName: 'criado', type: 'dateTime', display: true }, { id: 'resumo', displayName: 'resumo', type: 'string', display: true }, { id: 'numeros', displayName: 'numeros', type: 'string', display: true }, { id: 'sugestoes', displayName: 'sugestoes', type: 'string', display: true }, { id: 'aplicar', displayName: 'aplicar', type: 'string', display: true } ] },
   options: {} } } });
 
-const avisar = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, config: { name: 'Avisar no #aprovações-gerente', credentials: DISCORD, onError: 'continueRegularOutput', parameters: {
-  method: 'POST', url: 'https://discord.com/api/v10/channels/1567643418270634136/messages', authentication: 'genericCredentialType', genericAuthType: 'httpHeaderAuth',
+const avisar = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, config: { name: 'Avisar no #revisora-ia', credentials: DISCORD, onError: 'continueRegularOutput', parameters: {
+  method: 'POST', url: 'https://discord.com/api/v10/channels/1567917509431263302/messages', authentication: 'genericCredentialType', genericAuthType: 'httpHeaderAuth',
   sendBody: true, specifyBody: 'json', jsonBody: "={{ $('Ler relatório').first().json.discord }}", options: {} } } });
 
 // ---------- 2) aba do painel ----------
@@ -126,7 +126,7 @@ return [{ json: { r: { ok: true, agora: DateTime.now().setZone('America/Recife')
 const responder = node({ type: 'n8n-nodes-base.respondToWebhook', version: 1.5, config: { name: 'Responder', parameters: {
   respondWith: 'json', responseBody: '={{ JSON.stringify($json.r) }}', options: {} } } });
 
-const nota = sticky('## Revisora IA · relatório diário e painel (V1)\n1) Seg a sáb 18h30 (Recife): achados do dia (só clientes do escopo, linha revisora_escopo da tabela Gerente IA · textos) → Claude escreve resumo + mudanças sugeridas com texto pronto → tabela "Revisora IA · relatórios" + aviso curto no #aprovações-gerente. Nada é aplicado sozinho.\n2) Webhook euforia-painel-revisora (só diretor): últimos 14 relatórios + achados de hoje para a aba Revisora IA do painel.', [], { color: 4 });
+const nota = sticky('## Revisora IA · relatório diário e painel (V1)\n1) Seg a sáb 18h30 (Recife): achados do dia (só clientes do escopo, linha revisora_escopo da tabela Gerente IA · textos) → Claude escreve resumo + mudanças sugeridas com texto pronto → tabela "Revisora IA · relatórios" + aviso curto no #revisora-ia. Nada é aplicado sozinho.\n2) Webhook euforia-painel-revisora (só diretor): últimos 14 relatórios + achados de hoje para a aba Revisora IA do painel.', [], { color: 4 });
 
 export default workflow('revisora-relatorio', 'Revisora IA | Relatório diário e painel (V1)')
   .add(cadaHora).to(ehHora).to(lerEscopo).to(lerAchados).to(montar).to(escrever).to(ler).to(salvar).to(avisar)
