@@ -43,13 +43,13 @@ const caminho = switchCase({ version: 3.2, config: { name: 'O que fazer', parame
   ] }, options: {} } } });
 
 const ver = node({ type: 'n8n-nodes-base.postgres', version: 2.6, config: { name: 'Ler rascunhos', credentials: PG, parameters: { operation: 'executeQuery',
-  query: `ALTER TABLE gerente_rascunhos ADD COLUMN IF NOT EXISTS painel_acao TEXT, ADD COLUMN IF NOT EXISTS painel_texto TEXT, ADD COLUMN IF NOT EXISTS painel_em TIMESTAMPTZ, ADD COLUMN IF NOT EXISTS confirmar TEXT, ADD COLUMN IF NOT EXISTS confirmar_quem TEXT, ADD COLUMN IF NOT EXISTS confirmar_msg TEXT, ADD COLUMN IF NOT EXISTS confirmado TEXT;
+  query: `ALTER TABLE gerente_rascunhos ADD COLUMN IF NOT EXISTS painel_acao TEXT, ADD COLUMN IF NOT EXISTS painel_texto TEXT, ADD COLUMN IF NOT EXISTS painel_em TIMESTAMPTZ, ADD COLUMN IF NOT EXISTS confirmar TEXT, ADD COLUMN IF NOT EXISTS confirmar_quem TEXT, ADD COLUMN IF NOT EXISTS confirmar_msg TEXT, ADD COLUMN IF NOT EXISTS confirmado TEXT, ADD COLUMN IF NOT EXISTS revisora_status TEXT, ADD COLUMN IF NOT EXISTS revisora_nota TEXT, ADD COLUMN IF NOT EXISTS revisora_em TIMESTAMPTZ;
 SELECT json_build_object(
   'agora', to_char(now() AT TIME ZONE 'America/Recife', 'HH24:MI'),
   'abertos', (SELECT COALESCE(json_agg(x ORDER BY x.id DESC), '[]'::json) FROM (
     SELECT r.id, to_char(r.criado_em AT TIME ZONE 'America/Recife', 'DD/MM HH24:MI') AS criado, r.cliente, r.classe, r.urgencia, r.texto, r.card_url,
       (r.card_corpo IS NOT NULL AND r.card_id IS NULL) AS card_no_ok, r.status, r.painel_acao,
-      r.confirmar, r.confirmar_quem, r.confirmado, (r.confirmar_msg IS NOT NULL) AS perguntado,
+      r.confirmar, r.confirmar_quem, r.confirmado, (r.confirmar_msg IS NOT NULL) AS perguntado, r.revisora_status, r.revisora_nota,
       (SELECT string_agg(to_char(q.enviado_em AT TIME ZONE 'America/Recife', 'HH24:MI') || ' ' || COALESCE(q.autor_nome, 'Cliente') || ': ' || left(COALESCE(q.texto, '[' || q.tipo || ']'), 300), E'\\n' ORDER BY q.enviado_em)
          FROM (SELECT DISTINCT ON (m.msg_id) m.* FROM mensagens m WHERE m.chat_id = r.chat_id AND m.enviado_em <= r.ultima_cliente AND m.enviado_em > r.ultima_cliente - interval '6 hours'
                AND NOT m.from_me AND m.tipo NOT IN ('reactionMessage', 'protocolMessage') ORDER BY m.msg_id, m.enviado_em) q

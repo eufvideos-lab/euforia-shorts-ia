@@ -2321,7 +2321,7 @@ setInterval(() => { if (D && diretor() && view === 'aprovar' && !document.hidden
 // Pedido do Henrique: uma camada extra que confere o que a Gerente IA pede e o que as máquinas entregam, antes da revisão humana,
 // e um relatório diário (seg a sáb, 18h30) com mudanças sugeridas para cada máquina e para a Gerente. Começa só nos clientes sensíveis
 // (Nova Acrópole e Regina). Dados: fluxo n8n "Revisora IA | Relatório diário e painel" (webhook euforia-painel-revisora, só diretor).
-const REVISORA_NO_AR = false;
+const REVISORA_NO_AR = true;
 const GRAV_RV = { alta: ['🔴', 'red'], media: ['🟠', 'warn'], baixa: ['🟡', ''] };
 async function carregarRevisora(){
   if (carregarRevisora.indo) return; carregarRevisora.indo = true;
