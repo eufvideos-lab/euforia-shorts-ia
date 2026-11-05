@@ -61,6 +61,10 @@ O Chrome já vem no ambiente (/opt/pw-browsers). Se não achar, use `CHROME=<cam
       Inter), sem logo (sai o nome do cliente no rodapé) e avise no log que falta identidade.
       Grave no cliente o campo "Identidade carrossel (IA)" em JSON curto, com IDs do Drive no lugar dos caminhos:
       `{"cores":{...},"fontes":{...},"logo":"<id>","logo_escuro":"<id>","logo_cor_no_claro":"#hex","arroba":"@..."}`
+   c. **Modelo para seguir.** Se as "Observações para a máquina" tiverem a linha `Modelo para seguir: ...`, ou se
+      o cliente tiver modelo padrão (chave `modelo` na "Identidade carrossel (IA)" ou arquivo `PADRÃO ...` em
+      MODELOS DE CARROSSEL), siga `prompts/seguir_modelo.md`: o carrossel sai com a estrutura e o jeito do modelo,
+      nas cores do cliente. Isso vale mesmo quando a identidade já está salva.
 4. **Conteúdo.** Leia os roteiros (ligados ao pedido ou, sem eles, os mais recentes do cliente que ainda não viraram
    carrossel), as "Observações para a máquina" e a "Direção criativa" do cliente. Escreva
    `pedidos/<id-curto>/carrosseis.json` seguindo `carrossel/prompts/roteiro_carrossel.md`, com a quantidade do
@@ -81,17 +85,21 @@ O Chrome já vem no ambiente (/opt/pw-browsers). Se não achar, use `CHROME=<cam
    Faça a folha (`analisar.py folha`) e escolha a melhor de cada busca; sem nenhuma boa, slide sem foto.
 5. **Gerar.** `python3 carrossel/gerar.py pedidos/<id-curto>` (~10 s por carrossel).
    Corrija tudo que sair em "ALERTAS" (texto que não coube: encurte) e rode de novo só ele com `--so <n>`.
-6. **Conferir.** Olhe cada `saida/visao-geral-NN.jpg` e pelo menos a capa e o CTA em tamanho real. Refaça o que
+6. **Conferir.** Olhe cada `saida/visao-geral-NN.jpg` e pelo menos a capa e o CTA em tamanho real. Com modelo,
+   faça também a `comparacao-modelo.jpg` (modelo x carrossel novo) e refaça se não parecer o mesmo estilo. Refaça o que
    tiver: texto cortado, palavra sozinha numa linha, rosto cortado, logo ilegível, cor fora da identidade,
    erro de português, informação que não está no roteiro.
 7. **Entregar.** Pasta de entrega: a do pedido ou, sem ela, crie com o Google Drive uma pasta
    "CARROSSEIS IA - <AAAA-MM-DD>" dentro da pasta do cliente (campo "Drive"). Dentro dela, uma subpasta por
-   carrossel ("01 - <título>") com os `slide-NN.png` e a `legenda.txt`, mais as `visao-geral-NN.jpg` na raiz.
+   carrossel ("01 - <título>") com os `slide-NN.png` e a `legenda.txt`, mais as `visao-geral-NN.jpg` (e a
+   `comparacao-modelo.jpg`, se houve modelo) na raiz. Com modelo, salve-o como padrão do cliente
+   (`prompts/seguir_modelo.md`, item 5).
    Suba com `python3 -c "import sys; sys.path.insert(0,'pipeline'); import ponte; print(ponte.subir('<arquivo>','<pasta>','<nome>'))"`.
    Suba também `carrosseis.json` e `identidade.json` para a pasta da máquina como
    `carrossel-<id-curto>.json` e `identidade-<id-curto>.json` (é o que permite um "Ajustar" depois).
 8. Atualize o pedido: "Carrosséis prontos" (link da pasta), "Entregue em" (agora), Status "Pronto para revisão" e
-   um resumo curto no log (quantos carrosséis, de quais roteiros, se a identidade foi criada agora, dúvidas).
+   um resumo curto no log (quantos carrosséis, de quais roteiros, se a identidade foi criada agora, qual modelo
+   foi seguido, dúvidas).
 9. Avise no #carrosel-automático, assinando como Érica:
    "🖼️ Carrosséis prontos: <Cliente> (<n> carrosséis). Para revisão do Ismael: <link>. — Érica, time de suporte, Grupo Euforia"
 
