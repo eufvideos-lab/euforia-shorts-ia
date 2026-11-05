@@ -4,7 +4,7 @@ import { workflow, node, trigger, sticky } from '@n8n/workflow-sdk';
 // Escopo inicial (Henrique, 05/11): só clientes sensíveis, começando por Nova Acrópole e Regina Gyraser. Para abrir para outro cliente, grave
 // versão nova da linha "revisora_escopo" na tabela "Gerente IA · textos".
 // A cada 2 min: rascunhos novos da Gerente desses clientes → Claude confere contra o checklist → grava selo (revisora_status/revisora_nota) em
-// gerente_rascunhos (a aba Aprovar mostra), responde embaixo do rascunho no #aprovações-gerente e registra os achados na tabela
+// gerente_rascunhos (a aba Aprovar mostra), avisa no #revisora-ia (canal próprio, pedido do Henrique 05/11) e registra os achados na tabela
 // "Revisora IA · achados" (alimenta o relatório diário). NÃO bloqueia nem muda o rascunho: só avisa. Nada vai ao cliente aqui.
 const PG = { postgres: { id: '2QBGXkxxr41tWTQw', name: 'Postgres account' } };
 const DISCORD = { httpHeaderAuth: { id: 'PY2ZcN5kAVFaS1io', name: 'Discord Bot' } };
@@ -79,8 +79,11 @@ return $input.all().map((it, i) => {
   const achados = falhou ? [] : (Array.isArray(v.achados) ? v.achados : []).slice(0, 6).map(a => ({ regra: String(a.regra || 'outro').slice(0, 30), detalhe: String(a.detalhe || '').slice(0, 300), gravidade: ['alta', 'media', 'baixa'].includes(a.gravidade) ? a.gravidade : 'media' }));
   const status = falhou ? 'erro' : (v.resultado === 'atencao' && achados.length ? 'atencao' : 'ok');
   const nota = falhou ? 'Não consegui revisar este rascunho.' : status === 'ok' ? 'Conferido, nada a apontar.' : achados.map(a => G[a.gravidade] + ' ' + a.detalhe).join(' · ');
-  const discord = r.discord_msg && status !== 'erro' ? JSON.stringify({ content: (status === 'ok' ? '🔎 Revisora: conferido ✅' : '🔎 **Revisora: atenção**\\n' + achados.map(a => '- ' + G[a.gravidade] + ' ' + a.detalhe).join('\\n')).slice(0, 1900),
-    message_reference: { message_id: r.discord_msg, fail_if_not_exists: false }, allowed_mentions: { parse: [] } }) : '';
+  // Canal próprio da Revisora (#revisora-ia); o link leva ao rascunho no #aprovações-gerente.
+  const link = r.discord_msg ? ' · [ver rascunho](https://discord.com/channels/776434767062237195/1567643418270634136/' + r.discord_msg + ')' : '';
+  const quem = '**' + String(r.cliente || 'cliente') + '** (' + String(r.classe || 'rascunho') + ')' + link;
+  const discord = status !== 'erro' ? JSON.stringify({ content: (status === 'ok' ? '🔎 Gerente · ' + quem + ': conferido ✅' : '🔎 **Gerente · atenção** · ' + quem + '\\n' + achados.map(a => '- ' + G[a.gravidade] + ' ' + a.detalhe).join('\\n')).slice(0, 1900),
+    allowed_mentions: { parse: [] } }) : '';
   const base = { quando: agora.toISO(), dia: agora.toISODate(), origem: 'gerente', maquina: 'Gerente IA', cliente: r.cliente, peca: 'rascunho ' + (r.classe || ''), ref: 'rascunho:' + r.id };
   const linhas = status === 'atencao' ? achados.map(a => ({ ...base, resultado: 'atencao', regra: a.regra, detalhe: a.detalhe, gravidade: a.gravidade }))
     : [{ ...base, resultado: status, regra: '', detalhe: status === 'erro' ? 'falha ao revisar' : '', gravidade: '' }];
@@ -94,8 +97,8 @@ FROM json_to_recordset($1::json) AS x(id int, status text, nota text) WHERE r.id
 
 const avisos = node({ type: 'n8n-nodes-base.code', version: 2, config: { name: 'Avisos', parameters: { jsCode: "return $('Resultado').all().filter(i => i.json.discord).map(i => ({ json: { discord: i.json.discord } }));" } } });
 
-const avisar = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, config: { name: 'Responder no #aprovações-gerente', credentials: DISCORD, onError: 'continueRegularOutput', parameters: {
-  method: 'POST', url: 'https://discord.com/api/v10/channels/1567643418270634136/messages', authentication: 'genericCredentialType', genericAuthType: 'httpHeaderAuth',
+const avisar = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, config: { name: 'Avisar no #revisora-ia', credentials: DISCORD, onError: 'continueRegularOutput', parameters: {
+  method: 'POST', url: 'https://discord.com/api/v10/channels/1567917509431263302/messages', authentication: 'genericCredentialType', genericAuthType: 'httpHeaderAuth',
   sendBody: true, specifyBody: 'json', jsonBody: '={{ $json.discord }}', options: { batching: { batch: { batchSize: 1, batchInterval: 1200 } } } } } });
 
 const linhas = node({ type: 'n8n-nodes-base.code', version: 2, config: { name: 'Linhas dos achados', parameters: { jsCode: "return $('Resultado').all().flatMap(i => i.json.linhas).map(l => ({ json: l }));" } } });
@@ -105,7 +108,7 @@ const gravarAch = node({ type: 'n8n-nodes-base.dataTable', version: 1.1, config:
     schema: [ { id: 'quando', displayName: 'quando', type: 'dateTime', display: true }, { id: 'dia', displayName: 'dia', type: 'string', display: true }, { id: 'origem', displayName: 'origem', type: 'string', display: true }, { id: 'maquina', displayName: 'maquina', type: 'string', display: true }, { id: 'cliente', displayName: 'cliente', type: 'string', display: true }, { id: 'peca', displayName: 'peca', type: 'string', display: true }, { id: 'ref', displayName: 'ref', type: 'string', display: true }, { id: 'resultado', displayName: 'resultado', type: 'string', display: true }, { id: 'regra', displayName: 'regra', type: 'string', display: true }, { id: 'detalhe', displayName: 'detalhe', type: 'string', display: true }, { id: 'gravidade', displayName: 'gravidade', type: 'string', display: true } ] },
   options: {} } } });
 
-const nota = sticky('## Revisora IA · revisar a Gerente (V1)\nA cada 2 min: rascunhos novos da Gerente IA dos clientes do ESCOPO (linha revisora_escopo da tabela Gerente IA · textos; hoje Nova Acrópole e Regina) → Claude confere classe, prazo, card, resposta, regras de texto, promessas e português → selo em gerente_rascunhos (revisora_status/nota), resposta embaixo do rascunho no #aprovações-gerente e achados na tabela "Revisora IA · achados". Não bloqueia nada e não fala com cliente.', [], { color: 4 });
+const nota = sticky('## Revisora IA · revisar a Gerente (V1)\nA cada 2 min: rascunhos novos da Gerente IA dos clientes do ESCOPO (linha revisora_escopo da tabela Gerente IA · textos; hoje Nova Acrópole e Regina) → Claude confere classe, prazo, card, resposta, regras de texto, promessas e português → selo em gerente_rascunhos (revisora_status/nota), aviso no #revisora-ia (com link do rascunho) e achados na tabela "Revisora IA · achados". Não bloqueia nada e não fala com cliente.', [], { color: 4 });
 
 export default workflow('revisora-gerente', 'Revisora IA | Revisar a Gerente (V1)')
   .add(cada2).to(lerEscopo).to(escopo).to(pendentes).to(montar).to(revisar).to(resultado).to(gravar).to(linhas).to(gravarAch).to(avisos).to(avisar)

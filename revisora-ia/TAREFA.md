@@ -49,7 +49,7 @@ Checklist (base: casos Ana Mangia 04/11 e Nova Acrópole 04/11):
    ("Shorts IA", "Longos IA", "Carrosséis IA", "Escritório", "Equipe"), cliente, peca (nome curto), ref (url do pedido/card),
    resultado ("ok" | "atencao"), regra (texto|copiado|titulo|repeticao|pacote|capa|olhar|broll|video), detalhe (curto, sem valores), gravidade (alta|media|baixa).
    Peça ok = uma linha com resultado "ok" e o resto vazio.
-3. Erro técnico (ponte, download, Notion): detalhe no #ia-status (1559987978774777998) e siga para a próxima peça.
+3. Erro técnico (ponte, download, Notion): detalhe no #revisora-ia (1567917509431263302) e siga para a próxima peça. Todo aviso da Revisora vai só no #revisora-ia (nunca no #aprovações-gerente).
 
 ## Regras
 - Não escreva no #dia-a-dia nem marque ninguém (fase 1). Equipe não vê valores nem financeiro.
