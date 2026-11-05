@@ -18,7 +18,7 @@ plano = json.load(open(os.path.join(pasta, 'plano.json')))
 dest = os.path.join(pasta, 'broll'); os.makedirs(dest, exist_ok=True)
 so = set(sys.argv[2:])
 EVITAR = ('cartoon', 'animation', 'animated', 'anime', 'illustration', 'drawing', 'christmas', 'snow', 'halloween', 'glove',
-          'green screen', 'greenscreen', 'chroma', 'icon', 'vector', 'isometric', '3d', 'render', 'bitcoin', 'crypto', 'dog', 'puppy')
+          'green screen', 'greenscreen', 'chroma', 'icon', 'vector', 'isometric', '3d', 'render', 'bitcoin', 'crypto', 'dog', 'puppy', 'pyramid', 'triangle', 'illuminati', 'occult', 'eye of')
 CW, CH = 2112, 1188  # 10% maior que 1080p para o movimento lento (Ken Burns)
 
 
