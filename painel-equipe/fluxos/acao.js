@@ -147,7 +147,7 @@ if (p.acao === 'revisao') props['Link do arquivo'] = { url: p.link };
 if (p.acao === 'agendei' || p.acao === 'postei') props['Link da postagem'] = { url: p.link };
 if ((p.acao === 'postei' && !confere) || (p.acao === 'jafeito' && p.fim === 'Postado')) props['Postado em'] = { date: { start: agora.toISODate() } };
 if (p.acao === 'jafeito' && p.link) props['Link da postagem'] = { url: p.link };
-if ((p.acao === 'feito' || (p.acao === 'jafeito' && p.fim === 'Feito')) && !txt(cp['Concluído em'])) props['Concluído em'] = { date: { start: agora.toISODate() } };
+if ((p.acao === 'feito' || (p.acao === 'jafeito' && p.fim === 'Feito')) && !((cp['Concluído em'] || {}).date || {}).start) props['Concluído em'] = { date: { start: agora.toISODate() } };
 // Não é comigo: tira só o nome de quem apertou; o card fica com os outros ou cai em "Sem responsável".
 if (p.acao === 'naoemeu' && !teste) props['Responsável'] = { relation: resp.filter(x => x !== r.ficha).map(id => ({ id })) };
 if (p.acao === 'pegar' && !teste) props['Responsável'] = { relation: [{ id: r.ficha }] };
