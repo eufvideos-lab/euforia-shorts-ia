@@ -500,6 +500,7 @@ function chips(c){
   const cl = cli(c), k = diff(c.prazo); let h = '';
   if (falta(c)) h += `<span class="chip red">Falta informação</span>`;
   if (cl.foco) h += `<span class="chip org">⭐ Prioridade da diretoria</span>`;
+  if (c.promessa) { const kp = diff(c.promessa.quando); h += `<span class="chip ${kp <= 0 ? 'red' : 'org'}">🗓️ Prometido ao cliente ${kp < 0 ? '(atrasado)' : kp === 0 ? 'para hoje' : 'para amanhã'}</span>`; }
   h += `<span class="chip">${esc(c.tipo || 'Entrega')}${c.qtd > 1 ? ' ×' + c.qtd : ''}</span>`;
   if (cl.faixa) h += `<span class="chip">Faixa ${esc(cl.faixa)}</span>`;
   if (cl.atencao) h += `<span class="chip red">🔴 Atenção</span>`;
@@ -753,7 +754,9 @@ const VIEWS = {
     html(){
       if (diretor()) return filaEscritorio();
       const meus = D.cards.filter(c => c.meu && ABERTO.includes(c.status));
-      const faltas = ordenar(meus.filter(falta)), resto = meus.filter(c => !falta(c));
+      // Henrique 05/11: card com promessa feita ao cliente (hoje, amanhã ou atrasada) é a prioridade do dia, acima de tudo.
+      const prom = ordenar(meus.filter(c => c.promessa)).sort((x, y) => String(x.promessa.quando).localeCompare(String(y.promessa.quando)));
+      const faltas = ordenar(meus.filter(c => falta(c) && !c.promessa)), resto = meus.filter(c => !falta(c) && !c.promessa);
       // ⭐ Cliente em foco da diretoria e o que vai ao ar hoje entram sempre em "Fazer agora".
       const agora = c => c.status === 'Ajustes' || diff(c.prazo) <= 0 || !!cli(c).foco || diff(c.postar) === 0;
       const ag = ordenar(resto.filter(agora));
@@ -769,6 +772,7 @@ const VIEWS = {
         <div class="stat"><span class="v">${comigo.length}</span><span>na revisão ou com o cliente</span></div>
       </div>
       ${(DEMO || ESTREIAS_NO_AR) && ['revisor', 'calls', 'teste'].includes(papel()) ? semEstreiaBloco() : ''}
+      ${grupoFold('🗓️ Prometido ao cliente: prioridade do dia', prom, '', true)}
       ${grupoFold('Falta informação para o escritório', faltas, '', true)}
       ${grupoFold('Fazer agora', ag, 'Nada atrasado nem para hoje.', true)}
       ${grupoFold('Amanhã', am, 'Nada para amanhã.', false)}

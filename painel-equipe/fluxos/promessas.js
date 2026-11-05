@@ -136,12 +136,19 @@ base.forEach((b, i) => {
 });
 const avisos = [];
 const ment = l => [...new Set([...l.flatMap(x => x.guard), ...l.flatMap(x => x.depende ? [] : x.resp)])];
+// Henrique 05/11: cada pessoa recebe no SEU 1x1 só as promessas dela (a Lorena nem está no #dia-a-dia). Sem 1x1 conhecido, cai no #dia-a-dia.
+const UM = { '1490768736876237082': '1556650881921978511', '1410287139169763471': '1556650886678454403', '1142062975071551528': '1556650891732459620',
+  '827882215185973279': '1556650896962879518', '1470387767337816128': '1556650902448771104' };
+const porPessoa = (l, cab, fimResp, fimGuard) => { for (const id of ment(l)) {
+  const meus = l.filter(x => x.guard.includes(id) || (!x.depende && x.resp.includes(id)));
+  if (!meus.length) continue;
+  const guarda = meus.some(x => x.guard.includes(id));
+  avisos.push({ canal: UM[id] || '1556642691410956339', body: JSON.stringify({ content: (cab.replace('@', '<@' + id + '>') + '\\n' + meus.map(x => '• ' + x.txt + (x.guard.includes(id) ? ' · você é o guardião' : '')).join('\\n') + '\\n\\n' + (guarda ? fimGuard : fimResp)).slice(0, 1990), allowed_mentions: { users: [id] } }) });
+} };
 const r = risco.filter(x => !x.depende);
-if (r.length) { const ids = ment(r);
-  avisos.push({ canal: '1556642691410956339', body: JSON.stringify({ content: ('⏰ ' + ids.map(i => '<@' + i + '>').join(' ') + ' promessa(s) para HOJE ainda não feitas:\\n' + r.map(x => '• ' + x.txt).join('\\n') + '\\n\\nSe já fez, mude o card. Se não vai dar, avise agora o guardião do cliente (o primeiro marcado aqui).').slice(0, 1990), allowed_mentions: { users: ids } }) }); }
+if (r.length) porPessoa(r, '⏰ @ promessa(s) para HOJE ainda não feitas:', 'Se já fez, mude o card. Se não vai dar, avise agora o guardião do cliente.', 'Se já foi feito, mude o card. Se não vai dar, combine agora com quem faz e registre na promessa.');
 const a = atraso.filter(x => !x.depende);
-if (a.length) { const ids = ment(a);
-  avisos.push({ canal: '1556642691410956339', body: JSON.stringify({ content: ('🚨 ' + ids.map(i => '<@' + i + '>').join(' ') + ' promessa(s) ATRASADA(S):\\n' + a.map(x => '• ' + x.txt).join('\\n') + '\\n\\nGuardião, resolva hoje e registre o novo combinado na promessa.').slice(0, 1990), allowed_mentions: { users: ids } }) }); }
+if (a.length) porPessoa(a, '🚨 @ promessa(s) ATRASADA(S):', 'Termine hoje e mude o card. Se travou, avise o guardião do cliente.', 'Guardião, resolva hoje e registre o novo combinado na promessa.');
 if (atraso.length) avisos.push({ canal: '1560627456837427250', body: JSON.stringify({ content: ('🚨 Promessa(s) atrasada(s) (' + h.carimbo + ').' + (a.length ? ' O guardião foi chamado.' : '') + '\\n' + atraso.map(x => '• ' + x.txt).join('\\n')).slice(0, 1990), allowed_mentions: { parse: [] } }) });
 return mudar.map((m, i) => ({ json: Object.assign({}, m.json, { avisos: i === 0 ? avisos : [] }) }));
 ` } } });
@@ -154,7 +161,7 @@ const avisar = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, config: 
   method: 'POST', url: '={{ "https://discord.com/api/v10/channels/" + $json.canal + "/messages" }}', authentication: 'genericCredentialType', genericAuthType: 'httpHeaderAuth',
   sendBody: true, specifyBody: 'json', jsonBody: '={{ $json.body }}', options: {} } } });
 
-const nota = sticky('## Painel · Promessas: gerador e vigia (V1)\nBanco 🗓️ Promessas (Esteira de Entregas). Segunda a sábado, 8h às 19h (Recife).\nGerador (:05): promessa "Prometido" sem card vira card no Entregas ("CLIENTE | MARCO | DD/MM", Origem Extra). Longo/shorts/carrossel: Postar em = Quando e Prazo = D-3. Resto: Prazo = Quando. A promessa fica "Com card".\nVigia (:25): lê o card de cada promessa aberta. Feito = Cumprido. No dia, depois do "Alerta às" = Em risco (aviso no #dia-a-dia marcando o guardião do cliente: campo 🛡️ Guardião da ficha; vazio = Rômulo para foco ⭐ ou faixa A, Lorena para B/C, e o responsável). Passou do dia = Atrasado (#dia-a-dia + #avisos-escritório). Só avisa quando o status muda. "Depende do cliente" não chama a equipe.', [], { color: 4 });
+const nota = sticky('## Painel · Promessas: gerador e vigia (V1)\nBanco 🗓️ Promessas (Esteira de Entregas). Segunda a sábado, 8h às 19h (Recife).\nGerador (:05): promessa "Prometido" sem card vira card no Entregas ("CLIENTE | MARCO | DD/MM", Origem Extra). Longo/shorts/carrossel: Postar em = Quando e Prazo = D-3. Resto: Prazo = Quando. A promessa fica "Com card".\nVigia (:25): lê o card de cada promessa aberta. Feito = Cumprido. No dia, depois do "Alerta às" = Em risco (aviso no 1x1 de cada um, desde 05/11: o guardião do cliente, campo 🛡️ Guardião da ficha; vazio = Rômulo para foco ⭐ ou faixa A, Lorena para B/C, e o responsável). Passou do dia = Atrasado (1x1 + #avisos-escritório). Remarcada para frente (Quando novo) volta a Com card. Só avisa quando o status muda. "Depende do cliente" não chama a equipe.', [], { color: 4 });
 
 export default workflow('painel-promessas', 'Painel | Promessas: gerador e vigia (V1)')
   .add(relogioG).to(horaG).to(semCard).to(clientesG).to(montarCards).to(criarCard).to(ligarCard)

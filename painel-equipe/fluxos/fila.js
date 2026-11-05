@@ -79,6 +79,13 @@ const pedidosNode = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, con
     parameters: { parameters: [{ type: 'body', name: 'start_cursor', value: '={{ $response.body.next_cursor }}' }] },
     paginationCompleteWhen: 'other', completeExpression: '={{ !$response.body.has_more }}', limitPagesFetched: true, maxRequests: 10 } } } } } });
 
+// Henrique 05/11: card ligado a promessa feita ao cliente (hoje, amanhã ou atrasada) é a prioridade do dia de quem tem o card.
+const promessasNode = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, config: { name: 'Promessas do dia', credentials: NOTION, executeOnce: true, onError: 'continueRegularOutput', alwaysOutputData: true, parameters: {
+  method: 'POST', url: 'https://api.notion.com/v1/databases/824c669471e5424d8c846936a63c16d4/query', authentication: 'genericCredentialType', genericAuthType: 'httpHeaderAuth',
+  sendHeaders: true, headerParameters: NOTION_HDR, sendBody: true, specifyBody: 'json',
+  jsonBody: '={{ JSON.stringify({ filter: { and: [{ property: "Quando", date: { on_or_before: $now.setZone("America/Recife").plus({ days: 1 }).toISODate() } }, { or: ["Prometido", "Com card", "Em risco", "Atrasado"].map(s => ({ property: "Status", select: { equals: s } })) }] }, page_size: 100 }) }}',
+  options: {} } } });
+
 // Só sai daqui o que a produção precisa. Nada de contrato, valores, risco, clima ou financeiro.
 const montar = node({ type: 'n8n-nodes-base.code', version: 2, config: { name: 'Montar fila', parameters: { jsCode: `const Z = 'America/Recife';
 const quem = $('Validar acesso').first().json;
@@ -96,6 +103,10 @@ for (const it of $('Clientes ativos').all()) for (const p of (it.json.results ||
 // Cliente que a pessoa não pode atender (decisão da diretoria 04/11: Victor fora da Ana Mangia e da Além do CNPJ).
 const BLOQUEIO = { '3ea98c0cdde08182a952f3d9a5b73575': ['3ea98c0cdde081578305ec053b215822', '3ea98c0cdde081aaa244c92b808677f9'] };
 const TIPOS_LIVRE = ['Vídeo longo', 'Shorts', 'Podcast', 'Carrossel', 'Thumbnail'];
+const PROM = {};
+for (const it of $('Promessas do dia').all()) for (const p of (it.json.results || [])) { const pr = p.properties || {};
+  for (const r of ((pr['Card'] || {}).relation || [])) { const q = { marco: txt(pr['Marco']).slice(0, 160), quando: txt(pr['Quando']).slice(0, 10), status: txt(pr['Status']) };
+    if (!PROM[sem(r.id)] || q.quando < PROM[sem(r.id)].quando) PROM[sem(r.id)] = q; } }
 const cards = [];
 for (const it of $('Cards da pessoa').all()) for (const p of (it.json.results || [])) {
   const pr = p.properties || {};
@@ -116,6 +127,7 @@ for (const it of $('Cards da pessoa').all()) for (const p of (it.json.results ||
     obs: txt(pr['Obs']).split('\\n').slice(0, 4).join('\\n').slice(0, 600),
     naogravou: status === 'Aguardando cliente' && (txt(pr['Obs']).split('\\n').find(x => /marcou: cliente (ainda não gravou|mandou o material)/.test(x)) || '').includes('ainda não gravou'),
     resp: resp.map(r => EQUIPE[r] || 'Outro'), meu: quem.papel === 'teste' || resp.includes(quem.ficha),
+    promessa: PROM[sem(p.id)] || null,
     comecou: txt(pr['⏱️ Começou em']), revisao: txt(pr['⏱️ Foi para revisão em']), voltas: (pr['⏱️ Voltas de ajuste'] || {}).number || 0 });
 }
 // Pedidos ao escritório: quem pediu sai da linha "[Painel dd/MM HH:mm] Pedido de Nome · ..." da Obs.
@@ -153,5 +165,5 @@ const nota = sticky('## Painel da equipe · fila (V1)\nA página grupoeuforia.co
 
 export default workflow('painel-fila', 'Painel | Fila da equipe (V1)')
   .add(pedir).to(ler).to(acesso).to(validar)
-  .to(podeSeguir.onTrue(entregas.to(clientes).to(pedidosNode).to(montar).to(devolver)).onFalse(recusar))
+  .to(podeSeguir.onTrue(entregas.to(clientes).to(pedidosNode).to(promessasNode).to(montar).to(devolver)).onFalse(recusar))
   .add(nota);
