@@ -14,7 +14,7 @@ const ler = node({ type: 'n8n-nodes-base.code', version: 2, config: { name: 'Ler
 const u = String(b.u || '').toLowerCase();
 return [{ json: { u: /^[0-9a-f]{24}$/.test(u) ? u : 'x', pin: String(b.pin || '').replace(/[^0-9]/g, '').slice(0, 6),
   acao: ['ver', 'decidir', 'metricas', 'resolver'].includes(b.acao) ? b.acao : '', id: Math.max(0, parseInt(b.id, 10) || 0),
-  chat: /^[0-9-]+@g\\.us$/.test(String(b.chat || '')) ? String(b.chat) : '', ate: /^\\d{4}-\\d{2}-\\d{2}T[0-9:.]+Z?$/.test(String(b.ate || '')) ? String(b.ate) : '',
+  chat: /^[0-9-]+@g\\.us$/.test(String(b.chat || '')) ? String(b.chat) : '', ate: /^\\d{4}-\\d{2}-\\d{2}T[0-9:.]+(Z|[+-][0-9]{2}:?[0-9]{2})?$/.test(String(b.ate || '')) ? String(b.ate) : '',
   escolha: ['enviar', 'cancelar'].includes(b.escolha) ? b.escolha : '', texto: String(b.texto || '').trim().slice(0, 1500) } }];
 ` } } });
 
