@@ -436,6 +436,7 @@ let FO = null, FOQ = '', FOF = '';
 let CT = null, CTQ = '', CTT = '', CTO = '', CTN = 40;
 let RS = null, RSC = '', RSP = '';
 let GA = null, GAE = {}, GM = null, GMP = 7;
+let RV = null, RVD = 0; // Revisora IA (05/11/2026): relatórios e achados de hoje
 let ES = null;
 let CL = null, CLQ = '', CLF = '', CLO = 'atencao';
 let EV = null, EVJ = '', EVP = '1', EVT = '';
@@ -611,6 +612,7 @@ const VIEWS = {
       </section>`;
     } },
   aprovar: { nome: 'Aprovar', pode: () => (DEMO || GERENTE_NO_AR) && diretor(), badge: () => esperaGA().length, html(){ return aprovarHtml(); } },
+  revisora: { nome: 'Revisora IA', pode: () => (DEMO || REVISORA_NO_AR) && diretor(), badge: () => RV && RV.hoje ? new Set(RV.hoje.filter(x => x.resultado === 'atencao').map(x => x.ref)).size : 0, html(){ return revisoraHtml(); } },
   central: { nome: 'Central de Demandas', pode: () => (DEMO || CENTRAL_NO_AR) && ['revisor', 'calls', 'diretor', 'teste'].includes(papel()), badge: () => CT && CT.demandas ? CT.demandas.filter(x => !x.velho && ['ninguem', 'travado'].includes(x.onde)).length : 0,
     html(){
       const topo = `<div class="head"><div><p class="eyebrow">${CT && CT.ok ? esc(CT.hojeTexto) + ' · atualizada às ' + esc(CT.agora) : 'Esteira de demandas'}</p><h1>Central de Demandas</h1></div><p class="sub">Tudo o que precisa ser feito, em ordem de prioridade (prazo, dia de ir ao ar, cliente em atenção ou sensível, faixa e urgência), com a sugestão de quem faz. Mande para a máquina ou para uma pessoa com um clique. Em cima, quanto cada máquina e cada pessoa aguenta agora.</p></div>`;
@@ -2261,6 +2263,7 @@ function cardGA(x){
   return `<section class="panel"><h2>${esc(x.cliente)} <span class="sub">· ${esc(CLASSE_GA[x.classe] || x.classe)} · ${esc(x.criado)}</span></h2>
     ${URG_GA[x.urgencia] ? `<p><span class="chip ${x.urgencia === 'hiperurgente' ? 'red' : 'warn'}">${esc(URG_GA[x.urgencia])}</span></p>` : ''}
     ${conf}
+    ${x.revisora_status === 'ok' ? '<p><span class="chip ok">🔎 Revisora: conferido</span></p>' : x.revisora_status === 'atencao' ? `<p class="note" style="white-space:pre-wrap">🔎 <b>Revisora: atenção</b> · ${esc(x.revisora_nota || '')}</p>` : ''}
     ${x.cliente_disse ? `<p class="sub" style="white-space:pre-wrap;border-left:3px solid var(--line);padding-left:10px">${esc(x.cliente_disse)}</p>` : ''}
     ${x.card_url ? `<p class="note">📋 Card criado no Entregas (com o Ismael): <a href="${esc(x.card_url)}" target="_blank" rel="noopener">abrir</a></p>` : ''}
     <label for="ga-t${x.id}">Resposta para o grupo<textarea id="ga-t${x.id}" rows="4" ${feito ? 'disabled' : ''}>${esc(GAE[x.id] != null ? GAE[x.id] : x.texto)}</textarea></label>
@@ -2314,6 +2317,52 @@ async function carregarMetricas(){
 }
 document.addEventListener('click', e => { const b = e.target.closest('#main [data-gmp]'); if (b) { GMP = Number(b.dataset.gmp) || 7; render(); } });
 setInterval(() => { if (D && diretor() && view === 'aprovar' && !document.hidden) { GM = GM && GM.p7 ? GM : null; carregarMetricas(); } }, 300000);
+// ---------- Revisora IA (05/11/2026) ----------
+// Pedido do Henrique: uma camada extra que confere o que a Gerente IA pede e o que as máquinas entregam, antes da revisão humana,
+// e um relatório diário (seg a sáb, 18h30) com mudanças sugeridas para cada máquina e para a Gerente. Começa só nos clientes sensíveis
+// (Nova Acrópole e Regina). Dados: fluxo n8n "Revisora IA | Relatório diário e painel" (webhook euforia-painel-revisora, só diretor).
+const REVISORA_NO_AR = false;
+const GRAV_RV = { alta: ['🔴', 'red'], media: ['🟠', 'warn'], baixa: ['🟡', ''] };
+async function carregarRevisora(){
+  if (carregarRevisora.indo) return; carregarRevisora.indo = true;
+  try { const r = await api('euforia-painel-revisora', {}); RV = r && r.ok ? r : (RV && RV.ok ? RV : { erro: true }); }
+  catch (e) { if (!RV) RV = { erro: true }; }
+  carregarRevisora.indo = false;
+  if (view === 'revisora' && !ocupado && !$('#layer').innerHTML) render();
+}
+setInterval(() => { if (D && diretor() && (DEMO || REVISORA_NO_AR) && view === 'revisora' && !document.hidden) carregarRevisora(); }, 300000);
+document.addEventListener('click', e => { const b = e.target.closest('#main [data-rvd]'); if (b) { RVD = Number(b.dataset.rvd) || 0; render(); } });
+function revisoraHtml(){
+  const topo = `<div class="head"><div><p class="eyebrow">Revisora IA${RV && RV.ok ? ' · atualizada às ' + esc(RV.agora) : ''}</p><h1>Revisora IA</h1></div><p class="sub">Ela confere os rascunhos da Gerente IA e as peças das máquinas antes da revisão da equipe. De segunda a sábado, às 18h30, sai o relatório com o que melhorar. Para aplicar uma sugestão, diga ao Claude "aplica 1 e 3".${RV && RV.escopo ? ' Clientes conferidos agora: <b>' + esc(RV.escopo.join(', ')) + '</b>.' : ''}</p></div>`;
+  if (!RV) { carregarRevisora(); return topo + '<p class="sub">Carregando…</p>'; }
+  if (RV.erro) return topo + '<p class="empty">Não consegui ler a Revisora agora. Tente de novo em alguns minutos.</p>';
+  const H = RV.hoje || [];
+  const pecas = {}; H.forEach(x => { const p = pecas[x.ref] = pecas[x.ref] || { ...x, itens: [] }; if (x.resultado === 'atencao') p.itens.push(x); });
+  const P = Object.values(pecas), comProblema = P.filter(p => p.itens.length);
+  const linhaPeca = p => `<li class="item ${p.itens.some(i => i.gravidade === 'alta') ? 'late' : p.itens.length ? 'today' : ''}"><span class="stripe"></span>
+    <div class="main" style="cursor:default"><span class="t">${esc(p.cliente)} · ${esc(p.peca)}</span>
+    <span class="meta"><span class="chip">${esc(p.maquina)}</span><span class="chip">${esc(p.quando)}</span>${p.itens.length ? '' : '<span class="chip ok">conferido</span>'}</span>
+    ${p.itens.map(i => `<span class="sub" style="display:block;margin-top:4px">${(GRAV_RV[i.gravidade] || ['•'])[0]} ${esc(i.regra)}: ${esc(i.detalhe)}</span>`).join('')}</div>
+    ${/^https:/.test(p.ref || '') ? `<span class="act"><a class="btn" href="${esc(p.ref)}" target="_blank" rel="noopener">Abrir</a></span>` : ''}</li>`;
+  const R = RV.relatorios || [], r = R[Math.min(RVD, R.length - 1)];
+  const abas = R.length > 1 ? `<p style="display:flex;gap:6px;flex-wrap:wrap">${R.slice(0, 7).map((x, i) => `<button class="btn ${i === RVD ? 'primary' : ''}" data-rvd="${i}">${esc(x.dia.split('-').reverse().slice(0, 2).join('/'))}</button>`).join('')}</p>` : '';
+  const num = r && r.numeros ? r.numeros : null;
+  const rel = !r ? '<p class="empty">O primeiro relatório sai às 18h30 de hoje (ou do próximo dia útil com peça conferida).</p>' : `${abas}
+    <p>${esc(r.resumo)}</p>
+    ${num ? `<div class="stats"><div class="stat"><span class="v">${num.pecas || 0}</span><span>conferidas</span></div><div class="stat"><span class="v">${num.ok || 0}</span><span>sem nada a apontar</span></div>${(num.maquinas || []).map(m => `<div class="stat ${m.pct < 80 ? 'hot' : ''}"><span class="v">${m.pct}%</span><span>${esc(m.maquina)} certas de primeira (${m.ok}/${m.pecas})</span></div>`).join('')}</div>` : ''}
+    ${(r.sugestoes || []).length ? `<div style="display:flex;flex-direction:column;gap:10px;margin-top:10px">${r.sugestoes.map(sg => `<section class="panel"><h2>${sg.n}. ${esc(sg.para)} <span class="chip ${(GRAV_RV[sg.prioridade] || ['', ''])[1]}">${esc(sg.prioridade)}</span></h2>
+      <p><b>Problema:</b> ${esc(sg.problema)}</p><p><b>Mudança:</b> ${esc(sg.mudanca)}</p><p class="note" style="white-space:pre-wrap">${esc(sg.regra)}</p></section>`).join('')}</div>` : '<p class="sub">Nenhuma mudança sugerida neste dia.</p>'}`;
+  return topo + `<div class="stats"><div class="stat"><span class="v">${P.length}</span><span>conferidas hoje</span></div><div class="stat ${comProblema.length ? 'hot' : ''}"><span class="v">${comProblema.length}</span><span>com algo a corrigir</span></div></div>
+    <section class="group"><h2>📋 Relatório do dia</h2>${rel}</section>
+    <section class="group"><h2>Conferido hoje <span class="count">${P.length}</span></h2>${P.length ? `<ul class="rows">${comProblema.concat(P.filter(p => !p.itens.length)).map(linhaPeca).join('')}</ul>` : '<p class="empty">Nada conferido ainda hoje.</p>'}</section>`;
+}
+const DEMO_RV = { ok: true, agora: '18:32', escopo: ['Acrópole', 'Regina'], hoje: [
+  { quando: '15:10', maquina: 'Shorts IA', cliente: 'Nova Acrópole', peca: 'Corte 20 · short 2', ref: 'https://www.notion.so/demo-short', resultado: 'atencao', regra: 'titulo', detalhe: 'O título fala de "força centrífuga" e o trecho fala da mesa de trabalho. Trocar pelo tema do trecho.', gravidade: 'alta' },
+  { quando: '14:02', maquina: 'Gerente IA', cliente: 'Regina Gyraser', peca: 'rascunho status', ref: 'rascunho:12', resultado: 'ok', regra: '', detalhe: '', gravidade: '' },
+  { quando: '11:40', maquina: 'Carrosséis IA', cliente: 'Nova Acrópole', peca: 'Corte 19 · carrossel', ref: 'https://www.notion.so/demo-carrossel', resultado: 'atencao', regra: 'texto', detalhe: 'Legenda com "concerteza": o certo é "com certeza".', gravidade: 'baixa' } ],
+  relatorios: [{ dia: '2026-11-05', resumo: 'Dia com 3 peças conferidas: 1 sem nada a apontar. O erro que pesa é título de short que não fala do trecho, o mesmo da reclamação da Nova Acrópole de 04/11.', aplicar: '',
+    numeros: { pecas: 3, ok: 1, maquinas: [{ maquina: 'Shorts IA', pecas: 1, ok: 0, pct: 0 }, { maquina: 'Carrosséis IA', pecas: 1, ok: 0, pct: 0 }, { maquina: 'Gerente IA', pecas: 1, ok: 1, pct: 100 }] },
+    sugestoes: [{ n: 1, para: 'Shorts IA', problema: 'Título não combina com o trecho', mudanca: 'Conferir título contra a transcrição antes de entregar', regra: 'Antes de marcar Pronto para revisão, leia a transcrição de cada short e confirme que o título fala do que é dito no trecho. Se não falar, reescreva o título.', prioridade: 'alta' }] }] };
 function aprovarHtml(){
   const topo = `<div class="head"><div><p class="eyebrow">Gerente IA${GA && GA.ok ? ' · atualizada às ' + esc(GA.agora) : ''}</p><h1>Aprovar respostas</h1></div><p class="sub">Rascunhos da Gerente IA para os grupos do piloto. Enviar manda pelo suporte, assinado Érica, em até 1 minuto. Para corrigir, mude o texto e aperte Enviar. Vale o primeiro toque, aqui ou no #aprovações-gerente.</p></div>`;
   if (!GA) { carregarGerente(); return topo + '<p class="sub">Carregando…</p>'; }
@@ -2516,6 +2565,7 @@ async function carregarCentral(silencioso){
 function demoApi(path, b){
   const wait = v => new Promise(r => setTimeout(() => r(v), 350));
   if (path === 'euforia-painel-fila') return wait(DEMO_D);
+  if (path === 'euforia-painel-revisora') return wait(JSON.parse(JSON.stringify(DEMO_RV)));
   if (path === 'euforia-painel-gerente') return wait(b.acao === 'decidir' ? { ok: true } : b.acao === 'metricas' ? JSON.parse(JSON.stringify(DEMO_GM)) : JSON.parse(JSON.stringify(DEMO_GA)));
   if (path === 'euforia-painel-whatsapp') {
     if (b.acao === 'conectar') { demoApi.n = 0; return wait({ ok: true, estado: 'aguardando', qr: DEMO_QR }); }
