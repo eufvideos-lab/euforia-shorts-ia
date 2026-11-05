@@ -423,10 +423,12 @@ if (!SITUACAO_NO_AR && !DEMO) for (let i = TIPOS.length - 1; i >= 0; i--) if (TI
 // Erros que a pessoa consegue resolver sozinha; o resto vira o aviso padrão.
 const MOTIVO = {acesso:'Seu acesso mudou. Entre de novo com o PIN.', permissao:'Esse card não está no seu nome.', etapa:'Esse card mudou de etapa. A fila foi atualizada.',
   link:'Cole o link antes de mandar.', texto:'Escreva o que precisa antes de mandar.', prazo:'Escolha um prazo de hoje em diante.', cliente:'Escolha um cliente ativo.',
-  tema:'Escreva o tema ou o texto da thumb.', pessoa:'Esse card já está com essa pessoa. Escolha outra.', bloqueio:'Essa pessoa não atende esse cliente. Escolha outra.', fim:'Escolha o que aconteceu.', pego:'Alguém pegou esse card antes. A fila foi atualizada.', limite:'Você já está com 8 cards em produção. Termine um para pegar outro.', direcao:'Esse assunto é da diretoria. Não responda por aqui.', grupo:'Esse grupo não é de cliente do suporte.', whatsapp:'O WhatsApp não mandou. Tente de novo ou responda direto no grupo.', tamanho:'Arquivo vazio ou maior que 20 GB.', 'sem-pasta':'A pasta do cliente no Drive não foi achada. Cole o link do arquivo no lugar.'};
+  tema:'Escreva o tema da thumb ou cole o link do vídeo (a máquina tira o texto do roteiro).', pessoa:'Esse card já está com essa pessoa. Escolha outra.', bloqueio:'Essa pessoa não atende esse cliente. Escolha outra.', fim:'Escolha o que aconteceu.', pego:'Alguém pegou esse card antes. A fila foi atualizada.', limite:'Você já está com 8 cards em produção. Termine um para pegar outro.', direcao:'Esse assunto é da diretoria. Não responda por aqui.', grupo:'Esse grupo não é de cliente do suporte.', whatsapp:'O WhatsApp não mandou. Tente de novo ou responda direto no grupo.', tamanho:'Arquivo vazio ou maior que 20 GB.', 'sem-pasta':'A pasta do cliente no Drive não foi achada. Cole o link do arquivo no lugar.'};
 const ERRO = 'Deu erro, a diretoria está resolvendo.';
 const LIMITE = 8;
-let PANEXOS = [];
+let PANEXOS = [], PMODELO = [];
+function listaModelo(){ const l = $('#pmlist'); if (l) l.innerHTML = PMODELO.map((f, i) => `<li><span>🎯 ${esc(f.name)} <span class="mono">${(f.size / 1048576).toFixed(1)} MB</span></span><button type="button" class="btn" data-tiramodelo="${i}">Tirar</button></li>`).join(''); }
+function juntarModelo(lista){ for (const f of lista) if (PMODELO.length < 5 && f.size > 0) PMODELO.push(f); if (lista.length && PMODELO.length >= 5) toast('Até 5 arquivos de modelo.'); listaModelo(); }
 function listaAnexos(){ const l = $('#palist'); if (l) l.innerHTML = PANEXOS.map((f, i) => `<li><span>📎 ${esc(f.name)} <span class="mono">${(f.size / 1048576).toFixed(1)} MB</span></span><button type="button" class="btn" data-tiraanexo="${i}">Tirar</button></li>`).join(''); }
 function juntarAnexos(lista){ for (const f of lista) if (PANEXOS.length < 10 && f.size > 0) PANEXOS.push(f); if (lista.length && PANEXOS.length >= 10) toast('Até 10 arquivos por pedido.'); listaAnexos(); }
 const PASSAR = [['victor', 'Victor'], ['lorena', 'Lorena'], ['daniel', 'Daniel'], ['ismael', 'Ismael'], ['romulo', 'Rômulo'], ['escritorio', 'Escritório (máquinas)']];
@@ -963,8 +965,13 @@ const VIEWS = {
         <p class="note" id="npautas" hidden>Pautas e roteiros já saem em lote de 12.</p>
         <p class="note" id="nsetup" hidden><b>Setup faz tudo de uma vez:</b> copy (página de vendas pronta), funil e estratégia. Se precisar só de um deles, peça Copy, Funil ou Estratégia separado.</p>
         <label for="pqtd" id="lpqtd" hidden>Quantos<select id="pqtd"></select></label>
-        <label for="ptema" id="lptema" hidden>Tema ou texto da thumb (obrigatório; num pacote, separe por vírgula ou escreva "vídeos 05 a 08")<input type="text" id="ptema" maxlength="600" placeholder="Ex.: os 3 erros do primeiro emprego"></label>
+        <label for="ptema" id="lptema" hidden>Tema ou texto da thumb (num pacote, separe por vírgula ou escreva "vídeos 05 a 08"; em branco, a máquina tira do roteiro do vídeo)<input type="text" id="ptema" maxlength="600" placeholder="Ex.: os 3 erros do primeiro emprego"></label>
         <label for="pfoto" id="lpfoto" hidden>Foto ou pasta (opcional)<input type="text" id="pfoto" maxlength="500" placeholder="Link da foto ou da pasta. Sem isso a máquina procura no Drive do cliente."></label>
+        <div class="anexos" id="lpmod" hidden><b>Modelo para seguir (opcional)</b>
+          <div class="drop" id="pmdrop"><b>Solte aqui a thumb, o carrossel ou a arte de referência</b><span>ou</span><label class="btn" for="pmfile" style="flex-direction:row">Escolher arquivo<input type="file" id="pmfile" accept="image/*,application/pdf" multiple hidden></label><span class="mono">print, PNG, JPG ou PDF · até 5</span></div>
+          <ul class="alist" id="pmlist"></ul>
+          <label for="pmlink">Ou o link do modelo<input type="text" id="pmlink" maxlength="500" placeholder="Link do Drive, do vídeo no YouTube ou do post"></label>
+          <p class="note">A máquina copia o jeito do modelo (posição do rosto, tamanho do texto, elementos) com as cores e o texto do cliente. Depois de entregue, vira o padrão do cliente: não precisa mandar de novo.</p></div>
         <label for="pvt" id="lpvt" hidden>Vídeo ou tema (opcional)<input type="text" id="pvt" maxlength="500" placeholder="Link do vídeo ou o tema. Sem roteiro, a máquina usa a fala do vídeo."></label>
         <label for="po"><span id="lpo-t">O que precisa, em detalhe</span><textarea id="po" required minlength="5"></textarea><small class="sub" id="po-min" hidden style="font-size:12px">Pedido livre: escreva pelo menos 40 letras, com o que é, para quê e onde vai.</small></label>
         <div class="anexos"><b>Anexos (opcional)</b>
@@ -1109,6 +1116,7 @@ function atualizarPedido(){
   $('#lpl-t').textContent = t.link;
   po.placeholder = 'Ex.: ' + t.ex;
   $('#nshorts').hidden = t.id !== 'shorts'; $('#lptema').hidden = $('#lpfoto').hidden = t.id !== 'thumb'; $('#lpvt').hidden = t.id !== 'carrossel';
+  $('#lpmod').hidden = !['thumb', 'carrossel', 'arte'].includes(t.id);
   // Pacotes: carrossel e thumb 1/3/6/12; shorts saem de um vídeo só (1 ou 3). Pautas e roteiros já vêm em lote de 12.
   const QTD = { carrossel: ['1 carrossel', '3 carrosséis', '6 carrosséis', '12 carrosséis'], thumb: ['1 thumb', '3 thumbs', '6 thumbs', '12 thumbs'], shorts: ['3 shorts', '1 short'] }[t.id];
   $('#lpqtd').hidden = !QTD; $('#npautas').hidden = t.id !== 'pautas'; $('#nsetup').hidden = t.id !== 'setup';
@@ -1131,7 +1139,7 @@ function render(){
   // O formulário de pedido não é redesenhado na atualização automática, para não apagar o que a pessoa está digitando.
   if (view === 'pedir' && $('#fpedir')) return;
   $('#main').innerHTML = `<div class="view">${VIEWS[view].html()}</div>`;
-  atualizarPedido(); listaAnexos();
+  atualizarPedido(); listaAnexos(); listaModelo();
 }
 
 // Gaveta do card: dados, passo a passo, histórico e só os botões que a pessoa pode apertar nesta etapa.
@@ -1960,6 +1968,9 @@ async function enviar(alvo, f){
 document.addEventListener('dragover', e => { const d = e.target.closest && e.target.closest('#pdrop'); if (d) { e.preventDefault(); d.classList.add('over'); } });
 document.addEventListener('dragleave', e => { const d = e.target.closest && e.target.closest('#pdrop'); if (d) d.classList.remove('over'); });
 document.addEventListener('drop', e => { const d = e.target.closest && e.target.closest('#pdrop'); if (d) { e.preventDefault(); d.classList.remove('over'); juntarAnexos([...e.dataTransfer.files]); } });
+document.addEventListener('dragover', e => { const d = e.target.closest && e.target.closest('#pmdrop'); if (d) { e.preventDefault(); d.classList.add('over'); } });
+document.addEventListener('dragleave', e => { const d = e.target.closest && e.target.closest('#pmdrop'); if (d) d.classList.remove('over'); });
+document.addEventListener('drop', e => { const d = e.target.closest && e.target.closest('#pmdrop'); if (d) { e.preventDefault(); d.classList.remove('over'); juntarModelo([...e.dataTransfer.files]); } });
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && !ocupado) fechar(); });
 document.addEventListener('click', async e => {
   const v = e.target.closest('[data-view]'); if (v) { view = v.dataset.view; try { localStorage.setItem('painel-view', view); } catch (x) {} $('#main').innerHTML = ''; if (view === 'formularios' && FO && FO.formularios && Date.now() - (carregarFormularios.em || 0) > 1800000) carregarFormularios(); render(); window.scrollTo({ top: 0 }); return; }
@@ -2019,6 +2030,7 @@ document.addEventListener('click', async e => {
   const df = e.target.closest('#main [data-definir]'); if (df) { abrirSlot('', df.dataset.definir); return; }
   if (e.target.id === 'g-novo') { abrirSlot(''); return; }
   const ta = e.target.closest('#main [data-tiraanexo]'); if (ta) { PANEXOS.splice(Number(ta.dataset.tiraanexo), 1); listaAnexos(); return; }
+  const tm = e.target.closest('#main [data-tiramodelo]'); if (tm) { PMODELO.splice(Number(tm.dataset.tiramodelo), 1); listaModelo(); return; }
   const pg = e.target.closest('#main [data-pegar]');
   if (pg) {
     pg.disabled = true; ocupado = true;
@@ -2068,6 +2080,7 @@ document.addEventListener('change', e => {
   if (e.target.id === 'mw') { MW = e.target.value; $('#dres').innerHTML = listaMensagens(); return; }
   if (e.target.id === 'mp') { MP = e.target.value; $('#dres').innerHTML = listaPedidos(); return; }
   if (e.target.id === 'pfile') { juntarAnexos([...e.target.files]); e.target.value = ''; return; }
+  if (e.target.id === 'pmfile') { juntarModelo([...e.target.files]); e.target.value = ''; return; }
   if (['pt', 'm-auto', 'm-mao', 'pf'].includes(e.target.id)) { if (e.target.id === 'pt') delete $('#pf').dataset.mexeu; if (e.target.id === 'pf') e.target.dataset.mexeu = 1; atualizarPedido(); }
 });
 // Busca da diretoria: redesenha só a lista, para o campo não perder o foco.
@@ -2093,12 +2106,12 @@ document.addEventListener('submit', async e => {
   const t = TIPOS.find(x => x.id === $('#pt').value), manual = $('#m-mao').checked, b = $('#bpedir');
   if (!$('#pc').value) { $('#pc').focus(); toast('Escolha o cliente.'); return; }
   // O mínimo que cada máquina precisa: tema na thumb, descrição de verdade no pedido livre.
-  if (t.id === 'thumb' && $('#ptema').value.trim().length < 3) { $('#ptema').focus(); toast(MOTIVO.tema); return; }
+  if (t.id === 'thumb' && $('#ptema').value.trim().length < 3 && !/^https:\/\//.test($('#pl').value.trim())) { $('#ptema').focus(); toast(MOTIVO.tema); return; }
   if (t.id === 'outro' && $('#po').value.trim().length < 40) { $('#po').focus(); toast('Explique melhor o pedido: pelo menos 40 letras, com o que é, para quê e onde vai.'); return; }
-  const extra = t.id === 'thumb' ? '\nTema da thumb: ' + $('#ptema').value.trim() + ($('#pfoto').value.trim() ? '\nFoto ou pasta: ' + $('#pfoto').value.trim() : '')
+  const extra = t.id === 'thumb' ? '\nTema da thumb: ' + ($('#ptema').value.trim().length >= 3 ? $('#ptema').value.trim() : 'do roteiro do vídeo') + ($('#pfoto').value.trim() ? '\nFoto ou pasta: ' + $('#pfoto').value.trim() : '')
     : t.id === 'carrossel' && $('#pvt').value.trim() ? '\nVídeo ou tema: ' + $('#pvt').value.trim() : '';
   const qtd = !$('#lpqtd').hidden ? '\nQuantidade: ' + $('#pqtd').value : '';
-  const texto = t.so ? t.nome + ($('#po').value.trim() ? '\nFoco: ' + $('#po').value.trim() : '') : $('#po').value.trim() + extra + qtd;
+  let texto = t.so ? t.nome + ($('#po').value.trim() ? '\nFoco: ' + $('#po').value.trim() : '') : $('#po').value.trim() + extra + qtd;
   ocupado = true; b.disabled = true;
   try {
     const anexos = [];
@@ -2106,11 +2119,20 @@ document.addEventListener('submit', async e => {
       $('#up-txt').textContent = 'Enviando anexo ' + (i + 1) + ' de ' + PANEXOS.length + '…';
       anexos.push({ nome: PANEXOS[i].name, link: await enviar({ modo: 'pedido', cliente: $('#pc').value }, PANEXOS[i]) });
     }
+    const modelo = [];
+    if (!$('#lpmod').hidden) {
+      for (let i = 0; i < PMODELO.length; i++) {
+        $('#up').hidden = false; $('#up-txt').textContent = 'Enviando modelo ' + (i + 1) + ' de ' + PMODELO.length + '…';
+        const l = await enviar({ modo: 'pedido', cliente: $('#pc').value }, PMODELO[i]); modelo.push(l); anexos.push({ nome: 'MODELO - ' + PMODELO[i].name, link: l });
+      }
+      $('#pmlink').value.split(/\s+/).filter(x => /^https:\/\/\S+$/.test(x)).slice(0, 3).forEach(l => modelo.push(l));
+    }
+    if (modelo.length) texto += '\nModelo para seguir: ' + modelo.join(' ');
     $('#plinks').value.split('\n').map(x => x.trim()).filter(x => /^https:\/\//.test(x)).slice(0, 10).forEach(l => anexos.push({ nome: 'Link', link: l }));
     const r = await api('euforia-painel-pedido', { cliente: $('#pc').value, tipo: t.id, modo: manual && !t.so ? 'mao' : 'auto', ferramenta: manual && !t.so ? $('#pf').value : '', prazo: $('#pz').value, link: t.so ? '' : $('#pl').value.trim(), texto, anexos });
     if (!r || !r.ok) throw new Error((r && r.motivo) || 'erro');
     toast('Pedido feito: ' + t.nome + ' → ' + (r.quem === 'Máquina do Escritório' && t.maq ? t.maq : r.quem) + '. Card criado no Entregas' + (anexos.length ? ' com ' + anexos.length + ' anexo' + (anexos.length > 1 ? 's' : '') : '') + '.');
-    e.target.reset(); delete $('#pf').dataset.mexeu; PANEXOS = []; listaAnexos(); $('#up').hidden = true; atualizarPedido();
+    e.target.reset(); delete $('#pf').dataset.mexeu; PANEXOS = []; PMODELO = []; listaAnexos(); listaModelo(); $('#up').hidden = true; atualizarPedido();
   } catch (err) { toast(MOTIVO[err.message] || ERRO); }
   ocupado = false; b.disabled = false;
 });
