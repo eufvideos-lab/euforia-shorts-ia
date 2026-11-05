@@ -98,6 +98,10 @@ Nome das calls (vale para Obs, avisos e material): **Call 1 Onboarding + Oferta*
 ## 2a. Pedido com pouca informação: buscar antes de travar
 Desde 27/10 o painel manda na Obs as linhas "Tema da thumb: ...", "Foto ou pasta: ..." e "Vídeo ou tema: ...":
 use-as primeiro (o tema é o texto base da thumb; a foto ou pasta é a primeira fonte de imagem).
+Desde 05/11 pode vir "Modelo para seguir: ..." (thumb, arte e carrossel): a peça sai com o jeito do modelo, nas
+cores e com o texto do cliente. Siga `prompts/seguir_modelo.md` (vale também para o modelo padrão do cliente, mesmo
+sem essa linha). "Tema da thumb: do roteiro do vídeo" = a equipe não escreveu tema: tire o texto do roteiro do vídeo
+do pedido (item 6 do mesmo arquivo).
 Desde 27/10 pode vir também "Quantidade: ..." (thumb: "1 thumb", "3 thumbs", "6 thumbs" ou "12 thumbs"). Faça a
 quantidade pedida: uma thumb por tema, na ordem em que os temas vêm em "Tema da thumb" (separados por vírgula, ou
 uma faixa como "vídeos 05 a 08", que vira um tema por vídeo, tirado do roteiro ou do vídeo). Se vierem menos temas
@@ -114,7 +118,8 @@ A equipe às vezes manda só o link de um vídeo. Antes de travar, junte sozinho
   ser baixado, tire um quadro do vídeo (ffmpeg) com o rosto do cliente olhando para a câmera.
 - **Texto da peça** (ex.: texto da thumb) que não veio: proponha 2–3 opções a partir do tema/roteiro e diga no Obs
   que o texto é sugestão para a equipe escolher.
-- **Padrão**: siga as entregas anteriores do mesmo tipo do cliente (ex.: as últimas thumbs dele).
+- **Padrão**: o modelo padrão do cliente (`PADRÃO ...` em MODELOS DE THUMB, ver `prompts/seguir_modelo.md`) e,
+  sem ele, as entregas anteriores do mesmo tipo do cliente (ex.: as últimas thumbs dele).
 Se der para fazer, faça (passo 3) e escreva no Obs o que você buscou e de onde.
 
 Se ainda faltar o essencial (nenhuma foto do cliente em lugar nenhum, tema impossível de saber):
@@ -202,6 +207,8 @@ Se ainda faltar o essencial (nenhuma foto do cliente em lugar nenhum, tema impos
      5. O resultado precisa trazer `ok: true`. Se falhar: "Link do arquivo" fica no que havia, Obs com
         "Deu erro ao publicar", detalhe técnico só no #ia-status, e o card vai para "Precisa da Direção".
    - **Arte** (capa de destaque, post fixado, thumb avulsa): PNG pelo mesmo esquema HTML → PNG do `carrossel/`.
+     Com "Modelo para seguir" (ou modelo padrão do cliente): `prompts/seguir_modelo.md`, e a
+     `comparacao-modelo.jpg` vai junto na pasta da entrega.
 4. Confira antes de entregar: português, nada inventado (datas, números, valores, promessas, depoimentos),
    dados do canal **só em percentual** (nunca views, horas ou inscritos absolutos em material para cliente),
    nada de financeiro/valores em material da equipe, nunca o nome do Henrique em material para cliente,
