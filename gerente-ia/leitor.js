@@ -311,8 +311,8 @@ const ler_rascunho = node({
       jsCode: `// Lê o rascunho do Claude, calcula o prazo (padrão 72h, urgente 24h, hiperurgente hoje e só com aprovação) e monta o card.
 const TIPOS = ['Vídeo longo', 'Shorts', 'Carrossel', 'Thumbnail', 'Arte', 'Banner', 'Página', 'Roteiro', 'Copy', 'Blog', 'Outro'];
 const ISMAEL = '3ea98c0c-dde0-812d-9cb4-c41ce70df4ae';
-// Roteiro (Henrique 05/11): quem faz é o Rômulo; a Lorena está aprendendo. Urgente e hiperurgente com o Rômulo, padrão com a Lorena.
-const ROMULO = '3ea98c0c-dde0-8129-9709-cf901fac7275', LORENA = '3ea98c0c-dde0-8163-bd16-f0213b098cb5';
+// Roteiro (Henrique 05/11): roteiro é sempre do Escritório (máquina de roteiros), nunca da equipe.
+const ESCRITORIO = '3ea98c0c-dde0-812b-ba06-cba7e4261426';
 const GERENTE = '40e98c0c-dde0-817e-b798-f6e045686b7c';
 const ENTREGAS_DB = '74b3076a-3257-49e3-bac4-ba6659215e48';
 const mascara = s => String(s || '').replace(/r\\$\\s*[\\d.,]+(\\s*(mil|k))?/gi, '[valor]').replace(/\\b\\d{1,3}(\\.\\d{3})+(,\\d{1,2})?\\b/g, '[valor]');
@@ -339,8 +339,8 @@ return $input.all().map((it, i) => {
   const tipo = TIPOS.includes(c.tipo) ? c.tipo : 'Outro';
   const ligado = d.classe === 'ajuste' ? (base.cards || []).find(x => x.codigo && x.codigo === r.card_ligado) : null;
   const titulo = (d.cliente.toUpperCase() + ' | ' + (d.classe === 'ajuste' ? 'AJUSTE ' : '') + tipo.toUpperCase() + ' | ' + String(c.titulo || d.resumo || 'pedido do grupo').toUpperCase()).slice(0, 180);
-  const resp_id = tipo === 'Roteiro' ? (urg === 'padrao' ? LORENA : ROMULO) : ISMAEL;
-  const resp_nome = resp_id === LORENA ? 'a Lorena' : resp_id === ROMULO ? 'o Rômulo' : 'o Ismael';
+  const resp_id = tipo === 'Roteiro' ? ESCRITORIO : ISMAEL;
+  const resp_nome = resp_id === ESCRITORIO ? 'o Escritório' : 'o Ismael';
   const quando = DateTime.fromJSDate(new Date(d.ultima)).setZone('America/Recife').toFormat('dd/MM HH:mm');
   const obs = ('[Gerente IA ' + agora.toFormat('dd/MM HH:mm') + '] Pedido no grupo em ' + quando + ' (' + (urg === 'padrao' ? 'prazo padrão 72h' : urg) + ').\\n' + mascara(c.obs || d.resumo || '') + (ligado ? '\\nAjuste do card ' + ligado.codigo + ': ' + ligado.url : '')).slice(0, 1900);
   const props = {
