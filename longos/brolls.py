@@ -17,22 +17,33 @@ pasta = sys.argv[1]
 plano = json.load(open(os.path.join(pasta, 'plano.json')))
 dest = os.path.join(pasta, 'broll'); os.makedirs(dest, exist_ok=True)
 so = set(sys.argv[2:])
-EVITAR = ('cartoon', 'animation', 'anime', 'illustration', 'drawing', 'christmas', 'snow', 'halloween', 'glove')
+EVITAR = ('cartoon', 'animation', 'animated', 'anime', 'illustration', 'drawing', 'christmas', 'snow', 'halloween', 'glove',
+          'green screen', 'greenscreen', 'chroma', 'icon', 'vector', 'isometric', '3d', 'render', 'bitcoin', 'crypto', 'dog', 'puppy')
 CW, CH = 2112, 1188  # 10% maior que 1080p para o movimento lento (Ken Burns)
 
 
-def pixabay(br):
-    palavras = [w for w in re.findall(r'[a-z]+', br['busca'].lower()) if w not in ('a', 'an', 'the', 'of', 'in', 'on', 'at', 'with', 'and', 'to')]
+# o mesmo clipe nunca entra duas vezes no vídeo (05/11/2026); vale entre rodadas (broll/_usados.json)
+_USO = os.path.join(dest, '_usados.json')
+USADOS = set(json.load(open(_USO))) if os.path.exists(_USO) else set()
+
+
+def pixabay(br, busca=None):
+    busca = busca or br['busca']
+    palavras = [w for w in re.findall(r'[a-z]+', busca.lower()) if w not in ('a', 'an', 'the', 'of', 'in', 'on', 'at', 'with', 'and', 'to')]
     def nota(h):
         tags = (h.get('tags') or '').lower()
         return sum(1 for w in palavras if re.search(r'\b' + w.rstrip('s'), tags))
     minimo = max(1, len(palavras) - 1) if len(palavras) >= 3 else max(1, len(palavras))
-    hits = ponte.broll_buscar(br['busca'], 12)
-    bons = [h for h in hits if h.get('url') and not any(t in (h.get('tags') or '').lower() for t in EVITAR) and nota(h) >= minimo]
+    hits = ponte.broll_buscar(busca, 20)
+    bons = [h for h in hits if h.get('url') and h.get('id') not in USADOS and not any(t in (h.get('tags') or '').lower() for t in EVITAR) and nota(h) >= minimo]
     bons.sort(key=lambda h: (-nota(h), (h.get('duracao') or 0) < br.get('dur', 3) + 0.5, -(h.get('altura') or 0)))
     if not bons:
+        # tenta de novo com as 2 palavras principais antes de desistir (cobrir olhar fora da câmera não pode falhar)
+        curta = ' '.join(palavras[:2])
+        if busca == br['busca'] and len(palavras) > 2:
+            return pixabay(br, curta)
         return None, f'nada no banco combina com "{br["busca"]}"'
-    h = bons[0]
+    h = bons[0]; USADOS.add(h.get('id')); json.dump(sorted(USADOS, key=str), open(_USO, 'w'))
     tmp = os.path.join(dest, f'_px_{h["id"]}.mp4')
     ponte.broll_baixar(h['url'], tmp)
     out = os.path.join(dest, f"{br['id']}.mp4")

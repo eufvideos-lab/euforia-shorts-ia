@@ -135,7 +135,7 @@ EV = []  # (camada, arquivo, início no vídeo final, duração)
 for br in plano.get('brolls', []):
     f = next((os.path.join(B, f"{br['id']}.{e}") for e in ('mp4', 'jpg') if os.path.exists(os.path.join(B, f"{br['id']}.{e}"))), None)
     if f:
-        EV.append(('broll', f, t_saida(br['palavra']) - 0.1, br.get('dur', 3.0)))
+        EV.append(('broll', f, br['ini'] if 'ini' in br else t_saida(br['palavra']) - 0.1, br.get('dur', 3.0)))
     else:
         print('sem B-roll', br['id'])
 if tit:
