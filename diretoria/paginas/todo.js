@@ -16,7 +16,7 @@ function carregar() {
 }
 // Pedidos que a equipe passa para o Escritório (Esteira de Entregas) ficam na aba To-do escritório, fora do To-do pessoal.
 // Também vão para o escritório as entregas e promessas de clientes (setor Clientes ou título "CLIENTE | entrega").
-function doEscritorio(i) { return /^Pedido da equipe para o Escrit/i.test(String(i.cx || '')) || i.se === 'Clientes' || /^[^|]{2,60}\s\|\s/.test(String(i.t || '')); }
+function doEscritorio(i) { if (/^Isa #/.test(String(i.cx || ''))) return false; return /^Pedido da equipe para o Escrit/i.test(String(i.cx || '')) || i.se === 'Clientes' || /^[^|]{2,60}\s\|\s/.test(String(i.t || '')); }
 function meu(i) { return !i.re || i.re === 'Flau'; }
 function grupoDe(i, hoje) {
   if (i.st === 'Feito') return 'feito';
