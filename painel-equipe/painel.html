@@ -2453,6 +2453,7 @@ document.addEventListener('click', async e => {
     const r = await api('euforia-painel-gerente', { acao: 'decidir', id, escolha, texto: escolha === 'enviar' && texto !== String(x.texto || '').trim() ? texto : '' });
     if (!r || !r.ok) throw new Error((r && r.motivo) || 'erro');
     x.painel_acao = escolha; delete GAE[id];
+    if (escolha === 'cancelar') GA.abertos = GA.abertos.filter(y => y !== x);  // cancelado some na hora (05/11)
     toast(escolha === 'enviar' ? 'Aprovado. Sai pelo suporte no próximo minuto.' : 'Cancelado. Nada sai para o cliente.');
   } catch (er) { toast(er.message === 'decidido' ? 'Esse rascunho já foi decidido (aqui ou no Discord).' : ERRO); GA = null; }
   ocupado = false; render(); setTimeout(() => carregarGerente(true), 75000);
