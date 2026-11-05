@@ -13,7 +13,8 @@ const pedir = trigger({ type: 'n8n-nodes-base.webhook', version: 2.1, config: { 
 const ler = node({ type: 'n8n-nodes-base.code', version: 2, config: { name: 'Ler pedido', parameters: { jsCode: `const b = ($input.first().json.body) || {};
 const u = String(b.u || '').toLowerCase();
 return [{ json: { u: /^[0-9a-f]{24}$/.test(u) ? u : 'x', pin: String(b.pin || '').replace(/[^0-9]/g, '').slice(0, 6),
-  acao: ['ver', 'decidir', 'metricas'].includes(b.acao) ? b.acao : '', id: Math.max(0, parseInt(b.id, 10) || 0),
+  acao: ['ver', 'decidir', 'metricas', 'resolver'].includes(b.acao) ? b.acao : '', id: Math.max(0, parseInt(b.id, 10) || 0),
+  chat: /^[0-9-]+@g\\.us$/.test(String(b.chat || '')) ? String(b.chat) : '', ate: /^\\d{4}-\\d{2}-\\d{2}T[0-9:.]+Z?$/.test(String(b.ate || '')) ? String(b.ate) : '',
   escolha: ['enviar', 'cancelar'].includes(b.escolha) ? b.escolha : '', texto: String(b.texto || '').trim().slice(0, 1500) } }];
 ` } } });
 
@@ -28,6 +29,7 @@ let motivo = ok ? '' : 'acesso';
 if (!motivo && r.papel !== 'diretor') motivo = 'permissao';
 if (!motivo && !p.acao) motivo = 'acao';
 if (!motivo && p.acao === 'decidir' && (!p.id || !p.escolha)) motivo = 'campos';
+if (!motivo && p.acao === 'resolver' && (!p.chat || !p.ate)) motivo = 'campos';
 return [{ json: { ...p, acao: motivo ? 'recusar' : p.acao, resposta: { ok: false, motivo } } }];
 ` } } });
 
@@ -38,13 +40,25 @@ const caminho = switchCase({ version: 3.2, config: { name: 'O que fazer', parame
       conditions: [{ leftValue: '={{ $json.acao }}', rightValue: 'decidir', operator: { type: 'string', operation: 'equals' } }], combinator: 'and' } },
     { outputKey: 'metricas', conditions: { options: { caseSensitive: true, leftValue: '', typeValidation: 'strict' },
       conditions: [{ leftValue: '={{ $json.acao }}', rightValue: 'metricas', operator: { type: 'string', operation: 'equals' } }], combinator: 'and' } },
+    { outputKey: 'resolver', conditions: { options: { caseSensitive: true, leftValue: '', typeValidation: 'strict' },
+      conditions: [{ leftValue: '={{ $json.acao }}', rightValue: 'resolver', operator: { type: 'string', operation: 'equals' } }], combinator: 'and' } },
     { outputKey: 'recusar', conditions: { options: { caseSensitive: true, leftValue: '', typeValidation: 'strict' },
       conditions: [{ leftValue: '={{ $json.acao }}', rightValue: 'recusar', operator: { type: 'string', operation: 'equals' } }], combinator: 'and' } }
   ] }, options: {} } } });
 
 const ver = node({ type: 'n8n-nodes-base.postgres', version: 2.6, config: { name: 'Ler rascunhos', credentials: PG, parameters: { operation: 'executeQuery',
   query: `ALTER TABLE gerente_rascunhos ADD COLUMN IF NOT EXISTS painel_acao TEXT, ADD COLUMN IF NOT EXISTS painel_texto TEXT, ADD COLUMN IF NOT EXISTS painel_em TIMESTAMPTZ, ADD COLUMN IF NOT EXISTS confirmar TEXT, ADD COLUMN IF NOT EXISTS confirmar_quem TEXT, ADD COLUMN IF NOT EXISTS confirmar_msg TEXT, ADD COLUMN IF NOT EXISTS confirmado TEXT, ADD COLUMN IF NOT EXISTS revisora_status TEXT, ADD COLUMN IF NOT EXISTS revisora_nota TEXT, ADD COLUMN IF NOT EXISTS revisora_em TIMESTAMPTZ;
+CREATE TABLE IF NOT EXISTS gerente_serios_ok (chat_id TEXT, ate TIMESTAMPTZ, em TIMESTAMPTZ DEFAULT now());
+WITH ev AS (SELECT * FROM json_to_recordset($1::json) AS x(chat_id text, cliente text, quando timestamptz, trava boolean)),
+ult AS (SELECT chat_id, max(cliente) AS cliente, max(quando) AS quando, count(*) AS vezes, bool_or(trava) AS trava FROM ev GROUP BY chat_id)
 SELECT json_build_object(
+  'serios', (SELECT COALESCE(json_agg(s ORDER BY s.quando DESC), '[]'::json) FROM (
+    SELECT u.chat_id, u.cliente, u.quando, to_char(u.quando AT TIME ZONE 'America/Recife', 'DD/MM HH24:MI') AS criado, u.vezes, u.trava,
+      EXISTS (SELECT 1 FROM mensagens z WHERE z.chat_id = u.chat_id AND z.from_me AND z.enviado_em > u.quando) AS equipe_depois,
+      (SELECT string_agg(to_char(q.enviado_em AT TIME ZONE 'America/Recife', 'HH24:MI') || ' ' || COALESCE(q.autor_nome, 'Cliente') || ': ' || left(COALESCE(q.texto, '[' || q.tipo || ']'), 300), E'\\n' ORDER BY q.enviado_em)
+         FROM (SELECT DISTINCT ON (m.msg_id) m.* FROM mensagens m WHERE m.chat_id = u.chat_id AND m.enviado_em <= u.quando AND m.enviado_em > u.quando - interval '3 hours'
+               AND NOT m.from_me AND m.tipo NOT IN ('reactionMessage', 'protocolMessage') ORDER BY m.msg_id, m.enviado_em) q) AS cliente_disse
+    FROM ult u WHERE NOT EXISTS (SELECT 1 FROM gerente_serios_ok o WHERE o.chat_id = u.chat_id AND o.ate >= u.quando)) s),
   'agora', to_char(now() AT TIME ZONE 'America/Recife', 'HH24:MI'),
   'abertos', (SELECT COALESCE(json_agg(x ORDER BY x.id DESC), '[]'::json) FROM (
     SELECT r.id, to_char(r.criado_em AT TIME ZONE 'America/Recife', 'DD/MM HH24:MI') AS criado, r.cliente, r.classe, r.urgencia, r.texto, r.card_url,
@@ -64,7 +78,24 @@ SELECT json_build_object(
       'canceladas', count(*) FILTER (WHERE status = 'cancelado'), 'expiradas', count(*) FILTER (WHERE status = 'expirado'),
       'equipe', count(*) FILTER (WHERE status = 'equipe_respondeu'))
     FROM gerente_rascunhos WHERE cliente NOT ILIKE 'TESTE%')
-) AS r;`, options: {} } } });
+) AS r;`, options: { queryReplacement: '={{ [ $json.serios ] }}' } } } });
+
+// Assunto sério (05/11): os alertas "escalado" da tabela de eventos dos últimos 3 dias (sem TESTE) entram na aba como "Fica com você".
+const seriosEv = node({ type: 'n8n-nodes-base.dataTable', version: 1.1, config: { name: 'Alertas sérios', executeOnce: true, alwaysOutputData: true, parameters: {
+  resource: 'row', operation: 'get', dataTableId: { __rl: true, mode: 'id', value: 'BHqPtAKnMtZTS5Q0', cachedResultName: 'Gerente IA · eventos' }, matchType: 'allConditions',
+  filters: { conditions: [{ keyName: 'evento', condition: 'eq', keyValue: 'escalado' }] }, returnAll: true } } });
+
+const seriosJson = node({ type: 'n8n-nodes-base.code', version: 2, config: { name: 'Juntar alertas', parameters: { jsCode: `const desde = DateTime.now().minus({ days: 3 }).toISO();
+const L = $input.all().map(i => i.json).filter(e => e && e.chat_id && e.quando && String(new Date(e.quando).toISOString()) >= desde && !/^TESTE/i.test(String(e.cliente || '')))
+  .map(e => ({ chat_id: e.chat_id, cliente: e.cliente, quando: new Date(e.quando).toISOString(), trava: e.trava_palavra === true }));
+return [{ json: { serios: JSON.stringify(L) } }];` } } });
+
+const resolver = node({ type: 'n8n-nodes-base.postgres', version: 2.6, config: { name: 'Marcar resolvido', credentials: PG, alwaysOutputData: true, parameters: { operation: 'executeQuery',
+  query: `CREATE TABLE IF NOT EXISTS gerente_serios_ok (chat_id TEXT, ate TIMESTAMPTZ, em TIMESTAMPTZ DEFAULT now());
+INSERT INTO gerente_serios_ok (chat_id, ate) VALUES ($1, $2::timestamptz) RETURNING chat_id;`, options: { queryReplacement: '={{ [ $json.chat, $json.ate ] }}' } } } });
+
+const okResolver = node({ type: 'n8n-nodes-base.respondToWebhook', version: 1.5, config: { name: 'Confirmar resolvido', parameters: {
+  respondWith: 'json', responseBody: '={{ JSON.stringify({ ok: !!$json.chat_id }) }}', options: {} } } });
 
 const devolver = node({ type: 'n8n-nodes-base.respondToWebhook', version: 1.5, config: { name: 'Devolver rascunhos', parameters: {
   respondWith: 'json', responseBody: '={{ JSON.stringify(Object.assign({ ok: true }, $json.r || {})) }}', options: {} } } });
@@ -148,8 +179,9 @@ const nota = sticky('## Painel · Gerente IA (aba Aprovar, V1)\nSó diretoria. v
 
 export default workflow('painel-gerente', 'Painel | Gerente IA · Aprovar (V1)')
   .add(pedir).to(ler).to(acesso).to(validar).to(caminho
-    .onCase(0, ver.to(devolver))
+    .onCase(0, seriosEv.to(seriosJson).to(ver).to(devolver))
     .onCase(1, gravar.to(confirmar))
     .onCase(2, eventos.to(cardsGerente).to(contar).to(devolverNumeros))
-    .onCase(3, recusar))
+    .onCase(3, resolver.to(okResolver))
+    .onCase(4, recusar))
   .add(nota);

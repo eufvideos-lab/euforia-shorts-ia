@@ -2279,18 +2279,40 @@ function cardGA(x){
     ${conf}
     ${x.revisora_status === 'ok' ? '<p><span class="chip ok">🔎 Revisora: conferido</span></p>' : x.revisora_status === 'atencao' ? `<p class="note" style="white-space:pre-wrap">🔎 <b>Revisora: atenção</b> · ${esc(x.revisora_nota || '')}</p>` : ''}
     ${x.cliente_disse ? `<p class="sub" style="white-space:pre-wrap;border-left:3px solid var(--line);padding-left:10px">${esc(x.cliente_disse)}</p>` : ''}
-    ${x.card_url ? `<p class="note">📋 Card criado no Entregas (com o Ismael): <a href="${esc(x.card_url)}" target="_blank" rel="noopener">abrir</a></p>` : ''}
+    ${x.card_url ? `<p class="note">📋 Card criado no Entregas: <a href="${esc(x.card_url)}" target="_blank" rel="noopener">abrir</a></p>` : ''}
     <label for="ga-t${x.id}">Resposta para o grupo<textarea id="ga-t${x.id}" rows="4" ${feito ? 'disabled' : ''}>${esc(GAE[x.id] != null ? GAE[x.id] : x.texto)}</textarea></label>
     <p class="note">Sai com "Érica, time de suporte, Grupo Euforia" no fim.</p>
     ${feito ? `<p class="note"><b>${situacao}</b></p>` : `<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn primary" data-gaenv="${x.id}">Enviar</button><button class="btn" data-gacan="${x.id}">Cancelar</button></div>`}
   </section>`;
 }
+// Assunto sério (05/11): a Gerente não escreve rascunho; o caso fica com a diretoria. Aparece aqui até apertar "Já resolvi".
+function seriosGA(){
+  const L = GA && GA.serios ? GA.serios : [];
+  if (!L.length) return '';
+  return `<section class="group" style="margin-bottom:18px"><h2>🚨 Fica com você <span class="count">${L.length}</span></h2><p class="sub">Assuntos sérios dos últimos 3 dias (dinheiro, contrato, reclamação, jurídico ou cliente irritado). A Gerente não respondeu nada. Responda você no grupo e aperte "Já resolvi".</p>
+    <div style="display:flex;flex-direction:column;gap:12px">${L.map(x => `<section class="panel"><h2>${esc(x.cliente)} <span class="sub">· ${esc(x.criado)}${x.vezes > 1 ? ' · ' + x.vezes + ' alertas' : ''}</span></h2>
+      <p><span class="chip red">${esc(x.trava ? 'Dinheiro, contrato ou jurídico' : 'Tom irritado ou assunto sério')}</span>${x.equipe_depois ? ' <span class="chip info">a equipe já escreveu no grupo depois</span>' : ''}</p>
+      ${x.cliente_disse ? `<p class="sub" style="white-space:pre-wrap;border-left:3px solid var(--line);padding-left:10px">${esc(x.cliente_disse)}</p>` : ''}
+      <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" data-gaok="${esc(x.chat_id)}" data-gaate="${esc(x.quando)}">Já resolvi</button></div></section>`).join('')}</div></section>`;
+}
+document.addEventListener('click', async e => {
+  const b = e.target.closest('#main [data-gaok]'); if (!b || ocupado) return;
+  ocupado = true; b.disabled = true;
+  try {
+    const r = await api('euforia-painel-gerente', { acao: 'resolver', chat: b.dataset.gaok, ate: b.dataset.gaate });
+    if (!r || !r.ok) throw new Error('erro');
+    GA.serios = (GA.serios || []).filter(x => x.chat_id !== b.dataset.gaok);
+    toast('Marcado como resolvido.');
+  } catch (er) { toast(ERRO); }
+  ocupado = false; render();
+});
 // Na Visão geral (a mesa da diretoria): os rascunhos esperando aparecem no topo, com Enviar e Cancelar ali mesmo.
 function aprovarGeral(){
   if (!GA) { carregarGerente(true); return ''; }
-  if (GA.erro || !GA.abertos || !GA.abertos.length) return '';
+  if (GA.erro) return '';
+  if (!GA.abertos || !GA.abertos.length) return seriosGA();
   const L = GA.abertos.slice(0, 5);
-  return `<section class="group" style="margin-bottom:18px"><h2>✍️ Respostas para aprovar <span class="count">${esperaGA().length}</span></h2><p class="sub">Rascunhos da Gerente IA. Enviar manda pelo suporte, assinado Érica, em até 1 minuto. Para corrigir, mude o texto e aperte Enviar.</p>
+  return seriosGA() + `<section class="group" style="margin-bottom:18px"><h2>✍️ Respostas para aprovar <span class="count">${esperaGA().length}</span></h2><p class="sub">Rascunhos da Gerente IA. Enviar manda pelo suporte, assinado Érica, em até 1 minuto. Para corrigir, mude o texto e aperte Enviar.</p>
     <div style="display:flex;flex-direction:column;gap:12px">${L.map(cardGA).join('')}</div>${GA.abertos.length > L.length ? `<p style="margin-top:10px"><button class="btn" data-view="aprovar">Ver todas (${GA.abertos.length})</button></p>` : ''}</section>`;
 }
 // Etapa 3: como a Gerente está indo (hoje, 7 ou 30 dias, sem os testes). Números do fluxo "Painel | Gerente IA · Aprovar" (acao: metricas).
@@ -2383,7 +2405,7 @@ function aprovarHtml(){
   if (GA.erro) return topo + '<p class="empty">Não consegui ler os rascunhos agora. Tente de novo em alguns minutos.</p>';
   const st = x => ST_GA[x.status] || [x.status, ''];
   const rec = GA.recentes && GA.recentes.length ? `<div class="tbl"><table><thead><tr><th>Quando</th><th>Cliente</th><th>Como ficou</th><th>Texto</th></tr></thead><tbody>${GA.recentes.map(x => `<tr><td class="mono">${esc(x.quando)}</td><td>${esc(x.cliente)}</td><td><span class="chip ${st(x)[1]}">${esc(st(x)[0])}</span>${x.corrigida ? ' <span class="sub">corrigida</span>' : ''}${x.pelo_painel ? ' <span class="sub">pelo painel</span>' : ''}</td><td class="sub">${esc(String(x.texto || '').slice(0, 160))}</td></tr>`).join('')}</tbody></table></div>` : '<p class="empty">Nada decidido ainda.</p>';
-  return topo + (GA.abertos.length ? `<div style="display:flex;flex-direction:column;gap:12px;margin-top:12px">${GA.abertos.map(cardGA).join('')}</div>` : '<p class="empty">Nenhum rascunho esperando. Assunto sério (dinheiro, contrato, reclamação, jurídico) não ganha rascunho: continua só como alerta no #aprovações-gerente.</p>')
+  return topo + seriosGA() + (GA.abertos.length ? `<div style="display:flex;flex-direction:column;gap:12px;margin-top:12px">${GA.abertos.map(cardGA).join('')}</div>` : '<p class="empty">Nenhum rascunho esperando. Assunto sério não ganha rascunho: aparece em "Fica com você", acima.</p>')
     + metricasGA() + `<section class="group"><h2>Últimos decididos</h2>${rec}</section>`;
 }
 async function carregarGerente(silencioso){
@@ -2416,7 +2438,7 @@ const DEMO_GM = { ok: true, agora: '10:42', fase1b: { enviadas: 18, pct: 94, pro
   p1: { dias: 1, lidas: 31, conversas: 9, demandas_criadas: 2, entregues: 1, abertas: 1, atrasadas: 0, tempo_resposta_min: 18, tempo_entrega_h: 6, escalados: 1, travas: 0, rascunhos: 4, enviadas: 3, sem_correcao: 3, pct_sem_correcao: 100, canceladas: 0, expiradas: 0, equipe_antes: 1, classes: { pedido: 2, status: 4, material: 1, sem_acao: 2 } },
   p7: { dias: 7, lidas: 214, conversas: 61, demandas_criadas: 14, entregues: 9, abertas: 5, atrasadas: 1, tempo_resposta_min: 23, tempo_entrega_h: 41.5, escalados: 3, travas: 2, rascunhos: 22, enviadas: 18, sem_correcao: 17, pct_sem_correcao: 94, canceladas: 2, expiradas: 1, equipe_antes: 1, classes: { pedido: 14, status: 20, material: 9, ajuste: 5, serio: 3, sem_acao: 10 } },
   p30: { dias: 30, lidas: 640, conversas: 190, demandas_criadas: 40, entregues: 31, abertas: 9, atrasadas: 2, tempo_resposta_min: 27, tempo_entrega_h: 44, escalados: 7, travas: 4, rascunhos: 60, enviadas: 50, sem_correcao: 46, pct_sem_correcao: 92, canceladas: 6, expiradas: 2, equipe_antes: 2, classes: { pedido: 40, status: 60 } } };
-const DEMO_GA = { ok: true, agora: '10:42', numeros: { total: 12, enviadas: 9, sem_correcao: 8, canceladas: 1, expiradas: 1, equipe: 1 },
+const DEMO_GA = { ok: true, agora: '10:42', serios: [{ chat_id: 'demo@g.us', cliente: 'Cliente Exemplo D', criado: '05/11 11:30', quando: '2026-11-05T14:30:00.000Z', vezes: 1, trava: false, equipe_depois: false, cliente_disse: '11:25 Marina: Já é a terceira vez que peço isso. Preciso que resolvam hoje.' }], numeros: { total: 12, enviadas: 9, sem_correcao: 8, canceladas: 1, expiradas: 1, equipe: 1 },
   abertos: [{ id: 1, criado: '04/11 10:31', cliente: 'Cliente Exemplo A', classe: 'pedido', urgencia: 'urgente', texto: 'Ana, recebemos o pedido do carrossel sobre imposto de renda! Já entrou na produção e avisamos assim que estiver pronto.', card_url: 'https://www.notion.so/', status: 'aguardando', painel_acao: null, cliente_disse: '10:27 Ana: Preciso de um carrossel sobre imposto de renda, é urgente, consegue até amanhã?' },
     { id: 2, criado: '04/11 10:12', cliente: 'Cliente Exemplo B', classe: 'status', urgencia: 'padrao', texto: 'Carlos, o vídeo desta semana está em revisão final e fica pronto até 06/11.', card_url: null, status: 'aguardando', painel_acao: null, confirmar: 'O bruto do vídeo desta semana já chegou e a edição fica pronta até 06/11?', confirmar_quem: 'ismael', confirmado: null, perguntado: true, cliente_disse: '10:08 Carlos: Como está o vídeo desta semana?' }],
   recentes: [{ id: 3, quando: '04/11 09:50', cliente: 'Cliente Exemplo C', classe: 'material', status: 'enviado', texto: 'Paula, recebemos as fotos, obrigada!', corrigida: false, pelo_painel: true }] };
