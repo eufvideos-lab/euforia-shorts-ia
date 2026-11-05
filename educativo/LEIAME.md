@@ -16,7 +16,7 @@ quiz "QUAL ESTÁ CERTA?" com contagem 3-2-1 e revelação, check que aparece ao 
      `s2:fim`, `inicio`, `final`.
 2. Gere a voz de cada fala (voz Will, ElevenLabs) pelo fluxo n8n "Motion | Voz da narração (ElevenLabs)"
    (test_workflow + get_execution) e salve `sN.mp3` + `sN.json` (palavras com tempo) em `remotion/public/<pasta>/`.
-   Escreva "Grupo Eufória" na fala (pronúncia); a legenda troca para "Euforia" (`trocas`).
+   Escreva "Grupo Euforía" na fala (o Will fala certo, eu-fo-RÍ-a; "Eufória" sai errado); a legenda troca para "Euforia" (`trocas`).
 3. `python3 educativo/montar.py educativo/pecas/<nome>.json` → `narracao.mp3` e `props.json` na pasta.
 4. `cd remotion && CHROME=<chrome-headless-shell> node render.mjs public/<pasta>/props.json saida.mp4 Educativo`
    (prévia de quadros: `node quadros.mjs ... Educativo 3 20 45`).

@@ -30,7 +30,9 @@ for item in peca['audio']:
     ancoras[nome + ':fim'] = t + ws[-1]['e']
     entradas.append((nome, t))
     for i, w in enumerate(ws):
-        txt = peca.get('trocas', {}).get(w['t'], w['t'])
+        txt = w['t']
+        for de, para in peca.get('trocas', {}).items():  # pronúncia na fala, grafia certa na legenda
+            txt = txt.replace(de, para)
         palavras.append({'t': txt, 's': round(t + w['s'], 3), 'e': round(t + w['e'], 3), 'f': nome, 'fimFrase': i == len(ws) - 1})
     t += dur
 total = t
