@@ -5,6 +5,7 @@ import { workflow, node, trigger, ifElse, merge, sticky } from '@n8n/workflow-sd
 // Envia pelo WhatsApp da Isabela, assinado "Isabela, time administrativo, Grupo Euforia". Silêncio 22h-7h (sai às 7h).
 const PG = { postgres: { id: '2QBGXkxxr41tWTQw', name: 'Postgres account' } };
 const DISCORD = { httpHeaderAuth: { id: 'PY2ZcN5kAVFaS1io', name: 'Discord Bot' } };
+const NOTION = { httpHeaderAuth: { id: 'VYOze6gUMvjy3QXF', name: 'Notion Euforia' } };
 const EVO = { httpHeaderAuth: { id: 'MqNLRX9duuYKJSR2', name: 'Evolution API' } };
 const CH = 'https://discord.com/api/v10/channels/1567878609060765718/messages';
 
@@ -14,54 +15,29 @@ const cada1 = trigger({ type: 'n8n-nodes-base.scheduleTrigger', version: 1.3, co
 // ---------- A) Postar sugestões novas ----------
 const novas = node({ type: 'n8n-nodes-base.postgres', version: 2.6, config: { name: 'Sugestões novas', credentials: PG, executeOnce: true, parameters: {
   operation: 'executeQuery',
-  query: `SELECT id, contato, quem, gravidade, categoria, resumo, acao, texto, primeira_cliente, mensagens
-FROM isa_sugestoes WHERE status = 'aguardando' AND discord_msg IS NULL ORDER BY id LIMIT 8;`, options: {} } } });
+  query: `SELECT id, contato, quem, gravidade, categoria, resumo, acao, texto, tarefa, primeira_cliente, mensagens
+FROM isa_sugestoes WHERE status = 'aguardando' AND discord_msg IS NULL ORDER BY id LIMIT 15;`, options: {} } } });
 
-const cartao = node({ type: 'n8n-nodes-base.code', version: 2, config: { name: 'Montar cartão', parameters: { jsCode: `const NL = String.fromCharCode(10);
-const mascara = s => String(s || '').replace(/r\\$\\s*[\\d.,]+(\\s*(mil|k))?/gi, '[valor]').replace(/\\b\\d{1,3}(\\.\\d{3})+(,\\d{1,2})?\\b/g, '[valor]').replace(/https?:\\/\\/\\S+/g, '[link]').replace(/\\b\\d{8,}\\b/g, '[número]');
-const CAT = { rescisao: 'rescisão', cancelamento: 'cancelamento', juridico: 'jurídico', reclamacao: 'reclamação', renegociacao: 'renegociação', cobranca: 'cobrança', pagamento: 'pagamento', nota_fiscal: 'nota fiscal' };
-const G = { serio: '🔴 sério', atencao: '🟠 atenção', normal: '⚪ normal' };
-return $input.all().filter(it => it.json.id).map(it => {
-  const r = it.json;
-  const desde = DateTime.fromJSDate(new Date(r.primeira_cliente)).setZone('America/Recife');
-  const trecho = String(r.mensagens || '').split(NL).filter(Boolean).slice(-4).map(l => '> ' + mascara(l).slice(0, 220)).join(NL);
-  const tem = String(r.texto || '').trim().length >= 2;
-  const quem = r.quem === 'equipe' ? ' (equipe)' : r.quem === 'advogado' ? ' (advogado)' : '';
-  let t = '📨 **Isa #' + r.id + '** · ' + (G[r.gravidade] || r.gravidade) + ' · **' + r.contato + '**' + quem + ' · ' + (CAT[r.categoria] || r.categoria || '') + NL +
-    'Esperando desde ' + desde.toFormat('dd/MM HH:mm') + NL + trecho + NL +
-    '**Resumo:** ' + mascara(r.resumo) + NL + '**Sugestão:** ' + mascara(r.acao) + NL;
-  const rodape = tem
-    ? '✅ envia este texto · ❌ recusa · 👍 já resolvi · ou responda esta mensagem com outro texto para enviar a sua versão.'
-    : 'Sem rascunho (assunto da direção ou do Dr. Rinaldo). ❌ recusa · 👍 já resolvi · ou responda esta mensagem com o texto que a Isabela deve mandar.';
-  if (tem) {
-    const cabe = Math.max(200, 1990 - t.length - rodape.length - 80);
-    t = t + '**Rascunho** (sai com a assinatura da Isabela):' + NL + '\`\`\`' + NL + String(r.texto).replace(/\`\`\`/g, "'''").slice(0, cabe) + NL + '\`\`\`' + NL;
-  }
-  t = t + rodape;
-  return { json: { id: r.id, corpo: JSON.stringify({ content: t.slice(0, 1995), allowed_mentions: { parse: [] } }) } };
-});` } } });
+const cartao = node({ type: 'n8n-nodes-base.code', version: 2, config: { name: 'Montar aviso', parameters: { jsCode: `// Um aviso curto por rodada: quem tem pendência nova no painel. A decisão é no Painel Central (aba Isa).
+const NL = String.fromCharCode(10);
+const CAT = { rescisao: 'rescisão', cancelamento: 'cancelamento', juridico: 'jurídico', reclamacao: 'reclamação', renegociacao: 'renegociação', cobranca: 'cobrança', pagamento: 'pagamento', nota_fiscal: 'nota fiscal', contrato: 'contrato', documento: 'documento', duvida: 'dúvida' };
+const G = { serio: '🔴', atencao: '🟠', normal: '⚪' };
+const L = $input.all().map(it => it.json).filter(r => r.id);
+if (!L.length) return [];
+const linhas = L.map(r => G[r.gravidade] + ' **' + r.contato + '** · ' + (CAT[r.categoria] || r.categoria || 'mensagem'));
+const t = '📨 **Isa · ' + (L.length === 1 ? '1 pendência nova' : L.length + ' pendências novas') + ' no seu painel**' + NL + linhas.join(NL) + NL +
+  'Aprove em Painel Central › Minha mesa › **Isa**.';
+return [{ json: { ids: L.map(r => r.id).join(','), corpo: JSON.stringify({ content: t.slice(0, 1950), allowed_mentions: { parse: [] } }) } }];` } } });
 
-const postar = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, config: { name: 'Postar no #aprovações-isa', credentials: DISCORD, onError: 'continueRegularOutput', parameters: {
+const postar = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, config: { name: 'Avisar no #aprovações-isa', credentials: DISCORD, onError: 'continueRegularOutput', parameters: {
   method: 'POST', url: CH, authentication: 'genericCredentialType', genericAuthType: 'httpHeaderAuth',
   sendBody: true, specifyBody: 'json', jsonBody: '={{ $json.corpo }}',
-  options: { batching: { batch: { batchSize: 1, batchInterval: 1200 } }, response: { response: { fullResponse: true, neverError: true } } } } } });
+  options: { response: { response: { fullResponse: true, neverError: true } } } } } });
 
-const gravarMsg = node({ type: 'n8n-nodes-base.postgres', version: 2.6, config: { name: 'Gravar cartão', credentials: PG, parameters: {
+const gravarMsg = node({ type: 'n8n-nodes-base.postgres', version: 2.6, config: { name: 'Marcar avisadas', credentials: PG, parameters: {
   operation: 'executeQuery',
-  query: `UPDATE isa_sugestoes SET discord_msg = $2 WHERE id = $1::int AND $2 <> '' RETURNING id, discord_msg;`,
-  options: { queryReplacement: "={{ [ $('Montar cartão').item.json.id, String(($json.body && $json.body.id) || '') ] }}" } } } });
-
-const reagirOk = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, config: { name: 'Reagir ✅', credentials: DISCORD, onError: 'continueRegularOutput', alwaysOutputData: true, parameters: {
-  method: 'PUT', url: "={{ '" + CH + "/' + $('Gravar cartão').item.json.discord_msg + '/reactions/%E2%9C%85/@me' }}",
-  authentication: 'genericCredentialType', genericAuthType: 'httpHeaderAuth', options: { batching: { batch: { batchSize: 1, batchInterval: 600 } } } } } });
-
-const reagirNao = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, config: { name: 'Reagir ❌', credentials: DISCORD, onError: 'continueRegularOutput', alwaysOutputData: true, parameters: {
-  method: 'PUT', url: "={{ '" + CH + "/' + $('Gravar cartão').item.json.discord_msg + '/reactions/%E2%9D%8C/@me' }}",
-  authentication: 'genericCredentialType', genericAuthType: 'httpHeaderAuth', options: { batching: { batch: { batchSize: 1, batchInterval: 600 } } } } } });
-
-const reagirFeito = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, config: { name: 'Reagir 👍', credentials: DISCORD, onError: 'continueRegularOutput', alwaysOutputData: true, parameters: {
-  method: 'PUT', url: "={{ '" + CH + "/' + $('Gravar cartão').item.json.discord_msg + '/reactions/%F0%9F%91%8D/@me' }}",
-  authentication: 'genericCredentialType', genericAuthType: 'httpHeaderAuth', options: { batching: { batch: { batchSize: 1, batchInterval: 600 } } } } } });
+  query: `UPDATE isa_sugestoes SET discord_msg = $2, discord_fechado = true WHERE id = ANY(string_to_array($1, ',')::int[]) AND $2 <> '' RETURNING id;`,
+  options: { queryReplacement: "={{ [ $('Montar aviso').item.json.ids, String(($json.body && $json.body.id) || '') ] }}" } } } });
 
 // ---------- B) Ler decisões ----------
 const abertas = node({ type: 'n8n-nodes-base.postgres', version: 2.6, config: { name: 'Cartões abertos', credentials: PG, executeOnce: true, parameters: {
@@ -156,7 +132,8 @@ const agora = DateTime.now().setZone('America/Recife');
 const hhmm = agora.toFormat('HH:mm');
 const FIM = { enviado: '✅ Enviado pelo painel. Nada mais a fazer aqui.', recusado: '❌ Recusado pelo painel. Nada saiu.', resolvido: '👍 Marcado como resolvido no painel.',
   arquivada: 'Arquivada.', substituida: '🔁 O contato mandou mais mensagens. Saiu um cartão novo, mais atual; este fica sem efeito.',
-  respondida_fora: 'A Isabela respondeu por outro caminho (celular ou Telegram). Fechei; nada saiu daqui.' };
+  respondida_fora: 'A Isabela respondeu por outro caminho (celular ou Telegram). Fechei; nada saiu daqui.',
+  refeita: '🔁 Refiz esta sugestão com as regras novas (prazo de 1 dia útil e to-do no painel). Ela está no painel (aba Isa).' };
 return $input.all().map(it => {
   const x = it.json;
   const lido = x.status_lido || x.status;
@@ -165,7 +142,7 @@ return $input.all().map(it => {
     if (x.enviado) { status = 'enviado'; fecha = true; decide = true; texto = x.texto_final; aviso = '✅ Enviado para ' + x.contato + ' às ' + hhmm + (x.resp_id ? ' (com o seu texto)' : '') + '.'; }
     else { status = 'aguardando'; nota = 'erro_envio'; aviso = '⚠️ O WhatsApp da Isabela não aceitou (número desconectado?). Nada saiu. Tente pelo Painel Central › Minha mesa › Isa.'; }
   }
-  if (x.acao === 'fechar') { fecha = true; aviso = FIM[x.status] || ('Fechado (' + x.status + ').'); }
+  if (x.acao === 'fechar') { fecha = true; aviso = x.nota === 'fora da Isa' ? 'Fechado: esse contato saiu da Isa, a seu pedido.' : (FIM[x.status] || ('Fechado (' + x.status + ').')); }
   if (x.acao === 'recusar') { status = 'recusado'; fecha = true; decide = true; aviso = '❌ Recusado. Nada saiu.'; }
   if (x.acao === 'resolver') { status = 'resolvido'; fecha = true; decide = true; aviso = '👍 Marcado como resolvido. Nada saiu.'; }
   if (x.acao === 'sumiu') { fecha = true; }
@@ -196,13 +173,52 @@ const avisar = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, config: 
   method: 'POST', url: CH, authentication: 'genericCredentialType', genericAuthType: 'httpHeaderAuth',
   sendBody: true, specifyBody: 'json', jsonBody: '={{ $json.discord }}', options: { batching: { batch: { batchSize: 1, batchInterval: 1200 } } } } } });
 
-const nota = sticky('## Isa · aprovações pelo Discord (V1)\nCada sugestão aberta da Isa (isa_sugestoes, status aguardando) vira cartão no #aprovações-isa (canal privado da diretoria). ✅ envia o rascunho · ❌ recusa · 👍 já resolvi · responder o cartão = envia o texto da resposta. Sai pelo WhatsApp da Isabela com a assinatura. 22h-7h: aprovado sai às 7h. Bloqueia texto com o nome do Henrique e contato já respondido por outro caminho. Decisão no painel (aba Isa) fecha o cartão com nota. "enviando" reserva o envio para o painel e o Discord não mandarem duas vezes.', [], { color: 4 });
+// ---------- C) Enviado com tarefa: vira to-do no Painel Central (✅ Minhas Pendências) ----------
+const comTarefa = node({ type: 'n8n-nodes-base.postgres', version: 2.6, config: { name: 'Enviados com tarefa', credentials: PG, executeOnce: true, parameters: {
+  operation: 'executeQuery',
+  query: `SELECT id, contato, gravidade, categoria, resumo, tarefa, texto_final, enviado_em FROM isa_sugestoes
+WHERE status = 'enviado' AND COALESCE(tarefa, '') <> '' AND todo_id IS NULL AND enviado_em > now() - interval '3 days' ORDER BY id LIMIT 5;`, options: {} } } });
 
-export default workflow('isa-aprovar-discord', 'Isa | Aprovações pelo Discord (V1)')
-  .add(cada1).to(novas).to(cartao).to(postar).to(gravarMsg).to(reagirOk).to(reagirNao).to(reagirFeito)
+const montarTodo = node({ type: 'n8n-nodes-base.code', version: 2, config: { name: 'Montar to-do', parameters: { jsCode: `const NL = String.fromCharCode(10);
+const SETOR = { pagamento: 'Financeiro', cobranca: 'Financeiro', nota_fiscal: 'Financeiro', renegociacao: 'Clientes', rescisao: 'Clientes', cancelamento: 'Clientes', reclamacao: 'Clientes', juridico: 'Jurídico', contrato: 'Clientes', documento: 'Clientes', equipe: 'Equipe' };
+const rt = t => ({ rich_text: (String(t).match(/[^]{1,1990}/g) || []).slice(0, 4).map(x => ({ type: 'text', text: { content: x } })) });
+return $input.all().filter(it => it.json.id).map(it => {
+  const r = it.json;
+  let d = DateTime.fromJSDate(new Date(r.enviado_em)).setZone('America/Recife').plus({ days: 1 });
+  while (d.weekday > 5) d = d.plus({ days: 1 });
+  const pr = {
+    'Pendência': { title: [{ type: 'text', text: { content: (r.tarefa + ' — ' + r.contato).slice(0, 300) } }] },
+    'Status': { select: { name: 'A fazer' } }, 'Responsável': { select: { name: 'Flau' } },
+    'Data limite': { date: { start: d.toISODate() } },
+    'Prioridade': { select: { name: r.gravidade === 'serio' ? '🔴 Urgente' : '🟠 Alta' } },
+    'Setor': { select: { name: SETOR[r.categoria] || 'Clientes' } },
+    'Contexto': rt('Isa #' + r.id + ' · ' + (r.resumo || '') + NL + NL + 'Resposta enviada pela Isabela:' + NL + (r.texto_final || ''))
+  };
+  return { json: { id: r.id, corpo: JSON.stringify({ parent: { database_id: '0fbba4fb020149aba045b4e34436a1cd' }, properties: pr }) } };
+});` } } });
+
+const criarTodo = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, config: { name: 'Criar to-do no Notion', credentials: NOTION, onError: 'continueRegularOutput', parameters: {
+  method: 'POST', url: 'https://api.notion.com/v1/pages', authentication: 'genericCredentialType', genericAuthType: 'httpHeaderAuth',
+  sendHeaders: true, headerParameters: { parameters: [{ name: 'Notion-Version', value: '2022-06-28' }] },
+  sendBody: true, specifyBody: 'json', jsonBody: '={{ $json.corpo }}',
+  options: { batching: { batch: { batchSize: 1, batchInterval: 500 } }, response: { response: { neverError: true } } } } } });
+
+const marcarTodo = node({ type: 'n8n-nodes-base.postgres', version: 2.6, config: { name: 'Marcar to-do e copiar', credentials: PG, parameters: {
+  operation: 'executeQuery',
+  query: `WITH u AS (UPDATE isa_sugestoes SET todo_id = $2 WHERE id = $1::int RETURNING id)
+INSERT INTO notion_cache (db, id, props, criado, editado, arquivado, visto_em)
+SELECT 'pendencias', $2, $3::jsonb, now(), now(), false, now() WHERE $2 NOT IN ('', 'erro')
+ON CONFLICT (db, id) DO UPDATE SET props = EXCLUDED.props, editado = EXCLUDED.editado, arquivado = false, visto_em = now();`,
+  options: { queryReplacement: "={{ [ $('Montar to-do').item.json.id, ($json.object === 'page' && $json.id) ? String($json.id).replace(/-/g, '') : 'erro', JSON.stringify($json.properties || {}) ] }}" } } } });
+
+const nota = sticky('## Isa · avisos e to-do (V2)\n05/11: a pedido do Henrique, a aprovação é só no Painel Central (aba Isa). (A) Um aviso curto no #aprovações-isa com quem tem pendência nova. (B) Cartões antigos (V1) ainda leem ✅/❌/👍/resposta até fecharem e recebem nota quando decididos no painel. (C) Enviado com tarefa vira to-do no ✅ Minhas Pendências (Flau, próximo dia útil). Envio pela Isabela com assinatura; 22h-7h sai às 7h; "enviando" reserva para não sair duas vezes.', [], { color: 4 });
+
+export default workflow('isa-aprovar-discord', 'Isa | Avisos e to-do (V2)')
+  .add(cada1).to(novas).to(cartao).to(postar).to(gravarMsg)
   .add(cada1).to(abertas).to(respostas).to(lista).to(lerCartao).to(decidir)
   .to(vaiEnviar.onTrue(reservar.to(mandar).to(resultado).to(juntar.input(0))).onFalse(juntar.input(1)))
   .add(juntar).to(fechar)
   .add(fechar).to(atualizar)
   .add(fechar).to(temAviso).to(avisar)
+  .add(cada1).to(comTarefa).to(montarTodo).to(criarTodo).to(marcarTodo)
   .add(nota);

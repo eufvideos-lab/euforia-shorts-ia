@@ -3,7 +3,7 @@
 var URL_ISA = 'https://n8n.grupoeuforia.tech/webhook/diretoria-central-isa';
 var G = { serio: ['at', '🔴 Sério'], atencao: ['hj', '🟠 Atenção'], normal: ['', '⚪ Normal'] };
 var CAT = { rescisao: 'rescisão', cancelamento: 'cancelamento', juridico: 'jurídico', reclamacao: 'reclamação', renegociacao: 'renegociação', cobranca: 'cobrança', pagamento: 'pagamento', nota_fiscal: 'nota fiscal', duvida: 'dúvida', outro: 'outro' };
-var ST = { enviado: ['ent', 'Enviado'], recusado: ['sai', 'Recusado'], resolvido: ['', 'Resolvido'], arquivada: ['', 'Arquivada'], respondida_fora: ['', 'Respondida por outro caminho'], aprovado_espera: ['', 'Aprovado, sai às 7h'] };
+var ST = { enviado: ['ent', 'Enviado'], recusado: ['sai', 'Recusado'], resolvido: ['', 'Resolvido'], arquivada: ['', 'Arquivada'], respondida_fora: ['', 'Respondida por outro caminho'], aprovado_espera: ['', 'Aprovado, sai às 7h'], refeita: ['', 'Refeita'] };
 var R = null;
 function chamar(acao, extra) {
   var ss = sessao() || {};
@@ -33,6 +33,7 @@ function cartao(s) {
     '<p class="mut" style="font-size:12.5px;margin-top:4px">Esperando desde ' + esc(quando(s.primeira_cliente)) + '</p>' +
     '<p style="margin-top:8px"><b>Resumo:</b> ' + esc(s.resumo) + '</p>' +
     '<p style="margin-top:4px"><b style="color:var(--or2)">Sugestão:</b> ' + esc(s.acao) + '</p>' +
+    (s.tarefa ? '<p style="margin-top:6px;font-size:13.5px">📝 <b>Ao enviar, vira to-do no seu painel:</b> ' + esc(s.tarefa) + ' <span class="mut">(próximo dia útil)</span></p>' : '') +
     '<details style="margin-top:8px"><summary class="mut" style="cursor:pointer;font-size:13px">Ver as mensagens</summary>' +
     '<pre style="white-space:pre-wrap;font:inherit;font-size:13px;color:var(--mut);margin-top:6px">' + esc(s.mensagens) + '</pre>' +
     (s.contexto ? '<p class="mut" style="font-size:12px;margin-top:6px">Conversa anterior:</p><pre style="white-space:pre-wrap;font:inherit;font-size:12.5px;color:var(--mut)">' + esc(s.contexto) + '</pre>' : '') + '</details>' +
@@ -63,7 +64,7 @@ function decidir(acao, id, extra, botao) {
   return chamar(acao, Object.assign({ id: id }, extra || {})).then(function (r) {
     if (botao) botao.disabled = false;
     if (!r.ok) { aviso(r.erro || 'Não deu certo.', true); return; }
-    aviso(acao === 'enviar' ? 'Enviado pelo WhatsApp da Isabela.' : acao === 'recusar' ? 'Recusada. Nada saiu.' : 'Marcada como resolvida.');
+    aviso(acao === 'enviar' ? 'Enviado pelo WhatsApp da Isabela. Se tinha tarefa, o to-do entra no painel em 1 minuto.' : acao === 'recusar' ? 'Recusada. Nada saiu.' : 'Marcada como resolvida.');
     carregar();
   });
 }

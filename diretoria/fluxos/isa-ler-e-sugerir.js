@@ -16,12 +16,17 @@ const conversas = node({ type: 'n8n-nodes-base.postgres', version: 2.6, config: 
 CREATE TABLE IF NOT EXISTS isa_sugestoes (id SERIAL PRIMARY KEY, criado_em TIMESTAMPTZ DEFAULT now(), chat_id TEXT, contato TEXT, quem TEXT,
   gravidade TEXT, categoria TEXT, resumo TEXT, acao TEXT, texto TEXT, primeira_cliente TIMESTAMPTZ, ultima_cliente TIMESTAMPTZ, mensagens TEXT, contexto TEXT,
   status TEXT DEFAULT 'aguardando', texto_final TEXT, decidido_em TIMESTAMPTZ, enviado_em TIMESTAMPTZ, alertado_em TIMESTAMPTZ, lembrete_em TIMESTAMPTZ, nota TEXT);
+ALTER TABLE isa_sugestoes ADD COLUMN IF NOT EXISTS tarefa TEXT, ADD COLUMN IF NOT EXISTS todo_id TEXT;
+UPDATE isa_sugestoes SET status = 'arquivada', decidido_em = now(), nota = 'fora da Isa' WHERE status = 'aguardando' AND chat_id IN ('558195231886@s.whatsapp.net');
+WITH r AS (UPDATE isa_sugestoes SET status = 'refeita', decidido_em = now() WHERE status = 'aguardando' AND tarefa IS NULL RETURNING chat_id)
+DELETE FROM isa_lote WHERE chat_id IN (SELECT chat_id FROM r);
 UPDATE isa_sugestoes s SET status = 'respondida_fora', decidido_em = now()
 WHERE s.status = 'aguardando' AND EXISTS (SELECT 1 FROM mensagens m WHERE m.chat_id = s.chat_id AND m.origem = 'isabela' AND m.from_me AND m.enviado_em > s.ultima_cliente);
 WITH priv AS (
   SELECT DISTINCT ON (msg_id) msg_id, chat_id, from_me, autor_nome, tipo, texto, enviado_em
   FROM mensagens
   WHERE origem = 'isabela' AND NOT COALESCE(is_group, false) AND chat_id NOT LIKE '%@g.us' AND chat_id NOT LIKE '%broadcast%'
+    AND chat_id NOT IN ('558195231886@s.whatsapp.net') -- Diogo (equipe): fora da Isa, pedido do Henrique 05/11
     AND enviado_em > now() - interval '12 days'
     AND tipo NOT IN ('reactionMessage','protocolMessage','pollUpdateMessage','stickerMessage')
   ORDER BY msg_id, enviado_em
@@ -58,11 +63,13 @@ const so = s => String(s || '').split('@')[0].replace(/\\D/g, '');
 const tira9 = d => d.length === 13 && d.startsWith('55') ? d.slice(2, 4) + d.slice(5) : d.length === 12 && d.startsWith('55') ? d.slice(2) : d;
 const TRAVA = /rescis|distrato|cancelar|cancelament|quero sair|encerrar (o )?contrato|nao quero mais|advogad|procon|reclame ?aqui|processar|processo|justica|juridic|notificacao|danos morais|reembols|estorn|chargeback|golpe|enganad|absurdo|descaso|inaceitavel|sem resposta|ninguem responde|nenhum retorno|algum retorno/;
 const agora = DateTime.now().setZone('America/Recife');
+let util = agora.plus({ days: 1 }); while (util.weekday > 5) util = util.plus({ days: 1 });
+const PRAZO = util.setLocale('pt-BR').toFormat("cccc (dd/MM)");
 const SYSTEM = [
 'Você é a Isa, assistente da diretoria do Grupo Euforia, empresa de mídia que cria e cuida do ecossistema digital (YouTube e redes sociais) de especialistas.',
 'Você lê as mensagens que chegaram no WhatsApp ADMINISTRATIVO da empresa (a "Isabela", que cuida de financeiro, contratos, cobrança e assuntos sérios) e sugere à diretoria o que fazer e um rascunho de resposta. Nada é enviado sem a diretoria aprovar.',
 'Responda SÓ com um JSON válido, sem nenhum texto fora dele, neste formato:',
-'{"gravidade":"normal","categoria":"duvida","resumo":"...","acao":"...","precisa_resposta":true,"resposta":"..."}',
+'{"gravidade":"normal","categoria":"duvida","resumo":"...","acao":"...","precisa_resposta":true,"resposta":"...","tarefa":"..."}',
 '',
 'gravidade:',
 '- serio: pedido de rescisão, cancelamento, pausa ou distrato; ameaça; advogado, Procon, Reclame Aqui, processo ou notificação; cliente irritado, inseguro com o contrato ou querendo rever termos; reclamação de qualidade; reembolso ou estorno; cobrança contestada; contato cobrando retorno que não recebeu.',
@@ -71,6 +78,7 @@ const SYSTEM = [
 'categoria (uma só): rescisao, cancelamento, juridico, reclamacao, renegociacao, cobranca, pagamento, nota_fiscal, contrato, documento, equipe, duvida, agradecimento, outro.',
 'resumo: uma frase curta do que a pessoa quer, sem valores em reais nem dados pessoais.',
 'acao: o que a diretoria deve fazer, em 1 ou 2 frases práticas (ex.: "Levar ao Dr. Rinaldo antes de responder", "Confirmar o recebimento no extrato e agradecer").',
+'tarefa: se a resposta compromete a Euforia a fazer algo (enviar documento, emitir nota fiscal, formalizar proposta, enviar contrato, conferir pagamento, levar um ponto à direção), escreva a tarefa curta para o to-do da diretoria, começando com verbo e com o que for preciso para fazê-la (ex.: "Enviar a formalização da renovação para o e-mail financeiro informado pela cliente"). Se não houver nada a fazer, "".',
 'precisa_resposta: false se a última mensagem não pede resposta (ex.: só "obrigada", emoji, ok) ou se o assunto é jurídico.',
 '',
 'Regras da resposta (rascunho em nome da Isabela, do time administrativo):',
@@ -79,6 +87,7 @@ const SYSTEM = [
 '- Diga "ecossistema digital", nunca "canal".',
 '- Nunca admita falha, erro, atraso ou descaso; não peça desculpas por erro. Pode agradecer a paciência. Mudanças são apresentadas como melhoria boa para os dois lados.',
 '- Nunca invente nem prometa valor, data, prazo, desconto, multa, reembolso, condição ou decisão que não esteja escrita nas mensagens. Quando a decisão for da direção, diga que vai levar o ponto à direção e retorna por aqui.',
+'- Prazo: nunca prometa "agora", "agora mesmo", "hoje", "ainda hoje" nem "em instantes". Quando a Euforia tiver que entregar algo (documento, nota fiscal, formalização, contrato, retorno da direção), o prazo é o próximo dia útil: escreva "até ' + PRAZO + '".',
 '- Nunca diga que um pagamento foi recebido ou confirmado: diga que o comprovante chegou e que o financeiro vai conferir.',
 '- Rescisão, cancelamento ou renegociação: acolha, diga que o pedido foi registrado e levado à direção e que retorna por escrito; não aceite nem recuse.',
 '- Jurídico (advogado, Procon, Reclame Aqui, processo, notificação): precisa_resposta=false e resposta vazia; a diretoria fala com o advogado antes.',
@@ -123,19 +132,19 @@ $input.all().forEach((it, i) => {
     resumo: String(s.resumo || 'Não consegui ler a conversa; abra e veja.').replace(/r\\$\\s*[\\d.,]+/gi, '[valor]').slice(0, 300),
     acao: String(s.acao || '').slice(0, 400) + (s.precisa_resposta === false && !juridico ? ' (a Isa acha que não precisa responder)' : ''),
     status: grav === 'normal' && s.precisa_resposta === false ? 'arquivada' : 'aguardando',
-    texto: texto.slice(0, 1500), primeira_cliente: b.primeira, ultima_cliente: b.ultima, mensagens: String(b.textos || '').slice(-4000), contexto: String(b.contexto || '').slice(-3000) });
+    tarefa: String(s.tarefa || '').trim().slice(0, 300), texto: texto.slice(0, 1500), primeira_cliente: b.primeira, ultima_cliente: b.ultima, mensagens: String(b.textos || '').slice(-4000), contexto: String(b.contexto || '').slice(-3000) });
 });
 return [{ json: { linhas: JSON.stringify(linhas) } }];` } } });
 
 const gravar = node({ type: 'n8n-nodes-base.postgres', version: 2.6, config: { name: 'Gravar sugestões', credentials: PG, executeOnce: true, parameters: {
   operation: 'executeQuery',
-  query: `WITH x AS (SELECT * FROM json_to_recordset($1::json) AS x(chat_id text, contato text, quem text, gravidade text, categoria text, resumo text, acao text, texto text,
+  query: `WITH x AS (SELECT * FROM json_to_recordset($1::json) AS x(chat_id text, contato text, quem text, gravidade text, categoria text, resumo text, acao text, texto text, tarefa text,
     primeira_cliente timestamptz, ultima_cliente timestamptz, mensagens text, contexto text, status text)),
 velhas AS (UPDATE isa_sugestoes s SET status = 'substituida', decidido_em = now() FROM x WHERE s.chat_id = x.chat_id AND s.status = 'aguardando' RETURNING s.id),
 lote AS (INSERT INTO isa_lote (chat_id, ate, atualizado_em) SELECT chat_id, ultima_cliente, now() FROM x
   ON CONFLICT (chat_id) DO UPDATE SET ate = GREATEST(isa_lote.ate, EXCLUDED.ate), atualizado_em = now() RETURNING chat_id)
-INSERT INTO isa_sugestoes (chat_id, contato, quem, gravidade, categoria, resumo, acao, texto, primeira_cliente, ultima_cliente, mensagens, contexto, status, decidido_em)
-SELECT chat_id, contato, quem, gravidade, categoria, resumo, acao, texto, primeira_cliente, ultima_cliente, mensagens, contexto, COALESCE(status, 'aguardando'), CASE WHEN status = 'arquivada' THEN now() END FROM x
+INSERT INTO isa_sugestoes (chat_id, contato, quem, gravidade, categoria, resumo, acao, texto, tarefa, primeira_cliente, ultima_cliente, mensagens, contexto, status, decidido_em)
+SELECT chat_id, contato, quem, gravidade, categoria, resumo, acao, texto, COALESCE(tarefa, ''), primeira_cliente, ultima_cliente, mensagens, contexto, COALESCE(status, 'aguardando'), CASE WHEN status = 'arquivada' THEN now() END FROM x
 RETURNING id, chat_id, contato, quem, gravidade, categoria, resumo, acao, primeira_cliente, mensagens, (SELECT count(*) FROM velhas) AS substituidas, (SELECT count(*) FROM lote) AS lotes;`,
   options: { queryReplacement: '={{ [ $json.linhas ] }}' } } } });
 
@@ -152,7 +161,7 @@ return $input.all().filter(it => it.json.id && it.json.gravidade === 'serio').ma
   const t = '🚨 **Isa · assunto sério** · **' + r.contato + '**' + (r.quem === 'equipe' ? ' (equipe)' : '') + ' · ' + (CAT[r.categoria] || r.categoria) + NL +
     'Esperando resposta desde ' + desde.toFormat('dd/MM HH:mm') + ' (' + fmt(h) + ')' + NL + trecho + NL +
     '**Resumo:** ' + mascara(r.resumo) + NL + '**Sugestão:** ' + mascara(r.acao) + NL +
-    'Decida no <#1567878609060765718> (cartão #' + r.id + ': ✅ envia · ❌ recusa · 👍 já resolvi) ou no Painel Central › Minha mesa › Isa. Nada sai sem você.';
+    'Decida no Painel Central › Minha mesa › **Isa** (#' + r.id + '). Nada sai sem você.';
   return { json: { id: r.id, corpo: JSON.stringify({ content: t.slice(0, 1950), allowed_mentions: { parse: [] } }) } };
 });` } } });
 
@@ -182,7 +191,7 @@ const agora = DateTime.now().setZone('America/Recife');
 const fmt = h => h >= 48 ? Math.floor(h / 24) + ' dias' : Math.floor(h) + 'h';
 const linhas = L.map(r => '• ' + (r.gravidade === 'serio' ? '🔴 ' : '🟠 ') + '**' + r.contato + '** · ' + String(r.resumo || '').replace(/r\\$\\s*[\\d.,]+/gi, '[valor]').slice(0, 140) +
   ' · esperando há ' + fmt(agora.diff(DateTime.fromJSDate(new Date(r.primeira_cliente)), 'hours').hours) + ' (#' + r.id + ')');
-const t = '⏰ **Isa · ainda sem decisão**' + NL + linhas.join(NL) + NL + 'Decida no <#1567878609060765718> ou no Painel Central › Minha mesa › Isa.';
+const t = '⏰ **Isa · ainda sem decisão**' + NL + linhas.join(NL) + NL + 'Decida no Painel Central › Minha mesa › Isa.';
 return [{ json: { corpo: JSON.stringify({ content: t.slice(0, 1950), allowed_mentions: { parse: [] } }) } }];` } } });
 
 const postarLembrete = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, config: { name: 'Lembrar no #alertas-diretoria', credentials: DISCORD, onError: 'continueRegularOutput', parameters: {

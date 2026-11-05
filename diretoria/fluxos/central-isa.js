@@ -45,7 +45,7 @@ const lerTudo = node({ type: 'n8n-nodes-base.postgres', version: 2.6, config: { 
   query: `SELECT COALESCE((SELECT jsonb_agg(to_jsonb(s) - 'chat_id' ORDER BY CASE s.gravidade WHEN 'serio' THEN 0 WHEN 'atencao' THEN 1 ELSE 2 END, s.primeira_cliente)
     FROM isa_sugestoes s WHERE s.status = 'aguardando'), '[]'::jsonb) AS abertas,
   COALESCE((SELECT jsonb_agg(to_jsonb(s) - 'chat_id' - 'contexto' ORDER BY s.decidido_em DESC) FROM (SELECT * FROM isa_sugestoes
-    WHERE status NOT IN ('aguardando', 'substituida') AND decidido_em > now() - interval '3 days' ORDER BY decidido_em DESC LIMIT 40) s), '[]'::jsonb) AS recentes,
+    WHERE status NOT IN ('aguardando', 'substituida', 'refeita') AND decidido_em > now() - interval '3 days' ORDER BY decidido_em DESC LIMIT 40) s), '[]'::jsonb) AS recentes,
   to_char(now() AT TIME ZONE 'America/Recife', 'YYYY-MM-DD"T"HH24:MI') AS agora;`, options: {} } } });
 
 const devolver = node({ type: 'n8n-nodes-base.respondToWebhook', version: 1.5, config: { name: 'Devolver sugestões', parameters: {

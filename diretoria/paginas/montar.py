@@ -40,7 +40,7 @@ corpoQ = '''<div class="topo"><span class="mut" style="font-size:13px">Pontos po
 <select id="eqPer" style="width:170px;flex:none"><option value="7">Últimos 7 dias</option><option value="30" selected>Últimos 30 dias</option><option value="90">Últimos 90 dias</option><option value="">Tudo</option></select>
 <button class="btn" id="eqNovo">+ Registrar</button></div>
 <div id="eqLista" style="margin-top:14px"><p class="vazio">Carregando…</p></div>'''
-corpoI = '''<div class="topo"><span class="mut" style="font-size:13px">O que chegou no privado do WhatsApp da Isabela, com a sugestão da Isa. Nada sai sem você. Também dá para decidir no Discord (#aprovações-isa).</span><span class="esp"></span>
+corpoI = '''<div class="topo"><span class="mut" style="font-size:13px">O que chegou no privado do WhatsApp da Isabela, com a sugestão da Isa. Nada sai sem você. O Discord só avisa que tem pendência nova; o que gera tarefa vira to-do aqui no painel.</span><span class="esp"></span>
 <button class="ghost" id="isaAtualizar">Atualizar</button></div>
 <div id="isaLista" style="margin-top:14px"><p class="vazio">Carregando…</p></div>'''
 corpoF = PAGS['financeiro'][1].replace('id="bLanc"', 'id="bLancF"').replace('id="rodape"', 'id="rodapeF"')
