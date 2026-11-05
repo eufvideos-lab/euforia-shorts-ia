@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow"><title>Aprovações · Grupo Euforia</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100..125,500..900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0A0A0A;--card:#141417;--card2:#1c1c21;--line:rgba(255,255,255,.09);--txt:#F4F2EE;--mut:rgba(244,242,238,.6);--or:#FF5A00;--or2:#FF7A1A;--ok:#2ecc71;--warn:#e9c46a;--err:#ff6b6b}
+*{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:var(--txt);font:15px/1.5 Inter,system-ui,sans-serif}
+.in{max-width:720px;margin:0 auto;padding:24px 16px 60px}
+.marca{font:900 13px/1 Archivo,sans-serif;letter-spacing:3px;color:var(--or2);text-transform:uppercase}
+h1{font:800 28px/1.15 Archivo,sans-serif;font-stretch:110%;margin:10px 0 6px}
+.sub{color:var(--mut);margin:0 0 22px}
+h2{font:800 13px/1 Archivo,sans-serif;letter-spacing:2px;text-transform:uppercase;color:var(--mut);margin:28px 0 12px}
+.peca{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:12px}
+.peca.nova{border-color:rgba(255,90,0,.45)}
+.top{display:flex;gap:10px;align-items:flex-start;justify-content:space-between}
+.tit{font-weight:700;font-size:16px}
+.meta{color:var(--mut);font-size:13px;margin-top:3px}
+.selo{flex:none;font-size:12px;font-weight:600;border-radius:999px;padding:3px 10px;border:1px solid var(--line);color:var(--mut);white-space:nowrap}
+.selo.ag{color:var(--or2);border-color:rgba(255,90,0,.5)}.selo.ok{color:var(--ok);border-color:rgba(46,204,113,.45)}.selo.aj{color:var(--warn);border-color:rgba(233,196,106,.45)}
+.ver{display:inline-flex;align-items:center;gap:8px;margin-top:12px;color:var(--txt);text-decoration:none;font-weight:600;background:var(--card2);border:1px solid var(--line);border-radius:10px;padding:10px 14px}
+.acoes{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap}
+button{font:700 15px Inter,sans-serif;border-radius:12px;padding:13px 18px;border:1px solid var(--line);cursor:pointer;flex:1;min-width:140px}
+.sim{background:linear-gradient(135deg,var(--or2),var(--or));color:#fff;border:0}.nao{background:transparent;color:var(--txt)}
+button:disabled{opacity:.55;cursor:default}
+textarea{width:100%;min-height:96px;margin-top:12px;background:var(--card2);color:var(--txt);border:1px solid var(--line);border-radius:12px;padding:12px;font:15px/1.45 Inter,sans-serif;resize:vertical}
+.msg{font-size:13px;margin-top:8px;color:var(--err);min-height:1px}
+.vazio{background:var(--card);border:1px dashed var(--line);border-radius:16px;padding:22px;color:var(--mut);text-align:center}
+.pe{color:var(--mut);font-size:12.5px;margin-top:34px;text-align:center}
+@media (prefers-color-scheme: light){:root:not([data-theme="dark"]){--bg:#F4F2EE;--card:#fff;--card2:#f1efea;--line:rgba(0,0,0,.1);--txt:#141414;--mut:rgba(20,20,20,.6)}}
+</style></head><body><div class="in">
+<div class="marca">Grupo Euforia</div>
+<h1 id="ola">Suas aprovações</h1>
+<p class="sub" id="sub">Carregando…</p>
+<div id="lista"></div>
+<p class="pe">Assim que você aprova, a peça segue para a publicação no seu ecossistema digital. Se pedir ajuste, a equipe recebe o seu pedido na hora.<br>Grupo Euforia</p>
+</div>
+<script>
+var API = 'https://n8n.grupoeuforia.tech/webhook/portal-aprovacao';
+var T = (new URLSearchParams(location.search).get('t') || '').replace(/[^A-Za-z0-9]/g, '');
+var D = null;
+function $(id) { return document.getElementById(id); }
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+function dia(d) { if (!d) return ''; var x = new Date(d.slice(0, 10) + 'T12:00:00'); var s = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'][x.getDay()]; return s + ', ' + d.slice(8, 10) + '/' + d.slice(5, 7); }
+function chamar(corpo) {
+  return fetch(API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(Object.assign({ t: T }, corpo)) })
+    .then(function (r) { return r.json(); }).catch(function () { return { ok: false, erro: 'Sem conexão. Tente de novo em instantes.' }; });
+}
+function carregar() {
+  if (T.length < 24) { $('sub').textContent = 'Este link não está completo. Peça o seu link à equipe no grupo.'; return; }
+  chamar({ acao: 'ler' }).then(function (r) {
+    if (!r.ok) { $('sub').textContent = r.erro === 'link' ? 'Este link não está ativo. Peça o seu link à equipe no grupo.' : (r.erro || 'Não consegui abrir agora.'); return; }
+    D = r; desenhar();
+  });
+}
+function cartao(p) {
+  var selo = { aguardando: ['ag', 'Esperando você'], ajuste: ['aj', 'Em ajuste'], aprovado: ['ok', 'Aprovado'], publicado: ['ok', 'Publicado'] }[p.situacao] || ['', ''];
+  var h = '<div class="peca' + (p.situacao === 'aguardando' ? ' nova' : '') + '" id="p_' + p.id + '"><div class="top"><div><div class="tit">' + esc(p.titulo || p.tipo) + '</div>' +
+    '<div class="meta">' + esc(p.tipo) + (p.postar ? ' · vai ao ar ' + esc(dia(p.postar)) : '') + '</div></div><span class="selo ' + selo[0] + '">' + selo[1] + '</span></div>' +
+    '<a class="ver" href="' + esc(p.link) + '" target="_blank" rel="noopener">▶ Ver a peça</a>';
+  if (p.situacao === 'aguardando') h += '<div class="acoes"><button class="sim" data-ok="' + p.id + '">Aprovar</button><button class="nao" data-aj="' + p.id + '">Pedir ajuste</button></div>' +
+    '<div data-caixa="' + p.id + '" hidden><textarea placeholder="Conte o que você quer mudar. Ex.: no minuto 1:20 a palavra certa é &quot;mantenha&quot;."></textarea>' +
+    '<div class="acoes"><button class="sim" data-env="' + p.id + '">Enviar pedido de ajuste</button></div></div><div class="msg"></div>';
+  return h + '</div>';
+}
+function desenhar() {
+  var nome = String(D.nome || '').split(/[ (]/)[0];
+  $('ola').textContent = nome ? 'Olá, ' + nome + '!' : 'Suas aprovações';
+  var ag = D.pecas.filter(function (p) { return p.situacao === 'aguardando'; }), resto = D.pecas.filter(function (p) { return p.situacao !== 'aguardando'; });
+  $('sub').textContent = ag.length ? (ag.length === 1 ? 'Tem 1 peça esperando a sua aprovação.' : 'Tem ' + ag.length + ' peças esperando a sua aprovação.') : 'Tudo em dia por aqui. Quando houver peça nova, ela aparece nesta página.';
+  var h = ag.length ? ag.map(cartao).join('') : '<div class="vazio">Nenhuma peça esperando você agora.</div>';
+  if (resto.length) h += '<h2>Últimas respondidas</h2>' + resto.map(cartao).join('');
+  $('lista').innerHTML = h;
+}
+function responder(id, acao, texto, btn) {
+  var card = $('p_' + id), msg = card.querySelector('.msg');
+  [].forEach.call(card.querySelectorAll('button'), function (b) { b.disabled = true; }); msg.textContent = '';
+  chamar({ acao: acao, id: id, texto: texto || '' }).then(function (r) {
+    if (!r.ok) { [].forEach.call(card.querySelectorAll('button'), function (b) { b.disabled = false; }); msg.textContent = r.erro || 'Não deu certo. Tente de novo.'; return; }
+    D.pecas.forEach(function (p) { if (p.id === id) p.situacao = acao === 'aprovar' ? 'aprovado' : 'ajuste'; }); desenhar();
+  });
+}
+document.addEventListener('click', function (e) {
+  var b = e.target.closest('button'); if (!b) return;
+  if (b.dataset.ok) responder(b.dataset.ok, 'aprovar', '', b);
+  if (b.dataset.aj) { var c = document.querySelector('[data-caixa="' + b.dataset.aj + '"]'); c.hidden = false; c.querySelector('textarea').focus(); }
+  if (b.dataset.env) { var t = document.querySelector('[data-caixa="' + b.dataset.env + '"] textarea').value.trim();
+    var m = $('p_' + b.dataset.env).querySelector('.msg'); if (t.length < 5) { m.textContent = 'Conte o que você quer ajustar.'; return; } responder(b.dataset.env, 'ajustar', t, b); }
+});
+carregar();
+</script></body></html>
