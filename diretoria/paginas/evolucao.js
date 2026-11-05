@@ -25,23 +25,27 @@ function desenhar() {
   var dias = []; L.forEach(function (i) { if (dias.indexOf(i.dia) < 0) dias.push(i.dia); });
   var conta = function (t) { return L.filter(function (i) { return i.tipo === t; }).length; };
   var soma = function (t) { return L.filter(function (i) { return i.tipo === t && typeof i.valor === 'number'; }).reduce(function (a, i) { return a + i.valor; }, 0); };
+  // Dinheiro que entrou: Entradas pagas do 💸 Lançamentos (não o que foi escrito no diário).
+  var EN = (E.entradas || []).filter(function (e) { return e.dia && (!desde || e.dia >= desde) && e.dia <= hoje; });
+  var caixa = EN.reduce(function (a, e) { return a + (e.valor || 0); }, 0);
   var feitos = L.filter(function (i) { return i.tipo !== 'pendente'; }).length;
   var h = '<div class="kpis">' +
     '<div class="kpi or"><small>Coisas feitas</small><b>' + feitos + '</b><span>em ' + dias.length + ' dia(s) com registro</span></div>' +
     '<div class="kpi"><small>Construídas</small><b>' + conta('construido') + '</b><span>fluxos, painéis, páginas</span></div>' +
     '<div class="kpi"><small>Resolvidas ou decididas</small><b>' + (conta('resolvido') + conta('decidido')) + '</b><span>problemas e decisões</span></div>' +
-    '<div class="kpi pos"><small>Entrou no caixa</small><b>' + rs(soma('dinheiro')) + '</b><span>registrado no diário</span></div>' +
+    '<div class="kpi pos"><small>Entrou no caixa</small><b>' + rs(caixa) + '</b><span>entradas pagas no Lançamentos (sem aporte e empréstimo)</span></div>' +
     '<div class="kpi pos"><small>Vendido ou renovado</small><b>' + rs(soma('vendido')) + '</b><span>registrado no diário</span></div>' +
     '<div class="kpi' + (conta('pendente') ? ' neg' : '') + '"><small>Pendentes</small><b>' + conta('pendente') + '</b><span>ficaram para depois</span></div></div>';
   // Semana a semana (começando na segunda), para ver a curva.
   var sem = {};
   L.forEach(function (i) { var x = d0(i.dia), w = (x.getDay() + 6) % 7; var k = maisDias(-w, i.dia.slice(0, 10)); sem[k] = sem[k] || { n: 0, r: 0 };
-    if (i.tipo !== 'pendente') sem[k].n++; if (i.tipo === 'dinheiro' && typeof i.valor === 'number') sem[k].r += i.valor; });
+    if (i.tipo !== 'pendente') sem[k].n++; });
+  EN.forEach(function (e) { var x = d0(e.dia), w = (x.getDay() + 6) % 7; var k = maisDias(-w, e.dia); sem[k] = sem[k] || { n: 0, r: 0 }; sem[k].r += e.valor || 0; });
   var ks = Object.keys(sem).sort(), max = Math.max.apply(null, [1].concat(ks.map(function (k) { return sem[k].n; })));
   if (ks.length > 1) {
     h += '<h2 class="sec">Semana a semana</h2><div class="card">' + ks.map(function (k) {
       return '<div class="lin"><div class="t" style="flex:none;width:150px">semana de ' + dm(k) + '</div><div style="flex:1;height:10px;background:var(--card2);border-radius:6px;overflow:hidden"><div style="height:100%;width:' + Math.round(sem[k].n / max * 100) + '%;background:var(--or)"></div></div>' +
-        '<div class="v" style="min-width:150px">' + sem[k].n + ' feito(s)' + (sem[k].r ? ' · ' + rs(sem[k].r) : '') + '</div></div>'; }).join('') + '</div>';
+        '<div class="v" style="min-width:150px">' + sem[k].n + ' feito(s)' + (sem[k].r ? ' · entrou ' + rs(sem[k].r) : '') + '</div></div>'; }).join('') + '</div>';
   }
   dias.forEach(function (d) {
     var itens = L.filter(function (i) { return i.dia === d; });
