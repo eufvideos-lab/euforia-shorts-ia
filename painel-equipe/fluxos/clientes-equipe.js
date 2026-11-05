@@ -41,7 +41,7 @@ const fichas = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, config: 
 const entregas = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, config: { name: 'Entregas do ano', credentials: NOTION, executeOnce: true, parameters: {
   method: 'POST', url: 'https://api.notion.com/v1/databases/74b3076a325749e3bac4ba6659215e48/query', authentication: 'genericCredentialType', genericAuthType: 'httpHeaderAuth',
   sendHeaders: true, headerParameters: NOTION_HDR, sendBody: true, specifyBody: 'json',
-  jsonBody: '={{ JSON.stringify({ filter: { and: [{ property: "Status", select: { does_not_equal: "Cancelado" } }, { or: [{ property: "Status", select: { does_not_equal: "Postado" } }, { property: "Postado em", date: { on_or_after: $("Validar acesso").first().json.ano } }] }] }, page_size: 100 }) }}',
+  jsonBody: '={{ JSON.stringify({ filter: { and: [{ property: "Status", select: { does_not_equal: "Cancelado" } }, { or: [{ and: [{ property: "Status", select: { does_not_equal: "Postado" } }, { property: "Status", select: { does_not_equal: "Feito" } }] }, { property: "Postado em", date: { on_or_after: $("Validar acesso").first().json.ano } }, { and: [{ property: "Status", select: { equals: "Feito" } }, { property: "Concluído em", date: { on_or_after: $("Validar acesso").first().json.ano } }] }] }] }, page_size: 100 }) }}',
   options: PAGINAR } } });
 
 // O contrato vem do texto "Resumo do contrato" da ficha. A equipe recebe só plano, tempo e entregas:
@@ -118,14 +118,14 @@ for (const it of $('Fichas dos clientes').all()) for (const p of (it.json.result
   const feito = { longos: 0, shorts: 0, carrosseis: 0, thumbs: 0, roteiros: 0 }, mes = { longos: 0, shorts: 0, carrosseis: 0, thumbs: 0, roteiros: 0 };
   const mes0 = hoje.startOf('month').toISODate();
   for (const e of lista) { const g = GRUPO[e.tipo]; if (!g) continue;
-    const pronto = e.status === 'Postado' || (g === 'roteiros' && e.status === 'Aprovado'); if (!pronto) continue;
+    const pronto = ['Postado', 'Feito'].includes(e.status) || (g === 'roteiros' && e.status === 'Aprovado'); if (!pronto) continue;
     const quando = e.postado || '';
     if (!inicio || !quando || quando >= inicio) feito[g] += e.qtd; if (quando >= mes0) mes[g] += e.qtd; }
   const extrasFicha = ((pr['Extras do contrato'] || {}).multi_select || []).map(x => x.name);
   const ACHA = { 'Página': /p[aá]gina/i, 'Copy': /\\bcop(y|ies)/i, 'Funil': /funil/i, 'ID visual': /ID do canal|identidade visual/i, 'Banner': /banner/i, 'Limpeza de canal': /limpeza/i, 'Insta-Blindado': /insta(gram)?.?blindado/i, 'Blog': /\\bblog/i };
   const contrato_txt = inclui.concat(diferencas).filter(x => !/n[aã]o (inclui|aparece|menciona)/i.test(x)).join('; ');
   const extras = EXTRAS.filter(t => lista.some(e => e.tipo === t) || extrasFicha.some(x => x === t || (x === 'Limpeza' && t === 'Limpeza de canal')) || ACHA[t].test(contrato_txt))
-    .map(t => { const l = lista.filter(e => e.tipo === t); return { tipo: t, estado: l.some(e => ['Postado', 'Aprovado'].includes(e.status)) ? 'feito' : l.some(e => ABERTO.includes(e.status)) ? 'andando' : 'falta' }; });
+    .map(t => { const l = lista.filter(e => e.tipo === t); return { tipo: t, estado: l.some(e => ['Postado', 'Feito', 'Aprovado'].includes(e.status)) ? 'feito' : l.some(e => ABERTO.includes(e.status)) ? 'andando' : 'falta' }; });
   const abertos = lista.filter(e => ABERTO.includes(e.status)).length;
   const atrasados = lista.filter(e => ['A fazer', 'Fazendo', 'Ajustes'].includes(e.status) && e.prazo && e.prazo < hoje.toISODate()).length;
   clientes.push({ id, nome, faixa: txt(pr['Faixa']) || txt(pr['Faixa base']), atencao: !!(pr['🔴 Atenção redobrada'] || {}).checkbox,

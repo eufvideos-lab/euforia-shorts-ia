@@ -253,7 +253,7 @@ const s_rascunhos = node({
 const cards_abertos_do_cliente = node({
   type: 'n8n-nodes-base.httpRequest',
   version: 4.4,
-  config: { name: 'Cards abertos do cliente', parameters: { method: 'POST', url: 'https://api.notion.com/v1/databases/74b3076a325749e3bac4ba6659215e48/query', authentication: 'genericCredentialType', genericAuthType: 'httpHeaderAuth', sendHeaders: true, headerParameters: { parameters: [{ name: 'Notion-Version', value: '2022-06-28' }] }, sendBody: true, specifyBody: 'json', jsonBody: expr('{{ JSON.stringify({ filter: { and: [{ property: "Cliente", relation: { contains: $json.dados.cliente_id } }, { property: "Status", select: { does_not_equal: "Postado" } }, { property: "Status", select: { does_not_equal: "Cancelado" } }] }, sorts: [{ property: "Prazo", direction: "ascending" }], page_size: 25 }) }}'), options: { batching: { batch: { batchSize: 1, batchInterval: 400 } } } }, credentials: { httpHeaderAuth: { id: 'VYOze6gUMvjy3QXF', name: 'Notion Euforia' } }, position: [2240, 384], onError: 'continueRegularOutput' }
+  config: { name: 'Cards abertos do cliente', parameters: { method: 'POST', url: 'https://api.notion.com/v1/databases/74b3076a325749e3bac4ba6659215e48/query', authentication: 'genericCredentialType', genericAuthType: 'httpHeaderAuth', sendHeaders: true, headerParameters: { parameters: [{ name: 'Notion-Version', value: '2022-06-28' }] }, sendBody: true, specifyBody: 'json', jsonBody: expr('{{ JSON.stringify({ filter: { and: [{ property: "Cliente", relation: { contains: $json.dados.cliente_id } }, { property: "Status", select: { does_not_equal: "Postado" } }, { property: "Status", select: { does_not_equal: "Feito" } }, { property: "Status", select: { does_not_equal: "Cancelado" } }] }, sorts: [{ property: "Prazo", direction: "ascending" }], page_size: 25 }) }}'), options: { batching: { batch: { batchSize: 1, batchInterval: 400 } } } }, credentials: { httpHeaderAuth: { id: 'VYOze6gUMvjy3QXF', name: 'Notion Euforia' } }, position: [2240, 384], onError: 'continueRegularOutput' }
 });
 
 const ler_textos = node({
@@ -270,7 +270,7 @@ const pedir_rascunho = node({
     parameters: {
       jsCode: `// Junta os cards abertos do cliente e monta o pedido de rascunho para o Claude.
 const txt = v => { if (!v) return ''; const a = v.title || v.rich_text; if (a) return a.map(t => t.plain_text).join('').trim(); if (v.select) return v.select.name; if (v.date) return v.date.start || ''; if (v.unique_id) return (v.unique_id.prefix ? v.unique_id.prefix + '-' : '') + v.unique_id.number; return ''; };
-const STATUS_CLIENTE = { 'A fazer': 'em produção', 'Fazendo': 'em produção', 'Ajustes': 'em ajuste', 'Em revisão': 'em revisão final', 'Aguardando cliente': 'esperando a aprovação do cliente', 'Aprovado': 'pronto', 'Agendado': 'agendado para postar' };
+const STATUS_CLIENTE = { 'A fazer': 'em produção', 'Fazendo': 'em produção', 'Ajustes': 'em ajuste', 'Em revisão': 'em revisão final', 'Aguardando cliente': 'esperando a aprovação do cliente', 'Aprovado': 'pronto', 'Feito': 'pronto e entregue', 'Agendado': 'agendado para postar' };
 const ddmm = d => d ? d.slice(8, 10) + '/' + d.slice(5, 7) : '';
 // O texto do prompt fica na tabela Gerente IA · textos (chave rascunho_system); vale a maior versão.
 const linhasTexto = $('Ler textos').all().map(i => i.json).filter(r => r.chave === 'rascunho_system' && r.texto);

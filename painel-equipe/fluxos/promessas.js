@@ -104,7 +104,7 @@ const lerCard = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, config:
   method: 'GET', url: '={{ "https://api.notion.com/v1/pages/" + $json.card }}', ...HTTP, options: {} } } });
 
 // Card feito: Postado (longo, shorts, carrossel); Aguardando cliente/Aprovado/Agendado/Postado (aprovação do cliente);
-// Aprovado/Agendado/Postado (resto). Feito vira Cumprido. No dia, depois do "Alerta às", sem feito: Em risco.
+// Aprovado/Feito/Agendado/Postado (resto). Feito vira Cumprido. No dia, depois do "Alerta às", sem feito: Em risco.
 // Passou do dia sem feito: Atrasado. Só avisa quando o status muda. "Depende do cliente" muda o status mas não chama a equipe.
 const decidir = node({ type: 'n8n-nodes-base.code', version: 2, config: { name: 'Decidir', parameters: { jsCode: TXT + `const h = $('Hora do vigia').first().json;
 const base = $('Lista para conferir').all(), cards = $input.all();
@@ -119,7 +119,7 @@ base.forEach((b, i) => {
   const p = b.json, c = (cards[i] || {}).json || {};
   if (!c.properties) return;
   const st = txt(c.properties['Status']);
-  const feitos = SO_POSTADO.includes(p.tipo) ? ['Postado'] : p.tipo === 'Aprovação do cliente' ? ['Aguardando cliente', 'Aprovado', 'Agendado', 'Postado'] : ['Aprovado', 'Agendado', 'Postado'];
+  const feitos = SO_POSTADO.includes(p.tipo) ? ['Postado'] : p.tipo === 'Aprovação do cliente' ? ['Aguardando cliente', 'Aprovado', 'Feito', 'Agendado', 'Postado'] : ['Aprovado', 'Feito', 'Agendado', 'Postado'];
   const dia = p.quando.slice(0, 10);
   let novo = p.status;
   if (feitos.includes(st)) novo = 'Cumprido';
