@@ -60,7 +60,7 @@ label{display:block;font-size:11.5px;color:var(--mut);margin:12px 0 5px;text-tra
 @media (max-width:640px){body{padding:14px 16px 80px}.modal .row{grid-template-columns:1fr}.lin{flex-wrap:wrap}.lin .acts{width:100%;justify-content:flex-start}}
 </style></head><body><div class="in">
 <style>.tabs{display:flex;gap:6px;margin-bottom:16px}.tab{background:transparent;border:1px solid var(--line);border-radius:9px;padding:7px 14px;font-weight:700;font-size:13.5px}.tab.on{border-color:var(--or);color:var(--or2)}</style>
-<div class="tabs"><button class="tab" data-t="todo">To-do</button><button class="tab" data-t="esc">To-do escritório</button><button class="tab" data-t="fin">Financeiro</button><button class="tab" data-t="evo">Evolução</button><button class="tab" data-t="mkt">Marketing</button><button class="tab" data-t="eqp">Equipe</button></div><section id="sTodo" hidden><div class="topo">
+<div class="tabs"><button class="tab" data-t="todo">To-do</button><button class="tab" data-t="esc">To-do escritório</button><button class="tab" data-t="isa">Isa</button><button class="tab" data-t="fin">Financeiro</button><button class="tab" data-t="evo">Evolução</button><button class="tab" data-t="mkt">Marketing</button><button class="tab" data-t="eqp">Equipe</button></div><section id="sTodo" hidden><div class="topo">
 <input id="novo" placeholder="Anote e aperte Enter (ex.: ligar para o contador)" style="flex:2;min-width:220px" autocomplete="off">
 <input id="nData" type="date" title="Data limite (opcional)" style="width:150px;flex:none">
 <select id="nPrio" title="Prioridade" style="width:130px;flex:none"><option value="">Prioridade</option><option>🔴 Urgente</option><option>🟠 Alta</option><option>🟡 Média</option><option>⚪ Baixa</option></select>
@@ -82,7 +82,9 @@ label{display:block;font-size:11.5px;color:var(--mut);margin:12px 0 5px;text-tra
 <select id="eqQuem" style="width:170px;flex:none"></select>
 <select id="eqPer" style="width:170px;flex:none"><option value="7">Últimos 7 dias</option><option value="30" selected>Últimos 30 dias</option><option value="90">Últimos 90 dias</option><option value="">Tudo</option></select>
 <button class="btn" id="eqNovo">+ Registrar</button></div>
-<div id="eqLista" style="margin-top:14px"><p class="vazio">Carregando…</p></div></section>
+<div id="eqLista" style="margin-top:14px"><p class="vazio">Carregando…</p></div></section><section id="sIsa" hidden><div class="topo"><span class="mut" style="font-size:13px">O que chegou no privado do WhatsApp da Isabela, com a sugestão da Isa. Nada sai sem você. Também dá para decidir no Discord (#aprovações-isa).</span><span class="esp"></span>
+<button class="ghost" id="isaAtualizar">Atualizar</button></div>
+<div id="isaLista" style="margin-top:14px"><p class="vazio">Carregando…</p></div></section>
 </div><script>
 // Comum às abas do Painel Central (To-do e Financeiro). A sessão vem da casca (/diretoria), no sessionStorage.
 var API = 'https://n8n.grupoeuforia.tech/webhook/diretoria-central';
@@ -891,21 +893,109 @@ window.iniciarEqp = function () {
 };
 })();
 
+(function () {
+// Aba Isa do Painel Central: sugestões da Isa para o privado do WhatsApp da Isabela. Nada sai sem o clique do Henrique.
+var URL_ISA = 'https://n8n.grupoeuforia.tech/webhook/diretoria-central-isa';
+var G = { serio: ['at', '🔴 Sério'], atencao: ['hj', '🟠 Atenção'], normal: ['', '⚪ Normal'] };
+var CAT = { rescisao: 'rescisão', cancelamento: 'cancelamento', juridico: 'jurídico', reclamacao: 'reclamação', renegociacao: 'renegociação', cobranca: 'cobrança', pagamento: 'pagamento', nota_fiscal: 'nota fiscal', duvida: 'dúvida', outro: 'outro' };
+var ST = { enviado: ['ent', 'Enviado'], recusado: ['sai', 'Recusado'], resolvido: ['', 'Resolvido'], arquivada: ['', 'Arquivada'], respondida_fora: ['', 'Respondida por outro caminho'], aprovado_espera: ['', 'Aprovado, sai às 7h'] };
+var R = null;
+function chamar(acao, extra) {
+  var ss = sessao() || {};
+  return fetch(URL_ISA, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(Object.assign({ usuario: ss.usuario, token: ss.token, acao: acao }, extra || {})) })
+    .then(function (r) { return r.json(); }).catch(function () { return { ok: false, erro: 'Sem conexão. Tente de novo.' }; })
+    .then(function (r) { if (r && r.erro === 'sessao') r.erro = 'Sua sessão acabou. Saia e entre de novo no Painel Central.'; return r || { ok: false, erro: 'Sem resposta.' }; });
+}
+function quando(iso) {
+  if (!iso) return '';
+  var d = new Date(iso), h = (Date.now() - d.getTime()) / 36e5;
+  var dt = ('0' + d.getDate()).slice(-2) + '/' + ('0' + (d.getMonth() + 1)).slice(-2) + ' ' + ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2);
+  return dt + ' (' + (h >= 48 ? Math.floor(h / 24) + ' dias' : h >= 1 ? Math.floor(h) + 'h' : Math.max(1, Math.round(h * 60)) + ' min') + ')';
+}
+function carregar() {
+  $('isaLista').innerHTML = '<p class="vazio">Carregando…</p>';
+  return chamar('ler').then(function (r) {
+    if (!r.ok) { $('isaLista').innerHTML = '<p class="erro">' + esc(r.erro || 'Não consegui ler as sugestões agora.') + '</p>'; return; }
+    R = r; desenhar();
+  });
+}
+function cartao(s) {
+  var g = G[s.gravidade] || G.normal, tem = String(s.texto || '').trim().length >= 2;
+  var quem = s.quem === 'equipe' ? ' (equipe)' : s.quem === 'advogado' ? ' (advogado)' : '';
+  return '<div class="card" style="margin-bottom:12px;padding:14px" data-id="' + s.id + '">' +
+    '<div><span class="chip ' + g[0] + '">' + g[1] + '</span><span class="chip">' + esc(CAT[s.categoria] || s.categoria || '') + '</span><span class="chip">#' + s.id + '</span>' +
+    ' <b>' + esc(s.contato) + '</b><span class="mut">' + esc(quem) + '</span></div>' +
+    '<p class="mut" style="font-size:12.5px;margin-top:4px">Esperando desde ' + esc(quando(s.primeira_cliente)) + '</p>' +
+    '<p style="margin-top:8px"><b>Resumo:</b> ' + esc(s.resumo) + '</p>' +
+    '<p style="margin-top:4px"><b style="color:var(--or2)">Sugestão:</b> ' + esc(s.acao) + '</p>' +
+    '<details style="margin-top:8px"><summary class="mut" style="cursor:pointer;font-size:13px">Ver as mensagens</summary>' +
+    '<pre style="white-space:pre-wrap;font:inherit;font-size:13px;color:var(--mut);margin-top:6px">' + esc(s.mensagens) + '</pre>' +
+    (s.contexto ? '<p class="mut" style="font-size:12px;margin-top:6px">Conversa anterior:</p><pre style="white-space:pre-wrap;font:inherit;font-size:12.5px;color:var(--mut)">' + esc(s.contexto) + '</pre>' : '') + '</details>' +
+    '<label class="mut" style="display:block;font-size:12.5px;margin-top:10px">' + (tem ? 'Resposta (edite se quiser; a assinatura da Isabela entra sozinha)' : 'Sem rascunho: assunto da direção ou do Dr. Rinaldo. Escreva aqui se quiser que a Isabela responda.') + '</label>' +
+    '<textarea id="isaT' + s.id + '" style="margin-top:4px;min-height:110px">' + esc(s.texto || '') + '</textarea>' +
+    '<div class="topo" style="margin-top:10px"><button class="btn" data-isa-env="' + s.id + '">Enviar pela Isabela</button>' +
+    '<button class="ghost" data-isa-rec="' + s.id + '">Recusar</button><button class="ghost" data-isa-ok="' + s.id + '">Já resolvi</button></div></div>';
+}
+function desenhar() {
+  var A = R.abertas || [], D = R.recentes || [];
+  var nS = A.filter(function (s) { return s.gravidade === 'serio'; }).length;
+  var h = '<div class="kpis" style="margin-bottom:14px"><div class="kpi ' + (nS ? 'neg' : '') + '"><small>Sérios</small><b>' + nS + '</b><span>esperando você</span></div>' +
+    '<div class="kpi or"><small>Abertas</small><b>' + A.length + '</b><span>sugestões da Isa</span></div>' +
+    '<div class="kpi pos"><small>Decididas</small><b>' + D.length + '</b><span>últimos 3 dias</span></div></div>';
+  h += A.length ? A.map(cartao).join('') : '<p class="vazio">Nada esperando você no privado da Isabela. 🎉</p>';
+  if (D.length) {
+    h += '<h3 style="margin:22px 0 6px;font-size:15px">Decididas nos últimos 3 dias</h3><div class="card">' + D.map(function (s) {
+      var st = ST[s.status] || ['', s.status];
+      return '<div class="lin"><div class="t"><b>' + esc(s.contato) + '</b> <span class="chip ' + st[0] + '">' + esc(st[1]) + '</span>' +
+        '<span class="s">' + esc(s.resumo) + '</span>' + (s.texto_final ? '<span class="s">“' + esc(String(s.texto_final).slice(0, 160)) + '”</span>' : '') + '</div>' +
+        '<div class="v mut" style="font-weight:500;font-size:12.5px">' + esc(quando(s.decidido_em).split(' (')[0]) + '</div></div>';
+    }).join('') + '</div>';
+  }
+  $('isaLista').innerHTML = h;
+}
+function decidir(acao, id, extra, botao) {
+  if (botao) botao.disabled = true;
+  return chamar(acao, Object.assign({ id: id }, extra || {})).then(function (r) {
+    if (botao) botao.disabled = false;
+    if (!r.ok) { aviso(r.erro || 'Não deu certo.', true); return; }
+    aviso(acao === 'enviar' ? 'Enviado pelo WhatsApp da Isabela.' : acao === 'recusar' ? 'Recusada. Nada saiu.' : 'Marcada como resolvida.');
+    carregar();
+  });
+}
+document.addEventListener('click', function (e) {
+  var b = e.target.closest('[data-isa-env],[data-isa-rec],[data-isa-ok],#isaAtualizar'); if (!b) return;
+  if (b.id === 'isaAtualizar') { carregar(); return; }
+  var id = Number(b.getAttribute('data-isa-env') || b.getAttribute('data-isa-rec') || b.getAttribute('data-isa-ok'));
+  var s = (R.abertas || []).filter(function (x) { return x.id === id; })[0] || {};
+  if (b.hasAttribute('data-isa-env')) {
+    var t = $('isaT' + id).value.trim();
+    if (t.length < 2) { aviso('Escreva a resposta antes de enviar.', true); return; }
+    if (!confirm('Enviar para ' + (s.contato || 'o contato') + ' pelo WhatsApp da Isabela?\n\n' + t + '\n\nIsabela, time administrativo, Grupo Euforia')) return;
+    decidir('enviar', id, { texto: t }, b);
+  } else if (b.hasAttribute('data-isa-rec')) {
+    modal('Recusar a sugestão', [{ k: 'nota', rot: 'Por quê? (opcional, ajuda a Isa a aprender)', tipo: 'textarea' }], 'Recusar', function (v) {
+      return chamar('recusar', { id: id, nota: v.nota }).then(function (r) { if (!r.ok) return r.erro || 'Não deu certo.'; aviso('Recusada. Nada saiu.'); carregar(); });
+    });
+  } else decidir('feito', id, {}, b);
+});
+window.iniciarIsa = function () { carregar(); };
+})();
+
 var aba = '', iniciadas = {};
 function abrirAba(t) {
   aba = t;
   [].forEach.call(document.querySelectorAll('.tab'), function (b) { b.classList.toggle('on', b.getAttribute('data-t') === t); });
-  $('sTodo').hidden = t !== 'todo' && t !== 'esc'; if (t === 'todo' || t === 'esc') window.modoTodo(t); $('sFin').hidden = t !== 'fin'; $('sEvo').hidden = t !== 'evo'; $('sMkt').hidden = t !== 'mkt'; $('sEqp').hidden = t !== 'eqp';
+  $('sTodo').hidden = t !== 'todo' && t !== 'esc'; if (t === 'todo' || t === 'esc') window.modoTodo(t); $('sFin').hidden = t !== 'fin'; $('sEvo').hidden = t !== 'evo'; $('sMkt').hidden = t !== 'mkt'; $('sEqp').hidden = t !== 'eqp'; $('sIsa').hidden = t !== 'isa';
   try { localStorage.setItem('centralAba', t); } catch (e) {}
   var ini = t === 'esc' ? 'todo' : t;
-  if (!iniciadas[ini]) { iniciadas[ini] = 1; (ini === 'todo' ? window.iniciarTodo : t === 'evo' ? window.iniciarEvo : t === 'mkt' ? window.iniciarMkt : t === 'eqp' ? window.iniciarEqp : window.iniciarFin)(); }
+  if (!iniciadas[ini]) { iniciadas[ini] = 1; (ini === 'todo' ? window.iniciarTodo : t === 'evo' ? window.iniciarEvo : t === 'mkt' ? window.iniciarMkt : t === 'eqp' ? window.iniciarEqp : t === 'isa' ? window.iniciarIsa : window.iniciarFin)(); }
 }
 document.addEventListener('click', function (e) { var b = e.target.closest('.tab[data-t]'); if (b) abrirAba(b.getAttribute('data-t')); });
 document.addEventListener('DOMContentLoaded', function () {
   var q = new URLSearchParams(location.search).get('aba'), u = '';
   try { u = localStorage.getItem('centralAba') || ''; } catch (e) {}
   // Dentro da casca, ela clica na aba certa; fora dela, abre a última usada.
-  setTimeout(function () { if (aba) return; var x = q || u; abrirAba(x === 'fin' || x === 'evo' || x === 'mkt' || x === 'esc' || x === 'eqp' ? x : 'todo'); }, window.parent !== window ? 1500 : 0);
+  setTimeout(function () { if (aba) return; var x = q || u; abrirAba(x === 'fin' || x === 'evo' || x === 'mkt' || x === 'esc' || x === 'eqp' || x === 'isa' ? x : 'todo'); }, window.parent !== window ? 1500 : 0);
 });
 
 </script></body></html>

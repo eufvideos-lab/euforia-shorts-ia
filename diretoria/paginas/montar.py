@@ -24,7 +24,7 @@ PAGS = {
 <div id="conteudo" style="margin-top:14px"><p class="vazio">Carregando…</p></div><div id="rodape"></div>''', 'financeiro.js'),
 }
 TABS = """<style>.tabs{display:flex;gap:6px;margin-bottom:16px}.tab{background:transparent;border:1px solid var(--line);border-radius:9px;padding:7px 14px;font-weight:700;font-size:13.5px}.tab.on{border-color:var(--or);color:var(--or2)}</style>
-<div class="tabs"><button class="tab" data-t="todo">To-do</button><button class="tab" data-t="esc">To-do escritório</button><button class="tab" data-t="fin">Financeiro</button><button class="tab" data-t="evo">Evolução</button><button class="tab" data-t="mkt">Marketing</button><button class="tab" data-t="eqp">Equipe</button></div>"""
+<div class="tabs"><button class="tab" data-t="todo">To-do</button><button class="tab" data-t="esc">To-do escritório</button><button class="tab" data-t="isa">Isa</button><button class="tab" data-t="fin">Financeiro</button><button class="tab" data-t="evo">Evolução</button><button class="tab" data-t="mkt">Marketing</button><button class="tab" data-t="eqp">Equipe</button></div>"""
 corpoT = PAGS['todo'][1]
 corpoE = '''<div class="topo"><span class="mut" style="font-size:13px">O que foi construído, resolvido e decidido em cada dia, em todos os projetos. A rotina das 21h41 lança o dia.</span><span class="esp"></span>
 <select id="evPer" style="width:170px;flex:none"><option value="1">Hoje</option><option value="7" selected>Últimos 7 dias</option><option value="30">Últimos 30 dias</option><option value="90">Últimos 90 dias</option><option value="">Tudo</option></select>
@@ -40,26 +40,29 @@ corpoQ = '''<div class="topo"><span class="mut" style="font-size:13px">Pontos po
 <select id="eqPer" style="width:170px;flex:none"><option value="7">Últimos 7 dias</option><option value="30" selected>Últimos 30 dias</option><option value="90">Últimos 90 dias</option><option value="">Tudo</option></select>
 <button class="btn" id="eqNovo">+ Registrar</button></div>
 <div id="eqLista" style="margin-top:14px"><p class="vazio">Carregando…</p></div>'''
+corpoI = '''<div class="topo"><span class="mut" style="font-size:13px">O que chegou no privado do WhatsApp da Isabela, com a sugestão da Isa. Nada sai sem você. Também dá para decidir no Discord (#aprovações-isa).</span><span class="esp"></span>
+<button class="ghost" id="isaAtualizar">Atualizar</button></div>
+<div id="isaLista" style="margin-top:14px"><p class="vazio">Carregando…</p></div>'''
 corpoF = PAGS['financeiro'][1].replace('id="bLanc"', 'id="bLancF"').replace('id="rodape"', 'id="rodapeF"')
 INIT = """
 var aba = '', iniciadas = {};
 function abrirAba(t) {
   aba = t;
   [].forEach.call(document.querySelectorAll('.tab'), function (b) { b.classList.toggle('on', b.getAttribute('data-t') === t); });
-  $('sTodo').hidden = t !== 'todo' && t !== 'esc'; if (t === 'todo' || t === 'esc') window.modoTodo(t); $('sFin').hidden = t !== 'fin'; $('sEvo').hidden = t !== 'evo'; $('sMkt').hidden = t !== 'mkt'; $('sEqp').hidden = t !== 'eqp';
+  $('sTodo').hidden = t !== 'todo' && t !== 'esc'; if (t === 'todo' || t === 'esc') window.modoTodo(t); $('sFin').hidden = t !== 'fin'; $('sEvo').hidden = t !== 'evo'; $('sMkt').hidden = t !== 'mkt'; $('sEqp').hidden = t !== 'eqp'; $('sIsa').hidden = t !== 'isa';
   try { localStorage.setItem('centralAba', t); } catch (e) {}
   var ini = t === 'esc' ? 'todo' : t;
-  if (!iniciadas[ini]) { iniciadas[ini] = 1; (ini === 'todo' ? window.iniciarTodo : t === 'evo' ? window.iniciarEvo : t === 'mkt' ? window.iniciarMkt : t === 'eqp' ? window.iniciarEqp : window.iniciarFin)(); }
+  if (!iniciadas[ini]) { iniciadas[ini] = 1; (ini === 'todo' ? window.iniciarTodo : t === 'evo' ? window.iniciarEvo : t === 'mkt' ? window.iniciarMkt : t === 'eqp' ? window.iniciarEqp : t === 'isa' ? window.iniciarIsa : window.iniciarFin)(); }
 }
 document.addEventListener('click', function (e) { var b = e.target.closest('.tab[data-t]'); if (b) abrirAba(b.getAttribute('data-t')); });
 document.addEventListener('DOMContentLoaded', function () {
   var q = new URLSearchParams(location.search).get('aba'), u = '';
   try { u = localStorage.getItem('centralAba') || ''; } catch (e) {}
   // Dentro da casca, ela clica na aba certa; fora dela, abre a última usada.
-  setTimeout(function () { if (aba) return; var x = q || u; abrirAba(x === 'fin' || x === 'evo' || x === 'mkt' || x === 'esc' || x === 'eqp' ? x : 'todo'); }, window.parent !== window ? 1500 : 0);
+  setTimeout(function () { if (aba) return; var x = q || u; abrirAba(x === 'fin' || x === 'evo' || x === 'mkt' || x === 'esc' || x === 'eqp' || x === 'isa' ? x : 'todo'); }, window.parent !== window ? 1500 : 0);
 });
 """
-html = HEAD.format(titulo='Painel Central · Minha mesa', css=css) + TABS + '<section id="sTodo" hidden>' + corpoT + '</section><section id="sFin" hidden>' + corpoF + '</section><section id="sEvo" hidden>' + corpoE + '</section><section id="sMkt" hidden>' + corpoM + '</section><section id="sEqp" hidden>' + corpoQ + '</section>' + \
-  '\n</div><script>\n' + comum + '\n' + open('todo.js').read() + '\n' + open('financeiro.js').read() + '\n' + open('evolucao.js').read() + '\n' + open('marketing.js').read() + '\n' + open('equipe.js').read() + INIT + '\n</script></body></html>\n'
+html = HEAD.format(titulo='Painel Central · Minha mesa', css=css) + TABS + '<section id="sTodo" hidden>' + corpoT + '</section><section id="sFin" hidden>' + corpoF + '</section><section id="sEvo" hidden>' + corpoE + '</section><section id="sMkt" hidden>' + corpoM + '</section><section id="sEqp" hidden>' + corpoQ + '</section><section id="sIsa" hidden>' + corpoI + '</section>' + \
+  '\n</div><script>\n' + comum + '\n' + open('todo.js').read() + '\n' + open('financeiro.js').read() + '\n' + open('evolucao.js').read() + '\n' + open('marketing.js').read() + '\n' + open('equipe.js').read() + '\n' + open('isa.js').read() + INIT + '\n</script></body></html>\n'
 open('../publicar/diretoria-central.html', 'w').write(html)
 print(len(html))
