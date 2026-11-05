@@ -36,7 +36,8 @@ Você recebe `palavras.txt` (cada palavra como `índice:palavra[tempo]`, uma fra
   de 3,5 s; até ~7 s num B-roll só, acima disso dois em sequência). Se o banco não achar B-roll bom, troque a busca,
   use foto (`"fonte": "foto"`: as fotos profissionais da pessoa na pasta 01 - ELEMENTOS ESSENCIAIS › FOTOS do cliente,
   ou foto do Google do assunto) ou um cartão de tópico. Nunca deixe descoberto: `montar.py` para e lista o que faltou.
-  Trecho de rosto olhando para a câmera e fechando a ideia não se cobre.
+  Trecho de rosto olhando para a câmera e fechando a ideia não se cobre. Para cobrir certinho, o B-roll aceita `"ini"` (segundo exato no vídeo final, o
+  `ini` do olhar.json) no lugar da palavra.
 - **Fonte do cliente:** se a ficha ou as observações dão uma fonte (ex.: Winthorpe), ponha
   `"fontes": {"cliente": "Winthorpe", "titulo": {"file_id": "..."}}` com o arquivo .ttf/.otf da pasta do cliente no
   Drive. Sem o arquivo, use a mais parecida do Google Fonts (`"titulo": {"google": "Playfair Display:800"}`) e avise no

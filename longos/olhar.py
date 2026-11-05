@@ -16,7 +16,9 @@ W = json.load(open(os.path.join(pasta, 'transcricao.json')))['words']
 plano = json.load(open(os.path.join(pasta, 'plano.json')))
 MODELO = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'modelos', 'olhar', 'face_landmarker.task')
 FPS = 4  # quadros analisados por segundo
-LIMITE = float(plano.get('olhar_limite', 0.42))  # olhar para baixo (blendshape) acima disso = não olha para a câmera
+# calibrado no bruto da Regina (05/11): olhando para a câmera dá baixo < 0,3 e cabeça reta ou para cima; lendo o
+# teleprompter dá baixo > 0,5 com a cabeça inclinada para baixo (pitch negativo).
+LIMITE = float(plano.get('olhar_limite', 0.6))
 MIN_DUR, JUNTA = 0.8, 0.7  # trecho menor que isso não conta; buracos menores que JUNTA viram um trecho só
 
 from mediapipe.tasks.python import vision, BaseOptions
@@ -38,7 +40,7 @@ def quadros(s, e):
 
 
 def medir(img):
-    """(baixo, lado, pitch): olhar para baixo (0 a 1), para o lado (0 a 1) e inclinação da cabeça (graus, + = baixo)."""
+    """(baixo, lado, pitch): olhar para baixo (0 a 1), para o lado (0 a 1) e inclinação da cabeça (graus, negativo = cabeça para baixo)."""
     r = det.detect(mp.Image(image_format=mp.ImageFormat.SRGB, data=np.ascontiguousarray(img)))
     if not r.face_blendshapes:
         return None
@@ -46,7 +48,7 @@ def medir(img):
     baixo = (b.get('eyeLookDownLeft', 0) + b.get('eyeLookDownRight', 0)) / 2
     lado = max((b.get('eyeLookOutLeft', 0) + b.get('eyeLookInRight', 0)) / 2, (b.get('eyeLookInLeft', 0) + b.get('eyeLookOutRight', 0)) / 2)
     m = np.array(r.facial_transformation_matrixes[0])
-    pitch = float(np.degrees(np.arctan2(-m[1, 2], m[2, 2])))
+    pitch = float(np.degrees(np.arctan2(-m[1, 2], m[2, 2])))  # negativo = cabeça para baixo
     return baixo, lado, pitch
 
 
@@ -66,7 +68,7 @@ if not com:
 base_pitch = float(np.median([a[2] for a in com]))
 fora = []
 for t, a in amostras:
-    fora.append(bool(a) and (a[0] > LIMITE or a[1] > 0.6))
+    fora.append(bool(a) and (a[0] >= LIMITE or (a[0] >= LIMITE - 0.12 and a[2] < -4) or a[1] > 0.6))
 
 # junta os quadros "fora" em trechos no tempo final
 trechos, ini = [], None
