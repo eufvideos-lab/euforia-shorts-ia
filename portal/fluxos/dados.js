@@ -111,7 +111,7 @@ for (const it of fonte('entregas')) for (const p of (it.json.results || [])) {
   const status = txt(pr['Status']);
   const tipo = txt(pr['Tipo']);
   const origem = txt(pr['Origem']);
-  const col = COL[status];
+  let col = COL[status];
   if (!col || !TIPO[tipo] || ESCONDER.includes(tipo) || origem === 'Treino (fila reserva)') continue;
   const postarEm = txt(pr['Postar em']);
   const postadoEm = txt(pr['Postado em']);
@@ -120,13 +120,19 @@ for (const it of fonte('entregas')) for (const p of (it.json.results || [])) {
   const concluidoEm = txt(pr['Concluído em']);
   if (status === 'Feito' && concluidoEm && concluidoEm < agora.minus({ days: 45 }).toISODate()) continue;
   const linkArq = txt(pr['Link do arquivo']);
+  // Um portal só (05/11/2026): só vai para aprovação peça com arquivo (link https) e conferida pela equipe.
+  // Sem isso o cliente vê "Em revisão final". O campo Conferido só passa a valer quando existir no Entregas.
+  const conferido = !pr['✔️ Conferido pela equipe'] || pr['✔️ Conferido pela equipe'].checkbox === true;
+  if (col === 'aprovar' && (!/^https:[/][/]/.test(linkArq) || !conferido)) col = 'revisao';
   const linkPost = txt(pr['Link da postagem']);
   const qtd = (pr['Quantidade'] || {}).number || 1;
   let info = '';
   if (col === 'publicado') info = 'Publicado ' + (postadoEm ? fmtData(postadoEm) : (postarEm ? fmtData(postarEm) : ''));
   else if (status === 'Feito') info = 'Entregue' + (concluidoEm ? ' ' + fmtData(concluidoEm) : '');
   else if (col === 'aprovado') info = postarEm ? 'Vai ao ar ' + fmtData(postarEm) : 'Aprovado';
-  else if (postarEm) info = 'Previsto para ir ao ar ' + fmtData(postarEm);
+  else if (col === 'revisao') { col = 'producao'; info = 'Em revisão final'; }
+  // Nunca mostrar atraso ao cliente: data que já passou some do card.
+  else if (postarEm && postarEm >= hoje) info = 'Previsto para ir ao ar ' + fmtData(postarEm);
   cards.push({ id: p.id, t: limparTitulo(txt(pr['Entrega'])), tipo: TIPO[tipo] || tipo || 'Entrega', qtd, col, info,
     link: ['aprovar', 'ajuste', 'aprovado'].includes(col) ? linkArq : (col === 'publicado' ? (linkPost || '') : ''),
     postarEm, editado: p.last_edited_time });
