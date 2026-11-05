@@ -1,12 +1,14 @@
 import { workflow, node, trigger, ifElse, sticky } from '@n8n/workflow-sdk';
 
-const NOTION = { httpHeaderAuth: { id: 'VYOze6gUMvjy3QXF', name: 'Notion Euforia' } };
-const NOTION_HDR = { parameters: [{ name: 'Notion-Version', value: '2022-06-28' }] };
 const ORIGENS = 'https://lp.grupoeuforia.tech,https://grupoeuforia.com.br,https://www.grupoeuforia.com.br';
 const ACESSO = { __rl: true, mode: 'id', value: 'ilXDZWGAcOjoajx7', cachedResultName: 'Painel equipe · acesso' };
-const PAGINAR = { pagination: { pagination: { paginationMode: 'updateAParameterInEachRequest',
-  parameters: { parameters: [{ type: 'body', name: 'start_cursor', value: '={{ $response.body.next_cursor }}' }] },
-  paginationCompleteWhen: 'other', completeExpression: '={{ !$response.body.has_more }}', limitPagesFetched: true, maxRequests: 50 } } };
+// Leitura de Entregas e Clientes pela cópia no Postgres (sub-fluxo "Cache | Consultar como Notion (V1)"); o Notion fica só para gravar.
+// Se a cópia passar de 10 min, o próprio sub-fluxo volta a ler o Notion.
+const COPIA = { __rl: true, mode: 'id', value: 'MsQKViah1gK8oetH', cachedResultName: 'Cache | Consultar como Notion (V1)' };
+const COPIA_CAMPOS = [
+  { id: 'db', displayName: 'db', required: false, defaultMatch: false, display: true, canBeUsedToMatch: true, type: 'string' },
+  { id: 'consulta', displayName: 'consulta', required: false, defaultMatch: false, display: true, canBeUsedToMatch: true, type: 'string' },
+  { id: 'forcar', displayName: 'forcar', required: false, defaultMatch: false, display: true, canBeUsedToMatch: true, type: 'string' }];
 
 const pedir = trigger({ type: 'n8n-nodes-base.webhook', version: 2.1, config: { name: 'Pedir clientes da equipe', parameters: {
   httpMethod: 'POST', path: 'euforia-painel-clientes', responseMode: 'responseNode', options: { allowedOrigins: ORIGENS } } } });
@@ -32,17 +34,13 @@ const podeSeguir = ifElse({ version: 2.2, config: { name: 'Acesso válido?', par
   conditions: [{ leftValue: '={{ $json.ok }}', rightValue: '', operator: { type: 'boolean', operation: 'true', singleValue: true } }],
   combinator: 'and' } } } });
 
-const fichas = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, config: { name: 'Fichas dos clientes', credentials: NOTION, executeOnce: true, parameters: {
-  method: 'POST', url: 'https://api.notion.com/v1/databases/3ddc91b406be49e98e630c298d9162d8/query', authentication: 'genericCredentialType', genericAuthType: 'httpHeaderAuth',
-  sendHeaders: true, headerParameters: NOTION_HDR, sendBody: true, specifyBody: 'json',
-  jsonBody: '={{ JSON.stringify({ filter: { and: [{ property: "Situação", select: { does_not_equal: "Encerrado" } }, { property: "Cliente", title: { does_not_contain: "TESTE" } }] }, sorts: [{ property: "Cliente", direction: "ascending" }], page_size: 100 }) }}',
-  options: PAGINAR } } });
+const fichas = node({ type: 'n8n-nodes-base.executeWorkflow', version: 1.3, config: { name: 'Fichas dos clientes', executeOnce: true, parameters: {
+  source: 'database', workflowId: COPIA, mode: 'once', options: { waitForSubWorkflow: true },
+  workflowInputs: { mappingMode: 'defineBelow', value: { db: 'clientes', consulta: '={{ JSON.stringify({ filter: { and: [{ property: "Situação", select: { does_not_equal: "Encerrado" } }, { property: "Cliente", title: { does_not_contain: "TESTE" } }] }, sorts: [{ property: "Cliente", direction: "ascending" }], page_size: 100 }) }}', forcar: '' }, matchingColumns: [], schema: COPIA_CAMPOS } } } });
 
-const entregas = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, config: { name: 'Entregas do ano', credentials: NOTION, executeOnce: true, parameters: {
-  method: 'POST', url: 'https://api.notion.com/v1/databases/74b3076a325749e3bac4ba6659215e48/query', authentication: 'genericCredentialType', genericAuthType: 'httpHeaderAuth',
-  sendHeaders: true, headerParameters: NOTION_HDR, sendBody: true, specifyBody: 'json',
-  jsonBody: '={{ JSON.stringify({ filter: { and: [{ property: "Status", select: { does_not_equal: "Cancelado" } }, { or: [{ property: "Status", select: { is_empty: true } }, { property: "Status", select: { equals: "A fazer" } }, { property: "Status", select: { equals: "Fazendo" } }, { property: "Status", select: { equals: "Em revisão" } }, { property: "Status", select: { equals: "Ajustes" } }, { property: "Status", select: { equals: "Aguardando cliente" } }, { property: "Status", select: { equals: "Aprovado" } }, { property: "Status", select: { equals: "Agendado" } }, { property: "Postado em", date: { on_or_after: $("Validar acesso").first().json.ano } }, { property: "Concluído em", date: { on_or_after: $("Validar acesso").first().json.ano } }] }] }, page_size: 100 }) }}',
-  options: PAGINAR } } });
+const entregas = node({ type: 'n8n-nodes-base.executeWorkflow', version: 1.3, config: { name: 'Entregas do ano', executeOnce: true, parameters: {
+  source: 'database', workflowId: COPIA, mode: 'once', options: { waitForSubWorkflow: true },
+  workflowInputs: { mappingMode: 'defineBelow', value: { db: 'entregas', consulta: '={{ JSON.stringify({ filter: { and: [{ property: "Status", select: { does_not_equal: "Cancelado" } }, { or: [{ property: "Status", select: { is_empty: true } }, { property: "Status", select: { equals: "A fazer" } }, { property: "Status", select: { equals: "Fazendo" } }, { property: "Status", select: { equals: "Em revisão" } }, { property: "Status", select: { equals: "Ajustes" } }, { property: "Status", select: { equals: "Aguardando cliente" } }, { property: "Status", select: { equals: "Aprovado" } }, { property: "Status", select: { equals: "Agendado" } }, { property: "Postado em", date: { on_or_after: $("Validar acesso").first().json.ano } }, { property: "Concluído em", date: { on_or_after: $("Validar acesso").first().json.ano } }] }] }, page_size: 100 }) }}', forcar: '' }, matchingColumns: [], schema: COPIA_CAMPOS } } } });
 
 // O contrato vem do texto "Resumo do contrato" da ficha. A equipe recebe só plano, tempo e entregas:
 // nada de e-mail, link do contrato, valores, pagamento, garantia ou cláusula (frases com essas palavras são cortadas aqui).
@@ -143,7 +141,7 @@ const devolver = node({ type: 'n8n-nodes-base.respondToWebhook', version: 1.5, c
 const recusar = node({ type: 'n8n-nodes-base.respondToWebhook', version: 1.5, config: { name: 'Recusar acesso', parameters: {
   respondWith: 'json', responseBody: '={{ JSON.stringify($json.resposta) }}', options: {} } } });
 
-const nota = sticky('## Painel da equipe · clientes (V1)\nAba "Clientes" do Ismael, do Rômulo e da diretoria: plano do contrato, tempo (início, fim, mês atual), entregas previstas x feitas desde o início e o que mais o contrato inclui.\nTudo sai do "Resumo do contrato" da ficha. Frases com valor, pagamento, garantia, cláusula, e-mail ou link são cortadas antes de sair daqui. Prioridade só por faixa A/B/C.\nSó leitura.', [], { color: 4 });
+const nota = sticky('## Painel da equipe · clientes (V1)\nAba "Clientes" do Ismael, do Rômulo e da diretoria: plano do contrato, tempo (início, fim, mês atual), entregas previstas x feitas desde o início e o que mais o contrato inclui.\nTudo sai do "Resumo do contrato" da ficha. Frases com valor, pagamento, garantia, cláusula, e-mail ou link são cortadas antes de sair daqui. Prioridade só por faixa A/B/C.\nSó leitura: fichas e entregas vêm da cópia no Postgres ("Cache | Consultar como Notion (V1)").', [], { color: 4 });
 
 export default workflow('painel-clientes-equipe', 'Painel | Clientes da equipe (V1)')
   .add(pedir).to(ler).to(acesso).to(validar)

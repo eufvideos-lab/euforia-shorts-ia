@@ -6,6 +6,13 @@ const PG = { postgres: { id: '2QBGXkxxr41tWTQw', name: 'Postgres account' } };
 const ORIGENS = 'https://lp.grupoeuforia.tech,https://grupoeuforia.com.br,https://www.grupoeuforia.com.br';
 const NOTION_HDR = { parameters: [{ name: 'Notion-Version', value: '2022-06-28' }] };
 const ACESSO = { __rl: true, mode: 'id', value: 'ilXDZWGAcOjoajx7', cachedResultName: 'Painel equipe · acesso' };
+// Leitura de Entregas e Clientes pela cópia no Postgres (sub-fluxo "Cache | Consultar como Notion (V1)"); o Notion fica só para gravar.
+// Se a cópia passar de 10 min, o próprio sub-fluxo volta a ler o Notion.
+const COPIA = { __rl: true, mode: 'id', value: 'MsQKViah1gK8oetH', cachedResultName: 'Cache | Consultar como Notion (V1)' };
+const COPIA_CAMPOS = [
+  { id: 'db', displayName: 'db', required: false, defaultMatch: false, display: true, canBeUsedToMatch: true, type: 'string' },
+  { id: 'consulta', displayName: 'consulta', required: false, defaultMatch: false, display: true, canBeUsedToMatch: true, type: 'string' },
+  { id: 'forcar', displayName: 'forcar', required: false, defaultMatch: false, display: true, canBeUsedToMatch: true, type: 'string' }];
 const PAGINAR = { pagination: { pagination: { paginationMode: 'updateAParameterInEachRequest',
   parameters: { parameters: [{ type: 'body', name: 'start_cursor', value: '={{ $response.body.next_cursor }}' }] },
   paginationCompleteWhen: 'other', completeExpression: '={{ !$response.body.has_more }}', limitPagesFetched: true, maxRequests: 20 } } };
@@ -86,17 +93,13 @@ const caminho = switchCase({ version: 3.2, config: { name: 'O que fazer', parame
   ] }, options: {} } } });
 
 // ---------- Visão: tudo que está aberto + o que foi ao ar nos últimos 7 dias ----------
-const entregas = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, config: { name: 'Cards abertos e da semana', credentials: NOTION, parameters: {
-  method: 'POST', url: 'https://api.notion.com/v1/databases/74b3076a325749e3bac4ba6659215e48/query', authentication: 'genericCredentialType', genericAuthType: 'httpHeaderAuth',
-  sendHeaders: true, headerParameters: NOTION_HDR, sendBody: true, specifyBody: 'json',
-  jsonBody: '={{ JSON.stringify({ filter: { and: [{ property: "Status", select: { does_not_equal: "Cancelado" } }, { or: [{ property: "Status", select: { is_empty: true } }, { property: "Status", select: { equals: "A fazer" } }, { property: "Status", select: { equals: "Fazendo" } }, { property: "Status", select: { equals: "Em revisão" } }, { property: "Status", select: { equals: "Ajustes" } }, { property: "Status", select: { equals: "Aguardando cliente" } }, { property: "Status", select: { equals: "Aprovado" } }, { property: "Status", select: { equals: "Agendado" } }, { property: "Postado em", date: { on_or_after: $json.semana } }, { property: "Concluído em", date: { on_or_after: $json.semana } }] }] }, sorts: [{ property: "Prazo", direction: "ascending" }], page_size: 100 }) }}',
-  options: PAGINAR } } });
+const entregas = node({ type: 'n8n-nodes-base.executeWorkflow', version: 1.3, config: { name: 'Cards abertos e da semana', parameters: {
+  source: 'database', workflowId: COPIA, mode: 'once', options: { waitForSubWorkflow: true },
+  workflowInputs: { mappingMode: 'defineBelow', value: { db: 'entregas', consulta: '={{ JSON.stringify({ filter: { and: [{ property: "Status", select: { does_not_equal: "Cancelado" } }, { or: [{ property: "Status", select: { is_empty: true } }, { property: "Status", select: { equals: "A fazer" } }, { property: "Status", select: { equals: "Fazendo" } }, { property: "Status", select: { equals: "Em revisão" } }, { property: "Status", select: { equals: "Ajustes" } }, { property: "Status", select: { equals: "Aguardando cliente" } }, { property: "Status", select: { equals: "Aprovado" } }, { property: "Status", select: { equals: "Agendado" } }, { property: "Postado em", date: { on_or_after: $json.semana } }, { property: "Concluído em", date: { on_or_after: $json.semana } }] }] }, sorts: [{ property: "Prazo", direction: "ascending" }], page_size: 100 }) }}', forcar: '' }, matchingColumns: [], schema: COPIA_CAMPOS } } } });
 
-const clientes = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, config: { name: 'Clientes ativos', credentials: NOTION, executeOnce: true, parameters: {
-  method: 'POST', url: 'https://api.notion.com/v1/databases/3ddc91b406be49e98e630c298d9162d8/query', authentication: 'genericCredentialType', genericAuthType: 'httpHeaderAuth',
-  sendHeaders: true, headerParameters: NOTION_HDR, sendBody: true, specifyBody: 'json',
-  jsonBody: '={{ JSON.stringify({ filter: { property: "Situação", select: { does_not_equal: "Encerrado" } }, sorts: [{ property: "Cliente", direction: "ascending" }], page_size: 100 }) }}',
-  options: PAGINAR } } });
+const clientes = node({ type: 'n8n-nodes-base.executeWorkflow', version: 1.3, config: { name: 'Clientes ativos', executeOnce: true, parameters: {
+  source: 'database', workflowId: COPIA, mode: 'once', options: { waitForSubWorkflow: true },
+  workflowInputs: { mappingMode: 'defineBelow', value: { db: 'clientes', consulta: '={{ JSON.stringify({ filter: { property: "Situação", select: { does_not_equal: "Encerrado" } }, sorts: [{ property: "Cliente", direction: "ascending" }], page_size: 100 }) }}', forcar: '' }, matchingColumns: [], schema: COPIA_CAMPOS } } } });
 
 const montarVisao = node({ type: 'n8n-nodes-base.code', version: 2, config: { name: 'Montar visão', parameters: { jsCode: `const Z = 'America/Recife';
 const txt = v => { if (!v) return ''; const a = v.title || v.rich_text; if (a) return a.map(t => t.plain_text).join('').trim(); if (v.select) return v.select.name; if (v.date) return v.date.start; if (v.url !== undefined) return v.url || ''; if (v.formula) return String(v.formula.string || v.formula.number || ''); return ''; };
@@ -256,20 +259,14 @@ const recusar = node({ type: 'n8n-nodes-base.respondToWebhook', version: 1.5, co
   respondWith: 'json', responseBody: '={{ JSON.stringify($json.resposta) }}', options: {} } } });
 
 // ---------- Clientes: ficha, contrato e o que já foi entregue ----------
-const fichas = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, config: { name: 'Fichas dos clientes', credentials: NOTION, executeOnce: true, parameters: {
-  method: 'POST', url: 'https://api.notion.com/v1/databases/3ddc91b406be49e98e630c298d9162d8/query', authentication: 'genericCredentialType', genericAuthType: 'httpHeaderAuth',
-  sendHeaders: true, headerParameters: NOTION_HDR, sendBody: true, specifyBody: 'json',
-  jsonBody: '={{ JSON.stringify({ filter: { property: "Situação", select: { does_not_equal: "Encerrado" } }, sorts: [{ property: "Cliente", direction: "ascending" }], page_size: 100 }) }}',
-  options: PAGINAR } } });
+const fichas = node({ type: 'n8n-nodes-base.executeWorkflow', version: 1.3, config: { name: 'Fichas dos clientes', executeOnce: true, parameters: {
+  source: 'database', workflowId: COPIA, mode: 'once', options: { waitForSubWorkflow: true },
+  workflowInputs: { mappingMode: 'defineBelow', value: { db: 'clientes', consulta: '={{ JSON.stringify({ filter: { property: "Situação", select: { does_not_equal: "Encerrado" } }, sorts: [{ property: "Cliente", direction: "ascending" }], page_size: 100 }) }}', forcar: '' }, matchingColumns: [], schema: COPIA_CAMPOS } } } });
 
 // Tudo que foi ao ar no último ano e tudo que ainda está aberto (para contar o feito e o que falta).
-const doAno = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, config: { name: 'Entregas do ano', credentials: NOTION, executeOnce: true, parameters: {
-  method: 'POST', url: 'https://api.notion.com/v1/databases/74b3076a325749e3bac4ba6659215e48/query', authentication: 'genericCredentialType', genericAuthType: 'httpHeaderAuth',
-  sendHeaders: true, headerParameters: NOTION_HDR, sendBody: true, specifyBody: 'json',
-  jsonBody: '={{ JSON.stringify({ filter: { and: [{ property: "Status", select: { does_not_equal: "Cancelado" } }, { or: [{ property: "Status", select: { is_empty: true } }, { property: "Status", select: { equals: "A fazer" } }, { property: "Status", select: { equals: "Fazendo" } }, { property: "Status", select: { equals: "Em revisão" } }, { property: "Status", select: { equals: "Ajustes" } }, { property: "Status", select: { equals: "Aguardando cliente" } }, { property: "Status", select: { equals: "Aprovado" } }, { property: "Status", select: { equals: "Agendado" } }, { property: "Postado em", date: { on_or_after: $("Validar acesso").first().json.ano } }, { property: "Concluído em", date: { on_or_after: $("Validar acesso").first().json.ano } }] }] }, sorts: [{ property: "Postado em", direction: "descending" }], page_size: 100 }) }}',
-  options: { pagination: { pagination: { paginationMode: 'updateAParameterInEachRequest',
-    parameters: { parameters: [{ type: 'body', name: 'start_cursor', value: '={{ $response.body.next_cursor }}' }] },
-    paginationCompleteWhen: 'other', completeExpression: '={{ !$response.body.has_more }}', limitPagesFetched: true, maxRequests: 50 } } } } } });
+const doAno = node({ type: 'n8n-nodes-base.executeWorkflow', version: 1.3, config: { name: 'Entregas do ano', executeOnce: true, parameters: {
+  source: 'database', workflowId: COPIA, mode: 'once', options: { waitForSubWorkflow: true },
+  workflowInputs: { mappingMode: 'defineBelow', value: { db: 'entregas', consulta: '={{ JSON.stringify({ filter: { and: [{ property: "Status", select: { does_not_equal: "Cancelado" } }, { or: [{ property: "Status", select: { is_empty: true } }, { property: "Status", select: { equals: "A fazer" } }, { property: "Status", select: { equals: "Fazendo" } }, { property: "Status", select: { equals: "Em revisão" } }, { property: "Status", select: { equals: "Ajustes" } }, { property: "Status", select: { equals: "Aguardando cliente" } }, { property: "Status", select: { equals: "Aprovado" } }, { property: "Status", select: { equals: "Agendado" } }, { property: "Postado em", date: { on_or_after: $("Validar acesso").first().json.ano } }, { property: "Concluído em", date: { on_or_after: $("Validar acesso").first().json.ano } }] }] }, sorts: [{ property: "Postado em", direction: "descending" }], page_size: 100 }) }}', forcar: '' }, matchingColumns: [], schema: COPIA_CAMPOS } } } });
 
 const conversas = node({ type: 'n8n-nodes-base.postgres', version: 2.6, config: { name: 'Conversa nos grupos', credentials: PG, alwaysOutputData: true, executeOnce: true, parameters: {
   operation: 'executeQuery',

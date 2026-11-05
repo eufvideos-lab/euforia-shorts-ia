@@ -4,6 +4,13 @@ const NOTION = { httpHeaderAuth: { id: 'VYOze6gUMvjy3QXF', name: 'Notion Euforia
 const ORIGENS = 'https://lp.grupoeuforia.tech,https://grupoeuforia.com.br,https://www.grupoeuforia.com.br';
 const NOTION_HDR = { parameters: [{ name: 'Notion-Version', value: '2022-06-28' }] };
 const ACESSO = { __rl: true, mode: 'id', value: 'ilXDZWGAcOjoajx7', cachedResultName: 'Painel equipe · acesso' };
+// Leitura de Entregas e Clientes pela cópia no Postgres (sub-fluxo "Cache | Consultar como Notion (V1)"); o Notion fica só para gravar.
+// Se a cópia passar de 10 min, o próprio sub-fluxo volta a ler o Notion.
+const COPIA = { __rl: true, mode: 'id', value: 'MsQKViah1gK8oetH', cachedResultName: 'Cache | Consultar como Notion (V1)' };
+const COPIA_CAMPOS = [
+  { id: 'db', displayName: 'db', required: false, defaultMatch: false, display: true, canBeUsedToMatch: true, type: 'string' },
+  { id: 'consulta', displayName: 'consulta', required: false, defaultMatch: false, display: true, canBeUsedToMatch: true, type: 'string' },
+  { id: 'forcar', displayName: 'forcar', required: false, defaultMatch: false, display: true, canBeUsedToMatch: true, type: 'string' }];
 
 const pedir = trigger({ type: 'n8n-nodes-base.webhook', version: 2.1, config: { name: 'Pedir fila do painel', parameters: {
   httpMethod: 'POST', path: 'euforia-painel-fila', responseMode: 'responseNode', options: { allowedOrigins: ORIGENS } } } });
@@ -57,27 +64,17 @@ const podeSeguir = ifElse({ version: 2.2, config: { name: 'Acesso válido?', par
   conditions: [{ leftValue: '={{ $json.ok }}', rightValue: '', operator: { type: 'boolean', operation: 'true', singleValue: true } }],
   combinator: 'and' } } } });
 
-const entregas = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, config: { name: 'Cards da pessoa', credentials: NOTION, parameters: {
-  method: 'POST', url: 'https://api.notion.com/v1/databases/74b3076a325749e3bac4ba6659215e48/query', authentication: 'genericCredentialType', genericAuthType: 'httpHeaderAuth',
-  sendHeaders: true, headerParameters: NOTION_HDR, sendBody: true, specifyBody: 'json', jsonBody: '={{ $json.consulta }}',
-  options: { pagination: { pagination: { paginationMode: 'updateAParameterInEachRequest',
-    parameters: { parameters: [{ type: 'body', name: 'start_cursor', value: '={{ $response.body.next_cursor }}' }] },
-    paginationCompleteWhen: 'other', completeExpression: '={{ !$response.body.has_more }}', limitPagesFetched: true, maxRequests: 10 } } } } } });
+const entregas = node({ type: 'n8n-nodes-base.executeWorkflow', version: 1.3, config: { name: 'Cards da pessoa', parameters: {
+  source: 'database', workflowId: COPIA, mode: 'once', options: { waitForSubWorkflow: true },
+  workflowInputs: { mappingMode: 'defineBelow', value: { db: 'entregas', consulta: '={{ $json.consulta }}', forcar: '' }, matchingColumns: [], schema: COPIA_CAMPOS } } } });
 
-const clientes = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, config: { name: 'Clientes ativos', credentials: NOTION, executeOnce: true, parameters: {
-  method: 'POST', url: 'https://api.notion.com/v1/databases/3ddc91b406be49e98e630c298d9162d8/query', authentication: 'genericCredentialType', genericAuthType: 'httpHeaderAuth',
-  sendHeaders: true, headerParameters: NOTION_HDR, sendBody: true, specifyBody: 'json',
-  jsonBody: '={{ JSON.stringify({ filter: { property: "Situação", select: { does_not_equal: "Encerrado" } }, sorts: [{ property: "Cliente", direction: "ascending" }], page_size: 100 }) }}',
-  options: { pagination: { pagination: { paginationMode: 'updateAParameterInEachRequest',
-    parameters: { parameters: [{ type: 'body', name: 'start_cursor', value: '={{ $response.body.next_cursor }}' }] },
-    paginationCompleteWhen: 'other', completeExpression: '={{ !$response.body.has_more }}', limitPagesFetched: true, maxRequests: 10 } } } } } });
+const clientes = node({ type: 'n8n-nodes-base.executeWorkflow', version: 1.3, config: { name: 'Clientes ativos', executeOnce: true, parameters: {
+  source: 'database', workflowId: COPIA, mode: 'once', options: { waitForSubWorkflow: true },
+  workflowInputs: { mappingMode: 'defineBelow', value: { db: 'clientes', consulta: '={{ JSON.stringify({ filter: { property: "Situação", select: { does_not_equal: "Encerrado" } }, sorts: [{ property: "Cliente", direction: "ascending" }], page_size: 100 }) }}', forcar: '' }, matchingColumns: [], schema: COPIA_CAMPOS } } } });
 
-const pedidosNode = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, config: { name: 'Pedidos do painel', credentials: NOTION, executeOnce: true, onError: 'continueRegularOutput', alwaysOutputData: true, parameters: {
-  method: 'POST', url: 'https://api.notion.com/v1/databases/74b3076a325749e3bac4ba6659215e48/query', authentication: 'genericCredentialType', genericAuthType: 'httpHeaderAuth',
-  sendHeaders: true, headerParameters: NOTION_HDR, sendBody: true, specifyBody: 'json', jsonBody: '={{ $("Validar acesso").first().json.consultaPedidos }}',
-  options: { pagination: { pagination: { paginationMode: 'updateAParameterInEachRequest',
-    parameters: { parameters: [{ type: 'body', name: 'start_cursor', value: '={{ $response.body.next_cursor }}' }] },
-    paginationCompleteWhen: 'other', completeExpression: '={{ !$response.body.has_more }}', limitPagesFetched: true, maxRequests: 10 } } } } } });
+const pedidosNode = node({ type: 'n8n-nodes-base.executeWorkflow', version: 1.3, config: { name: 'Pedidos do painel', executeOnce: true, onError: 'continueRegularOutput', alwaysOutputData: true, parameters: {
+  source: 'database', workflowId: COPIA, mode: 'once', options: { waitForSubWorkflow: true },
+  workflowInputs: { mappingMode: 'defineBelow', value: { db: 'entregas', consulta: '={{ $("Validar acesso").first().json.consultaPedidos }}', forcar: '' }, matchingColumns: [], schema: COPIA_CAMPOS } } } });
 
 // Henrique 05/11: card ligado a promessa feita ao cliente (hoje, amanhã ou atrasada) é a prioridade do dia de quem tem o card.
 const promessasNode = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, config: { name: 'Promessas do dia', credentials: NOTION, executeOnce: true, onError: 'continueRegularOutput', alwaysOutputData: true, parameters: {
@@ -161,7 +158,7 @@ const devolver = node({ type: 'n8n-nodes-base.respondToWebhook', version: 1.5, c
 const recusar = node({ type: 'n8n-nodes-base.respondToWebhook', version: 1.5, config: { name: 'Recusar acesso', parameters: {
   respondWith: 'json', responseBody: '={{ JSON.stringify($json.resposta) }}', options: {} } } });
 
-const nota = sticky('## Painel da equipe · fila (V1)\nA página grupoeuforia.com.br/equipe?u=<token> pede aqui a fila da pessoa (token + PIN da tabela "Painel equipe · acesso").\nEditor: cards abertos em que ela é Responsável. Revisor (Ismael): os dele + tudo Em revisão, Aguardando cliente e o que vai ao ar até amanhã. Calls e produção: os dele + Aguardando cliente e o que vai ao ar até amanhã. Teste: só cards com "TESTE PAINEL" no título.\nTodos (menos teste) recebem também a Fila de demandas: cards abertos sem Responsável de vídeo longo, shorts, podcast, carrossel e thumb (livre: true).\nSó leitura. Cliente sai só com faixa, atenção, padrões de edição e gosta/não gosta. Cards e clientes vêm página por página (sem limite de 100).\nMeus pedidos (Ismael, Rômulo, diretoria): todos os pedidos ao escritório feitos pelo painel desde 26/10 ("(painel)" no título), com quem pediu (da Obs), etapa e link do quadro da máquina. A página filtra por pessoa.', [], { color: 4 });
+const nota = sticky('## Painel da equipe · fila (V1)\nA página grupoeuforia.com.br/equipe?u=<token> pede aqui a fila da pessoa (token + PIN da tabela "Painel equipe · acesso").\nEditor: cards abertos em que ela é Responsável. Revisor (Ismael): os dele + tudo Em revisão, Aguardando cliente e o que vai ao ar até amanhã. Calls e produção: os dele + Aguardando cliente e o que vai ao ar até amanhã. Teste: só cards com "TESTE PAINEL" no título.\nTodos (menos teste) recebem também a Fila de demandas: cards abertos sem Responsável de vídeo longo, shorts, podcast, carrossel e thumb (livre: true).\nSó leitura (Entregas e Clientes vêm da cópia no Postgres pelo "Cache | Consultar como Notion (V1)"; Promessas ainda do Notion). Cliente sai só com faixa, atenção, padrões de edição e gosta/não gosta. Cards e clientes vêm página por página (sem limite de 100).\nMeus pedidos (Ismael, Rômulo, diretoria): todos os pedidos ao escritório feitos pelo painel desde 26/10 ("(painel)" no título), com quem pediu (da Obs), etapa e link do quadro da máquina. A página filtra por pessoa.', [], { color: 4 });
 
 export default workflow('painel-fila', 'Painel | Fila da equipe (V1)')
   .add(pedir).to(ler).to(acesso).to(validar)
