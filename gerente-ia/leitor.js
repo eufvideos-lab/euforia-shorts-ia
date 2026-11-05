@@ -354,7 +354,10 @@ return $input.all().map((it, i) => {
   const q = Number(c.quantidade);
   if (q > 1 && q < 50) props['Quantidade'] = { number: q };
   const card_corpo = precisaCard ? JSON.stringify({ parent: { database_id: ENTREGAS_DB }, properties: props }) : '';
-  return { json: { dados: d, cards: base.cards, resposta, urgencia: urg, prazo, tipo, titulo, ok: !!resposta,
+  // Fato que só a equipe sabe (acesso, bruto, entrega hoje): a mensagem espera o sim do Rômulo ou do Ismael (Henrique 05/11).
+  const confirmar = mascara(String(r.confirmar || '').trim()).slice(0, 220);
+  const confirmar_quem = confirmar ? (r.confirmar_quem === 'romulo' ? 'romulo' : 'ismael') : '';
+  return { json: { dados: d, cards: base.cards, resposta, urgencia: urg, prazo, tipo, titulo, ok: !!resposta, confirmar, confirmar_quem,
     criar_agora: precisaCard && urg !== 'hiperurgente' && !!resposta, card_corpo, card_id: '', card_url: '', card_codigo: '' } };
 });
 `
@@ -419,7 +422,10 @@ return $input.all().map(it => {
   else if (d.classe === 'pedido' || d.classe === 'ajuste') linhaCard = '📋 Sem card novo (não achei peça concreta no pedido).';
   const resp = x.ok ? x.resposta.split('\\n').map(l => '> ' + l).join('\\n') : '> (não consegui escrever o rascunho)';
   const msg = '✍️ **' + d.cliente + '**' + (selo ? ' (' + selo.trim() + ')' : '') + ' · ' + (NOMES[d.classe] || d.classe) + (d.resumo ? ' · ' + d.resumo : '') + '\\n> ' + trecho + '\\n' + (linhaCard ? linhaCard + '\\n' : '') + '\\n**Resposta para o grupo** (sai pelo suporte, assinada Érica):\\n' + resp + '\\n\\n✅ envia · ❌ cancela · para corrigir, **responda esta mensagem** com o texto certo (o seu texto é o que sai)';
-  return { json: { ...x, discord: JSON.stringify({ content: msg.slice(0, 1990), allowed_mentions: { parse: [] } }) } };
+  const QUEM = { romulo: 'Rômulo', ismael: 'Ismael' };
+  const conf = x.confirmar ? '\\n\\n⏳ **Antes de sair, perguntei ao ' + QUEM[x.confirmar_quem] + ' no 1x1:** ' + x.confirmar + '\\nSe você der ✅ agora, a mensagem só sai depois que ele responder sim.' : '';
+  const msg2 = conf ? msg.replace('\\n\\n✅ envia', conf + '\\n\\n✅ envia') : msg;
+  return { json: { ...x, discord: JSON.stringify({ content: msg2.slice(0, 1990), allowed_mentions: { parse: [] } }) } };
 });
 `
     },
@@ -446,7 +452,7 @@ $input.all().forEach((it, i) => {
   const x = $('Montar post').itemMatching(i).json; const d = x.dados;
   const m = it.json || {};
   if (!m.id) return;
-  linhas.push({ chat_id: d.chat_id, cliente: d.cliente, cliente_id: d.cliente_id, classe: d.classe, urgencia: x.urgencia, ultima_cliente: d.ultima, texto: x.resposta, card_id: x.card_id || null, card_url: x.card_url || null, card_corpo: (!x.card_id && x.card_corpo) ? x.card_corpo : null, discord_msg: m.id });
+  linhas.push({ chat_id: d.chat_id, cliente: d.cliente, cliente_id: d.cliente_id, classe: d.classe, urgencia: x.urgencia, ultima_cliente: d.ultima, texto: x.resposta, card_id: x.card_id || null, card_url: x.card_url || null, card_corpo: (!x.card_id && x.card_corpo) ? x.card_corpo : null, discord_msg: m.id, confirmar: x.confirmar || null, confirmar_quem: x.confirmar_quem || null });
   for (const e of ['✅', '❌']) reacoes.push({ json: { msg: m.id, emoji: encodeURIComponent(e) } });
   const base = { quando: agora.toISO(), dia: agora.toISODate(), modo: 'piloto', chat_id: d.chat_id, cliente: d.cliente, classe: d.classe, qtd_msgs: d.qtd, trava_palavra: false, minutos: Math.max(0, Math.round(agora.diff(DateTime.fromJSDate(new Date(d.ultima)), 'minutes').minutes)) };
   eventos.push({ ...base, evento: 'rascunho', ref: x.urgencia });
@@ -466,9 +472,10 @@ const guardar_rascunhos = node({
     name: 'Guardar rascunhos',
     parameters: {
       operation: 'executeQuery',
-      query: `INSERT INTO gerente_rascunhos (chat_id, cliente, cliente_id, classe, urgencia, ultima_cliente, texto, card_id, card_url, card_corpo, discord_msg)
-SELECT x.chat_id, x.cliente, x.cliente_id, x.classe, x.urgencia, x.ultima_cliente, x.texto, x.card_id, x.card_url, x.card_corpo, x.discord_msg
-FROM json_to_recordset($1::json) AS x(chat_id text, cliente text, cliente_id text, classe text, urgencia text, ultima_cliente timestamptz, texto text, card_id text, card_url text, card_corpo text, discord_msg text)
+      query: `ALTER TABLE gerente_rascunhos ADD COLUMN IF NOT EXISTS confirmar TEXT, ADD COLUMN IF NOT EXISTS confirmar_quem TEXT, ADD COLUMN IF NOT EXISTS confirmar_msg TEXT, ADD COLUMN IF NOT EXISTS confirmado TEXT, ADD COLUMN IF NOT EXISTS confirmar_em TIMESTAMPTZ;
+INSERT INTO gerente_rascunhos (chat_id, cliente, cliente_id, classe, urgencia, ultima_cliente, texto, card_id, card_url, card_corpo, discord_msg, confirmar, confirmar_quem)
+SELECT x.chat_id, x.cliente, x.cliente_id, x.classe, x.urgencia, x.ultima_cliente, x.texto, x.card_id, x.card_url, x.card_corpo, x.discord_msg, x.confirmar, x.confirmar_quem
+FROM json_to_recordset($1::json) AS x(chat_id text, cliente text, cliente_id text, classe text, urgencia text, ultima_cliente timestamptz, texto text, card_id text, card_url text, card_corpo text, discord_msg text, confirmar text, confirmar_quem text)
 RETURNING id;`,
       options: { queryReplacement: expr('{{ [ $json.linhas ] }}') }
     },

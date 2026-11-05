@@ -11,9 +11,10 @@ const DISCORD = { httpHeaderAuth: { id: 'PY2ZcN5kAVFaS1io', name: 'Discord Bot' 
 const cada5 = trigger({ type: 'n8n-nodes-base.scheduleTrigger', version: 1.3, config: { name: 'A cada 5 minutos', parameters: { rule: { interval: [{ field: 'minutes', minutesInterval: 5 }] } } } });
 
 const pendentes = node({ type: 'n8n-nodes-base.postgres', version: 2.6, config: { name: 'Avisos pendentes', credentials: PG, executeOnce: true, parameters: { operation: 'executeQuery',
-  query: `ALTER TABLE gerente_rascunhos ADD COLUMN IF NOT EXISTS aviso_ismael_em TIMESTAMPTZ, ADD COLUMN IF NOT EXISTS aviso_romulo_em TIMESTAMPTZ;
+  query: `ALTER TABLE gerente_rascunhos ADD COLUMN IF NOT EXISTS aviso_ismael_em TIMESTAMPTZ, ADD COLUMN IF NOT EXISTS aviso_romulo_em TIMESTAMPTZ, ADD COLUMN IF NOT EXISTS confirmar TEXT, ADD COLUMN IF NOT EXISTS confirmar_quem TEXT, ADD COLUMN IF NOT EXISTS confirmar_msg TEXT, ADD COLUMN IF NOT EXISTS confirmado TEXT, ADD COLUMN IF NOT EXISTS confirmar_em TIMESTAMPTZ;
 SELECT * FROM (
-  SELECT r.id, r.cliente, r.card_url, r.classe, r.maquina_status,
+  SELECT r.id, r.cliente, r.card_url, r.classe, r.maquina_status, r.confirmar, r.confirmar_quem,
+    (r.confirmar IS NOT NULL AND r.confirmar_msg IS NULL AND r.confirmado IS NULL AND r.status IN ('aguardando', 'aprovado_confirmar')) AS p_conf,
     (r.aviso_ismael_em IS NULL AND r.card_id IS NOT NULL AND (r.maquina_status = 'falta_link' OR r.maquina_status LIKE 'erro:%' OR r.classe = 'ajuste')) AS p_ismael,
     CASE WHEN r.aviso_romulo_em IS NULL THEN (SELECT left(q.texto, 300) FROM mensagens q
       WHERE q.chat_id = r.chat_id AND NOT q.from_me AND q.texto IS NOT NULL
@@ -23,7 +24,7 @@ SELECT * FROM (
   FROM gerente_rascunhos r
   WHERE r.criado_em > now() - interval '1 day' AND r.criado_em > '2026-11-05 11:55:00+00' AND COALESCE(r.cliente, '') NOT ILIKE 'TESTE%'
     AND EXTRACT(HOUR FROM now() AT TIME ZONE 'America/Recife') BETWEEN 7 AND 21
-) t WHERE t.p_ismael OR t.texto_call IS NOT NULL
+) t WHERE t.p_ismael OR t.texto_call IS NOT NULL OR t.p_conf
 ORDER BY t.id LIMIT 10;`, options: {} } } });
 
 const montar = node({ type: 'n8n-nodes-base.code', version: 2, config: { name: 'Montar avisos', parameters: { jsCode: `const CANAL = { ismael: '1556650886678454403', romulo: '1556650881921978511' };
@@ -42,6 +43,11 @@ for (const it of $input.all()) {
     else t = '✂️ <@' + USER.ismael + '> pedido de **ajuste** da **' + r.cliente + '** no grupo. O card fica com você.' + card(r);
     out.push({ json: { id: r.id, quem: 'ismael', canal: CANAL.ismael, corpo: JSON.stringify({ content: t.slice(0, 1900), allowed_mentions: { users: [USER.ismael] } }) } });
   }
+  if (r.p_conf) {
+    const q = r.confirmar_quem === 'romulo' ? 'romulo' : 'ismael';
+    const t = '❓ <@' + USER[q] + '> pergunta rápida sobre **' + r.cliente + '** antes de responder o cliente:\\n> ' + mascara(r.confirmar) + '\\nReaja ✅ se **sim** ou ❌ se **não**. A resposta ao cliente só sai depois do seu ✅.';
+    out.push({ json: { id: r.id, quem: 'conf', canal: CANAL[q], corpo: JSON.stringify({ content: t.slice(0, 1900), allowed_mentions: { users: [USER[q]] } }) } });
+  }
   if (r.texto_call) {
     const t = '📞 <@' + USER.romulo + '> a **' + r.cliente + '** falou de call ou reunião no grupo:\\n> ' + mascara(r.texto_call).replace(/\\n/g, '\\n> ') + '\\nDá uma olhada no grupo. A resposta de texto da Gerente continua passando pela diretoria.';
     out.push({ json: { id: r.id, quem: 'romulo', canal: CANAL.romulo, corpo: JSON.stringify({ content: t.slice(0, 1900), allowed_mentions: { users: [USER.romulo] } }) } });
@@ -57,19 +63,20 @@ const marcar = node({ type: 'n8n-nodes-base.code', version: 2, config: { name: '
 $input.all().forEach((it, i) => {
   const a = $('Montar avisos').itemMatching(i).json;
   if (!(it.json && it.json.id)) return;
-  por[a.id] = por[a.id] || { id: a.id, ismael: false, romulo: false };
-  por[a.id][a.quem] = true;
+  por[a.id] = por[a.id] || { id: a.id, ismael: false, romulo: false, conf_msg: null };
+  if (a.quem === 'conf') por[a.id].conf_msg = it.json.id; else por[a.id][a.quem] = true;
 });
 return [{ json: { linhas: JSON.stringify(Object.values(por)) } }];` } } });
 
 const gravar = node({ type: 'n8n-nodes-base.postgres', version: 2.6, config: { name: 'Gravar avisados', credentials: PG, parameters: { operation: 'executeQuery',
   query: `UPDATE gerente_rascunhos r SET
   aviso_ismael_em = CASE WHEN x.ismael THEN now() ELSE r.aviso_ismael_em END,
-  aviso_romulo_em = CASE WHEN x.romulo THEN now() ELSE r.aviso_romulo_em END
-FROM json_to_recordset($1::json) AS x(id int, ismael boolean, romulo boolean) WHERE r.id = x.id RETURNING r.id;`,
+  aviso_romulo_em = CASE WHEN x.romulo THEN now() ELSE r.aviso_romulo_em END,
+  confirmar_msg = COALESCE(x.conf_msg, r.confirmar_msg)
+FROM json_to_recordset($1::json) AS x(id int, ismael boolean, romulo boolean, conf_msg text) WHERE r.id = x.id RETURNING r.id;`,
   options: { queryReplacement: '={{ [ $json.linhas ] }}' } } } });
 
-const nota = sticky('## Gerente IA · avisos 1x1 (V1)\nA cada 5 min, das 7h às 22h: Ismael recebe no 1x1 dele os cards da Gerente que ficaram com ele (Falta do cliente, não foi para a máquina, ajuste). Rômulo recebe no 1x1 quando o cliente fala de call/reunião. Cada aviso sai uma vez (colunas aviso_ismael_em / aviso_romulo_em em gerente_rascunhos). Assunto sério nunca vem para cá.', [], { color: 4 });
+const nota = sticky('## Gerente IA · avisos 1x1 (V1)\nA cada 5 min, das 7h às 22h: Ismael recebe no 1x1 dele os cards da Gerente que ficaram com ele (Falta do cliente, não foi para a máquina, ajuste). Rômulo recebe no 1x1 quando o cliente fala de call/reunião. Trava de confirmação: quando a resposta afirma algo que só a equipe sabe, pergunta ao Rômulo ou Ismael (✅/❌) e o Aprovações só manda depois do sim. Cada aviso sai uma vez (colunas aviso_ismael_em / aviso_romulo_em em gerente_rascunhos). Assunto sério nunca vem para cá.', [], { color: 4 });
 
 export default workflow('gerente-avisos-1x1', 'Gerente IA | Avisos 1x1 no Discord (V1)', { executionOrder: 'v1', availableInMCP: true })
   .add(cada5).to(pendentes).to(montar).to(postar).to(marcar).to(gravar)
