@@ -2245,11 +2245,18 @@ const CLASSE_GA = { pedido: 'Pedido de conteúdo', ajuste: 'Ajuste', status: 'D�
 const URG_GA = { padrao: '', urgente: '⚠️ Urgente (24h)', hiperurgente: '⚡ Hiperurgente: o card só nasce quando você enviar' };
 const ST_GA = { enviado: ['Enviado', 'ok'], cancelado: ['Cancelado', ''], expirado: ['Expirou (24h)', ''], equipe_respondeu: ['Equipe respondeu antes', 'info'], erro_envio: ['Erro no WhatsApp', 'red'] };
 const esperaGA = () => GA && GA.abertos ? GA.abertos.filter(x => x.status === 'aguardando' && !x.painel_acao) : [];
+const QUEM_GA = { romulo: 'Rômulo', ismael: 'Ismael' };
 function cardGA(x){
-  const feito = !!x.painel_acao || x.status === 'aprovado_espera';
-  const situacao = x.status === 'aprovado_espera' ? '🌙 Aprovado. Sai às 7h (silêncio das 22h às 7h).' : x.painel_acao === 'enviar' ? '⏳ Aprovado. Sai pelo suporte no próximo minuto.' : '⏳ Cancelado. Nada sai.';
+  const feito = !!x.painel_acao || x.status === 'aprovado_espera' || x.status === 'aprovado_confirmar';
+  const quem = QUEM_GA[x.confirmar_quem] || 'time';
+  const situacao = x.status === 'aprovado_confirmar' ? `👍 Aprovado. Sai assim que o ${quem} confirmar no 1x1.` : x.status === 'aprovado_espera' ? '🌙 Aprovado. Sai às 7h (silêncio das 22h às 7h).' : x.painel_acao === 'enviar' ? '⏳ Aprovado. Sai pelo suporte no próximo minuto.' : '⏳ Cancelado. Nada sai.';
+  // Trava de confirmação (05/11): fatos que só a equipe sabe passam antes pelo Rômulo ou pelo Ismael.
+  const conf = !x.confirmar ? '' : x.confirmado === 'sim' ? `<p><span class="chip ok">✅ ${esc(quem)} confirmou</span> <span class="sub">${esc(x.confirmar)}</span></p>`
+    : x.confirmado === 'nao' ? `<p><span class="chip red">🚫 ${esc(quem)} disse NÃO</span> <span class="sub">${esc(x.confirmar)} · Corrija o texto antes de enviar, ou cancele.</span></p>`
+    : `<p><span class="chip warn">⏳ esperando ${esc(quem)} confirmar</span> <span class="sub">${esc(x.confirmar)}${x.perguntado ? '' : ' (pergunta sai no 1x1 em instantes)'}</span></p>${feito ? '' : `<p class="note">Se você enviar agora, só sai depois do sim dele. Se mudar o texto, sai direto com o seu texto.</p>`}`;
   return `<section class="panel"><h2>${esc(x.cliente)} <span class="sub">· ${esc(CLASSE_GA[x.classe] || x.classe)} · ${esc(x.criado)}</span></h2>
     ${URG_GA[x.urgencia] ? `<p><span class="chip ${x.urgencia === 'hiperurgente' ? 'red' : 'warn'}">${esc(URG_GA[x.urgencia])}</span></p>` : ''}
+    ${conf}
     ${x.cliente_disse ? `<p class="sub" style="white-space:pre-wrap;border-left:3px solid var(--line);padding-left:10px">${esc(x.cliente_disse)}</p>` : ''}
     ${x.card_url ? `<p class="note">📋 Card criado no Entregas (com o Ismael): <a href="${esc(x.card_url)}" target="_blank" rel="noopener">abrir</a></p>` : ''}
     <label for="ga-t${x.id}">Resposta para o grupo<textarea id="ga-t${x.id}" rows="4" ${feito ? 'disabled' : ''}>${esc(GAE[x.id] != null ? GAE[x.id] : x.texto)}</textarea></label>
@@ -2344,7 +2351,7 @@ const DEMO_GM = { ok: true, agora: '10:42', fase1b: { enviadas: 18, pct: 94, pro
   p30: { dias: 30, lidas: 640, conversas: 190, demandas_criadas: 40, entregues: 31, abertas: 9, atrasadas: 2, tempo_resposta_min: 27, tempo_entrega_h: 44, escalados: 7, travas: 4, rascunhos: 60, enviadas: 50, sem_correcao: 46, pct_sem_correcao: 92, canceladas: 6, expiradas: 2, equipe_antes: 2, classes: { pedido: 40, status: 60 } } };
 const DEMO_GA = { ok: true, agora: '10:42', numeros: { total: 12, enviadas: 9, sem_correcao: 8, canceladas: 1, expiradas: 1, equipe: 1 },
   abertos: [{ id: 1, criado: '04/11 10:31', cliente: 'Cliente Exemplo A', classe: 'pedido', urgencia: 'urgente', texto: 'Ana, recebemos o pedido do carrossel sobre imposto de renda! Já entrou na produção e avisamos assim que estiver pronto.', card_url: 'https://www.notion.so/', status: 'aguardando', painel_acao: null, cliente_disse: '10:27 Ana: Preciso de um carrossel sobre imposto de renda, é urgente, consegue até amanhã?' },
-    { id: 2, criado: '04/11 10:12', cliente: 'Cliente Exemplo B', classe: 'status', urgencia: 'padrao', texto: 'Carlos, o vídeo desta semana está em revisão final e fica pronto até 06/11.', card_url: null, status: 'aguardando', painel_acao: null, cliente_disse: '10:08 Carlos: Como está o vídeo desta semana?' }],
+    { id: 2, criado: '04/11 10:12', cliente: 'Cliente Exemplo B', classe: 'status', urgencia: 'padrao', texto: 'Carlos, o vídeo desta semana está em revisão final e fica pronto até 06/11.', card_url: null, status: 'aguardando', painel_acao: null, confirmar: 'O bruto do vídeo desta semana já chegou e a edição fica pronta até 06/11?', confirmar_quem: 'ismael', confirmado: null, perguntado: true, cliente_disse: '10:08 Carlos: Como está o vídeo desta semana?' }],
   recentes: [{ id: 3, quando: '04/11 09:50', cliente: 'Cliente Exemplo C', classe: 'material', status: 'enviado', texto: 'Paula, recebemos as fotos, obrigada!', corrigida: false, pelo_painel: true }] };
 
 const CENTRAL_NO_AR = true;

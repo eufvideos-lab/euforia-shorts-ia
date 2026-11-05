@@ -96,7 +96,7 @@ const separar_e_travar = node({
     name: 'Separar e travar',
     parameters: {
       jsCode: `const entrada = $('Grupos com mensagem nova').all();
-const sem = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+const sem = s => String(s || '').normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').toLowerCase();
 const txt = v => { if (!v) return ''; const a = v.title || v.rich_text; if (a) return a.map(t => t.plain_text).join('').trim(); if (v.select) return v.select.name; if (v.date) return v.date.start || ''; if (v.formula) return String(v.formula.string || ''); return ''; };
 const hoje = DateTime.now().setZone('America/Recife').toISODate();
 const cli = {};
@@ -417,14 +417,13 @@ return $input.all().map(it => {
   const trecho = String(d.textos || '').split('\\n').slice(-4).join('\\n').slice(-450).replace(/\\n/g, '\\n> ');
   let linhaCard = '';
   if (x.card_url) linhaCard = '📋 Card criado: [' + (x.card_codigo || 'abrir') + '](<' + x.card_url + '>) · ' + x.tipo + ' · pronto até ' + ddmm(x.prazo) + ' · ' + URG[x.urgencia] + ' · com o Ismael';
-  else if (x.card_corpo && x.urgencia === 'hiperurgente') linhaCard = '⚡ **Hiperurgente:** o card (' + x.tipo + ', pronto hoje) só nasce com o seu ✅.';
-  else if (x.card_corpo && x.card_erro) linhaCard = '⚠️ ' + x.card_erro + ' (crio de novo no seu ✅).';
+  else if (x.card_corpo && x.urgencia === 'hiperurgente') linhaCard = '⚡ **Hiperurgente:** o card (' + x.tipo + ', pronto hoje) só nasce quando você enviar.';
+  else if (x.card_corpo && x.card_erro) linhaCard = '⚠️ ' + x.card_erro + ' (crio de novo quando você enviar).';
   else if (d.classe === 'pedido' || d.classe === 'ajuste') linhaCard = '📋 Sem card novo (não achei peça concreta no pedido).';
-  const resp = x.ok ? x.resposta.split('\\n').map(l => '> ' + l).join('\\n') : '> (não consegui escrever o rascunho)';
-  const msg = '✍️ **' + d.cliente + '**' + (selo ? ' (' + selo.trim() + ')' : '') + ' · ' + (NOMES[d.classe] || d.classe) + (d.resumo ? ' · ' + d.resumo : '') + '\\n> ' + trecho + '\\n' + (linhaCard ? linhaCard + '\\n' : '') + '\\n**Resposta para o grupo** (sai pelo suporte, assinada Érica):\\n' + resp + '\\n\\n✅ envia · ❌ cancela · para corrigir, **responda esta mensagem** com o texto certo (o seu texto é o que sai)';
+  // Henrique 05/11: aprovação só pelo painel (Minha mesa › Aprovar). O Discord fica como aviso curto, sem o texto do rascunho.
   const QUEM = { romulo: 'Rômulo', ismael: 'Ismael' };
-  const conf = x.confirmar ? '\\n\\n⏳ **Antes de sair, perguntei ao ' + QUEM[x.confirmar_quem] + ' no 1x1:** ' + x.confirmar + '\\nSe você der ✅ agora, a mensagem só sai depois que ele responder sim.' : '';
-  const msg2 = conf ? msg.replace('\\n\\n✅ envia', conf + '\\n\\n✅ envia') : msg;
+  const conf = x.confirmar ? '\\n⏳ Antes de sair, o ' + QUEM[x.confirmar_quem] + ' confirma no 1x1: ' + x.confirmar : '';
+  const msg2 = '✍️ Resposta para aprovar: **' + d.cliente + '**' + (selo ? ' (' + selo.trim() + ')' : '') + ' · ' + (NOMES[d.classe] || d.classe) + (d.resumo ? ' · ' + d.resumo : '') + (x.ok ? '' : ' · ⚠️ sem rascunho') + '\\n' + (linhaCard ? linhaCard + '\\n' : '') + conf.replace(/^\\n/, '') + (conf ? '\\n' : '') + '👉 Aprove no painel: Minha mesa › Aprovar.';
   return { json: { ...x, discord: JSON.stringify({ content: msg2.slice(0, 1990), allowed_mentions: { parse: [] } }) } };
 });
 `
@@ -453,7 +452,7 @@ $input.all().forEach((it, i) => {
   const m = it.json || {};
   if (!m.id) return;
   linhas.push({ chat_id: d.chat_id, cliente: d.cliente, cliente_id: d.cliente_id, classe: d.classe, urgencia: x.urgencia, ultima_cliente: d.ultima, texto: x.resposta, card_id: x.card_id || null, card_url: x.card_url || null, card_corpo: (!x.card_id && x.card_corpo) ? x.card_corpo : null, discord_msg: m.id, confirmar: x.confirmar || null, confirmar_quem: x.confirmar_quem || null });
-  for (const e of ['✅', '❌']) reacoes.push({ json: { msg: m.id, emoji: encodeURIComponent(e) } });
+  // Sem reações: o aviso no Discord não aprova nada (05/11).
   const base = { quando: agora.toISO(), dia: agora.toISODate(), modo: 'piloto', chat_id: d.chat_id, cliente: d.cliente, classe: d.classe, qtd_msgs: d.qtd, trava_palavra: false, minutos: Math.max(0, Math.round(agora.diff(DateTime.fromJSDate(new Date(d.ultima)), 'minutes').minutes)) };
   eventos.push({ ...base, evento: 'rascunho', ref: x.urgencia });
   if (x.card_id) eventos.push({ ...base, evento: 'demanda_criada', ref: x.card_codigo || x.card_id });

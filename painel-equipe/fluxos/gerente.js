@@ -43,21 +43,22 @@ const caminho = switchCase({ version: 3.2, config: { name: 'O que fazer', parame
   ] }, options: {} } } });
 
 const ver = node({ type: 'n8n-nodes-base.postgres', version: 2.6, config: { name: 'Ler rascunhos', credentials: PG, parameters: { operation: 'executeQuery',
-  query: `ALTER TABLE gerente_rascunhos ADD COLUMN IF NOT EXISTS painel_acao TEXT, ADD COLUMN IF NOT EXISTS painel_texto TEXT, ADD COLUMN IF NOT EXISTS painel_em TIMESTAMPTZ;
+  query: `ALTER TABLE gerente_rascunhos ADD COLUMN IF NOT EXISTS painel_acao TEXT, ADD COLUMN IF NOT EXISTS painel_texto TEXT, ADD COLUMN IF NOT EXISTS painel_em TIMESTAMPTZ, ADD COLUMN IF NOT EXISTS confirmar TEXT, ADD COLUMN IF NOT EXISTS confirmar_quem TEXT, ADD COLUMN IF NOT EXISTS confirmar_msg TEXT, ADD COLUMN IF NOT EXISTS confirmado TEXT;
 SELECT json_build_object(
   'agora', to_char(now() AT TIME ZONE 'America/Recife', 'HH24:MI'),
   'abertos', (SELECT COALESCE(json_agg(x ORDER BY x.id DESC), '[]'::json) FROM (
     SELECT r.id, to_char(r.criado_em AT TIME ZONE 'America/Recife', 'DD/MM HH24:MI') AS criado, r.cliente, r.classe, r.urgencia, r.texto, r.card_url,
       (r.card_corpo IS NOT NULL AND r.card_id IS NULL) AS card_no_ok, r.status, r.painel_acao,
+      r.confirmar, r.confirmar_quem, r.confirmado, (r.confirmar_msg IS NOT NULL) AS perguntado,
       (SELECT string_agg(to_char(q.enviado_em AT TIME ZONE 'America/Recife', 'HH24:MI') || ' ' || COALESCE(q.autor_nome, 'Cliente') || ': ' || left(COALESCE(q.texto, '[' || q.tipo || ']'), 300), E'\\n' ORDER BY q.enviado_em)
          FROM (SELECT DISTINCT ON (m.msg_id) m.* FROM mensagens m WHERE m.chat_id = r.chat_id AND m.enviado_em <= r.ultima_cliente AND m.enviado_em > r.ultima_cliente - interval '6 hours'
                AND NOT m.from_me AND m.tipo NOT IN ('reactionMessage', 'protocolMessage') ORDER BY m.msg_id, m.enviado_em) q
          WHERE q.enviado_em > r.ultima_cliente - interval '6 hours') AS cliente_disse
-    FROM gerente_rascunhos r WHERE r.status IN ('aguardando', 'aprovado_espera') AND r.criado_em > now() - interval '3 days' ORDER BY r.id DESC LIMIT 30) x),
+    FROM gerente_rascunhos r WHERE r.status IN ('aguardando', 'aprovado_espera', 'aprovado_confirmar') AND r.criado_em > now() - interval '3 days' ORDER BY r.id DESC LIMIT 30) x),
   'recentes', (SELECT COALESCE(json_agg(y ORDER BY y.id DESC), '[]'::json) FROM (
     SELECT r.id, to_char(COALESCE(r.decidido_em, r.criado_em) AT TIME ZONE 'America/Recife', 'DD/MM HH24:MI') AS quando, r.cliente, r.classe, r.status,
       COALESCE(NULLIF(r.texto_final, ''), r.texto) AS texto, COALESCE(r.corrigida, false) AS corrigida, r.painel_acao IS NOT NULL AS pelo_painel
-    FROM gerente_rascunhos r WHERE r.status NOT IN ('aguardando', 'aprovado_espera') ORDER BY r.id DESC LIMIT 20) y),
+    FROM gerente_rascunhos r WHERE r.status NOT IN ('aguardando', 'aprovado_espera', 'aprovado_confirmar') ORDER BY r.id DESC LIMIT 20) y),
   'numeros', (SELECT json_build_object('total', count(*), 'enviadas', count(*) FILTER (WHERE status = 'enviado'),
       'sem_correcao', count(*) FILTER (WHERE status = 'enviado' AND NOT COALESCE(corrigida, false)),
       'canceladas', count(*) FILTER (WHERE status = 'cancelado'), 'expiradas', count(*) FILTER (WHERE status = 'expirado'),
