@@ -5,13 +5,19 @@ from PIL import Image, ImageDraw, ImageFont, ImageFilter
 OUT='gfx'
 FPS=30; W,H=1920,1080
 F=os.path.join(os.path.dirname(os.path.abspath(__file__)),'fontes')+'/'
-def font(w,s): return ImageFont.truetype(F+{'b':'InterDisplay-Bold.otf','eb':'InterDisplay-ExtraBold.otf','blk':'InterDisplay-Black.otf','sb':'InterDisplay-SemiBold.otf'}[w],s)
+# fonte do cliente (05/11/2026): FONTE['titulo'] troca as pesadas (títulos, cartões, textos-chave) e FONTE['texto'] as
+# leves (lowers, subtítulos). Sem fonte do cliente, Inter Display.
+FONTE={}
+def font(w,s):
+    k='titulo' if w in ('blk','eb') else 'texto'
+    if FONTE.get(k): return ImageFont.truetype(FONTE[k],s)
+    return ImageFont.truetype(F+{'b':'InterDisplay-Bold.otf','eb':'InterDisplay-ExtraBold.otf','blk':'InterDisplay-Black.otf','sb':'InterDisplay-SemiBold.otf'}[w],s)
 # paleta do cliente (padrão = Grupo Euforia: preto, branco, laranja e degradê branco→pêssego→laranja)
 # caixa = fundo dos lowers; brilho = luz do fundo dos cartões e da tela final; degrade = destaque em degradê (Euforia)
 # ou em cor sólida (cliente sem degradê na marca).
 P={'bg':(5,5,5),'acc':(255,101,24),'acc2':(254,176,137),'txt':(255,255,255),'caixa':None,'brilho':None,'degrade':True}
 def hexrgb(h): h=h.lstrip('#'); return tuple(int(h[i:i+2],16) for i in (0,2,4))
-def configurar(out,paleta=None):
+def configurar(out,paleta=None,fontes=None):
     """paleta: {'fundo':'#050505','destaque':'#FF6518','destaque2':'#FEB089','texto':'#FFFFFF',
     'caixa':'#FF6518','brilho':'#FF6518','degrade':True}"""
     global OUT
@@ -21,6 +27,7 @@ def configurar(out,paleta=None):
         if paleta.get(k): P[c]=hexrgb(paleta[k])
     if 'degrade' in paleta: P['degrade']=paleta['degrade'] not in (False,'nao','não','0',0)
     P['caixa']=P['caixa'] or P['acc']; P['brilho']=P['brilho'] or P['acc']
+    FONTE.clear(); FONTE.update({k:v for k,v in (fontes or {}).items() if v})
 def ease_out(x): x=min(max(x,0),1); return 1-(1-x)**3
 def ease_back(x): x=min(max(x,0),1); c1=1.7; c3=c1+1; return 1+c3*(x-1)**3+c1*(x-1)**2
 def ease_in(x): x=min(max(x,0),1); return x**3
