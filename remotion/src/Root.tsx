@@ -13,6 +13,13 @@ import '@fontsource/poppins/600.css';
 import '@fontsource/poppins/700.css';
 import '@fontsource/montserrat/600.css';
 import '@fontsource/cormorant-garamond/700-italic.css';
+import '@fontsource/archivo/800.css';
+import '@fontsource/archivo/900.css';
+import '@fontsource/inter/500.css';
+import '@fontsource/inter/600.css';
+import '@fontsource/inter/700.css';
+import { Educativo } from './educativo/Educativo';
+import type { EducativoProps } from './educativo/Educativo';
 
 const exemplo: ShortProps = {
   fps: 30,
@@ -63,6 +70,19 @@ export const Root: React.FC = () => (
       defaultProps={{ fps: 30, largura: 1920, altura: 1080, duracao: 5, marca: {}, cenas: [] } as unknown as Record<string, unknown>}
       calculateMetadata={({ props }) => {
         const p = props as unknown as MotionProps;
+        return { fps: p.fps, width: p.largura, height: p.altura, durationInFrames: Math.ceil(p.duracao * p.fps) };
+      }}
+    />
+    <Composition
+      id="Educativo"
+      component={Educativo as unknown as React.FC<Record<string, unknown>>}
+      width={1920}
+      height={1080}
+      fps={30}
+      durationInFrames={150}
+      defaultProps={{ fps: 30, largura: 1920, altura: 1080, duracao: 5, selo: '', audio: '', capitulos: [], cenas: [], checks: [], legendas: [] } as unknown as Record<string, unknown>}
+      calculateMetadata={({ props }) => {
+        const p = props as unknown as EducativoProps;
         return { fps: p.fps, width: p.largura, height: p.altura, durationInFrames: Math.ceil(p.duracao * p.fps) };
       }}
     />

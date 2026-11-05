@@ -1,0 +1,455 @@
+{
+  "nome": "Guia de gravação · boas práticas",
+  "pasta": "educativo/gravacao",
+  "selo": "GUIA DE GRAVAÇÃO",
+  "audio": [
+    [
+      "pausa",
+      0.8
+    ],
+    [
+      "s1"
+    ],
+    [
+      "pausa",
+      0.7
+    ],
+    [
+      "pausa",
+      1.9,
+      "cap1"
+    ],
+    [
+      "s2"
+    ],
+    [
+      "pausa",
+      3.6,
+      "quiz1"
+    ],
+    [
+      "s2b"
+    ],
+    [
+      "pausa",
+      0.9
+    ],
+    [
+      "pausa",
+      1.9,
+      "cap2"
+    ],
+    [
+      "s3"
+    ],
+    [
+      "pausa",
+      0.9
+    ],
+    [
+      "pausa",
+      1.9,
+      "cap3"
+    ],
+    [
+      "s4"
+    ],
+    [
+      "pausa",
+      3.6,
+      "quiz2"
+    ],
+    [
+      "s4b"
+    ],
+    [
+      "pausa",
+      0.9
+    ],
+    [
+      "pausa",
+      1.9,
+      "cap4"
+    ],
+    [
+      "s5"
+    ],
+    [
+      "pausa",
+      3.6,
+      "quiz3"
+    ],
+    [
+      "s5b"
+    ],
+    [
+      "pausa",
+      0.9
+    ],
+    [
+      "pausa",
+      1.9,
+      "cap5"
+    ],
+    [
+      "s6"
+    ],
+    [
+      "pausa",
+      0.9
+    ],
+    [
+      "pausa",
+      1.9,
+      "cap6"
+    ],
+    [
+      "s7"
+    ],
+    [
+      "pausa",
+      0.9
+    ],
+    [
+      "pausa",
+      0.4,
+      "fim"
+    ],
+    [
+      "s8"
+    ],
+    [
+      "pausa",
+      3.0
+    ]
+  ],
+  "capitulos": [
+    {
+      "n": 1,
+      "titulo": "O OLHAR",
+      "de": "cap1",
+      "ate": "cap2"
+    },
+    {
+      "n": 2,
+      "titulo": "TELEPROMPTER",
+      "de": "cap2",
+      "ate": "cap3"
+    },
+    {
+      "n": 3,
+      "titulo": "ENQUADRAMENTO",
+      "de": "cap3",
+      "ate": "cap4"
+    },
+    {
+      "n": 4,
+      "titulo": "LUZ",
+      "de": "cap4",
+      "ate": "cap5"
+    },
+    {
+      "n": 5,
+      "titulo": "ÁUDIO",
+      "de": "cap5",
+      "ate": "cap6"
+    },
+    {
+      "n": 6,
+      "titulo": "O ARQUIVO",
+      "de": "cap6",
+      "ate": "fim"
+    }
+  ],
+  "cenas": [
+    {
+      "tipo": "abertura",
+      "de": "inicio",
+      "ate": "cap1",
+      "kicker": "GUIA EUFORIA · BOAS PRÁTICAS",
+      "titulo": "COMO GRAVAR UM VÍDEO QUE PRENDE",
+      "destaque": "PRENDE",
+      "sub": "6 passos para a sua gravação sair pronta"
+    },
+    {
+      "tipo": "capitulo",
+      "de": "cap1",
+      "ate": "cap1:fim",
+      "n": 1
+    },
+    {
+      "tipo": "pontos",
+      "de": "cap1:fim",
+      "ate": "s2:Então",
+      "ilustracao": "olhar-baixo",
+      "frases": [
+        {
+          "em": "s2:conexão",
+          "texto": "O OLHO DESCE, A CONEXÃO QUEBRA"
+        },
+        {
+          "em": "s2:cobertos",
+          "texto": "A EDIÇÃO PRECISA COBRIR COM IMAGENS"
+        },
+        {
+          "em": "s2:confiança",
+          "texto": "SEU ROSTO GERA CONFIANÇA"
+        }
+      ]
+    },
+    {
+      "tipo": "quiz",
+      "de": "s2:Então",
+      "ate": "s2b:regra",
+      "a": "olhar-baixo",
+      "b": "olhar-lente",
+      "certa": "b",
+      "contagem": "quiz1",
+      "rotulos": [
+        "LENDO",
+        "NA LENTE"
+      ]
+    },
+    {
+      "tipo": "pontos",
+      "de": "s2b:regra",
+      "ate": "cap2",
+      "ilustracao": "olhar-lente",
+      "frases": [
+        {
+          "em": "s2b:olhe",
+          "texto": "OLHE PARA A LENTE"
+        },
+        {
+          "em": "s2b:Não",
+          "texto": "NÃO PARA A TELA NEM PARA O VISOR"
+        }
+      ]
+    },
+    {
+      "tipo": "capitulo",
+      "de": "cap2",
+      "ate": "cap2:fim",
+      "n": 2
+    },
+    {
+      "tipo": "pontos",
+      "de": "cap2:fim",
+      "ate": "cap3",
+      "ilustracao": "prompter",
+      "frases": [
+        {
+          "em": "s3:colado",
+          "texto": "COLADO NA CÂMERA"
+        },
+        {
+          "em": "s3:altura",
+          "texto": "NA ALTURA DOS OLHOS"
+        },
+        {
+          "em": "s3:rolagem",
+          "texto": "ROLAGEM DEVAGAR, LETRA GRANDE"
+        },
+        {
+          "em": "s3:leia",
+          "texto": "SEM PROMPTER: LEIA, OLHE E FALE"
+        }
+      ]
+    },
+    {
+      "tipo": "capitulo",
+      "de": "cap3",
+      "ate": "cap3:fim",
+      "n": 3
+    },
+    {
+      "tipo": "quiz",
+      "de": "cap3:fim",
+      "ate": "s4b:Câmera",
+      "a": "enquadra-errado",
+      "b": "enquadra-certo",
+      "certa": "b",
+      "contagem": "quiz2",
+      "rotulos": [
+        "NA VERTICAL, DE BAIXO",
+        "HORIZONTAL, NA ALTURA"
+      ]
+    },
+    {
+      "tipo": "pontos",
+      "de": "s4b:Câmera",
+      "ate": "cap4",
+      "ilustracao": "enquadra-certo",
+      "frases": [
+        {
+          "em": "s4b:horizontal",
+          "texto": "NA HORIZONTAL"
+        },
+        {
+          "em": "s4b:olhos",
+          "texto": "NA ALTURA DOS OLHOS"
+        },
+        {
+          "em": "s4b:peito",
+          "texto": "DO PEITO PARA CIMA"
+        },
+        {
+          "em": "s4b:fundo",
+          "texto": "FUNDO ARRUMADO"
+        }
+      ]
+    },
+    {
+      "tipo": "capitulo",
+      "de": "cap4",
+      "ate": "cap4:fim",
+      "n": 4
+    },
+    {
+      "tipo": "quiz",
+      "de": "cap4:fim",
+      "ate": "s5b:luz",
+      "a": "luz-frente",
+      "b": "luz-costas",
+      "certa": "a",
+      "contagem": "quiz3",
+      "rotulos": [
+        "LUZ DE FRENTE",
+        "CONTRA A LUZ"
+      ]
+    },
+    {
+      "tipo": "pontos",
+      "de": "s5b:luz",
+      "ate": "cap5",
+      "ilustracao": "luz-frente",
+      "frases": [
+        {
+          "em": "s5b:frente",
+          "texto": "LUZ DE FRENTE"
+        },
+        {
+          "em": "s5b:costas",
+          "texto": "JANELA NUNCA ATRÁS DE VOCÊ"
+        }
+      ]
+    },
+    {
+      "tipo": "capitulo",
+      "de": "cap5",
+      "ate": "cap5:fim",
+      "n": 5
+    },
+    {
+      "tipo": "pontos",
+      "de": "cap5:fim",
+      "ate": "cap6",
+      "ilustracao": "audio",
+      "frases": [
+        {
+          "em": "s6:lapela",
+          "texto": "MICROFONE DE LAPELA"
+        },
+        {
+          "em": "s6:eco",
+          "texto": "LUGAR FECHADO, SEM ECO"
+        },
+        {
+          "em": "s6:silencioso",
+          "texto": "CELULAR NO SILENCIOSO"
+        }
+      ]
+    },
+    {
+      "tipo": "capitulo",
+      "de": "cap6",
+      "ate": "cap6:fim",
+      "n": 6
+    },
+    {
+      "tipo": "pontos",
+      "de": "cap6:fim",
+      "ate": "fim",
+      "ilustracao": "arquivo",
+      "frases": [
+        {
+          "em": "s7:original",
+          "texto": "ARQUIVO ORIGINAL EM 1080P"
+        },
+        {
+          "em": "s7:Drive",
+          "texto": "PELO DRIVE OU PELO PORTAL DO CLIENTE"
+        },
+        {
+          "em": "s7:Nunca",
+          "texto": "NUNCA PELO WHATSAPP"
+        }
+      ]
+    },
+    {
+      "tipo": "checklist",
+      "de": "fim",
+      "ate": "s8:Grupo",
+      "titulo": "ANTES DE GRAVAR",
+      "itens": [
+        {
+          "em": "s8:Olho",
+          "texto": "Olho na lente"
+        },
+        {
+          "em": "s8:texto",
+          "texto": "Texto na altura dos olhos"
+        },
+        {
+          "em": "s8:luz",
+          "texto": "Luz de frente"
+        },
+        {
+          "em": "s8:som",
+          "texto": "Som limpo"
+        },
+        {
+          "em": "s8:arquivo",
+          "texto": "Arquivo original em 1080p"
+        }
+      ]
+    },
+    {
+      "tipo": "logo",
+      "de": "s8:Grupo",
+      "ate": "final",
+      "frase": "Construindo negócios sólidos para profissionais sérios."
+    }
+  ],
+  "checks": [
+    {
+      "em": "s2b:fim",
+      "texto": "Olho na lente"
+    },
+    {
+      "em": "s3:fim",
+      "texto": "Texto na altura dos olhos"
+    },
+    {
+      "em": "s4b:fim",
+      "texto": "Horizontal, peito para cima"
+    },
+    {
+      "em": "s5b:fim",
+      "texto": "Luz de frente"
+    },
+    {
+      "em": "s6:fim",
+      "texto": "Som limpo"
+    },
+    {
+      "em": "s7:fim",
+      "texto": "Arquivo em 1080p"
+    }
+  ],
+  "trocas": {
+    "Eufória": "Euforia",
+    "Eufória.": "Euforia."
+  },
+  "trilha": "educativo/trilha.mp3"
+}
