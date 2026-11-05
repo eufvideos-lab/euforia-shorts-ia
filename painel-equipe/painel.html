@@ -423,7 +423,7 @@ if (!SITUACAO_NO_AR && !DEMO) for (let i = TIPOS.length - 1; i >= 0; i--) if (TI
 // Erros que a pessoa consegue resolver sozinha; o resto vira o aviso padrão.
 const MOTIVO = {acesso:'Seu acesso mudou. Entre de novo com o PIN.', permissao:'Esse card não está no seu nome.', etapa:'Esse card mudou de etapa. A fila foi atualizada.',
   link:'Cole o link antes de mandar.', texto:'Escreva o que precisa antes de mandar.', prazo:'Escolha um prazo de hoje em diante.', cliente:'Escolha um cliente ativo.',
-  tema:'Escreva o tema da thumb ou cole o link do vídeo (a máquina tira o texto do roteiro).', pessoa:'Esse card já está com essa pessoa. Escolha outra.', bloqueio:'Essa pessoa não atende esse cliente. Escolha outra.', fim:'Escolha o que aconteceu.', nada:'Esse já é o prazo do card.', postar:'O prazo não pode passar do dia de ir ao ar. Mude primeiro o Vai ao ar com a diretoria.', pego:'Alguém pegou esse card antes. A fila foi atualizada.', limite:'Você já está com 8 cards em produção. Termine um para pegar outro.', direcao:'Esse assunto é da diretoria. Não responda por aqui.', grupo:'Esse grupo não é de cliente do suporte.', whatsapp:'O WhatsApp não mandou. Tente de novo ou responda direto no grupo.', tamanho:'Arquivo vazio ou maior que 20 GB.', 'sem-pasta':'A pasta do cliente no Drive não foi achada. Cole o link do arquivo no lugar.'};
+  tema:'Escreva o tema da thumb ou cole o link do vídeo (a máquina tira o texto do roteiro).', pessoa:'Esse card já está com essa pessoa. Escolha outra.', bloqueio:'Essa pessoa não atende esse cliente. Escolha outra.', fim:'Escolha o que aconteceu.', nada:'Esse já é o prazo do card.', conferido:'Esse card já estava conferido.', postar:'O prazo não pode passar do dia de ir ao ar. Mude primeiro o Vai ao ar com a diretoria.', pego:'Alguém pegou esse card antes. A fila foi atualizada.', limite:'Você já está com 8 cards em produção. Termine um para pegar outro.', direcao:'Esse assunto é da diretoria. Não responda por aqui.', grupo:'Esse grupo não é de cliente do suporte.', whatsapp:'O WhatsApp não mandou. Tente de novo ou responda direto no grupo.', tamanho:'Arquivo vazio ou maior que 20 GB.', 'sem-pasta':'A pasta do cliente no Drive não foi achada. Cole o link do arquivo no lugar.'};
 const ERRO = 'Deu erro, a diretoria está resolvendo.';
 const LIMITE = 8;
 let PANEXOS = [], PMODELO = [];
@@ -1148,6 +1148,8 @@ function abrir(id){
   const cl = cli(c), ETP = etapasDo(c), i = ETP.indexOf(c.status);
   const passa = posta() && !FECHADO.includes(c.status);
   // Mudar prazo (05/11/2026): Ismael, Daniel, Rômulo, Lorena e diretoria, em qualquer card aberto.
+  // Conferido (05/11/2026): Ismael e Daniel conferem texto e ortografia antes de o cliente ver a peça no portal.
+  const podeConferir = ['revisor', 'conferente', 'teste'].includes(papel()) && c.status === 'Aguardando cliente' && !/conferiu texto e ortografia/.test(c.obs || '');
   const mudaPrazo = ['revisor', 'conferente', 'calls', 'diretor', 'teste'].includes(papel()) && !FECHADO.includes(c.status);
   const devolve = c.meu && !FECHADO.includes(c.status);
   // Feito: quem posta ou o Responsável marca quando a entrega está pronta e não vai ao ar.
@@ -1187,6 +1189,9 @@ function abrir(id){
     <label for="lpost">Link do YouTube ou Instagram<input type="url" id="lpost" placeholder="https://youtu.be/…" value="${esc(c.linkPost || '')}"></label>
     <div class="actions">${c.status === 'Aprovado' ? '<button class="btn" data-act="agendei">Agendei</button>' : ''}<button class="btn ok" data-act="postei">Postei</button>${c.status === 'Aprovado' ? '<button class="btn" data-act="feito">Feito (não vai ao ar)</button>' : ''}</div>`;
   else if (podeFeito && naoPosta(c)) acoes += blocoFeito;
+  if (podeConferir) acoes += `<div class="falta" style="background:var(--warn-soft);color:var(--warn)"><b>Falta conferir texto e ortografia</b><span>O cliente só vê essa peça no portal depois que você marcar como conferida.</span></div>
+    ${c.link ? `<p class="note">Arquivo: <a href="${esc(c.link)}" target="_blank" rel="noopener"><b>abrir</b></a></p>` : ''}
+    <div class="actions"><button class="btn ok" data-act="conferido">✔ Conferido</button></div>`;
   $('#layer').innerHTML = `<div class="scrim" data-x></div><aside class="drawer" role="dialog" aria-modal="true" aria-labelledby="d-t"><div class="drawer-in">
     <button class="close" data-x>Fechar</button>
     <div><p class="eyebrow">${c.cod ? '#' + c.cod + ' · ' : ''}${esc(c.tipo || 'Entrega')}</p><h2 id="d-t" style="font-size:26px">${esc(c.clienteNome)} · ${esc(c.nome)}</h2></div>
@@ -1278,7 +1283,7 @@ function abrir(id){
       const r = await api('euforia-painel-acao', { card: c.id, acao, texto, link, fim, anexos, para: act === 'passar' ? $('#pp').value : '', prazo: act === 'prazo' ? $('#npz').value : '' });
       if (!r || !r.ok) throw new Error((r && r.motivo) || 'erro');
       ocupado = false; fechar();
-      toast({ comecar: 'Bom trabalho! Card em Fazendo.', revisao: 'Mandado para revisão. O Daniel e o Ismael foram avisados.', aprovar: 'Aprovado. Agora é com o cliente.', ajuste: 'Voltou para ajuste com o seu recado.', agendei: 'Marcado como agendado.', postei: 'Marcado como postado.', feito: 'Marcado como feito.', prazo: 'Prazo mudado.', passar: 'Card passado. A pessoa foi avisada.', travei: 'Pedido de ajuda enviado. O guardião do cliente foi chamado.', fim: 'Pronto, ficou registrado e a equipe foi avisada.', pegar: 'É seu! O card já está na sua fila.', completar: 'Pronto! O pedido voltou para a fila do escritório.', naogravou: 'Pronto. O card saiu da fila e está esperando o cliente gravar.', gravou: 'Voltou para a fila em A fazer.' }[act]);
+      toast({ comecar: 'Bom trabalho! Card em Fazendo.', revisao: 'Mandado para revisão. O Daniel e o Ismael foram avisados.', aprovar: 'Aprovado. Agora é com o cliente.', ajuste: 'Voltou para ajuste com o seu recado.', agendei: 'Marcado como agendado.', postei: 'Marcado como postado.', feito: 'Marcado como feito.', prazo: 'Prazo mudado.', conferido: 'Conferido. A peça já aparece para o cliente aprovar no portal.', passar: 'Card passado. A pessoa foi avisada.', travei: 'Pedido de ajuda enviado. O guardião do cliente foi chamado.', fim: 'Pronto, ficou registrado e a equipe foi avisada.', pegar: 'É seu! O card já está na sua fila.', completar: 'Pronto! O pedido voltou para a fila do escritório.', naogravou: 'Pronto. O card saiu da fila e está esperando o cliente gravar.', gravou: 'Voltou para a fila em A fazer.' }[act]);
       await carregar(true);
     } catch (err) {
       ocupado = false;
