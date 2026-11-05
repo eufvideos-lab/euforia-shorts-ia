@@ -155,3 +155,36 @@ def transcrever(audio_mp3, idioma='pt', prompt=None):
         for w in r.get('words') or []:
             palavras.append({**w, 'start': round(w['start'] + a, 3), 'end': round(w['end'] + a, 3)})
     return {'text': ' '.join(t for t in textos if t), 'duration': total, 'words': palavras}
+
+
+def subir_grande(caminho, folder_id, nome, mime='video/mp4'):
+    """Sobe arquivo grande (ex.: vídeo longo final em 1080p, 300+ MB) SEM comprimir: o n8n abre uma sessão de upload
+    retomável do Drive (fluxo "Longos IA | Sessão de upload 1080p", mesma senha da ponte) e a máquina manda direto para
+    o Google em pedaços de 64 MB. Devolve {"id", "name", ...} do arquivo no Drive."""
+    tam = os.path.getsize(caminho)
+    r = json.loads(_curl(['-X', 'POST', '-H', 'Content-Type: application/json', '-d',
+                          json.dumps({'nome': nome, 'mime': mime, 'tamanho': tam, 'folder_id': folder_id}),
+                          f'{BASE}/longos-ia-sessao-upload'], timeout=120))
+    if not r.get('sessao'):
+        raise RuntimeError('sessão de upload não abriu')
+    url, PED, ini = r['sessao'], 64 * 1024 * 1024, 0
+    with open(caminho, 'rb') as f:
+        while ini < tam:
+            f.seek(ini); bloco = f.read(PED); fim = ini + len(bloco) - 1
+            parte = caminho + '.up'
+            open(parte, 'wb').write(bloco)
+            for tentativa in range(4):
+                p = subprocess.run(['curl', '-sS', '--max-time', '900', '-X', 'PUT', '--data-binary', f'@{parte}',
+                                    '-H', f'Content-Range: bytes {ini}-{fim}/{tam}', '-w', '\n%{http_code}', url],
+                                   capture_output=True, text=True)
+                corpo, _, cod = p.stdout.rpartition('\n')
+                if cod in ('200', '201'):
+                    os.remove(parte)
+                    return json.loads(corpo)
+                if cod == '308':
+                    break
+            else:
+                raise RuntimeError(f'upload parou em {ini} bytes: {p.stdout[-200:]} {p.stderr[-200:]}')
+            os.remove(parte)
+            ini = fim + 1
+    raise RuntimeError('upload terminou sem resposta do Drive')

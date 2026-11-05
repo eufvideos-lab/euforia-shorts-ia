@@ -24,11 +24,23 @@ Você recebe `palavras.txt` (cada palavra como `índice:palavra[tempo]`, uma fra
 - **Cartões de tópico** (`cartoes`): frases de impacto em tela cheia na cor do cliente, ~5 s, 4 a 6 por vídeo.
   Até 3 linhas curtas (máx. ~22 letras cada). Um cartão de título (`titulo`) logo depois do gancho.
 - **Mapa** (`mapa`, opcional): quando a pessoa cita 3 ou mais cidades seguidas. Uma imagem única, sem piscar.
-- **B-roll é obrigatório**, 10 a 16 num vídeo de 8 min, 2,5 a 3,5 s cada:
+- **B-roll é obrigatório**, 10 a 16 num vídeo de 8 min, 2,5 a 3,5 s cada (os que cobrem olhar fora da câmera duram o trecho todo):
   - `"fonte": "pixabay"` para o genérico (`busca` em inglês, 2 a 4 palavras, cena real, nada de desenho);
   - `"fonte": "foto"` para o específico (pessoa citada, faculdade, empresa, lugar): busque no Google pelo fluxo de
     fotos do n8n (ver TAREFA) e ponha os `file_ids` das partes salvas no Drive;
   - nunca trecho de vídeo do YouTube.
+- **Olhar para a câmera (Flau, 05/11/2026, vale para TODO cliente):** o rosto só aparece quando a pessoa olha para a
+  câmera. Depois do `cortar.py`, rode `olhar.py`: ele lista cada trecho em que ela lê o teleprompter, olha para baixo ou
+  para o lado (tempo, palavra e quanto dura). Cada trecho desses tem que ficar coberto do começo ao fim por B-roll,
+  foto ou cartão de tópico: ponha o B-roll na `palavra` do trecho com `dur` = duração do trecho + 0,3 s (pode passar
+  de 3,5 s; até ~7 s num B-roll só, acima disso dois em sequência). Se o banco não achar B-roll bom, troque a busca,
+  use foto (`"fonte": "foto"`: as fotos profissionais da pessoa na pasta 01 - ELEMENTOS ESSENCIAIS › FOTOS do cliente,
+  ou foto do Google do assunto) ou um cartão de tópico. Nunca deixe descoberto: `montar.py` para e lista o que faltou.
+  Trecho de rosto olhando para a câmera e fechando a ideia não se cobre.
+- **Fonte do cliente:** se a ficha ou as observações dão uma fonte (ex.: Winthorpe), ponha
+  `"fontes": {"cliente": "Winthorpe", "titulo": {"file_id": "..."}}` com o arquivo .ttf/.otf da pasta do cliente no
+  Drive. Sem o arquivo, use a mais parecida do Google Fonts (`"titulo": {"google": "Playfair Display:800"}`) e avise no
+  log. `"texto"` (lowers) é opcional. `montar.py` para se a fonte não carregar; nunca troca sozinho pela padrão.
 - **Lowers** (`lowers`): "inscreva" 2 vezes e "like" 1 vez (de preferência quando a pessoa pede para se inscrever
   ou comentar). Lower de nome (`"tipo": "nome"` + campo `nome`) só se o cliente mandar o nome/cargo.
 - **Trilha** royalty free bem baixa (-31 dB com ducking); a máquina cuida.

@@ -31,7 +31,47 @@ if CORRECOES:
             plano['titulo']['sub'] = T.corrigir_frase(plano['titulo']['sub'], CORRECOES)
 segs = json.load(open(os.path.join(pasta, 'segmentos.json')))
 W = json.load(open(os.path.join(pasta, 'transcricao.json')))['words']
-O = os.path.join(pasta, 'gfx'); G.configurar(O, plano.get('paleta'))
+O = os.path.join(pasta, 'gfx'); os.makedirs(O, exist_ok=True)
+
+
+def baixar_fonte(ref, nome):
+    """Fonte do cliente: {"arquivo": caminho} | {"file_id": "..."} (arquivo .ttf/.otf no Drive) |
+    {"google": "Playfair Display:700"} (Google Fonts, parecida quando o cliente não tem o arquivo)."""
+    if not ref:
+        return None
+    if isinstance(ref, str):
+        ref = {'arquivo': ref}
+    if ref.get('arquivo'):
+        return ref['arquivo'] if os.path.exists(ref['arquivo']) else None
+    arq = os.path.join(O, f'fonte_{nome}.ttf')
+    if os.path.exists(arq) and os.path.getsize(arq) > 1000:
+        return arq
+    try:
+        if ref.get('file_id'):
+            import ponte
+            ponte.baixar(ref['file_id'], arq)
+        elif ref.get('google'):
+            fam, _, peso = ref['google'].partition(':')
+            css = subprocess.run(['curl', '-sS', '-A', 'Mozilla/4.0', f"https://fonts.googleapis.com/css2?family={fam.strip().replace(' ', '+')}:wght@{peso or 400}"],
+                                 capture_output=True, text=True).stdout
+            url = re.search(r'url\((https://[^)]+\.ttf)\)', css)
+            subprocess.run(['curl', '-sS', '-o', arq, url.group(1)], check=True)
+        from PIL import ImageFont
+        ImageFont.truetype(arq, 40)
+        return arq
+    except Exception as e:
+        print('fonte não baixou:', nome, e)
+        return None
+
+
+# Fonte do cliente (05/11/2026): se a ficha tem fonte ("fontes": {"cliente": "Winthorpe", "titulo": {...}}), a máquina
+# usa ela ou uma parecida e PARA se não conseguir carregar; nunca troca sozinha pela fonte padrão.
+FT = plano.get('fontes') or {}
+FONTES = {'titulo': baixar_fonte(FT.get('titulo'), 'titulo'), 'texto': baixar_fonte(FT.get('texto'), 'texto')}
+if FT.get('cliente') and not FONTES['titulo']:
+    raise SystemExit(f"fonte do cliente ({FT['cliente']}) não carregou: ponha em plano.fontes.titulo o file_id do .ttf/.otf "
+                     "(pasta de fontes do cliente no Drive) ou uma parecida do Google Fonts, e rode de novo")
+G.configurar(O, plano.get('paleta'), FONTES)
 B = os.path.join(pasta, 'broll')
 TOTAL = segs[-1]['saida'] + segs[-1]['dur']
 KWD, END = 2.8, 8.0
@@ -137,6 +177,25 @@ baixo = sorted([e for e in EV if e[0] in ('kw', 'lw')], key=lambda e: e[2])
 for a, b in zip(baixo, baixo[1:]):
     if a[2] + a[3] > b[2]:
         avisos.append(f'textos de baixo sobrepostos: {os.path.basename(a[1])} e {os.path.basename(b[1])}')
+# Olhar (05/11/2026): todo trecho em que a pessoa não olha para a câmera (olhar.json, de olhar.py) precisa estar
+# coberto por B-roll, foto, cartão, título ou mapa. Sem olhar.json o vídeo não sai (rode olhar.py depois do cortar.py).
+OL = os.path.join(pasta, 'olhar.json')
+if not NA and not os.path.exists(OL) and '--forcar' not in sys.argv:
+    raise SystemExit('falta olhar.json: rode python3 longos/olhar.py ' + pasta + ' antes de montar')
+if not NA and os.path.exists(OL):
+    capa = sorted((e[2], e[2] + e[3]) for e in EV if e[0] in ('broll', 'full'))
+    for x in json.load(open(OL))['trechos']:
+        livre, t = 0.0, x['ini']
+        for a, b in capa:
+            if b <= t or a >= x['fim']:
+                continue
+            if a > t:
+                livre += a - t
+            t = max(t, b)
+        livre += max(0.0, x['fim'] - t)
+        if livre > 0.5:
+            avisos.append(f"rosto sem olhar para a câmera descoberto: {x['ini']:.1f}s a {x['fim']:.1f}s ({livre:.1f}s livres), "
+                          f"palavra {x['palavra']}: {x['texto'][:60]}")
 for m in avisos:
     print('AVISO', m)
 if avisos and '--forcar' not in sys.argv:
