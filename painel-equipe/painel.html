@@ -1150,12 +1150,26 @@ function atualizarPedido(){
 // (diretoria: todos os cards da visão da diretoria; operação: os mesmos cards das abas dela). Nada novo vem do servidor.
 const semAcento = t => String(t || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 const idLink = t => (String(t || '').match(/[-\w]{20,}/g) || []);
-let BSEL = 0, BRES = [];
+let BSEL = 0, BRES = [], BANT = { q: '', cards: [], total: 0, indo: false, erro: false }, BTIMER = null, BSEQ = 0;
 function buscaFonte(){ return diretor() && DD && DD.cards ? DD.cards : (D && D.cards) || []; }
-function buscar(){
+// Cards antigos (06/11/2026): depois de 350 ms sem digitar, pergunta ao fluxo "Painel | Busca de demandas", que lê a cópia do Entregas no servidor.
+// Diretoria acha qualquer card; a operação só os cards em que é ou foi Responsável.
+function buscarAntigos(q){
+  clearTimeout(BTIMER);
+  if (BANT.q === q && (BANT.indo || BANT.cards.length || BANT.feito)) return;
+  BANT = { q, cards: [], total: 0, indo: true, erro: false, feito: false };
+  const seq = ++BSEQ;
+  BTIMER = setTimeout(async () => {
+    try { const r = await api('euforia-painel-busca', { q }); if (seq !== BSEQ) return; BANT = { q, cards: (r && r.ok && r.cards) || [], total: (r && r.total) || 0, indo: false, erro: !(r && r.ok), feito: true }; }
+    catch (e) { if (seq !== BSEQ) return; BANT = { q, cards: [], total: 0, indo: false, erro: true, feito: true }; }
+    if ($('#busca') && $('#busca').value.trim() === q) buscar(true);
+  }, 350);
+}
+function buscar(daRede){
   const inp = $('#busca'), box = $('#busca-res'); if (!inp || !box) return;
   const bruto = inp.value.trim();
-  if (bruto.length < 2) { box.hidden = true; box.innerHTML = ''; inp.setAttribute('aria-expanded', 'false'); BRES = []; return; }
+  if (bruto.length < 2) { clearTimeout(BTIMER); BSEQ++; BANT = { q: '', cards: [], total: 0 }; box.hidden = true; box.innerHTML = ''; inp.setAttribute('aria-expanded', 'false'); BRES = []; return; }
+  if (!daRede) buscarAntigos(bruto);
   const ids = /https?:|drive|youtu|notion/i.test(bruto) ? idLink(bruto) : [];
   const cod = (bruto.match(/^(?:esteira[-\s]*|#)?(\d{1,6})$/i) || [])[1];
   const termos = semAcento(bruto).replace(/^#/, '').split(/\s+/).filter(Boolean);
@@ -1173,19 +1187,43 @@ function buscar(){
     if (n) pts.push([n, c]);
   }
   pts.sort((a, b) => b[0] - a[0] || diff(a[1].prazo) - diff(b[1].prazo));
-  BRES = pts.slice(0, 30).map(x => x[1]); BSEL = 0;
+  const locais = pts.slice(0, 30).map(x => x[1]);
+  const vistos = new Set(buscaFonte().map(c => c.id));
+  const antigos = BANT.q === bruto ? BANT.cards.filter(c => !vistos.has(c.id)).slice(0, 20) : [];
+  const ant = BRES[BSEL];
+  BRES = locais.concat(antigos);
+  BSEL = Math.max(0, ant ? BRES.findIndex(c => c.id === ant.id) : 0);
   const cor = st => st === 'Ajustes' ? 'red' : st === 'Em revisão' ? 'warn' : st === 'Aguardando cliente' ? 'info' : FECHADO.includes(st) || st === 'Aprovado' || st === 'Agendado' ? 'ok' : 'org';
-  box.innerHTML = BRES.length
-    ? BRES.map((c, i) => `<button type="button" data-bres="${i}" class="${i === 0 ? 'sel' : ''}"><b>${esc(c.clienteNome || '—')}</b> · ${esc(c.nome || c.titulo || 'Entrega')}
-        <span class="meta"><span class="chip ${cor(c.status)}">${esc(c.status || '—')}</span>${c.cod ? `<span class="mono">#${c.cod}</span>` : ''}${c.tipo ? `<span class="sub" style="font-size:12px">${esc(c.tipo)}</span>` : ''}${c.prazo && !FECHADO.includes(c.status) ? `<span class="sub" style="font-size:12px">prazo ${fmt(c.prazo)}</span>` : ''}</span></button>`).join('')
-      + (pts.length > 30 ? `<p class="rodape">Mostrando 30 de ${pts.length}. Escreva mais para afinar.</p>` : '')
-    : `<p class="vazio">Nada com “${esc(bruto)}” nos cards que você vê${diretor() ? ' (abertos e postados na semana)' : ''}.</p>`;
+  const linha = (c, i) => `<button type="button" data-bres="${i}" class="${i === BSEL ? 'sel' : ''}"><b>${esc(c.clienteNome || '—')}</b> · ${esc(c.nome || c.titulo || 'Entrega')}
+        <span class="meta"><span class="chip ${cor(c.status)}">${esc(c.status || '—')}</span>${c.cod ? `<span class="mono">#${c.cod}</span>` : ''}${c.tipo ? `<span class="sub" style="font-size:12px">${esc(c.tipo)}</span>` : ''}${c.postado ? `<span class="sub" style="font-size:12px">foi ao ar ${fmtA(c.postado)}</span>` : c.prazo && !FECHADO.includes(c.status) ? `<span class="sub" style="font-size:12px">prazo ${c.antigo ? fmtA(c.prazo) : fmt(c.prazo)}</span>` : ''}</span></button>`;
+  const espera = BANT.q === bruto && BANT.indo;
+  box.innerHTML = (locais.length ? locais.map(linha).join('') + (pts.length > 30 ? `<p class="rodape">Mostrando 30 de ${pts.length}. Escreva mais para afinar.</p>` : '') : '')
+    + (antigos.length ? `<p class="rodape" style="border-top:${locais.length ? '1px solid var(--line)' : '0'}">Mais antigos${diretor() ? '' : ' (cards que foram seus)'}</p>` + antigos.map((c, j) => linha(c, locais.length + j)).join('') : '')
+    + (espera ? `<p class="vazio">Procurando nos mais antigos…</p>` : '')
+    + (!locais.length && !antigos.length && !espera ? `<p class="vazio">${BANT.erro ? 'Não consegui procurar nos antigos agora. ' : ''}Nada com “${esc(bruto)}”${diretor() ? '' : ' nos cards que você vê'}.</p>` : '');
   box.hidden = false; inp.setAttribute('aria-expanded', 'true');
 }
 function abrirBusca(i){
   const c = BRES[i]; if (!c) return;
   $('#busca-res').hidden = true; $('#busca').setAttribute('aria-expanded', 'false');
+  if (c.antigo) { abrirAntigo(c); return; }
   if (diretor() && DD && DD.cards.some(x => x.id === c.id)) abrirDD(c.id); else abrir(c.id);
+}
+// Card antigo: só leitura (o card fechado não volta para a fila pela busca). A diretoria tem o link do Notion.
+function abrirAntigo(c){
+  const lk = (u, t) => /^https:\/\//.test(u || '') ? `<a href="${esc(u)}" target="_blank" rel="noopener">${t}</a>` : '';
+  const datas = [c.prazo ? 'Prazo ' + fmtA(c.prazo) : '', c.postar && !c.postado ? 'Ia ao ar ' + fmtA(c.postar) : '', c.postado ? 'Foi ao ar ' + fmtA(c.postado) : ''].filter(Boolean).join(' · ');
+  $('#layer').innerHTML = `<div class="scrim" data-x></div><aside class="drawer" role="dialog" aria-modal="true" aria-labelledby="ant-t"><div class="drawer-in">
+    <button class="close" data-x>Fechar</button>
+    <div><p class="eyebrow">${c.cod ? '#' + c.cod + ' · ' : ''}${esc(c.tipo || 'Entrega')} · card antigo</p><h2 id="ant-t" style="font-size:26px">${esc(c.clienteNome || '—')} · ${esc(c.nome || c.titulo || '')}</h2>
+      <p class="sub" style="margin-top:6px"><span class="chip">${esc(c.status || '—')}</span>${datas ? ' ' + esc(datas) : ''}</p></div>
+    ${(c.resp || []).length ? `<p><b>Responsável:</b> ${esc(c.resp.join(', '))}</p>` : ''}
+    ${lk(c.link, 'Abrir o arquivo') || lk(c.linkPost, '') ? `<p class="actions" style="gap:16px">${lk(c.link, 'Abrir o arquivo')}${lk(c.linkPost, 'Ver a postagem')}</p>` : ''}
+    ${c.obs ? `<section><h3 style="font-size:15px;margin-bottom:6px">Últimas notas</h3><p class="sub" style="white-space:pre-wrap;font-size:13px">${esc(c.obs)}</p></section>` : ''}
+    ${c.url ? `<p>${lk(c.url, 'Abrir no Notion')}</p>` : ''}
+    <p class="note">Card que já saiu da fila. Para refazer ou ajustar, faça um pedido novo em "Pedir ao escritório".</p>
+  </div></aside>`;
+  $('#layer').onclick = e => { if (e.target.closest('[data-x]')) fechar(); };
 }
 function marcarBusca(){ document.querySelectorAll('#busca-res [data-bres]').forEach(b => b.classList.toggle('sel', +b.dataset.bres === BSEL)); const b = document.querySelector('#busca-res .sel'); if (b) b.scrollIntoView({ block: 'nearest' }); }
 document.addEventListener('input', e => { if (e.target.id === 'busca') buscar(); });
@@ -2825,6 +2863,7 @@ function demoApi(path, b){
     c.obs = hora + 'mudou ' + Object.keys(b.campos).join(', ') + (b.nota ? ': ' + b.nota : '') + (c.obs ? '\n' + c.obs : '');
     return wait({ ok: true });
   }
+  if (path === 'euforia-painel-busca') { const q = String(b.q || '').toLowerCase(); const l = [{ id: 'antigo1', cod: 301, titulo: 'Dra. Helena | VÍDEO 02', nome: 'VÍDEO 02', clienteNome: 'Dra. Helena (exemplo)', tipo: 'Vídeo longo', status: 'Postado', prazo: '2026-09-10', postar: '2026-09-12', postado: '2026-09-12', link: 'https://drive.google.com/demo', linkPost: 'https://youtu.be/exemplo', resp: ['Lorena'], obs: '[Painel 11/09 10:20] Ismael aprovou\n[Painel 10/09 18:02] Lorena mandou para revisão', url: '', antigo: true }].filter(c => (c.clienteNome + ' ' + c.nome + ' #' + c.cod).toLowerCase().includes(q.replace(/^esteira-/, '#'))); return wait({ ok: true, total: l.length, cards: l }); }
   if (path === 'euforia-painel-pedido-v2') return wait({ ok: true, quem: b.modo === 'mao' ? 'Escritório, à mão' : (TIPOS.find(t => t.id === b.tipo) || {}).maq });
   if (path === 'euforia-painel-acao') {
     if (b.acao === 'criar') { const k = DEMO_D.clientes.find(x => x.id === b.cliente) || {}; if (b.para === 'eu') DEMO_D.cards.push({ id: 'n' + Date.now(), cod: 600, nome: b.nome.toUpperCase(), cliente: b.cliente, clienteNome: k.nome || '', tipo: b.tipo, status: 'A fazer', prazo: b.prazo, postar: '', prioridade: b.urgente ? 'Urgente' : 'Normal', meu: true, livre: false, resp: [DEMO_D.nome], obs: '[Painel] ' + DEMO_D.nome + ' criou pela Nova demanda' + (b.texto ? ': ' + b.texto : '') }); return wait({ ok: true, status: 'A fazer' }); }
