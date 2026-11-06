@@ -6,45 +6,165 @@
 <meta name="robots" content="noindex">
 <title>Conectar Instagram · Grupo Euforia</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-  :root { --preto:#050505; --off:#F2EFEA; --laranja:#FF6518; --brasa:#C2410C; }
+  :root { --preto:#050505; --off:#F2EFEA; --laranja:#FF6518; --brasa:#C2410C; --cinza:rgba(242,239,234,.12); }
   * { box-sizing: border-box; }
-  body { margin:0; min-height:100vh; background:var(--preto); color:var(--off); font-family:Inter,Arial,sans-serif; display:flex; align-items:center; justify-content:center; padding:24px 16px; }
-  main { width:100%; max-width:460px; }
+  body { margin:0; background:var(--preto); color:var(--off); font-family:Inter,Arial,sans-serif; padding:28px 16px 48px; }
+  main { width:100%; max-width:480px; margin:0 auto; }
   .marca { font-family:Archivo,sans-serif; font-weight:800; letter-spacing:.08em; font-size:13px; color:var(--laranja); text-transform:uppercase; }
   h1 { font-family:Archivo,sans-serif; font-weight:800; font-size:32px; line-height:1.1; margin:12px 0 10px; }
-  p.sub { font-size:17px; line-height:1.5; opacity:.85; margin:0 0 28px; }
-  ol { list-style:none; padding:0; margin:0 0 28px; }
-  li { display:flex; gap:14px; align-items:flex-start; padding:14px 0; border-top:1px solid rgba(242,239,234,.12); font-size:16px; line-height:1.45; }
-  li b { color:var(--off); }
-  .n { flex:0 0 32px; height:32px; border-radius:50%; background:var(--laranja); color:var(--preto); font-family:Archivo,sans-serif; font-weight:800; display:flex; align-items:center; justify-content:center; }
-  a.botao { display:block; text-align:center; background:var(--laranja); color:var(--preto); text-decoration:none; font-family:Archivo,sans-serif; font-weight:800; font-size:19px; padding:18px 20px; border-radius:14px; }
+  h2 { font-family:Archivo,sans-serif; font-weight:800; font-size:22px; margin:0 0 6px; display:flex; gap:12px; align-items:center; }
+  p { font-size:16px; line-height:1.5; }
+  .sub { font-size:17px; opacity:.85; margin:0 0 24px; }
+  .n { flex:0 0 34px; height:34px; border-radius:50%; background:var(--laranja); color:var(--preto); font-family:Archivo,sans-serif; font-weight:800; display:inline-flex; align-items:center; justify-content:center; font-size:17px; }
+  .passo { border-top:1px solid var(--cinza); padding:22px 0 8px; }
+  .passo p { margin:6px 0 14px; opacity:.85; }
+  a.botao { display:block; text-align:center; background:var(--laranja); color:var(--preto); text-decoration:none; font-family:Archivo,sans-serif; font-weight:800; font-size:18px; padding:17px 20px; border-radius:14px; }
+  a.botao.sec { background:transparent; color:var(--off); border:2px solid var(--laranja); }
   a.botao:active { background:var(--brasa); }
-  .nota { font-size:14px; opacity:.6; line-height:1.5; margin-top:20px; }
+  .nota { font-size:14px; opacity:.6; line-height:1.5; margin-top:24px; }
   .erro { display:none; background:rgba(194,65,12,.18); border:1px solid var(--brasa); padding:14px; border-radius:12px; font-size:15px; margin-bottom:20px; }
+
+  /* ---- simulação ---- */
+  .demo { margin:8px 0 18px; display:flex; flex-direction:column; align-items:center; gap:12px; }
+  .demo-titulo { font-size:13px; letter-spacing:.06em; text-transform:uppercase; opacity:.6; font-weight:600; }
+  .fone { width:260px; height:500px; border-radius:36px; background:#1a1a1a; padding:12px; position:relative; box-shadow:0 0 0 2px #2a2a2a; }
+  .tela { width:100%; height:100%; border-radius:26px; background:#fff; color:#111; overflow:hidden; position:relative; font-size:13px; }
+  .cena { position:absolute; inset:0; opacity:0; transition:opacity .35s; display:flex; flex-direction:column; }
+  .cena.on { opacity:1; }
+  .barra { background:#f1f1f1; padding:10px 12px 8px; font-size:11px; color:#555; border-bottom:1px solid #e3e3e3; }
+  .barra .url { background:#fff; border-radius:8px; padding:6px 8px; margin-top:6px; font-size:11px; color:#333; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .ig-top { padding:12px 14px; font-weight:700; font-size:15px; border-bottom:1px solid #eee; }
+  .abas { display:flex; gap:4px; padding:8px 10px; border-bottom:1px solid #eee; font-size:11px; }
+  .aba { padding:6px 7px; border-radius:6px; color:#777; }
+  .aba.ativa { color:#111; font-weight:700; border-bottom:2px solid #111; border-radius:0; }
+  .card { margin:14px; border:1px solid #e6e6e6; border-radius:12px; padding:12px; }
+  .card b { font-size:13px; }
+  .card small { display:block; color:#777; margin:4px 0 10px; }
+  .btns { display:flex; gap:8px; }
+  .b { flex:1; text-align:center; padding:8px; border-radius:8px; font-weight:700; font-size:12px; }
+  .b.azul { background:#0095f6; color:#fff; }
+  .b.cinza { background:#efefef; color:#111; }
+  .ok { color:#0a8a3a; font-weight:700; }
+  .vazio { flex:1; }
+  .eu-page { background:var(--preto); color:var(--off); padding:22px 16px; flex:1; display:flex; flex-direction:column; gap:10px; }
+  .eu-page .t { font-family:Archivo,sans-serif; font-weight:800; font-size:18px; line-height:1.15; }
+  .eu-page .bt { background:var(--laranja); color:var(--preto); text-align:center; font-family:Archivo,sans-serif; font-weight:800; padding:11px; border-radius:10px; margin-top:auto; }
+  .login { padding:30px 18px; display:flex; flex-direction:column; gap:10px; flex:1; }
+  .logo-ig { font-family:'Brush Script MT',cursive; font-size:30px; text-align:center; margin-bottom:8px; }
+  .campo { border:1px solid #ddd; background:#fafafa; border-radius:6px; padding:9px; color:#999; font-size:12px; }
+  .perm { padding:22px 16px; display:flex; flex-direction:column; gap:10px; flex:1; }
+  .perm .app { display:flex; gap:10px; align-items:center; font-weight:700; }
+  .perm .ic { width:34px; height:34px; border-radius:8px; background:var(--laranja); }
+  .perm ul { margin:0; padding-left:18px; color:#444; font-size:12px; line-height:1.5; }
+  .fim { flex:1; background:var(--preto); color:var(--off); display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:18px; gap:6px; }
+  .fim .v { font-size:46px; color:var(--laranja); }
+  .fim b { font-family:Archivo,sans-serif; font-size:17px; }
+  .dedo { position:absolute; width:34px; height:34px; border-radius:50%; background:rgba(255,101,24,.35); border:3px solid var(--laranja); transform:translate(-50%,-50%); pointer-events:none; transition:left .5s, top .5s; animation:pulsa 1.1s infinite; z-index:5; }
+  @keyframes pulsa { 0%,100% { transform:translate(-50%,-50%) scale(1); } 50% { transform:translate(-50%,-50%) scale(.75); } }
+  .legenda { min-height:44px; text-align:center; font-size:15px; line-height:1.4; max-width:320px; }
+  .controles { display:flex; gap:10px; align-items:center; }
+  .controles button { background:transparent; color:var(--off); border:1px solid var(--cinza); border-radius:10px; padding:8px 14px; font:600 14px Inter,sans-serif; cursor:pointer; }
+  .pontos { display:flex; gap:6px; }
+  .pontos i { width:7px; height:7px; border-radius:50%; background:var(--cinza); display:block; }
+  .pontos i.on { background:var(--laranja); }
 </style>
 </head>
 <body>
 <main>
-  <div class="marca">Grupo Euforia</div>
+  <div class="marca">Grupo Euforia · tecnologia própria</div>
   <h1>Conecte seu Instagram</h1>
-  <p class="sub">Assim a gente programa as postagens que você aprovou, no dia e horário certos, sem você precisar fazer nada.</p>
+  <p class="sub">Assim os carrosséis e reels que você aprovou saem no seu Instagram junto com os vídeos do canal, no dia e horário certos. Você não precisa postar nada nem passar senha.</p>
   <div class="erro" id="erro">Este link está incompleto. Peça o link certo para a nossa equipe no grupo.</div>
-  <ol>
-    <li><span class="n">1</span><span>Toque no botão abaixo.</span></li>
-    <li><span class="n">2</span><span>Entre com o <b>seu Instagram</b> (o mesmo usuário e senha de sempre).</span></li>
-    <li><span class="n">3</span><span>Toque em <b>Permitir</b>. Pronto!</span></li>
-  </ol>
-  <a class="botao" id="botao" href="#">Entrar com Instagram</a>
-  <p class="nota">Sua senha fica só com o Instagram: nós não vemos nem guardamos. Você pode desconectar quando quiser em Instagram › Configurações › Apps e sites.</p>
+
+  <div class="demo">
+    <div class="demo-titulo">Veja como é (toque na tela para avançar)</div>
+    <div class="fone"><div class="tela" id="tela">
+
+      <div class="cena" data-legenda="<b>Passo 1.</b> Toque em <b>Abrir meus convites</b> aqui embaixo. Abre esta tela do Instagram. Toque em <b>Convites para testador</b>." data-x="84" data-y="27">
+        <div class="barra">Instagram<div class="url">instagram.com/accounts/manage_access</div></div>
+        <div class="ig-top">Apps e sites</div>
+        <div class="abas"><span class="aba ativa">Ativos</span><span class="aba">Expirados</span><span class="aba">Removidos</span><span class="aba">Convites para testador</span></div>
+        <div class="vazio"></div>
+      </div>
+
+      <div class="cena" data-legenda="Vai aparecer o convite do <b>Euforia Automação</b>. Toque em <b>Aceitar</b>." data-x="30" data-y="44">
+        <div class="barra">Instagram<div class="url">instagram.com/accounts/manage_access</div></div>
+        <div class="ig-top">Apps e sites</div>
+        <div class="abas"><span class="aba">Ativos</span><span class="aba">Expirados</span><span class="aba">Removidos</span><span class="aba ativa">Convites para testador</span></div>
+        <div class="card"><b>Euforia Automação-IG</b><small>Convidou você para testar o app</small><div class="btns"><span class="b azul">Aceitar</span><span class="b cinza">Recusar</span></div></div>
+        <div class="vazio"></div>
+      </div>
+
+      <div class="cena" data-legenda="Pronto, convite aceito. Agora volte para esta página." data-x="50" data-y="40">
+        <div class="barra">Instagram<div class="url">instagram.com/accounts/manage_access</div></div>
+        <div class="ig-top">Apps e sites</div>
+        <div class="abas"><span class="aba">Ativos</span><span class="aba">Expirados</span><span class="aba">Removidos</span><span class="aba ativa">Convites para testador</span></div>
+        <div class="card"><b>Euforia Automação-IG</b><small class="ok">✓ Convite aceito</small></div>
+        <div class="vazio"></div>
+      </div>
+
+      <div class="cena" data-legenda="<b>Passo 2.</b> Aqui na página, toque em <b>Entrar com Instagram</b>." data-x="50" data-y="88">
+        <div class="eu-page"><div style="font-size:10px;color:#FF6518;font-weight:800;letter-spacing:.08em">GRUPO EUFORIA</div><div class="t">Conecte seu Instagram</div><div style="opacity:.7;font-size:12px">1. Aceite o convite ✓<br>2. Entre com Instagram</div><div class="bt">Entrar com Instagram</div></div>
+      </div>
+
+      <div class="cena" data-legenda="Entre com o <b>seu</b> usuário e senha do Instagram, como sempre. (Se já estiver logado, essa tela nem aparece.)" data-x="50" data-y="50">
+        <div class="login"><div class="logo-ig">Instagram</div><div class="campo">Usuário</div><div class="campo">Senha</div><div class="b azul" style="padding:10px">Entrar</div></div>
+      </div>
+
+      <div class="cena" data-legenda="O Instagram pergunta se pode deixar o Grupo Euforia publicar. Toque em <b>Permitir</b>." data-x="50" data-y="84">
+        <div class="perm"><div class="app"><span class="ic"></span>Euforia Automação</div><div>quer acessar sua conta para:</div><ul><li>ver seu perfil</li><li>publicar conteúdo no seu nome</li></ul><div class="vazio"></div><div class="b azul" style="padding:10px">Permitir</div><div class="b cinza" style="padding:10px">Cancelar</div></div>
+      </div>
+
+      <div class="cena" data-legenda="Pronto! Aparece <b>Instagram conectado</b>. Pode fechar. O resto é com a gente." data-x="-50" data-y="-50">
+        <div class="fim"><div class="v">✓</div><b>Pronto! Instagram conectado.</b><span style="font-size:12px;opacity:.75">Pode fechar esta página.</span></div>
+      </div>
+
+      <div class="dedo" id="dedo"></div>
+    </div></div>
+    <div class="legenda" id="legenda"></div>
+    <div class="controles"><button id="volta" aria-label="Voltar">‹</button><div class="pontos" id="pontos"></div><button id="vai" aria-label="Avançar">›</button></div>
+  </div>
+
+  <div class="passo">
+    <h2><span class="n">1</span>Aceite o convite</h2>
+    <p>Abre a tela de convites do seu Instagram. Toque em <b>Convites para testador</b> e depois em <b>Aceitar</b> no convite do <b>Euforia Automação</b>. Se pedir, entre com o seu Instagram.</p>
+    <a class="botao sec" href="https://www.instagram.com/accounts/manage_access/" target="_blank" rel="noopener">Abrir meus convites</a>
+  </div>
+
+  <div class="passo">
+    <h2><span class="n">2</span>Conecte</h2>
+    <p>Volte aqui, toque no botão, entre com o seu Instagram e toque em <b>Permitir</b>.</p>
+    <a class="botao" id="botao" href="#">Entrar com Instagram</a>
+  </div>
+
+  <p class="nota">Sua senha fica só com o Instagram: nós não vemos nem guardamos. Você pode desconectar quando quiser, na mesma tela de convites, na aba Ativos. Se algo não aparecer igual, avise a nossa equipe no grupo.</p>
 </main>
 <script>
   (function () {
     var c = (new URLSearchParams(location.search).get('c') || '').toLowerCase().replace(/[^a-z0-9-]/g, '');
     var botao = document.getElementById('botao');
-    if (!c) { document.getElementById('erro').style.display = 'block'; botao.style.opacity = '.4'; botao.removeAttribute('href'); return; }
-    botao.href = 'https://n8n.grupoeuforia.tech/webhook/insta-conectar?c=' + encodeURIComponent(c);
+    if (!c) { document.getElementById('erro').style.display = 'block'; botao.style.opacity = '.4'; botao.removeAttribute('href'); }
+    else { botao.href = 'https://n8n.grupoeuforia.tech/webhook/insta-conectar?c=' + encodeURIComponent(c); }
+
+    var cenas = [].slice.call(document.querySelectorAll('.cena'));
+    var dedo = document.getElementById('dedo'), leg = document.getElementById('legenda'), pontos = document.getElementById('pontos');
+    cenas.forEach(function () { pontos.appendChild(document.createElement('i')); });
+    var i = 0, timer;
+    function mostra(n) {
+      i = (n + cenas.length) % cenas.length;
+      cenas.forEach(function (el, k) { el.classList.toggle('on', k === i); pontos.children[k].classList.toggle('on', k === i); });
+      var el = cenas[i], x = +el.dataset.x, y = +el.dataset.y;
+      dedo.style.display = x < 0 ? 'none' : 'block';
+      dedo.style.left = x + '%'; dedo.style.top = y + '%';
+      leg.innerHTML = el.dataset.legenda;
+    }
+    function auto() { clearInterval(timer); timer = setInterval(function () { mostra(i + 1); }, 3800); }
+    document.getElementById('tela').addEventListener('click', function () { mostra(i + 1); auto(); });
+    document.getElementById('vai').addEventListener('click', function () { mostra(i + 1); auto(); });
+    document.getElementById('volta').addEventListener('click', function () { mostra(i - 1); auto(); });
+    mostra(0); auto();
   })();
 </script>
 </body>
