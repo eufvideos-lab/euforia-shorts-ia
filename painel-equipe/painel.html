@@ -396,7 +396,9 @@ const PAPEL = {editor:'Edição', revisor:'Revisão e postagem', calls:'Calls e 
 const TIPOS = [
  {id:'longo',g:'Vídeo',nome:'Vídeo longo (edição)',maq:'Máquina de Longos',le:'O bruto na pasta ARQUIVOS BRUTOS e as cores da ficha do cliente.',volta:'Vídeo editado na pasta do cliente.',link:'Pasta do bruto (ex.: VÍDEO 07)',ex:'Editar no modelo Padrão. Cortar o trecho em que ela atende o telefone.',mao:'Edição de vídeo (Premiere / CapCut)'},
  {id:'shorts',g:'Vídeo',nome:'Shorts',maq:'Máquina de Shorts',le:'O vídeo longo já editado e o modelo de shorts do cliente.',volta:'1 ou 3 shorts na pasta do vídeo, aviso no #shorts-ia.',link:'Vídeo de onde sai o short',ex:'3 shorts do VÍDEO 06, estilo Viral.',mao:'Edição de vídeo (Premiere / CapCut)'},
- {id:'ajvid',g:'Vídeo',nome:'Ajuste em vídeo pronto',maq:null,volta:'Vídeo corrigido na mesma pasta.',link:'Vídeo que precisa de ajuste',ex:'Trocar a música do final do VÍDEO 04.',mao:'Edição de vídeo (Premiere / CapCut)'},
+ {id:'ajvid',g:'Vídeo',nome:'Ajuste em vídeo que a máquina fez',maq:'máquina que fez o vídeo',le:'O pedido original no quadro de Longos ou de Shorts e o ajuste que você escrever.',volta:'O vídeo refeito pela máquina na mesma pasta, de volta para revisão.',link:'Link do vídeo que a máquina entregou',ex:'Trocar a música do final e tirar o trecho de 2:10 a 2:25.',mao:'Edição de vídeo (Premiere / CapCut)'},
+ {id:'vinheta',g:'Vídeo',nome:'Vinheta',maq:'Máquina do Escritório',le:'Logo, cores e identidade do cliente na ficha e no Drive.',volta:'Vinheta em MP4 na pasta do cliente, pronta para entrar nos vídeos.',link:'Referência (opcional)',ex:'Vinheta de 4 segundos com o logo animado nas cores do canal.',mao:'Edição de vídeo (Premiere / CapCut)'},
+ {id:'telafinal',g:'Vídeo',nome:'Tela final',maq:'Máquina do Escritório',le:'Logo, cores e identidade do cliente na ficha e no Drive.',volta:'Tela final em MP4 na pasta do cliente, com espaço para os elementos finais do YouTube.',link:'Referência (opcional)',ex:'Tela final de 20 segundos com Inscreva-se e espaço para 2 vídeos sugeridos.',mao:'Edição de vídeo (Premiere / CapCut)'},
  {id:'carrossel',g:'Design',nome:'Carrossel',maq:'Máquina de Carrosséis',le:'Os roteiros do cliente e a identidade salva na ficha.',volta:'Slides 1080x1350 na pasta do cliente.',link:'Roteiro ou tema',ex:'Carrossel da semana com o tema do VÍDEO 06.',mao:'Canva'},
  {id:'thumb',g:'Design',nome:'Thumbnail',maq:'Máquina do Escritório',le:'O vídeo, as fotos do cliente no Drive e os modelos de thumb aprovados.',volta:'2 opções de thumb na pasta do vídeo.',link:'Vídeo da thumb',ex:'Thumb do VÍDEO 07, rosto à esquerda.',mao:'Canva'},
  {id:'arte',g:'Design',nome:'Arte ou banner',maq:'Máquina do Escritório',le:'Identidade visual do cliente.',volta:'Arte na pasta do cliente.',link:'Referência (opcional)',ex:'Banner novo do YouTube com o curso de novembro.',mao:'Canva'},
@@ -423,7 +425,7 @@ if (!SITUACAO_NO_AR && !DEMO) for (let i = TIPOS.length - 1; i >= 0; i--) if (TI
 // Erros que a pessoa consegue resolver sozinha; o resto vira o aviso padrão.
 const MOTIVO = {acesso:'Seu acesso mudou. Entre de novo com o PIN.', permissao:'Esse card não está no seu nome.', etapa:'Esse card mudou de etapa. A fila foi atualizada.',
   link:'Cole o link antes de mandar.', texto:'Escreva o que precisa antes de mandar.', prazo:'Escolha um prazo de hoje em diante.', cliente:'Escolha um cliente ativo.',
-  tema:'Escreva o tema da thumb ou cole o link do vídeo (a máquina tira o texto do roteiro).', pessoa:'Esse card já está com essa pessoa. Escolha outra.', bloqueio:'Essa pessoa não atende esse cliente. Escolha outra.', fim:'Escolha o que aconteceu.', nada:'Esse já é o prazo do card.', conferido:'Esse card já estava conferido.', postar:'O prazo não pode passar do dia de ir ao ar. Mude primeiro o Vai ao ar com a diretoria.', pego:'Alguém pegou esse card antes. A fila foi atualizada.', limite:'Você já está com 8 cards em produção. Termine um para pegar outro.', direcao:'Esse assunto é da diretoria. Não responda por aqui.', grupo:'Esse grupo não é de cliente do suporte.', whatsapp:'O WhatsApp não mandou. Tente de novo ou responda direto no grupo.', tamanho:'Arquivo vazio ou maior que 20 GB.', 'sem-pasta':'A pasta do cliente no Drive não foi achada. Cole o link do arquivo no lugar.'};
+  maquina:'Não achei esse vídeo nas máquinas. Cole o link que a máquina entregou (do card ou do aviso) ou escolha À mão.', tema:'Escreva o tema da thumb ou cole o link do vídeo (a máquina tira o texto do roteiro).', pessoa:'Esse card já está com essa pessoa. Escolha outra.', bloqueio:'Essa pessoa não atende esse cliente. Escolha outra.', fim:'Escolha o que aconteceu.', nada:'Esse já é o prazo do card.', conferido:'Esse card já estava conferido.', postar:'O prazo não pode passar do dia de ir ao ar. Mude primeiro o Vai ao ar com a diretoria.', pego:'Alguém pegou esse card antes. A fila foi atualizada.', limite:'Você já está com 8 cards em produção. Termine um para pegar outro.', direcao:'Esse assunto é da diretoria. Não responda por aqui.', grupo:'Esse grupo não é de cliente do suporte.', whatsapp:'O WhatsApp não mandou. Tente de novo ou responda direto no grupo.', tamanho:'Arquivo vazio ou maior que 20 GB.', 'sem-pasta':'A pasta do cliente no Drive não foi achada. Cole o link do arquivo no lugar.'};
 const ERRO = 'Deu erro, a diretoria está resolvendo.';
 const LIMITE = 8;
 let PANEXOS = [], PMODELO = [];
@@ -2120,6 +2122,8 @@ document.addEventListener('submit', async e => {
   if (!$('#pc').value) { $('#pc').focus(); toast('Escolha o cliente.'); return; }
   // O mínimo que cada máquina precisa: tema na thumb, descrição de verdade no pedido livre.
   if (t.id === 'thumb' && $('#ptema').value.trim().length < 3 && !/^https:\/\//.test($('#pl').value.trim())) { $('#ptema').focus(); toast(MOTIVO.tema); return; }
+  // Ajuste automático: o link é o que acha o pedido original na máquina.
+  if (t.id === 'ajvid' && !manual && !/^https:\/\//.test($('#pl').value.trim())) { $('#pl').focus(); toast('Cole o link do vídeo que a máquina entregou.'); return; }
   if (t.id === 'outro' && $('#po').value.trim().length < 40) { $('#po').focus(); toast('Explique melhor o pedido: pelo menos 40 letras, com o que é, para quê e onde vai.'); return; }
   const extra = t.id === 'thumb' ? '\nTema da thumb: ' + ($('#ptema').value.trim().length >= 3 ? $('#ptema').value.trim() : 'do roteiro do vídeo') + ($('#pfoto').value.trim() ? '\nFoto ou pasta: ' + $('#pfoto').value.trim() : '')
     : t.id === 'carrossel' && $('#pvt').value.trim() ? '\nVídeo ou tema: ' + $('#pvt').value.trim() : '';
@@ -2142,7 +2146,7 @@ document.addEventListener('submit', async e => {
     }
     if (modelo.length) texto += '\nModelo para seguir: ' + modelo.join(' ');
     $('#plinks').value.split('\n').map(x => x.trim()).filter(x => /^https:\/\//.test(x)).slice(0, 10).forEach(l => anexos.push({ nome: 'Link', link: l }));
-    const r = await api('euforia-painel-pedido', { cliente: $('#pc').value, tipo: t.id, modo: manual && !t.so ? 'mao' : 'auto', ferramenta: manual && !t.so ? $('#pf').value : '', prazo: $('#pz').value, link: t.so ? '' : $('#pl').value.trim(), texto, anexos });
+    const r = await api('euforia-painel-pedido-v2', { cliente: $('#pc').value, tipo: t.id, modo: manual && !t.so ? 'mao' : 'auto', ferramenta: manual && !t.so ? $('#pf').value : '', prazo: $('#pz').value, link: t.so ? '' : $('#pl').value.trim(), texto, anexos });
     if (!r || !r.ok) throw new Error((r && r.motivo) || 'erro');
     toast('Pedido feito: ' + t.nome + ' → ' + (r.quem === 'Máquina do Escritório' && t.maq ? t.maq : r.quem) + '. Card criado no Entregas' + (anexos.length ? ' com ' + anexos.length + ' anexo' + (anexos.length > 1 ? 's' : '') : '') + '.');
     e.target.reset(); delete $('#pf').dataset.mexeu; PANEXOS = []; PMODELO = []; listaAnexos(); listaModelo(); $('#up').hidden = true; atualizarPedido();
@@ -2746,7 +2750,7 @@ function demoApi(path, b){
     c.obs = hora + 'mudou ' + Object.keys(b.campos).join(', ') + (b.nota ? ': ' + b.nota : '') + (c.obs ? '\n' + c.obs : '');
     return wait({ ok: true });
   }
-  if (path === 'euforia-painel-pedido') return wait({ ok: true, quem: b.modo === 'mao' ? 'Escritório, à mão' : (TIPOS.find(t => t.id === b.tipo) || {}).maq });
+  if (path === 'euforia-painel-pedido-v2') return wait({ ok: true, quem: b.modo === 'mao' ? 'Escritório, à mão' : (TIPOS.find(t => t.id === b.tipo) || {}).maq });
   if (path === 'euforia-painel-acao') {
     if (b.acao === 'criar') { const k = DEMO_D.clientes.find(x => x.id === b.cliente) || {}; if (b.para === 'eu') DEMO_D.cards.push({ id: 'n' + Date.now(), cod: 600, nome: b.nome.toUpperCase(), cliente: b.cliente, clienteNome: k.nome || '', tipo: b.tipo, status: 'A fazer', prazo: b.prazo, postar: '', prioridade: b.urgente ? 'Urgente' : 'Normal', meu: true, livre: false, resp: [DEMO_D.nome], obs: '[Painel] ' + DEMO_D.nome + ' criou pela Nova demanda' + (b.texto ? ': ' + b.texto : '') }); return wait({ ok: true, status: 'A fazer' }); }
     const c = DEMO_D.cards.find(x => x.id === b.card);
