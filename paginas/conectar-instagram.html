@@ -83,7 +83,7 @@
     <div class="demo-titulo">Veja como é (toque na tela para avançar)</div>
     <div class="fone"><div class="tela" id="tela">
 
-      <div class="cena" data-legenda="<b>Passo 1.</b> Toque em <b>Abrir meus convites</b> aqui embaixo. Ela abre direto a tela certa do Instagram, sem procurar nas configurações. Toque em <b>Convites para testador</b>." data-x="32" data-y="34">
+      <div class="cena" data-legenda="<b>Passo 1.</b> Toque em <b>Copiar endereço</b> aqui embaixo, abra o <b>Safari</b> ou o <b>Chrome</b>, cole na barra e entre. Abre esta tela. Toque em <b>Convites para testador</b>." data-x="32" data-y="34">
         <div class="barra">Instagram<div class="url">instagram.com/accounts/manage_access</div></div>
         <div class="ig-top">Apps e sites</div>
         <div class="abas"><span class="aba ativa">Ativos</span><span class="aba">Expirados</span><span class="aba">Removidos</span><span class="aba">Convites para testador</span></div>
@@ -130,9 +130,9 @@
 
   <div class="passo">
     <h2><span class="n">1</span>Aceite o convite</h2>
-    <p>Não precisa procurar nas configurações do app: este botão abre direto a tela de convites. Toque em <b>Convites para testador</b> e depois em <b>Aceitar</b> no convite do <b>Euforia Automação</b>. Se pedir, entre com o seu Instagram.</p>
-    <a class="botao sec" id="convites" href="https://www.instagram.com/accounts/manage_access/">Abrir meus convites</a>
-    <p class="nota" style="margin-top:10px">Se abrir o app do Instagram em vez da tela de convites, copie este endereço e cole no Safari ou no Chrome: <b>instagram.com/accounts/manage_access</b></p>
+    <p>Este passo é feito no <b>navegador</b> do celular, não no app do Instagram. Copie o endereço, cole no navegador, toque em <b>Convites para testador</b> e depois em <b>Aceitar</b> no convite do <b>Euforia Automação</b>. Se pedir, entre com o seu Instagram.</p>
+    <a class="botao sec" id="copiar" href="#">Copiar endereço dos convites</a>
+    <p class="nota" style="margin-top:10px;opacity:.85">Depois abra o <b>Safari</b> (iPhone) ou o <b>Chrome</b> (Android), toque na barra de endereço, cole e entre. O endereço é <b>instagram.com/accounts/manage_access</b>. Tocando direto no link, o celular abre o app do Instagram, que não mostra os convites.</p>
   </div>
 
   <div class="passo">
@@ -145,14 +145,18 @@
 </main>
 <script>
   (function () {
-    // Abre os convites pelo navegador: um redirecionamento automático não aciona o app do Instagram.
-    var qs = new URLSearchParams(location.search);
-    if (qs.get('ir') === 'convites') { location.replace('https://www.instagram.com/accounts/manage_access/'); return; }
     var c = (new URLSearchParams(location.search).get('c') || '').toLowerCase().replace(/[^a-z0-9-]/g, '');
     var botao = document.getElementById('botao');
     if (!c) { document.getElementById('erro').style.display = 'block'; botao.style.opacity = '.4'; botao.removeAttribute('href'); }
     else { botao.href = 'https://n8n.grupoeuforia.tech/webhook/insta-conectar?c=' + encodeURIComponent(c); }
-    qs.set('ir', 'convites'); document.getElementById('convites').href = location.pathname + '?' + qs.toString();
+    // Link direto abre o app do Instagram (que não mostra os convites); colar no navegador funciona.
+    var cp = document.getElementById('copiar'), END = 'https://www.instagram.com/accounts/manage_access/';
+    cp.addEventListener('click', function (e) {
+      e.preventDefault();
+      function ok() { cp.textContent = 'Copiado! Agora cole no navegador'; }
+      if (navigator.clipboard) { navigator.clipboard.writeText(END).then(ok, function () { prompt('Copie este endereço:', END); }); }
+      else { prompt('Copie este endereço:', END); }
+    });
 
     var cenas = [].slice.call(document.querySelectorAll('.cena'));
     var dedo = document.getElementById('dedo'), leg = document.getElementById('legenda'), pontos = document.getElementById('pontos');
