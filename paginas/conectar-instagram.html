@@ -36,8 +36,8 @@
   .barra { background:#f1f1f1; padding:10px 12px 8px; font-size:11px; color:#555; border-bottom:1px solid #e3e3e3; }
   .barra .url { background:#fff; border-radius:8px; padding:6px 8px; margin-top:6px; font-size:11px; color:#333; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .ig-top { padding:12px 14px; font-weight:700; font-size:15px; border-bottom:1px solid #eee; }
-  .abas { display:flex; gap:4px; padding:8px 10px; border-bottom:1px solid #eee; font-size:11px; }
-  .aba { padding:6px 7px; border-radius:6px; color:#777; }
+  .abas { display:flex; flex-wrap:wrap; gap:2px 4px; padding:8px 10px; border-bottom:1px solid #eee; font-size:11px; }
+  .aba { white-space:nowrap; padding:6px 7px; border-radius:6px; color:#777; }
   .aba.ativa { color:#111; font-weight:700; border-bottom:2px solid #111; border-radius:0; }
   .card { margin:14px; border:1px solid #e6e6e6; border-radius:12px; padding:12px; }
   .card b { font-size:13px; }
@@ -48,6 +48,7 @@
   .b.cinza { background:#efefef; color:#111; }
   .ok { color:#0a8a3a; font-weight:700; }
   .vazio { flex:1; }
+  .login .b, .perm .b { flex:none; }
   .eu-page { background:var(--preto); color:var(--off); padding:22px 16px; flex:1; display:flex; flex-direction:column; gap:10px; }
   .eu-page .t { font-family:Archivo,sans-serif; font-weight:800; font-size:18px; line-height:1.15; }
   .eu-page .bt { background:var(--laranja); color:var(--preto); text-align:center; font-family:Archivo,sans-serif; font-weight:800; padding:11px; border-radius:10px; margin-top:auto; }
@@ -82,14 +83,14 @@
     <div class="demo-titulo">Veja como é (toque na tela para avançar)</div>
     <div class="fone"><div class="tela" id="tela">
 
-      <div class="cena" data-legenda="<b>Passo 1.</b> Toque em <b>Abrir meus convites</b> aqui embaixo. Abre esta tela do Instagram. Toque em <b>Convites para testador</b>." data-x="84" data-y="27">
+      <div class="cena" data-legenda="<b>Passo 1.</b> Toque em <b>Abrir meus convites</b> aqui embaixo. Ela abre direto a tela certa do Instagram, sem procurar nas configurações. Toque em <b>Convites para testador</b>." data-x="32" data-y="34">
         <div class="barra">Instagram<div class="url">instagram.com/accounts/manage_access</div></div>
         <div class="ig-top">Apps e sites</div>
         <div class="abas"><span class="aba ativa">Ativos</span><span class="aba">Expirados</span><span class="aba">Removidos</span><span class="aba">Convites para testador</span></div>
         <div class="vazio"></div>
       </div>
 
-      <div class="cena" data-legenda="Vai aparecer o convite do <b>Euforia Automação</b>. Toque em <b>Aceitar</b>." data-x="30" data-y="44">
+      <div class="cena" data-legenda="Vai aparecer o convite do <b>Euforia Automação</b>. Toque em <b>Aceitar</b>." data-x="30" data-y="56">
         <div class="barra">Instagram<div class="url">instagram.com/accounts/manage_access</div></div>
         <div class="ig-top">Apps e sites</div>
         <div class="abas"><span class="aba">Ativos</span><span class="aba">Expirados</span><span class="aba">Removidos</span><span class="aba ativa">Convites para testador</span></div>
@@ -97,7 +98,7 @@
         <div class="vazio"></div>
       </div>
 
-      <div class="cena" data-legenda="Pronto, convite aceito. Agora volte para esta página." data-x="50" data-y="40">
+      <div class="cena" data-legenda="Pronto, convite aceito. Agora volte para esta página." data-x="50" data-y="48">
         <div class="barra">Instagram<div class="url">instagram.com/accounts/manage_access</div></div>
         <div class="ig-top">Apps e sites</div>
         <div class="abas"><span class="aba">Ativos</span><span class="aba">Expirados</span><span class="aba">Removidos</span><span class="aba ativa">Convites para testador</span></div>
@@ -105,15 +106,15 @@
         <div class="vazio"></div>
       </div>
 
-      <div class="cena" data-legenda="<b>Passo 2.</b> Aqui na página, toque em <b>Entrar com Instagram</b>." data-x="50" data-y="88">
+      <div class="cena" data-legenda="<b>Passo 2.</b> Aqui na página, toque em <b>Entrar com Instagram</b>." data-x="50" data-y="92">
         <div class="eu-page"><div style="font-size:10px;color:#FF6518;font-weight:800;letter-spacing:.08em">GRUPO EUFORIA</div><div class="t">Conecte seu Instagram</div><div style="opacity:.7;font-size:12px">1. Aceite o convite ✓<br>2. Entre com Instagram</div><div class="bt">Entrar com Instagram</div></div>
       </div>
 
-      <div class="cena" data-legenda="Entre com o <b>seu</b> usuário e senha do Instagram, como sempre. (Se já estiver logado, essa tela nem aparece.)" data-x="50" data-y="50">
+      <div class="cena" data-legenda="Entre com o <b>seu</b> usuário e senha do Instagram, como sempre. (Se já estiver logado, essa tela nem aparece.)" data-x="50" data-y="40">
         <div class="login"><div class="logo-ig">Instagram</div><div class="campo">Usuário</div><div class="campo">Senha</div><div class="b azul" style="padding:10px">Entrar</div></div>
       </div>
 
-      <div class="cena" data-legenda="O Instagram pergunta se pode deixar o Grupo Euforia publicar. Toque em <b>Permitir</b>." data-x="50" data-y="84">
+      <div class="cena" data-legenda="O Instagram pergunta se pode deixar o Grupo Euforia publicar. Toque em <b>Permitir</b>." data-x="50" data-y="82">
         <div class="perm"><div class="app"><span class="ic"></span>Euforia Automação</div><div>quer acessar sua conta para:</div><ul><li>ver seu perfil</li><li>publicar conteúdo no seu nome</li></ul><div class="vazio"></div><div class="b azul" style="padding:10px">Permitir</div><div class="b cinza" style="padding:10px">Cancelar</div></div>
       </div>
 
@@ -129,7 +130,7 @@
 
   <div class="passo">
     <h2><span class="n">1</span>Aceite o convite</h2>
-    <p>Abre a tela de convites do seu Instagram. Toque em <b>Convites para testador</b> e depois em <b>Aceitar</b> no convite do <b>Euforia Automação</b>. Se pedir, entre com o seu Instagram.</p>
+    <p>Não precisa procurar nas configurações do app: este botão abre direto a tela de convites. Toque em <b>Convites para testador</b> e depois em <b>Aceitar</b> no convite do <b>Euforia Automação</b>. Se pedir, entre com o seu Instagram.</p>
     <a class="botao sec" href="https://www.instagram.com/accounts/manage_access/" target="_blank" rel="noopener">Abrir meus convites</a>
   </div>
 
