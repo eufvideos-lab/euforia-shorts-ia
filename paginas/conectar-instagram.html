@@ -131,7 +131,8 @@
   <div class="passo">
     <h2><span class="n">1</span>Aceite o convite</h2>
     <p>Não precisa procurar nas configurações do app: este botão abre direto a tela de convites. Toque em <b>Convites para testador</b> e depois em <b>Aceitar</b> no convite do <b>Euforia Automação</b>. Se pedir, entre com o seu Instagram.</p>
-    <a class="botao sec" href="https://www.instagram.com/accounts/manage_access/" target="_blank" rel="noopener">Abrir meus convites</a>
+    <a class="botao sec" id="convites" href="https://www.instagram.com/accounts/manage_access/">Abrir meus convites</a>
+    <p class="nota" style="margin-top:10px">Se abrir o app do Instagram em vez da tela de convites, copie este endereço e cole no Safari ou no Chrome: <b>instagram.com/accounts/manage_access</b></p>
   </div>
 
   <div class="passo">
@@ -144,10 +145,14 @@
 </main>
 <script>
   (function () {
+    // Abre os convites pelo navegador: um redirecionamento automático não aciona o app do Instagram.
+    var qs = new URLSearchParams(location.search);
+    if (qs.get('ir') === 'convites') { location.replace('https://www.instagram.com/accounts/manage_access/'); return; }
     var c = (new URLSearchParams(location.search).get('c') || '').toLowerCase().replace(/[^a-z0-9-]/g, '');
     var botao = document.getElementById('botao');
     if (!c) { document.getElementById('erro').style.display = 'block'; botao.style.opacity = '.4'; botao.removeAttribute('href'); }
     else { botao.href = 'https://n8n.grupoeuforia.tech/webhook/insta-conectar?c=' + encodeURIComponent(c); }
+    qs.set('ir', 'convites'); document.getElementById('convites').href = location.pathname + '?' + qs.toString();
 
     var cenas = [].slice.call(document.querySelectorAll('.cena'));
     var dedo = document.getElementById('dedo'), leg = document.getElementById('legenda'), pontos = document.getElementById('pontos');
