@@ -66,6 +66,8 @@ def foco_rosto(caminho):
         img = cv2.imread(caminho); h, w = img.shape[:2]
         esc = 800 / max(h, w); peq = cv2.resize(img, (int(w * esc), int(h * esc)))
         casc = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+        if casc.empty():  # opencv 5 não traz mais os arquivos de rosto: usa a cópia da pasta da máquina
+            casc = cv2.CascadeClassifier(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'haarcascade_frontalface_default.xml'))
         r = casc.detectMultiScale(cv2.cvtColor(peq, cv2.COLOR_BGR2GRAY), 1.1, 6, minSize=(40, 40))
         if len(r):
             x, y, fw, fh = max(r, key=lambda q: q[2] * q[3])
