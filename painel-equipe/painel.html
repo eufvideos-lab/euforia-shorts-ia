@@ -1212,6 +1212,8 @@ function abrirBusca(i){
 // Card antigo: só leitura (o card fechado não volta para a fila pela busca). A diretoria tem o link do Notion.
 function abrirAntigo(c){
   const lk = (u, t) => /^https:\/\//.test(u || '') ? `<a href="${esc(u)}" target="_blank" rel="noopener">${t}</a>` : '';
+  const editar = diretor() && DD && Array.isArray(c.respIds);
+  const ajuste = VIEWS.pedir.pode() && /^https:\/\//.test(c.link || '') && ['Vídeo longo', 'Shorts', 'Podcast'].includes(c.tipo);
   const datas = [c.prazo ? 'Prazo ' + fmtA(c.prazo) : '', c.postar && !c.postado ? 'Ia ao ar ' + fmtA(c.postar) : '', c.postado ? 'Foi ao ar ' + fmtA(c.postado) : ''].filter(Boolean).join(' · ');
   $('#layer').innerHTML = `<div class="scrim" data-x></div><aside class="drawer" role="dialog" aria-modal="true" aria-labelledby="ant-t"><div class="drawer-in">
     <button class="close" data-x>Fechar</button>
@@ -1220,10 +1222,30 @@ function abrirAntigo(c){
     ${(c.resp || []).length ? `<p><b>Responsável:</b> ${esc(c.resp.join(', '))}</p>` : ''}
     ${lk(c.link, 'Abrir o arquivo') || lk(c.linkPost, '') ? `<p class="actions" style="gap:16px">${lk(c.link, 'Abrir o arquivo')}${lk(c.linkPost, 'Ver a postagem')}</p>` : ''}
     ${c.obs ? `<section><h3 style="font-size:15px;margin-bottom:6px">Últimas notas</h3><p class="sub" style="white-space:pre-wrap;font-size:13px">${esc(c.obs)}</p></section>` : ''}
+    ${editar || ajuste ? `<div class="actions">${editar ? '<button class="btn primary" type="button" data-ant="editar">Editar card</button>' : ''}${ajuste ? '<button class="btn" type="button" data-ant="ajuste">Pedir ajuste à máquina</button>' : ''}</div>` : ''}
     ${c.url ? `<p>${lk(c.url, 'Abrir no Notion')}</p>` : ''}
-    <p class="note">Card que já saiu da fila. Para refazer ou ajustar, faça um pedido novo em "Pedir ao escritório".</p>
+    <p class="note">${editar ? 'Editar abre a mesma gaveta dos outros cards: etapa, prazo, link, responsável e nota. ' : ''}${ajuste ? 'O ajuste vira um pedido novo ao escritório, já com o link do vídeo; a máquina refaz a partir do bruto.' : 'Card que já saiu da fila. Para refazer, faça um pedido novo em "Pedir ao escritório".'}</p>
   </div></aside>`;
-  $('#layer').onclick = e => { if (e.target.closest('[data-x]')) fechar(); };
+  $('#layer').onclick = e => {
+    if (e.target.closest('[data-x]')) { fechar(); return; }
+    const b = e.target.closest('[data-ant]'); if (!b) return;
+    if (b.dataset.ant === 'editar') {
+      // A gaveta da diretoria trabalha com DD.cards: o card antigo entra na lista (até a próxima atualização) com os ids do Responsável.
+      if (!DD.cards.some(x => x.id === c.id)) DD.cards.push(Object.assign({}, c, { resp: c.respIds || [], qtd: c.qtd || 1 }));
+      abrirDD(c.id); return;
+    }
+    if (b.dataset.ant === 'ajuste') { fechar(); pedirAjusteDe(c); }
+  };
+}
+// Abre "Pedir ao escritório" já com o cliente, o tipo "Ajuste em vídeo que a máquina fez" e o link do vídeo.
+function pedirAjusteDe(c){
+  view = 'pedir'; if ($('#fpedir')) $('#main').innerHTML = ''; render(); window.scrollTo({ top: 0 });
+  const pc = $('#pc'), pt = $('#pt'), pl = $('#pl'), po = $('#po'); if (!pt) return;
+  if (pc && [...pc.options].some(o => o.value === c.cliente)) pc.value = c.cliente;
+  pt.value = 'ajvid'; atualizarPedido();
+  if (pl) pl.value = c.link || '';
+  if (po) { po.focus(); po.placeholder = 'O que ajustar em ' + (c.nome || 'este vídeo') + '. Ex.: cortar o trecho em 1:16, trocar a música do começo…'; }
+  toast('Escreva o ajuste e envie. Cliente e link já estão preenchidos.');
 }
 function marcarBusca(){ document.querySelectorAll('#busca-res [data-bres]').forEach(b => b.classList.toggle('sel', +b.dataset.bres === BSEL)); const b = document.querySelector('#busca-res .sel'); if (b) b.scrollIntoView({ block: 'nearest' }); }
 document.addEventListener('input', e => { if (e.target.id === 'busca') buscar(); });
@@ -2863,7 +2885,7 @@ function demoApi(path, b){
     c.obs = hora + 'mudou ' + Object.keys(b.campos).join(', ') + (b.nota ? ': ' + b.nota : '') + (c.obs ? '\n' + c.obs : '');
     return wait({ ok: true });
   }
-  if (path === 'euforia-painel-busca') { const q = String(b.q || '').toLowerCase(); const l = [{ id: 'antigo1', cod: 301, titulo: 'Dra. Helena | VÍDEO 02', nome: 'VÍDEO 02', clienteNome: 'Dra. Helena (exemplo)', tipo: 'Vídeo longo', status: 'Postado', prazo: '2026-09-10', postar: '2026-09-12', postado: '2026-09-12', link: 'https://drive.google.com/demo', linkPost: 'https://youtu.be/exemplo', resp: ['Lorena'], obs: '[Painel 11/09 10:20] Ismael aprovou\n[Painel 10/09 18:02] Lorena mandou para revisão', url: '', antigo: true }].filter(c => (c.clienteNome + ' ' + c.nome + ' #' + c.cod).toLowerCase().includes(q.replace(/^esteira-/, '#'))); return wait({ ok: true, total: l.length, cards: l }); }
+  if (path === 'euforia-painel-busca') { const q = String(b.q || '').toLowerCase(); const l = [{ id: 'antigo1', cod: 301, titulo: 'Dra. Helena | VÍDEO 02', nome: 'VÍDEO 02', clienteNome: 'Dra. Helena (exemplo)', tipo: 'Vídeo longo', status: 'Postado', prazo: '2026-09-10', postar: '2026-09-12', postado: '2026-09-12', link: 'https://drive.google.com/demo', linkPost: 'https://youtu.be/exemplo', cliente: 'c1', respIds: ['3ea98c0cdde08163bd16f0213b098cb5'], qtd: 1, resp: ['Lorena'], obs: '[Painel 11/09 10:20] Ismael aprovou\n[Painel 10/09 18:02] Lorena mandou para revisão', url: '', antigo: true }].filter(c => (c.clienteNome + ' ' + c.nome + ' #' + c.cod).toLowerCase().includes(q.replace(/^esteira-/, '#'))); return wait({ ok: true, total: l.length, cards: l }); }
   if (path === 'euforia-painel-pedido-v2') return wait({ ok: true, quem: b.modo === 'mao' ? 'Escritório, à mão' : (TIPOS.find(t => t.id === b.tipo) || {}).maq });
   if (path === 'euforia-painel-acao') {
     if (b.acao === 'criar') { const k = DEMO_D.clientes.find(x => x.id === b.cliente) || {}; if (b.para === 'eu') DEMO_D.cards.push({ id: 'n' + Date.now(), cod: 600, nome: b.nome.toUpperCase(), cliente: b.cliente, clienteNome: k.nome || '', tipo: b.tipo, status: 'A fazer', prazo: b.prazo, postar: '', prioridade: b.urgente ? 'Urgente' : 'Normal', meu: true, livre: false, resp: [DEMO_D.nome], obs: '[Painel] ' + DEMO_D.nome + ' criou pela Nova demanda' + (b.texto ? ': ' + b.texto : '') }); return wait({ ok: true, status: 'A fazer' }); }

@@ -46,6 +46,8 @@ SELECT e.id, e.editado, e.titulo, e.resp,
   e.p->'Código'->'unique_id'->>'number' AS cod,
   COALESCE(e.p->'Link do arquivo'->>'url', (SELECT string_agg(t->>'plain_text', '') FROM jsonb_array_elements(COALESCE(e.p->'Link do arquivo'->'rich_text', '[]'::jsonb)) t)) AS link,
   COALESCE(e.p->'Link da postagem'->>'url', (SELECT string_agg(t->>'plain_text', '') FROM jsonb_array_elements(COALESCE(e.p->'Link da postagem'->'rich_text', '[]'::jsonb)) t)) AS linkpost,
+  e.p->'Prioridade'->'select'->>'name' AS prioridade, e.p->'Origem'->'select'->>'name' AS origem, e.p->'🏢 Escritório IA'->'select'->>'name' AS escritorio,
+  (e.p->'Quantidade'->>'number')::int AS qtd,
   e.p->'Prazo'->'date'->>'start' AS prazo, e.p->'Postar em'->'date'->>'start' AS postar, e.p->'Postado em'->'date'->>'start' AS postado,
   left((SELECT string_agg(t->>'plain_text', '') FROM jsonb_array_elements(COALESCE(e.p->'Obs'->'rich_text', '[]'::jsonb)) t), 4000) AS obs,
   replace(e.p->'Cliente'->'relation'->0->>'id', '-', '') AS cliente,
@@ -86,7 +88,9 @@ for (const it of $input.all()) {
     tipo: c.tipo || '', status: c.status || '', prazo: c.prazo || '', postar: c.postar || '', postado: c.postado || '',
     link: c.link || '', linkPost: c.linkpost || '', resp,
     obs: String(c.obs || '').split('\\n').slice(0, diretor ? 12 : 4).join('\\n').slice(0, diretor ? 1500 : 600),
-    url: diretor ? 'https://www.notion.so/' + c.id : '', antigo: true }]);
+    url: diretor ? 'https://www.notion.so/' + c.id : '', antigo: true,
+    // Só a diretoria recebe o que a gaveta de edição precisa (ids do Responsável, prioridade, origem).
+    ...(diretor ? { respIds: String(c.resp || '').split(',').filter(Boolean), qtd: c.qtd || 1, prioridade: c.prioridade || '', origem: c.origem || '', escritorio: c.escritorio || '' } : {}) }]);
 }
 pts.sort((a, b) => b[0] - a[0] || (b[1] > a[1] ? 1 : b[1] < a[1] ? -1 : 0));
 return [{ json: { resposta: { ok: true, total: pts.length, cards: pts.slice(0, 40).map(x => x[2]) } } }];
@@ -98,7 +102,7 @@ const devolver = node({ type: 'n8n-nodes-base.respondToWebhook', version: 1.5, c
 const recusar = node({ type: 'n8n-nodes-base.respondToWebhook', version: 1.5, config: { name: 'Recusar', parameters: {
   respondWith: 'json', responseBody: '={{ JSON.stringify($json.resposta) }}', options: {} } } });
 
-const nota = sticky('## Painel da equipe · busca nos antigos (V1)\nA caixa de busca do painel pergunta aqui quando quer cards antigos (token + PIN da tabela "Painel equipe · acesso").\nLê só a cópia do Entregas no Postgres (notion_cache, atualizada a cada 2 min). Não grava nada.\nDiretoria: qualquer card. Operação: só cards em que a pessoa é ou foi Responsável. Teste: só "TESTE PAINEL".\nSai sem valores: só cliente, entrega, etapa, datas, links e o começo da Obs.', [], { color: 4 });
+const nota = sticky('## Painel da equipe · busca nos antigos (V1)\nA caixa de busca do painel pergunta aqui quando quer cards antigos (token + PIN da tabela "Painel equipe · acesso").\nLê só a cópia do Entregas no Postgres (notion_cache, atualizada a cada 2 min). Não grava nada.\nDiretoria: qualquer card. Operação: só cards em que a pessoa é ou foi Responsável. Teste: só "TESTE PAINEL".\nSai sem valores: só cliente, entrega, etapa, datas, links e o começo da Obs. A diretoria edita o card antigo pela gaveta normal (fluxo Painel | Diretor).', [], { color: 4 });
 
 export default workflow('painel-busca', 'Painel | Busca de demandas (V1)')
   .add(pedir).to(ler).to(acesso).to(validar)
