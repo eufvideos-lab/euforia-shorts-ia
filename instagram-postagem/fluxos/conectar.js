@@ -17,7 +17,7 @@ const montarLink = node({
       mode: 'runOnceForAllItems',
       jsCode: `// ID do app do Instagram (Meta > app > Instagram > Configuração da API com login do Instagram > "ID do app do Instagram").
 // Não é segredo. O segredo do app fica só na credencial "Instagram App (Euforia)".
-const APP_ID = 'COLOCAR_ID_DO_APP_DO_INSTAGRAM';
+const APP_ID = '2207780193130954';
 const REDIRECT = 'https://n8n.grupoeuforia.tech/webhook/insta-retorno';
 const q = $input.first().json.query || {};
 const cliente = String(q.c || '').toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, 60);
