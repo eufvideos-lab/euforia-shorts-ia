@@ -1,4 +1,4 @@
-import { workflow, node, trigger, newCredential, ifElse, expr } from '@n8n/workflow-sdk';
+import { workflow, node, trigger, ifElse, expr } from '@n8n/workflow-sdk';
 
 const CONTAS = { __rl: true, mode: 'id', value: 'OOJsLQJwkBAvvLLk', cachedResultName: 'Instagram | Contas dos clientes' };
 const IA_STATUS = 'https://discord.com/api/v10/channels/1559987978774777998/messages';
@@ -54,16 +54,16 @@ const trocarCodigo = node({
       url: 'https://api.instagram.com/oauth/access_token',
       authentication: 'genericCredentialType',
       genericAuthType: 'httpCustomAuth',
+      // A Instagram só aceita formulário; a credencial Custom Auth junta client_id e client_secret no corpo.
+      sendHeaders: true,
+      headerParameters: { parameters: [{ name: 'Content-Type', value: 'application/x-www-form-urlencoded' }] },
       sendBody: true,
-      contentType: 'form-urlencoded',
-      bodyParameters: { parameters: [
-        { name: 'grant_type', value: 'authorization_code' },
-        { name: 'redirect_uri', value: 'https://n8n.grupoeuforia.tech/webhook/insta-retorno' },
-        { name: 'code', value: expr('{{ String($json.query.code || "").replace(/#_$/, "") }}') }
-      ] },
+      contentType: 'json',
+      specifyBody: 'json',
+      jsonBody: expr('{{ JSON.stringify({ grant_type: "authorization_code", redirect_uri: "https://n8n.grupoeuforia.tech/webhook/insta-retorno", code: String($json.query.code || "").replace(/#_$/, "") }) }}'),
       options: {}
     },
-    credentials: { httpCustomAuth: newCredential('Instagram App (Euforia)') }
+    credentials: { httpCustomAuth: { id: 'GW1RoyiES2fXvjdm', name: 'Instagram App (Euforia)' } }
   }
 });
 
@@ -84,7 +84,7 @@ const tokenLongo = node({
       ] },
       options: {}
     },
-    credentials: { httpCustomAuth: newCredential('Instagram App (Euforia)') }
+    credentials: { httpCustomAuth: { id: 'GW1RoyiES2fXvjdm', name: 'Instagram App (Euforia)' } }
   }
 });
 
@@ -181,7 +181,7 @@ const avisoOk = node({
       jsonBody: expr('{{ JSON.stringify({ content: "✅ Instagram conectado: @" + $(\'Conferir resultado\').item.json.username + " (cliente " + $(\'Conferir resultado\').item.json.cliente + "). Já pode entrar na fila de postagem." }) }}'),
       options: {}
     },
-    credentials: { httpHeaderAuth: newCredential('Discord Bot') }
+    credentials: { httpHeaderAuth: { id: 'PY2ZcN5kAVFaS1io', name: 'Discord Bot' } }
   }
 });
 
@@ -209,7 +209,7 @@ const avisoErro = node({
       jsonBody: expr('{{ JSON.stringify({ content: "⚠️ Instagram não conectou (cliente " + ($(\'Conferir resultado\').item.json.cliente || "?") + "): " + $(\'Conferir resultado\').item.json.motivo }) }}'),
       options: {}
     },
-    credentials: { httpHeaderAuth: newCredential('Discord Bot') }
+    credentials: { httpHeaderAuth: { id: 'PY2ZcN5kAVFaS1io', name: 'Discord Bot' } }
   }
 });
 
@@ -310,7 +310,7 @@ const avisoReconectar = node({
       jsonBody: expr('{{ JSON.stringify({ content: "🔴 Instagram de @" + $(\'Renovada há mais de 20 dias\').item.json.username + " (cliente " + $(\'Renovada há mais de 20 dias\').item.json.cliente + ") desconectou. Mandar o link de conectar de novo." }) }}'),
       options: {}
     },
-    credentials: { httpHeaderAuth: newCredential('Discord Bot') }
+    credentials: { httpHeaderAuth: { id: 'PY2ZcN5kAVFaS1io', name: 'Discord Bot' } }
   }
 });
 

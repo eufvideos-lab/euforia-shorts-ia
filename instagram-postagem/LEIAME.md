@@ -34,7 +34,7 @@ Página do cliente: `paginas/conectar-instagram.html` → grupoeuforia.com.br/co
 
 ## Falta (lado Meta)
 1. ID e segredo do app do Instagram → credencial Custom Auth "Instagram App (Euforia)" no n8n
-   (`{"body":{"client_id":"…","client_secret":"…"},"qs":{"client_secret":"…"}}`) e o ID no nó "Montar link do Instagram".
+   (`{"body":{"client_id":"…","client_secret":"…"},"qs":{"client_secret":"…"}}`; o nó de troca manda JSON com cabeçalho form-urlencoded, porque a Custom Auth troca o corpo de formulário por JSON e a Instagram só aceita formulário) e o ID no nó "Montar link do Instagram".
 2. Endereço de retorno cadastrado no app (o mesmo do campo redirect_uri do nó "Trocar código por token").
 3. Enquanto a Meta não aprova: cada cliente entra como "Testador do Instagram" no app e aceita o convite.
 4. Para todos os clientes sem convite: verificação da empresa + App Review de
