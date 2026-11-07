@@ -77,5 +77,6 @@ with open(os.path.join(pasta, 'palavras.txt'), 'w') as f:
         f.write("REGRAVAÇÕES PROVÁVEIS (a 1ª passada sai): " + ', '.join(f"{r['ini']}-{r['fim']}" for r in rel['regravacoes_provaveis']) + "\n")
     f.write("\n")
     f.write('\n'.join(linhas) + '\n')
+subprocess.run([sys.executable, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'enquadrar.py'), pasta])
 print(f'OK: {len(W)} palavras, {len(linhas)} linhas em palavras.txt; {len(rel["comandos"])} comandos de corte, '
       f'{len(rel["correcoes"])} palavras corrigidas (ver relatorio.md)')

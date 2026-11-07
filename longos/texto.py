@@ -19,7 +19,7 @@ cliente.json (copiado da ficha do cliente; todas as chaves são opcionais):
 """
 import difflib, json, os, re, sys, unicodedata
 
-CORTE_PADRAO = ['corta', 'corte', 'de novo', 'errei', 'vou repetir', 'deixa eu repetir', 'pera', 'vou de novo',
+CORTE_PADRAO = ['corta', 'corte', 'de novo', 'errei', 'vou repetir', 'deixa eu repetir', 'deixa eu voltar', 'vou voltar', 'pera', 'vou de novo',
                 'vamos de novo', 'gravando de novo']
 LIMITE = 0.75      # semelhança mínima para uma tomada contar como a frase do roteiro
 FOLGA = 3          # palavras a mais ou a menos que a janela de uma frase aceita
@@ -330,24 +330,25 @@ def processar(W, roteiro_txt=None, cliente=None):
     return rel
 
 
-def repeticoes(W, minimo=5, janela_s=90):
-    """Sem roteiro: trechos de 5+ palavras que se repetem logo depois (regravação mesmo sem o "corta" escrito).
-    Devolve a 1ª passada, que é a que deve sair."""
+def repeticoes(W, minimo=4, janela_s=35, pausa=0.5):
+    """Sem roteiro: a pessoa para, respira e repete o mesmo começo de frase logo depois (regravação mesmo sem o
+    "corta" escrito). Pede: 4+ palavras iguais (2 delas não triviais), repetidas em até 35 s, com pausa antes da
+    repetição. Devolve a 1ª passada, que é a que deve sair. É sugestão para o plano; o cortar.py não bloqueia."""
     n = [norm(w['word']) for w in W]
     out, i = [], 0
     while i < len(W) - minimo:
         chave = n[i:i + minimo]
-        if sum(1 for x in chave if x not in CURTAS) < 3:
+        if sum(1 for x in chave if x and x not in CURTAS) < 2:
             i += 1; continue
         achou = None
         j = i + minimo
         while j < len(W) - minimo + 1 and W[j]['start'] - W[i]['start'] <= janela_s:
-            if n[j:j + minimo] == chave:
+            if n[j:j + minimo] == chave and W[j]['start'] - W[j - 1]['end'] >= pausa:
                 achou = j; break
             j += 1
         if achou is not None:
             out.append({'ini': i, 'fim': achou - 1, 't': round(W[i]['start'], 1), 'refeita_em': round(W[achou]['start'], 1),
-                        'texto': ' '.join(w['word'] for w in W[i:min(achou, i + 12)])})
+                        'texto': ' '.join(w['word'] for w in W[i:achou] if w['word'])})
             i = achou
         else:
             i += 1
@@ -395,7 +396,7 @@ def relatorio_md(rel, W):
     L.append('')
     if rel.get('regravacoes_provaveis'):
         L += ['## Regravações prováveis (fala repetida logo depois; a 1ª passada deve sair)', '']
-        L += [f'- {fmt(r["t"])} (palavras {r["ini"]}–{r["fim"]}), refeita em {fmt(r["refeita_em"])}: "{r["texto"]}…"'
+        L += [f'- {fmt(r["t"])} (palavras {r["ini"]}–{r["fim"]}), refeita em {fmt(r["refeita_em"])}: "{r["texto"][:160]}"'
               for r in rel['regravacoes_provaveis']] + ['']
     outras = [d for d in rel['descartadas'] if d['motivo'] == 'regravada depois']
     if outras:
@@ -425,6 +426,54 @@ def rodar(pasta, roteiro=None, cliente=None):
     return rel
 
 
+def limpar_trechos(trechos, rel, W, max_regravacao=25):
+    """Tira dos trechos do plano o que nunca deve ir ao ar: cada comando de gravação (com o pedaço interrompido logo
+    antes dele e o complemento "do começo"/"daqui" logo depois) e a 1ª passada das regravações curtas (até 25
+    palavras; as maiores ficam só no relatório, para o plano decidir). Devolve (trechos_novos, removidos)."""
+    tirar = {}
+    for c in rel.get('comandos', []):
+        if c.get('duvida'):
+            continue
+        a = c['ini']
+        while a > 0 and W[a]['start'] - W[a - 1]['end'] < 0.5 and c['ini'] - a < 25:
+            a -= 1
+        b = c['fim']
+        while b + 1 < len(W) and b - c['fim'] < 3 and W[b + 1]['start'] - W[b]['end'] < 0.8 and \
+                norm(W[b + 1]['word']) in ('do', 'começo', 'comeco', 'daqui', 'de', 'novo', 'ai', 'aí', 'entao', 'então'):
+            b += 1
+        for k in range(a, b + 1):
+            tirar[k] = f'comando "{c["texto"]}" ({fmt(c["t"])})'
+    cmds = [c for c in rel.get('comandos', []) if not c.get('duvida')]
+    for r in rel.get('regravacoes_provaveis', []):
+        # com um "corta"/"de novo" dentro ou no fim da 1ª passada, ela sai inteira, de qualquer tamanho
+        com_comando = any(r['ini'] < c['ini'] <= r['fim'] + 2 for c in cmds)
+        if com_comando or r['fim'] - r['ini'] + 1 <= max_regravacao:
+            for k in range(r['ini'], r['fim'] + 1):
+                tirar.setdefault(k, f'1ª passada regravada em {fmt(r["refeita_em"])}')
+    novos, removidos = [], []
+    for a, b in trechos:
+        atual = None
+        for k in range(a, b + 1):
+            if k in tirar:
+                if atual:
+                    novos.append(atual); atual = None
+                if not removidos or removidos[-1]['fim'] != k - 1 or removidos[-1]['motivo'] != tirar[k]:
+                    removidos.append({'ini': k, 'fim': k, 'motivo': tirar[k]})
+                else:
+                    removidos[-1]['fim'] = k
+            elif atual:
+                atual[1] = k
+            else:
+                atual = [k, k]
+        if atual:
+            novos.append(atual)
+    novos = [t for t in novos if t[1] - t[0] >= 1 or W[t[0]]['end'] - W[t[0]]['start'] > 0.4]
+    for r in removidos:
+        r['texto'] = ' '.join(w['word'] for w in W[r['ini']:r['fim'] + 1] if w['word'])
+        r['t'] = round(W[r['ini']]['start'], 1)
+    return novos, removidos
+
+
 def corrigir_frase(texto, correcoes):
     """Aplica o glossário num texto do plano (texto-chave, cartão), mantendo *destaque* e | de quebra."""
     for errado, certo in sorted((correcoes or {}).items(), key=lambda r: -len(r[0])):
@@ -440,9 +489,26 @@ if __name__ == '__main__':
     import argparse
     ap = argparse.ArgumentParser()
     ap.add_argument('pasta'); ap.add_argument('--roteiro'); ap.add_argument('--cliente')
+    ap.add_argument('--limpar-plano', action='store_true', help='tira do plano.json os comandos e as 1ªs passadas')
     a = ap.parse_args()
     rot = a.roteiro or (os.path.join(a.pasta, 'roteiro.txt') if os.path.exists(os.path.join(a.pasta, 'roteiro.txt')) else None)
     cli = a.cliente or (os.path.join(a.pasta, 'cliente.json') if os.path.exists(os.path.join(a.pasta, 'cliente.json')) else None)
     r = rodar(a.pasta, rot, cli)
+    if a.limpar_plano:
+        pp = os.path.join(a.pasta, 'plano.json')
+        plano = json.load(open(pp))
+        W = json.load(open(os.path.join(a.pasta, 'transcricao.json')))['words']
+        novos, rem = limpar_trechos(plano['trechos'], r, W)
+        if rem:
+            json.dump(plano, open(os.path.join(a.pasta, 'plano_antes_limpeza.json'), 'w'), ensure_ascii=False, indent=1)
+            g = int(plano.get('gancho', 1))
+            # o gancho continua sendo o(s) primeiro(s) trecho(s) que sobraram do gancho original
+            ganchos = [t for t in novos if any(x[0] <= t[0] <= x[1] for x in plano['trechos'][:g])]
+            plano['trechos'] = novos
+            plano['gancho'] = min(len(ganchos), len(novos)) if g else 0
+            json.dump(plano, open(pp, 'w'), ensure_ascii=False, indent=1)
+        print(f'plano limpo: {len(rem)} pedaços tirados')
+        for x in rem:
+            print(f'  - {fmt(x["t"])} palavras {x["ini"]}–{x["fim"]} ({x["motivo"]}): "{x["texto"][:90]}"')
     print(f"{len(r['frases'])} frases do roteiro, {len(r['comandos'])} comandos de corte, {len(r['correcoes'])} correções; "
           f"relatório em {os.path.join(a.pasta, 'relatorio.md')}")

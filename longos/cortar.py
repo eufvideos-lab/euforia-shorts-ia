@@ -48,8 +48,20 @@ CX, CY = plano.get('centro_zoom', [0.5, 0.4])
 ABERTO = float(plano.get('zoom_aberto', 1.0))
 if plano.get('centralizar') and 'zoom_aberto' not in plano:
     ABERTO = min(1.6, max(1.0, 1 / (2 * max(0.05, min(CX, 1 - CX)))))
+# Enquadramento automático (Henrique, 07/11/2026): sempre centralizado e perto o bastante, pelo rosto achado no
+# bruto (enquadrar.py, roda no preparar). "enquadramento": "manual" no plano mantém centro_zoom/zoom_aberto do plano.
+_enq = os.path.join(pasta, 'enquadramento.json')
+if not NA and plano.get('enquadramento') != 'manual':
+    if not os.path.exists(_enq):
+        subprocess.run([sys.executable, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'enquadrar.py'), pasta])
+    if os.path.exists(_enq):
+        E = json.load(open(_enq))
+        CX, CY = E['centro_zoom']
+        ABERTO = float(E['zoom_aberto'])
+        ZOOM = min(max(ZOOM, ABERTO * 1.15), E.get('teto_zoom', 1.8) * 1.15)
+        print(f'enquadramento automático: centro {E["centro_zoom"]}, aberto {ABERTO:.2f}x, fechado {ZOOM:.2f}x', flush=True)
 if ABERTO > 1:
-    ZOOM = min(max(ZOOM, ABERTO * 1.15), max(ABERTO, 1.8))
+    ZOOM = min(max(ZOOM, ABERTO * 1.15), max(ABERTO * 1.15, 1.8))
     print(f'centralizando: plano aberto {ABERTO:.2f}x, fechado {ZOOM:.2f}x', flush=True)
 # Gancho (os primeiros "gancho" trechos do plano, padrão 1): deixa a pessoa respirar, sem corte seco.
 GANCHO = int(plano.get('gancho', 1))
@@ -59,6 +71,7 @@ for k, (i0, i1) in enumerate(plano['trechos']):
         trechos[-1][1] = i1
     else:
         trechos.append([i0, i1, k < GANCHO])
+PAUSA = float(plano.get('pausa_max', 1.0))
 segs = []
 for i0, i1, gancho in trechos:
     s, e = W[i0]['start'], W[i1]['end']
@@ -71,14 +84,21 @@ for i0, i1, gancho in trechos:
         s2 = silencio(max(ant, s - 0.25), s - 0.02)
         e2 = silencio(e + 0.03, min(prox, e + 0.30))
     ws = W[i0:i1 + 1]
-    cortes, ult = [s2], s2
+    # pausa longa no meio do trecho (ela mexendo no teleprompter/câmera): tira o silêncio, fica só um respiro
+    blocos, ini = [], s2
     for j in range(len(ws) - 1):
-        t = (ws[j]['end'] + ws[j + 1]['start']) / 2
-        if t - ult > 7.5 and e2 - t > 4:
-            cortes.append(t); ult = t
-    cortes.append(e2)
-    for n, (a, b) in enumerate(zip(cortes[:-1], cortes[1:])):
-        segs.append({'s': round(a, 3), 'e': round(b, 3), 'join': n > 0})
+        if ws[j + 1]['start'] - ws[j]['end'] > PAUSA:
+            blocos.append((ini, ws[j]['end'] + 0.25)); ini = ws[j + 1]['start'] - 0.2
+    blocos.append((ini, e2))
+    for bi, (a0, b0) in enumerate(blocos):
+        cortes, ult = [a0], a0
+        for j in range(len(ws) - 1):
+            t = (ws[j]['end'] + ws[j + 1]['start']) / 2
+            if a0 < t < b0 and t - ult > 7.5 and b0 - t > 4:
+                cortes.append(t); ult = t
+        cortes.append(b0)
+        for n, (a, b) in enumerate(zip(cortes[:-1], cortes[1:])):
+            segs.append({'s': round(a, 3), 'e': round(b, 3), 'join': n > 0})
 for n, x in enumerate(segs):
     x['zoom'] = ZOOM if n % 2 else ABERTO
 

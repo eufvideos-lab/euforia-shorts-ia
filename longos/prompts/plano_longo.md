@@ -11,6 +11,10 @@ Você recebe `palavras.txt` (cada palavra como `índice:palavra[tempo]`, uma fra
   nunca vários pedaços colados. A máquina deixa a pessoa respirar no gancho (`"gancho": 1` = quantos trechos do
   início contam como gancho). Depois do gancho, os cortes seguem normais.
 - **Zoom alternado** entre os segmentos: a máquina faz sozinha (`zoom` 1.22, `centro_zoom` [x, y] do rosto, 0 a 1).
+- **Enquadramento automático (Flau, 07/11/2026: "sempre enquadrar o cliente"; o erro era ficar distante ou fora do
+  centro):** `cortar.py` usa o `enquadramento.json` do preparar (rosto no meio, ~24% da altura da tela no plano
+  aberto). Pausa longa no meio de um trecho (ela mexendo na câmera ou no teleprompter) sai sozinha (`pausa_max`, 1 s).
+  O que vem abaixo vale só com `"enquadramento": "manual"`.
 - **Pessoa fora do centro** (gravou mais para o canto, ou as observações pedem para centralizar): ponha `"centralizar": true`.
   O plano aberto também corta em volta do rosto e a pessoa fica no meio. Confira num quadro do segmento 000 que ela
   ficou centralizada e sem cortar a cabeça; se precisar, ajuste com `"zoom_aberto"` (1.0 a 1.6). Em bruto 1080p,

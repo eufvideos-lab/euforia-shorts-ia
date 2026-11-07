@@ -47,13 +47,17 @@ python3 -m pip install --break-system-packages -q numpy pillow
    `palavras.txt` e o `relatorio.md` mostra cada "corta", o que saiu e as palavras corrigidas.
 4. Leia `pedidos/<id-curto>/palavras.txt`, as "Observações para a máquina", e a identidade do cliente
    (campo "Identidade shorts (IA)"; se vazio, pastas do Drive do cliente no padrão de `PASTAS.md`).
-   Tire 1 quadro do bruto (`ffmpeg -ss 60 -i bruto.* -frames:v 1 q.png`) para achar o rosto (`centro_zoom`).
+   O enquadramento é automático (07/11/2026): o preparar acha o rosto em 40 quadros e grava `enquadramento.json`
+   (cliente centralizada e perto). Olhe `enquadramento.png` (verde = plano aberto, laranja = fechado). Só se estiver
+   errado, ponha `"enquadramento": "manual"` com `centro_zoom`/`zoom_aberto` no plano.
 5. Escreva `pedidos/<id-curto>/plano.json` seguindo `longos/prompts/plano_longo.md`. Se o campo "Modelo" do pedido
    for "Nova Acrópole" (ou o cliente for a Nova Acrópole), siga a seção "Modelo Nova Acrópole" de lá: o bruto é uma
    palestra inteira e sai um corte de 3 a 6 min, com legenda amarela, marca d'água e o encerramento da Acrópole Play. Para as fotos específicas,
    rode o fluxo de fotos (uma chamada com todas as buscas), pegue os IDs e ponha em `file_ids`.
    A trilha: `"musica_file_id": "15UN5dqdxX_VcaJAdcJ1vOyuGgtmBSoiQ"` (no modelo Nova Acrópole, sem trilha).
-6. `python3 longos/cortar.py pedidos/<id-curto>` (corta e aplica o zoom; ~16 min para um bruto de 14 min).
+6. `python3 longos/texto.py pedidos/<id-curto> --limpar-plano` (tira do plano cada "corta"/"de novo"/"deixa eu voltar"
+   com o pedaço errado e a 1ª passada das regravações; lista o que tirou: cole no log). Depois
+   `python3 longos/cortar.py pedidos/<id-curto>` (corta e aplica o zoom; ~16 min para um bruto de 14 min).
    Confira 3 emendas: tire quadros e ouça se nenhuma palavra foi comida (veja a transcrição das bordas).
 7. `python3 longos/brolls.py pedidos/<id-curto>` e olhe `brolls.png`. O que não mostra o que a pessoa fala sai do
    plano (troque a busca e rode `brolls.py pasta <id>` só daquele).
