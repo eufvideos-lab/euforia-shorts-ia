@@ -10,9 +10,25 @@ import json, os, re, subprocess, sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'pipeline'))
 import gfx as G
+import texto as T
 
 pasta = sys.argv[1]
 plano = json.load(open(os.path.join(pasta, 'plano.json')))
+# glossário do cliente também nos textos que o plano escreve (texto-chave, cartão, título), 07/11/2026
+_cli = os.path.join(pasta, 'cliente.json')
+CORRECOES = (json.load(open(_cli)).get('correcoes') or {}) if os.path.exists(_cli) else {}
+if CORRECOES:
+    for kw in plano.get('keywords', []):
+        kw['texto'] = T.corrigir_frase(kw['texto'], CORRECOES)
+    for c in plano.get('cartoes', []):
+        if 'linhas' in c:
+            c['linhas'] = [T.corrigir_frase(x, CORRECOES) for x in c['linhas']]
+        if 'texto' in c:
+            c['texto'] = T.corrigir_frase(c['texto'], CORRECOES)
+    if plano.get('titulo'):
+        plano['titulo']['linhas'] = [T.corrigir_frase(x, CORRECOES) for x in plano['titulo'].get('linhas', [])]
+        if plano['titulo'].get('sub'):
+            plano['titulo']['sub'] = T.corrigir_frase(plano['titulo']['sub'], CORRECOES)
 segs = json.load(open(os.path.join(pasta, 'segmentos.json')))
 W = json.load(open(os.path.join(pasta, 'transcricao.json')))['words']
 O = os.path.join(pasta, 'gfx'); G.configurar(O, plano.get('paleta'))
@@ -138,13 +154,18 @@ def legendas_na(arq):
     tokens, j, P = texto.split(), 0, []
     k = 0
     while k < len(W):
-        alvo, txt, usa = norm(W[k]['word']), W[k]['word'], 1
+        # a palavra corrigida pelo roteiro/glossário (texto.py) guarda o que o Whisper ouviu em "orig": casa pelo
+        # ouvido e escreve o certo, com a pontuação do texto corrido
+        alvo, txt, usa = norm(W[k].get('orig', W[k]['word'])), W[k]['word'], 1
         for m in range(j, min(j + 4, len(tokens))):
             nt = norm(tokens[m])
             if nt == alvo:
                 txt, j = tokens[m], m + 1; break
-            if k + 1 < len(W) and nt == alvo + norm(W[k + 1]['word']):
+            if k + 1 < len(W) and nt == alvo + norm(W[k + 1].get('orig', W[k + 1]['word'])):
                 txt, j, usa = tokens[m], m + 1, 2; break
+        if 'orig' in W[k]:
+            pont = re.search(r'[.,;:!?…]+$', txt)
+            txt = W[k]['word'] + (pont.group(0) if pont and W[k]['word'] else '')
         P.append({'t': txt})
         if usa == 2:
             P.append({'t': ''}); k += 1

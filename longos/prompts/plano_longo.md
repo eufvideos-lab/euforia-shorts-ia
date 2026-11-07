@@ -38,6 +38,19 @@ Você recebe `palavras.txt` (cada palavra como `índice:palavra[tempo]`, uma fra
 - Nada pode se sobrepor: dois elementos de tela cheia (B-roll, cartão, título, mapa) não podem se cruzar,
   nem dois textos de baixo (texto-chave e lower). `montar.py` avisa e para; ajuste a palavra.
 
+## Texto certo e "corta" (07/11/2026)
+- `palavras.txt` já vem com a grafia do roteiro e do glossário do cliente ("autoliderança", não "liderança"). Use
+  essa grafia nos textos-chave, cartões e título.
+- **⛔ = comando de gravação** ("corta", "de novo", "errei", "vou repetir"). Ele e a tomada errada que vem antes
+  dele nunca entram num trecho. `cortar.py` para se algum trecho mantiver um ⛔. Se for fala de verdade (ex.: "corte
+  de gastos"), ponha o índice em `"ignorar_comandos": [123]`. ⚠ = talvez seja comando: confira o contexto.
+- **Com roteiro:** a linha "TRECHOS SUGERIDOS PELO ROTEIRO" traz a última tomada boa de cada frase, escolhida de trás
+  para frente (a regravação depois de um "corta" sempre ganha, mesmo quando a pessoa volta várias frases). Use como
+  base dos `trechos` e mude só o necessário (gancho na frente, fala boa que não está no roteiro, respiros). Frase
+  não achada fica no `relatorio.md`.
+- **Sem roteiro:** "REGRAVAÇÕES PROVÁVEIS" lista falas repetidas logo depois (a pessoa regravou mesmo sem o "corta"
+  aparecer escrito). A 1ª passada sai.
+
 ## Formato
 ```json
 {

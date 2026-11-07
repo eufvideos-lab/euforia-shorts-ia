@@ -15,6 +15,18 @@ plano = json.load(open(os.path.join(pasta, 'plano.json')))
 info = json.load(open(os.path.join(pasta, 'info.json')))
 W = json.load(open(os.path.join(pasta, 'transcricao.json')))['words']
 bruto = info['arquivo']
+# Comando de gravação ("corta", "de novo", "errei") nunca vai para o vídeo (07/11/2026). texto.json vem do preparar.py.
+_tx = os.path.join(pasta, 'texto.json')
+if os.path.exists(_tx) and '--forcar' not in sys.argv:
+    ignorar = set(plano.get('ignorar_comandos', []))
+    ruins = [c for c in json.load(open(_tx)).get('comandos', []) if not c.get('duvida') and c['ini'] not in ignorar
+             and any(a <= c['ini'] <= b for a, b in plano['trechos'])]
+    if ruins:
+        raise SystemExit('o plano mantém comando de gravação: ' + '; '.join(
+            f'palavra {c["ini"]} "{c["texto"]}" ({c["t"]:.1f}s)' for c in ruins) +
+            '. Tire o pedaço errado e o comando do trecho (veja relatorio.md); se for fala de verdade, ponha o índice em '
+            '"ignorar_comandos" no plano.')
+sys.argv = [a for a in sys.argv if a != '--forcar']
 SR = 8000
 raw = subprocess.run(['ffmpeg', '-v', 'error', '-i', bruto, '-vn', '-ac', '1', '-ar', str(SR), '-f', 's16le', '-'],
                      capture_output=True).stdout
