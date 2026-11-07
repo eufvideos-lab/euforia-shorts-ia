@@ -35,16 +35,29 @@ python3 -m pip install --break-system-packages -q numpy pillow
 1. Status "Em edição"; no "Log da máquina": "iniciado <data hora>".
 2. Pegue o ID do arquivo no link "Vídeo bruto" (depois de /d/ ou id=). Se for pasta, liste e use o vídeo mais recente.
    Sem vídeo: trate como erro.
-3. `python3 longos/preparar.py pedidos/<id-curto> <file_id>` (bruto de 1 a 2 GB leva alguns minutos).
+3. Antes de transcrever (texto certo e "corta", 07/11/2026):
+   - **Roteiro:** se o pedido tem roteiro (título "Vídeo N (Roteiro M)", campo ou observação), abra o roteiro no banco
+     🎬 Pautas e Roteiros e salve só o texto falado em `pedidos/<id-curto>/roteiro.txt` (marcações como
+     [CORTE SHORT 1] podem ficar; a máquina tira). Sem roteiro (fala livre, palestra), pule.
+   - **Glossário do cliente:** se o campo "Identidade shorts (IA)" do cliente tem `vocabulario`, `correcoes` ou
+     `palavras_corte`, grave essas chaves em `pedidos/<id-curto>/cliente.json`
+     (ex.: `{"vocabulario": ["autoliderança"], "correcoes": {"alto liderança": "autoliderança"}}`).
+   Depois: `python3 longos/preparar.py pedidos/<id-curto> <file_id>` (bruto de 1 a 2 GB leva alguns minutos).
+   A transcrição já sai com a palavra do roteiro/glossário; os comandos de gravação vêm marcados com ⛔ no
+   `palavras.txt` e o `relatorio.md` mostra cada "corta", o que saiu e as palavras corrigidas.
 4. Leia `pedidos/<id-curto>/palavras.txt`, as "Observações para a máquina", e a identidade do cliente
    (campo "Identidade shorts (IA)"; se vazio, pastas do Drive do cliente no padrão de `PASTAS.md`).
-   Tire 1 quadro do bruto (`ffmpeg -ss 60 -i bruto.* -frames:v 1 q.png`) para achar o rosto (`centro_zoom`).
+   O enquadramento é automático (07/11/2026): o preparar acha o rosto em 40 quadros e grava `enquadramento.json`
+   (cliente centralizada e perto). Olhe `enquadramento.png` (verde = plano aberto, laranja = fechado). Só se estiver
+   errado, ponha `"enquadramento": "manual"` com `centro_zoom`/`zoom_aberto` no plano.
 5. Escreva `pedidos/<id-curto>/plano.json` seguindo `longos/prompts/plano_longo.md`. Se o campo "Modelo" do pedido
    for "Nova Acrópole" (ou o cliente for a Nova Acrópole), siga a seção "Modelo Nova Acrópole" de lá: o bruto é uma
    palestra inteira e sai um corte de 3 a 6 min, com legenda amarela, marca d'água e o encerramento da Acrópole Play. Para as fotos específicas,
    rode o fluxo de fotos (uma chamada com todas as buscas), pegue os IDs e ponha em `file_ids`.
    A trilha: `"musica_file_id": "15UN5dqdxX_VcaJAdcJ1vOyuGgtmBSoiQ"` (no modelo Nova Acrópole, sem trilha).
-6. `python3 longos/cortar.py pedidos/<id-curto>` (corta e aplica o zoom; ~16 min para um bruto de 14 min).
+6. `python3 longos/texto.py pedidos/<id-curto> --limpar-plano` (tira do plano cada "corta"/"de novo"/"deixa eu voltar"
+   com o pedaço errado e a 1ª passada das regravações; lista o que tirou: cole no log). Depois
+   `python3 longos/cortar.py pedidos/<id-curto>` (corta e aplica o zoom; ~16 min para um bruto de 14 min).
    Confira 3 emendas: tire quadros e ouça se nenhuma palavra foi comida (veja a transcrição das bordas).
 7. `python3 longos/brolls.py pedidos/<id-curto>` e olhe `brolls.png`. O que não mostra o que a pessoa fala sai do
    plano (troque a busca e rode `brolls.py pasta <id>` só daquele).
@@ -58,7 +71,9 @@ python3 -m pip install --break-system-packages -q numpy pillow
     Suba também o `plano.json` para a pasta da máquina (1rF9yJwVPCp4IvTHfb6Gm3YbdLhWdX3eI) com o nome
     `plano-longo-<id-curto>.json` (é o que permite um "Ajustar" depois).
 11. Atualize o pedido: "Vídeo pronto" (link), "Entregue em" (agora), Status "Pronto para revisão" e um resumo
-    curto no log (duração, quantos cortes, B-rolls, dúvidas).
+    curto no log (duração, quantos cortes, B-rolls, dúvidas). Cole no log também as seções "Comandos de corte" e
+    "Palavras corrigidas" do `relatorio.md` (o revisor confere em 10 s) e as frases do roteiro não achadas.
+    Palavra errada que a equipe achar na revisão vira uma linha em `correcoes` na ficha do cliente.
 12. Avise no #longos-automáticos, marcando todos (@everyone), assinando como Érica:
     "@everyone 🎞️ Vídeo longo pronto: <Cliente> (<duração>). Para revisão: <link>. — Érica, time de suporte, Grupo Euforia"
 
