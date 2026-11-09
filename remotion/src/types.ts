@@ -24,6 +24,7 @@ export type ShortProps = {
   brolls: Broll[];
   cartoes?: Cartao[];
   logo: string | null;
+  rosto?: { y: number; altura: number } | null; // centro e altura do rosto no vídeo vertical (fração da altura)
   musica?: { src: string; volume: number } | null; // trilha em public/, volume 0-1 (ex.: 0.08)
   estilo: {
     corDestaque: string; // viral: #FAC800
