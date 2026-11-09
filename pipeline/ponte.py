@@ -93,9 +93,11 @@ def subir(caminho, folder_id, nome, drive_id=DRIVE_EUFORIA):
     return json.loads(out)
 
 
-def _transcrever_um(audio_mp3, idioma):
+def _transcrever_um(audio_mp3, idioma, prompt=None):
+    # prompt: vocabulário do roteiro/cliente para o Whisper acertar palavra rara ("autoliderança") e escrever o "corta"
     corpo = json.dumps({'audio_base64': base64.b64encode(open(audio_mp3, 'rb').read()).decode(),
-                        'filename': os.path.basename(audio_mp3), 'language': idioma})
+                        'filename': os.path.basename(audio_mp3), 'language': idioma,
+                        **({'prompt': prompt} if prompt else {})})
     tmp = audio_mp3 + '.req.json'
     open(tmp, 'w').write(corpo)
     try:
@@ -135,11 +137,11 @@ def _cortes(audio_mp3, total, alvo=270.0):
     return cortes
 
 
-def transcrever(audio_mp3, idioma='pt'):
+def transcrever(audio_mp3, idioma='pt', prompt=None):
     """Transcrição palavra a palavra. Áudio longo vai em pedaços de ~4,5 min (a resposta de uma vez só cai no caminho)."""
     total = _duracao(audio_mp3)
     if total <= 360:
-        return _transcrever_um(audio_mp3, idioma)
+        return _transcrever_um(audio_mp3, idioma, prompt)
     pontos = [0.0] + _cortes(audio_mp3, total) + [total]
     textos, palavras = [], []
     for i in range(len(pontos) - 1):
@@ -147,7 +149,7 @@ def transcrever(audio_mp3, idioma='pt'):
         parte = f'{audio_mp3}.p{i}.mp3'
         subprocess.run(['ffmpeg', '-v', 'error', '-y', '-ss', f'{a:.3f}', '-i', audio_mp3, '-t', f'{b - a:.3f}',
                         '-c:a', 'libmp3lame', '-b:a', '32k', parte], check=True)
-        r = _transcrever_um(parte, idioma)
+        r = _transcrever_um(parte, idioma, prompt)  # cada pedaço recebe o vocabulário (o Whisper só olha o começo)
         os.remove(parte)
         textos.append((r.get('text') or '').strip())
         for w in r.get('words') or []:

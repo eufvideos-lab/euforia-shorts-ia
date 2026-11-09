@@ -12,10 +12,12 @@ com o tempo de cada palavra, e devolve um plano de cortes em JSON. Você não v�
 
 ## Regras de escolha (obrigatórias)
 1. **Nunca cortar frase no meio.** O short começa na primeira palavra de uma frase (logo após `. ? !` ou uma pausa maior que 0,6 s) e termina na última palavra de uma frase (com `. ? !`).
-2. **Duração:** viral de 25 a 50 s; institucional de 30 a 60 s. Conta só a fala que fica, depois de tirar as pausas.
+2. **Duração:** viral de 30 a 50 s; institucional de 30 a 60 s (mínimo 30 s, regra da Lorena em 09/11/2026; abaixo disso o plano é rejeitado). Conta só a fala que fica, depois de tirar as pausas.
 3. **Gancho nos 3 primeiros segundos.** A primeira frase tem que prender: afirmação forte, número, pergunta, contraste ou promessa. Se o melhor gancho estiver no meio do trecho, você pode puxar UMA frase do mesmo assunto para abrir o short (campo `gancho_movido`), desde que ela faça sentido sozinha.
 4. **Fecha sozinho.** Quem nunca viu o vídeo longo entende: sem "como eu disse", sem "isso" ou "ele" sem referência, sem começar com "e", "então" ou "mas".
 5. **Uma ideia por short**, com começo, meio e fim. O final é a conclusão ou a frase de efeito, não uma ideia pela metade.
+   - **Nunca termine anunciando o que vem depois** ("E por último, um passo que muda tudo.", "vou te mostrar", "sabe qual é?"). Se o fim do trecho é um anúncio, estique até a resposta ou corte antes dele.
+   - **Lista prometida é lista entregue:** se o short diz "4 passos", "3 dicas" etc., todos os itens têm que estar nele. Se não cabem, escolha um item só e não use a frase que anuncia a lista. A máquina confere e rejeita.
 6. **Sem sobreposição** entre os shorts do mesmo vídeo.
 7. **Cortes internos (opcional):** pode remover frases do meio que desviam do assunto, sempre frase inteira. Liste em `remover`.
 8. **Proibido:** trecho com dado médico/jurídico/financeiro que fique errado ou perigoso fora de contexto; trecho que exponha terceiros; trecho com piada interna.
@@ -63,7 +65,7 @@ Devolva em `correcoes`: `{ "i": índice, "de": "...", "para": "..." }`. Não mud
 - PRIORIDADE: B-roll do próprio vídeo (#k) sempre vem antes do banco. Banco só quando nenhum #k serve, e no máximo 2 por short. Na dúvida se a imagem do banco vai combinar, NÃO use: cartão de texto ou o rosto da pessoa é melhor que B-roll estranho (ex.: um gato num vídeo sobre carreira, exame médico num vídeo sobre ansiedade).
 - Qualquer outro texto em `busca` é procurado no banco Pixabay: escreva em inglês, 2 a 4 palavras, descrevendo uma cena real e concreta ("mother hugging child", "doctor talking patient"). Evite termos abstratos ("success", "health") e nada de desenho/animação.
 - O B-roll tem que mostrar literalmente o que está sendo dito naquele instante ("criança estudando" quando ela fala de escola). Frase abstrata ("transformar conhecimento técnico") não pede B-roll: use cartão de texto ou deixe o rosto.
-- Os B-rolls que já estão DENTRO do trecho escolhido entram sozinhos (não precisa listar).
+- Os B-rolls que já estão DENTRO do trecho escolhido entram sozinhos (não precisa listar). Eles têm prioridade: não ponha B-roll do banco no mesmo momento (a máquina tira o seu). Nunca dois B-rolls ao mesmo tempo.
 
 ## Saída (somente JSON, sem texto fora)
 ```json

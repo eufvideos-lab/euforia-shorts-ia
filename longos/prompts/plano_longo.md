@@ -11,6 +11,10 @@ Você recebe `palavras.txt` (cada palavra como `índice:palavra[tempo]`, uma fra
   nunca vários pedaços colados. A máquina deixa a pessoa respirar no gancho (`"gancho": 1` = quantos trechos do
   início contam como gancho). Depois do gancho, os cortes seguem normais.
 - **Zoom alternado** entre os segmentos: a máquina faz sozinha (`zoom` 1.22, `centro_zoom` [x, y] do rosto, 0 a 1).
+- **Enquadramento automático (Flau, 07/11/2026: "sempre enquadrar o cliente"; o erro era ficar distante ou fora do
+  centro):** `cortar.py` usa o `enquadramento.json` do preparar (rosto no meio, ~24% da altura da tela no plano
+  aberto). Pausa longa no meio de um trecho (ela mexendo na câmera ou no teleprompter) sai sozinha (`pausa_max`, 1 s).
+  O que vem abaixo vale só com `"enquadramento": "manual"`.
 - **Pessoa fora do centro** (gravou mais para o canto, ou as observações pedem para centralizar): ponha `"centralizar": true`.
   O plano aberto também corta em volta do rosto e a pessoa fica no meio. Confira num quadro do segmento 000 que ela
   ficou centralizada e sem cortar a cabeça; se precisar, ajuste com `"zoom_aberto"` (1.0 a 1.6). Em bruto 1080p,
@@ -37,6 +41,19 @@ Você recebe `palavras.txt` (cada palavra como `índice:palavra[tempo]`, uma fra
   grave no cliente. Paleta padrão = Grupo Euforia.
 - Nada pode se sobrepor: dois elementos de tela cheia (B-roll, cartão, título, mapa) não podem se cruzar,
   nem dois textos de baixo (texto-chave e lower). `montar.py` avisa e para; ajuste a palavra.
+
+## Texto certo e "corta" (07/11/2026)
+- `palavras.txt` já vem com a grafia do roteiro e do glossário do cliente ("autoliderança", não "liderança"). Use
+  essa grafia nos textos-chave, cartões e título.
+- **⛔ = comando de gravação** ("corta", "de novo", "errei", "vou repetir"). Ele e a tomada errada que vem antes
+  dele nunca entram num trecho. `cortar.py` para se algum trecho mantiver um ⛔. Se for fala de verdade (ex.: "corte
+  de gastos"), ponha o índice em `"ignorar_comandos": [123]`. ⚠ = talvez seja comando: confira o contexto.
+- **Com roteiro:** a linha "TRECHOS SUGERIDOS PELO ROTEIRO" traz a última tomada boa de cada frase, escolhida de trás
+  para frente (a regravação depois de um "corta" sempre ganha, mesmo quando a pessoa volta várias frases). Use como
+  base dos `trechos` e mude só o necessário (gancho na frente, fala boa que não está no roteiro, respiros). Frase
+  não achada fica no `relatorio.md`.
+- **Sem roteiro:** "REGRAVAÇÕES PROVÁVEIS" lista falas repetidas logo depois (a pessoa regravou mesmo sem o "corta"
+  aparecer escrito). A 1ª passada sai.
 
 ## Formato
 ```json

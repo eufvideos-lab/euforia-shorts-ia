@@ -15,7 +15,25 @@ import ponte, analise
 RAIZ = os.path.dirname(AQUI)
 REMOTION = os.path.join(RAIZ, 'remotion')
 MUSICA_PADRAO = '1gwHG_OijcK-BbghdCOWYgjzLZFyqduhf'  # corporate-soft-background-music (Pixabay, uso livre)
-EVITAR = ('cartoon', 'animation', 'animated', 'illustration', 'drawing', '3d', 'render', 'logo', 'text', 'ai generated', 'ai-generated', 'generated')
+EVITAR = ('cartoon', 'animation', 'animated', 'illustration', 'drawing', '3d', 'render', 'logo', 'text', 'ai generated', 'ai-generated', 'generated',
+          'green screen', 'greenscreen', 'chroma', 'vector', 'character', 'avatar', 'infographic', 'explainer', 'whiteboard', 'motion graphic')
+
+
+def parece_desenho(video):
+    """Desenho/animação: grandes áreas de cor forte e chapada (o filtro por etiqueta deixou passar um desenho
+    em fundo verde, 09/11/2026). Foto clara de verdade é chapada mas sem cor forte, então passa."""
+    import numpy as np
+    raw = subprocess.run(['ffmpeg', '-v', 'error', '-ss', '1', '-i', video, '-frames:v', '1', '-vf', 'scale=270:480',
+                          '-f', 'rawvideo', '-pix_fmt', 'rgb24', '-'], capture_output=True).stdout
+    if len(raw) < 270 * 480 * 3:
+        return False
+    im = np.frombuffer(raw, np.uint8).reshape(480, 270, 3).astype(np.int16)
+    mx, mn = im.max(axis=2), im.min(axis=2)
+    sat = (mx - mn) / np.maximum(mx, 1)
+    g = np.abs(np.diff(im, axis=1)).max(axis=2)[:-1, :] + np.abs(np.diff(im, axis=0)).max(axis=2)[:, :-1]
+    chapado_forte = (g <= 3) & (sat[:-1, :-1] > 0.35)
+    return chapado_forte.mean() > 0.3
+
 
 ap = argparse.ArgumentParser()
 ap.add_argument('pasta'); ap.add_argument('--modelo', required=True, choices=['institucional', 'viral', 'nova-acropole'])
@@ -111,18 +129,24 @@ def foto_autor(ref, out):
 
 # 1) trilha vertical com o rosto no centro
 vertical = os.path.join(pub, 'vertical.mp4')
-if not os.path.exists(vertical):
+import sys as _s; _s.path.insert(0, AQUI)
+from montar_short import alinhar_pontuacao
+_tr = json.load(open(os.path.join(pasta, 'transcricao.json')))
+_pal = alinhar_pontuacao(_tr['text'], _tr['words'])
+_fim = min(info.get('duracao', 1e9), max(_pal[min(len(_pal) - 1, sh['fim_i'] + 1)]['e'] for sh in plano['shorts']) + 3)
+def _dur(arq):
+    r = subprocess.run(['ffprobe', '-v', 'error', '-show_entries', 'format=duration', '-of', 'csv=p=0', arq], capture_output=True, text=True)
+    try: return float(r.stdout.strip())
+    except ValueError: return 0.0
+# o vertical guardado de uma rodada anterior pode acabar antes do trecho novo (plano refeito em "Ajustar"):
+# aí o render mostrava os últimos quadros dele no lugar da fala certa. Refaz quando não cobre.
+if not os.path.exists(vertical) or _dur(vertical) < _fim - 0.5:
     passo('recortando vertical com rosto centralizado')
     # só até onde os shorts usam (o começo fica, para não deslocar os tempos)
-    import sys as _s; _s.path.insert(0, AQUI)
-    from montar_short import alinhar_pontuacao
-    _tr = json.load(open(os.path.join(pasta, 'transcricao.json')))
-    _pal = alinhar_pontuacao(_tr['text'], _tr['words'])
-    _fim = max(_pal[min(len(_pal) - 1, sh['fim_i'] + 1)]['e'] for sh in plano['shorts']) + 3
-    analise.recortar_vertical(fonte, vertical, info, t1=min(info.get('duracao', _fim), _fim))
+    analise.recortar_vertical(fonte, vertical, info, t1=_fim)
 if a.cortar_baixo > 0:
     cortado = os.path.join(pub, f'vertical_cb{int(a.cortar_baixo * 100)}.mp4')
-    if not os.path.exists(cortado):
+    if not os.path.exists(cortado) or _dur(cortado) < _fim - 0.5:
         passo(f'tirando a faixa de baixo ({a.cortar_baixo:.0%}) com legenda/marca embutida')
         f = a.cortar_baixo
         subprocess.run(['ffmpeg', '-v', 'error', '-y', '-i', vertical, '-vf',
@@ -176,13 +200,18 @@ for n_sh, sh in enumerate(plano['shorts']):
         bons.sort(key=lambda h: (-nota(h), h.get('duracao', 0) < br.get('duracao', 2) + 0.5, -(h.get('altura') or 0)))
         if not bons:
             passo(f'  nada no banco combina com "{chave}" (sem B-roll aqui)'); mapa.pop(chave, None); continue
-        h = bons[0]
-        bruto = os.path.join(pasta, f'px_{h["id"]}.mp4')
-        ponte.broll_baixar(h['url'], bruto)
-        out = os.path.join(pub, f'px_{h["id"]}.mp4')
-        analise.clipe_vertical_cobrir(bruto, out, dur=min(h.get('duracao', 8), br.get('duracao', 3) + 1))
-        mapa[chave] = f'{pid}/px_{h["id"]}.mp4'
-        passo(f'  usando pixabay {h["id"]} ({h.get("tags")})')
+        for h in bons[:3]:
+            bruto = os.path.join(pasta, f'px_{h["id"]}.mp4')
+            ponte.broll_baixar(h['url'], bruto)
+            out = os.path.join(pub, f'px_{h["id"]}.mp4')
+            analise.clipe_vertical_cobrir(bruto, out, dur=min(h.get('duracao', 8), br.get('duracao', 3) + 1))
+            if parece_desenho(out):
+                passo(f'  pixabay {h["id"]} parece desenho/animação: pulei'); continue
+            mapa[chave] = f'{pid}/px_{h["id"]}.mp4'
+            passo(f'  usando pixabay {h["id"]} ({h.get("tags")})')
+            break
+        else:
+            passo(f'  só desenho no banco para "{chave}" (sem B-roll aqui)'); mapa.pop(chave, None)
 json.dump(mapa, open(os.path.join(pasta, 'brolls_map.json'), 'w'))
 
 # folha de conferência: 1 quadro de cada B-roll do banco, com a busca escrita embaixo
@@ -258,8 +287,25 @@ for n, sh in enumerate(plano['shorts']):
         resultado['shorts'].append({'n': n + 1, 'titulo': sh.get('titulo'), 'erro': (r.stdout + r.stderr)[-400:]})
         continue
     P = json.load(open(props))
-    # B-rolls que a equipe já colocou no vídeo e caem dentro do trecho: entram inteiros (encaixados)
-    ocupado = [(b['start'], b['end']) for b in P['brolls']]
+    # tarja da edição (nome, "Inscreva-se") dentro do trecho: no vertical ela aparece cortada ao meio (Lorena, 09/11/2026)
+    if 'tarjas' not in info:
+        info['tarjas'] = [t for t in analise.tarjas(fonte, info) if analise.tarja_no_recorte(t, info)]
+        json.dump(info, open(os.path.join(pasta, 'planos.json'), 'w'), ensure_ascii=False, indent=1)
+    ult = P['segments'][-1]
+    for t in info['tarjas']:
+        # tarja que só entra na folga depois da última palavra: encurta o fim (o último quadro segura até o final)
+        if ult['srcStart'] < t['ini'] < ult['srcEnd'] and ult['srcEnd'] - t['ini'] <= 0.4:
+            ult['srcEnd'] = round(t['ini'] - 0.05, 3)
+    pega = [t for t in info['tarjas'] for sg in P['segments'] if sg['srcStart'] < t['fim'] and sg['srcEnd'] > t['ini']]
+    if pega:
+        msg = ('o trecho pega a tarja da edição (nome/Inscreva-se) em ' + ', '.join(f"{t['ini']:.1f}-{t['fim']:.1f}s" for t in pega)
+               + ': termine antes ou comece depois (ou ponha "remover" nessas palavras)')
+        passo(f'short {n + 1}: plano rejeitado: {msg}')
+        resultado['shorts'].append({'n': n + 1, 'titulo': sh.get('titulo'), 'erro': msg})
+        continue
+    # B-rolls que a equipe já colocou no vídeo e caem dentro do trecho: entram inteiros, em tela cheia.
+    # Eles têm prioridade: o B-roll da máquina que bate com um deles sai (senão aparecem dois ao mesmo tempo,
+    # o de baixo acaba e o da equipe "volta" em cima; Lorena, 09/11/2026).
     extra = 0
     for s in P['segments']:
         for k, p in enumerate(brolls_fonte):
@@ -267,8 +313,7 @@ for n, sh in enumerate(plano['shorts']):
             if fim - ini < 0.6:
                 continue
             o0 = s['outStart'] + ini - s['srcStart']; o1 = s['outStart'] + fim - s['srcStart']
-            if any(not (o1 <= x0 or o0 >= x1) for x0, x1 in ocupado):
-                continue
+            P['brolls'] = [b for b in P['brolls'] if b['end'] <= o0 - 0.3 or b['start'] >= o1 + 0.3]
             out = os.path.join(pub, f'enc_{n}_{extra}.mp4')
             analise.clipe_broll_fonte(fonte, p, ini, fim, out, info)
             P['brolls'].append({'start': round(o0, 3), 'end': round(o1, 3), 'src': f'{pid}/enc_{n}_{extra}.mp4', 'mode': 'cheio'})
@@ -277,6 +322,11 @@ for n, sh in enumerate(plano['shorts']):
         P['brolls'][0]['start'] = 0.0
     P['brolls'].sort(key=lambda b: b['start'])
     P['musica'] = musica; P['logo'] = logo
+    try:
+        tempos = [sg['srcStart'] + (sg['srcEnd'] - sg['srcStart']) * f for sg in P['segments'] for f in (0.3, 0.7)][:24]
+        P['rosto'] = analise.rosto_vertical(vertical, tempos)
+    except Exception as e:
+        passo(f'  rosto não medido ({e}): legenda e tela dividida na posição padrão')
     json.dump(P, open(props, 'w'), ensure_ascii=False)
     titulo = re.sub(r'[\\/:*?"<>|]+', '', sh.get('titulo', f'short {n + 1}'))[:60].strip()
     nome = f"{a.cliente.upper()} - SHORT {n + 1} - {titulo}.mp4"

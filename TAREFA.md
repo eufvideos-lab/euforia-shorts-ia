@@ -38,8 +38,11 @@ bash instalar.sh   # instala Remotion e OpenCV (~15 s)
 1. Abra a página do pedido e confira que o Status ainda é "Editar" ou "Ajustar" (outra rodada pode ter pegado).
    Se não for, pule este pedido sem mexer nele. Se for, mude o Status para "Em edição" na hora e escreva no
    "Log da máquina": "iniciado <data hora>".
-2. Pegue o ID do arquivo no link "Vídeo editado (link do Drive)" (o trecho depois de /d/ ou id=).
-   Se o link for de pasta, liste a pasta com o Google Drive e use o vídeo editado mais recente (.mp4/.mov).
+2. Pegue o ID do arquivo no link "Vídeo bruto (link do Drive)" (o trecho depois de /d/ ou id=). Desde 09/11/2026 os
+   shorts saem do BRUTO: o editado traz tarjas (nome, "Inscreva-se") e B-rolls do editor, que no vertical aparecem
+   cortados ao meio ou duplicados (retorno da Lorena). Se o bruto estiver vazio, use "Vídeo editado (link do Drive)"
+   e escreva no "Log da máquina": "feito do editado (sem link do bruto)".
+   Se o link for de pasta, liste a pasta com o Google Drive e use o vídeo mais recente (.mp4/.mov).
    Se não achar vídeo: Status "Erro" e siga para o próximo (veja "Como tratar erro").
 3. Rode `python3 pipeline/preparar.py pedidos/<id-curto> <file_id>`.
 4. Legenda queimada: tire 3 quadros do fonte.mp4 (início, meio, fim) e olhe a faixa de baixo. Se o vídeo já tiver
@@ -68,7 +71,7 @@ bash instalar.sh   # instala Remotion e OpenCV (~15 s)
    grave no campo, no formato `fundo=#...; texto=#...; destaque=#...; fonte=...; logo=...`.
    Sem nada para tirar: fundo #FDFBF7, texto #1F2937, destaque #D45C78.
 7. Pasta de entrega: se "Pasta de entrega (opcional)" estiver preenchida, use ela. Senão, crie com o Google Drive
-   uma pasta "SHORTS IA - <AAAA-MM-DD>" dentro da pasta onde está o vídeo editado.
+   uma pasta "SHORTS IA - <AAAA-MM-DD>" dentro da pasta onde está o vídeo editado (ou o bruto, se não houver editado).
 8. Antes do render, confira os B-rolls do banco: rode o comando abaixo com `--so-brolls` no fim e olhe a imagem
    `pedidos/<id-curto>/brolls_banco.png` (um quadro de cada B-roll do banco, com a busca escrita). O que não mostrar
    literalmente o que a pessoa fala naquele trecho sai do plano (troque por #k, cartão ou nada). Só então rode sem

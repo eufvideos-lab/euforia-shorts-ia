@@ -18,6 +18,24 @@ const W = 1080;
 const H = 1920;
 const METADE = H / 2;
 
+// Rosto medido no vídeo vertical (fração da altura). Sem medida: posição típica de quem fala para a câmera.
+const rostoDe = (p: ShortProps) => p.rosto ?? { y: 0.4, altura: 0.2 };
+
+// Tela dividida: o falante fica na metade de cima com o rosto inteiro e centrado (Lorena, 09/11/2026: rosto cortado ao meio)
+const divisao = (p: ShortProps, escala: number) => {
+  const r = rostoDe(p);
+  const ty = METADE * 0.47 - r.y * H * escala;
+  return Math.min(0, Math.max(METADE - H * escala, ty));
+};
+
+// Linha logo abaixo do queixo, na tela cheia (legenda nunca em cima do rosto)
+const abaixoDoQueixo = (p: ShortProps, scale: number, originY: number) => {
+  const r = rostoDe(p);
+  const oY = originY * H;
+  const queixo = oY + ((r.y + r.altura * 0.62) * H - oY) * scale;
+  return queixo + 40;
+};
+
 const ativo = <T extends { start: number; end: number }>(lista: T[], t: number) =>
   lista.find((x) => t >= x.start && t < x.end);
 
@@ -28,6 +46,7 @@ const Falante: React.FC<{ p: ShortProps; dividido: boolean }> = ({ p, dividido }
   const t = frame / fps;
   const fr = ativo(p.framing, t) ?? { scale: 1, originY: 0.3 };
   const escala = dividido ? Math.max(fr.scale, 1.0) : fr.scale;
+  const ty = dividido ? divisao(p, escala) : 0;
 
   return (
     <AbsoluteFill
@@ -40,8 +59,8 @@ const Falante: React.FC<{ p: ShortProps; dividido: boolean }> = ({ p, dividido }
       <AbsoluteFill
         style={{
           height: H,
-          transform: `translateY(${dividido ? -200 : 0}px) scale(${escala})`,
-          transformOrigin: `50% ${fr.originY * 100}%`,
+          transform: `translateY(${ty}px) scale(${escala})`,
+          transformOrigin: dividido ? '50% 0%' : `50% ${fr.originY * 100}%`,
         }}
       >
         {p.segments.map((s, i) => {
@@ -113,6 +132,8 @@ const Legenda: React.FC<{ c: Caption; p: ShortProps; dividido: boolean }> = ({ c
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const t = frame / fps;
+  const fr = ativo(p.framing, t) ?? { scale: 1, originY: 0.3 };
+  const linhaQueixo = abaixoDoQueixo(p, fr.scale, fr.originY);
 
   if (c.hook) {
     // Gancho: palavras grandes empilhadas em cascata (até 2 palavras / 11 letras por linha)
@@ -129,7 +150,7 @@ const Legenda: React.FC<{ c: Caption; p: ShortProps; dividido: boolean }> = ({ c
           position: 'absolute',
           left: 0,
           right: 0,
-          top: dividido ? METADE - 260 : 820,
+          top: dividido ? METADE + 70 : Math.min(1340, Math.max(980, linhaQueixo)),
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
@@ -172,7 +193,7 @@ const Legenda: React.FC<{ c: Caption; p: ShortProps; dividido: boolean }> = ({ c
         position: 'absolute',
         left: 90,
         right: 90,
-        top: dividido ? METADE - 48 : 1090,
+        top: dividido ? METADE - 48 : Math.min(1540, Math.max(1060, linhaQueixo)),
         textAlign: 'center',
         fontFamily: p.estilo.fonte,
         fontWeight: 800,

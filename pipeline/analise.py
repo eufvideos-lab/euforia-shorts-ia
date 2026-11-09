@@ -1,5 +1,5 @@
 """Análise do vídeo de origem: planos (cortes de cena), rosto do falante e B-rolls já existentes."""
-import statistics, subprocess
+import os, statistics, subprocess
 import numpy as np
 
 
@@ -149,3 +149,75 @@ def clipe_broll_fonte(video, plano, ini, fim, saida, info):
                         '-an', '-c:v', 'libx264', '-crf', '19', '-preset', 'superfast', saida], check=True)
     else:
         clipe_encaixado(video, ini, fim, saida)
+
+
+def rosto_vertical(video, tempos):
+    """Onde fica o rosto no vídeo vertical já recortado (1080x1920): mediana do centro (y) e da altura do rosto,
+    as duas em fração da altura. Serve para a tela dividida mostrar o rosto inteiro e a legenda ficar abaixo do queixo
+    (Lorena, 09/11/2026: rosto cortado ao meio e legenda em cima do rosto)."""
+    import cv2, numpy as np
+    cl = cv2.CascadeClassifier(os.path.join(cv2.data.haarcascades, 'haarcascade_frontalface_default.xml'))
+    ys, hs = [], []
+    for t in tempos:
+        r = subprocess.run(['ffmpeg', '-v', 'error', '-ss', f'{t:.2f}', '-i', video, '-frames:v', '1', '-vf', 'scale=540:960',
+                            '-f', 'image2pipe', '-vcodec', 'png', '-'], capture_output=True)
+        if not r.stdout:
+            continue
+        img = cv2.imdecode(np.frombuffer(r.stdout, np.uint8), cv2.IMREAD_GRAYSCALE)
+        if img is None:
+            continue
+        rs = cl.detectMultiScale(cv2.equalizeHist(img), 1.1, 6, minSize=(60, 60))
+        if len(rs):
+            x, y, w, h = max(rs, key=lambda r: r[2] * r[3])
+            ys.append((y + h / 2) / 960); hs.append(h / 960)
+    if len(ys) < 3:
+        return None
+    return {'y': round(float(np.median(ys)), 3), 'altura': round(float(np.median(hs)), 3)}
+
+
+def tarjas(video, info, fps=4, limite=7.0):
+    """Tarjas que a edição pôs no vídeo longo (nome, "Inscreva-se", @ do perfil) na faixa de baixo.
+    No short vertical elas aparecem cortadas ao meio (Lorena, 09/11/2026). Acha elementos parados, com borda forte
+    e diferentes do fundo típico do vídeo. Devolve [{'ini', 'fim', 'x0', 'x1'}] em segundos e fração da largura."""
+    import cv2
+    w, h = 320, 180
+    raw = subprocess.run(['ffmpeg', '-v', 'error', '-i', video, '-vf', f'fps={fps},scale={w}:{h},format=gray',
+                          '-f', 'rawvideo', '-'], capture_output=True).stdout
+    F = np.frombuffer(raw, np.uint8).reshape(-1, h, w).astype(np.int16)
+    if len(F) < 8:
+        return []
+    med = np.median(F[::8], axis=0)
+    y0 = int(h * 0.6)
+    brolls = [(p['ini'], p['fim']) for p in info.get('planos', []) if p['tipo'] == 'broll']
+    marcas = []
+    for k in range(0, len(F) - 4, 2):
+        t = k / fps
+        if any(a - 0.3 <= t <= b for a, b in brolls):
+            continue
+        win = F[k:k + 4, y0:]
+        m = (win.std(axis=0) < 3) & (np.abs(win.mean(axis=0) - med[y0:]) > 35) & (cv2.Canny(F[k, y0:].astype(np.uint8), 80, 160) > 0)
+        if m.mean() * 1000 > limite:
+            cols = np.where(m.sum(axis=0) >= 2)[0]
+            marcas.append((t, cols.min() / w, (cols.max() + 1) / w))
+    out = []
+    for t, a, b in marcas:
+        if out and t - out[-1]['fim'] <= 1.0:
+            o = out[-1]; o['fim'] = t + 1.0; o['x0'] = min(o['x0'], a); o['x1'] = max(o['x1'], b)
+        else:
+            out.append({'ini': t, 'fim': t + 1.0, 'x0': a, 'x1': b})
+    return [dict(o, ini=round(max(0, o['ini'] - 0.25), 2), fim=round(o['fim'], 2), x0=round(float(o['x0']), 3), x1=round(float(o['x1']), 3))
+            for o in out if o['fim'] - o['ini'] >= 1.4]
+
+
+def tarja_no_recorte(tarja, info):
+    """A tarja cai dentro (mesmo em parte) do recorte vertical naquele momento?"""
+    W, H = info['largura'], info['altura']
+    if H >= W:
+        return True
+    cw = H * 9 / 16
+    for p in info['planos']:
+        if p['fim'] > tarja['ini'] and p['ini'] < tarja['fim']:
+            x0 = min(max(p['x_centro'] - cw / 2, 0), W - cw) / W
+            if tarja['x0'] < x0 + cw / W and tarja['x1'] > x0:
+                return True
+    return False
