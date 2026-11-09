@@ -29,7 +29,7 @@ const num = v => (v && typeof v.number === 'number') ? v.number : null;
 const rel = v => ((v || {}).relation || []).map(r => sem(r.id));
 const dias = (a, b) => Math.round(DateTime.fromISO(b, { zone: Z }).diff(DateTime.fromISO(a, { zone: Z }), 'days').days);
 const ddmm = d => d ? d.slice(8, 10) + '/' + d.slice(5, 7) + '/' + d.slice(2, 4) : '?';
-// Pessoas (Equipe → Discord e 1x1). Guardião padrão: Rômulo (foco ⭐ ou faixa A), Lorena (B/C). Igual ao vigia de promessas.
+// Pessoas (Equipe → Discord e 1x1). Guardião: campo da ficha; vazio = Rômulo (Henrique 09/11, todos os clientes).
 const P = {
   '3ea98c0cdde081299709cf901fac7275': { nome: 'Rômulo', user: '1490768736876237082', canal: '1556650881921978511' },
   '3ea98c0cdde0812d9cb4c41ce70df4ae': { nome: 'Ismael', user: '1410287139169763471', canal: '1556650886678454403' },
@@ -57,7 +57,7 @@ for (const it of $('Clientes ativos').all()) for (const p of (it.json.results ||
   if (!nome || /^TESTE/i.test(nome)) continue;
   const fase = txt(pr['Fase']), faixa = (txt(pr['Faixa']) || txt(pr['Faixa base'])).replace(/[^ABC]/g, '').slice(0, 1);
   const foco = txt(pr['⭐ Foco até']).slice(0, 10) >= hoje;
-  const g = rel(pr['🛡️ Guardião']); const guard = g.length ? g : [foco || faixa === 'A' ? ROMULO : LORENA];
+  const g = rel(pr['🛡️ Guardião']); const guard = g.length ? g : [ROMULO]; // Henrique 09/11: Rômulo é guardião de todos
   const ini = txt(pr['📄 Contrato início']).slice(0, 10), fim = txt(pr['📄 Contrato fim']).slice(0, 10);
   const cL = num(pr['📄 Contratado longos']), cS = num(pr['📄 Contratado shorts']), cC = num(pr['📄 Contratado carrosséis']);
   const lista = ent[id] || [];
