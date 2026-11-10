@@ -2,7 +2,7 @@
 
 Tirado das conversas de 04 a 10/11: Priscilia, Willian, Nova Acrópole, Izaias, Rodrigo, Regina, Lucilene, João Victor.
 
-## 1. Os 14 padrões
+## 1. Os 15 padrões
 
 | # | Padrão | Onde apareceu |
 |---|--------|---------------|
@@ -20,6 +20,7 @@ Tirado das conversas de 04 a 10/11: Priscilia, Willian, Nova Acrópole, Izaias, 
 | 12 | **Uma mensagem completa e organizada**, em vez de várias picadas. Cobrança só no privado (Isabela). | Regina ("mensagem completona"), Rodrigo (parcela) |
 | 13 | **Cortesia que saiu do cronograma volta quando o cliente pede (decisão de 10/11).** Ex.: postar também no TikTok o que ele já aprovou. Faz: prepara as peças e passa ao Ismael ou ao Daniel para subir e postar, mas **antes confere se temos acesso à conta**. Sem acesso, avisa o Rômulo e não pede no grupo. Não muda texto nem imagem do que o cliente aprovou. | Priscilia (carrosséis aprovados, pediu TikTok) |
 | 14 | **Erro claro apontado pelo cliente: perdão direto e refação no mesmo dia** (exceção ao padrão 3). Ex.: peça fora do posicionamento. "Acabamos enviando a leva antiga..., e realmente pedimos perdão por isso", com as peças novas na mesma mensagem, e a regra "nunca falar de X" gravada na ficha. | Priscilia (carrosséis de vendas) |
+| 15 | **Tutoria só com tema definido, e nunca resposta vaga (decisão de 10/11).** Ver pelo contexto se é tutoria (tirar dúvidas, aprender) ou alinhamento (andamento, próximos passos): alinhamento não precisa de tema. Quando é tutoria, a resposta não confirma horário nem diz "o time vai confirmar a agenda": pede as dúvidas ou o tema específico antes, senão a tutoria vira conversa sem foco. Toda resposta fecha com um próximo passo concreto. | Adriana Loch ("a resposta foi vaga, para marcar as tutorias precisamos saber o que ela tem de dúvidas") |
 
 Decisões completas do caso: `/mnt/project-files/gerente-ia/decisoes/2026-11-10-priscilia-queiroz.md`.
 
