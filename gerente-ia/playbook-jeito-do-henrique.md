@@ -2,7 +2,7 @@
 
 Tirado das conversas de 04 a 10/11: Priscilia, Willian, Nova Acrópole, Izaias, Rodrigo, Regina, Lucilene, João Victor.
 
-## 1. Os 13 padrões
+## 1. Os 14 padrões
 
 | # | Padrão | Onde apareceu |
 |---|--------|---------------|
@@ -18,7 +18,10 @@ Tirado das conversas de 04 a 10/11: Priscilia, Willian, Nova Acrópole, Izaias, 
 | 10 | **Tira o trabalho de quem trava.** Passa para quem entrega e põe o cliente em foco. | NA ("o Ismael é lento" → Lorena), Priscilia e Lucilene em foco |
 | 11 | **"Resolve aí".** Problema técnico não sobe para ele. | Priscilia e Rodrigo (PDF/Drive) |
 | 12 | **Uma mensagem completa e organizada**, em vez de várias picadas. Cobrança só no privado (Isabela). | Regina ("mensagem completona"), Rodrigo (parcela) |
-| 13 | **Cortesia que saiu do cronograma volta quando o cliente pede (decisão de 10/11).** Ex.: postar também no TikTok o que ele já aprovou. Faz: prepara as peças e passa ao Ismael ou ao Daniel para subir e postar, mas **antes confere se temos acesso à conta**. Sem acesso, pede ao cliente sem dizer que a cortesia tinha saído. | Priscilia (carrosséis aprovados, pediu TikTok) |
+| 13 | **Cortesia que saiu do cronograma volta quando o cliente pede (decisão de 10/11).** Ex.: postar também no TikTok o que ele já aprovou. Faz: prepara as peças e passa ao Ismael ou ao Daniel para subir e postar, mas **antes confere se temos acesso à conta**. Sem acesso, avisa o Rômulo e não pede no grupo. Não muda texto nem imagem do que o cliente aprovou. | Priscilia (carrosséis aprovados, pediu TikTok) |
+| 14 | **Erro claro apontado pelo cliente: perdão direto e refação no mesmo dia** (exceção ao padrão 3). Ex.: peça fora do posicionamento. "Acabamos enviando a leva antiga..., e realmente pedimos perdão por isso", com as peças novas na mesma mensagem, e a regra "nunca falar de X" gravada na ficha. | Priscilia (carrosséis de vendas) |
+
+Decisões completas do caso: `/mnt/project-files/gerente-ia/decisoes/2026-11-10-priscilia-queiroz.md`.
 
 **Causa raiz que ele quer matar (Lucilene):** promessa feita no grupo sem card, sem dono e sem prazo. Isso já é a thread "Criar vigia de clientes e promessas".
 
