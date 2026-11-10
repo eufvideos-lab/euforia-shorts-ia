@@ -19,6 +19,10 @@ const PAPEIS = "['revisor', 'calls', 'diretor', 'teste']";
 const CLIENTES_DB = '3ddc91b406be49e98e630c298d9162d8';
 const ENTREGAS_DB = '74b3076a-3257-49e3-bac4-ba6659215e48';
 const GERENTE = '40e98c0c-dde0-817e-b798-f6e045686b7c';
+const PROMESSAS_DB = '824c669471e5424d8c846936a63c16d4';
+// Dono da demanda (Divisão da equipe 2.0, 09/11): id da linha no banco Equipe.
+const DONOS = "{ ismael: ['3ea98c0cdde0812d9cb4c41ce70df4ae', 'Ismael'], daniel: ['3ea98c0cdde0817e87aee637a96d4fd1', 'Daniel'], lorena: ['3ea98c0cdde08163bd16f0213b098cb5', 'Lorena'], romulo: ['3ea98c0cdde081299709cf901fac7275', 'Rômulo'], escritorio: ['3ea98c0cdde0812bba06cba7e4261426', 'Escritório'] }";
+const DEMANDA_SYSTEM = 'Você lê a mensagem que o time do Grupo Euforia acabou de mandar no grupo de WhatsApp de um cliente e diz se ela promete alguma tarefa do nosso lado (enviar, postar, refazer, ajustar, conferir, preparar). Responda SÓ com JSON válido: {"tem": true, "o_que": "tarefa curta, verbo no infinitivo, até 70 letras", "tipo": "Vídeo longo|Shorts|Carrossel|Thumbnail|Página|Arte|Organização (Drive/canal)|Descrições e links|Outro", "dono": "ismael|daniel|lorena|romulo|escritorio", "quando": "AAAA-MM-DD", "depende_cliente": false, "card_existente": ""}. Dono: editar vídeo, cortar shorts, thumb, subir página pronta = ismael; postar, publicar ou agendar em qualquer rede (YouTube, Instagram, TikTok) = daniel; revisar ou conferir peça = lorena; acesso, setup, limpeza de canal, call ou alinhamento = romulo; roteiro, pauta, carrossel novo, PDF, relatório, apresentação, página nova = escritorio. Quando: a data dita ou implícita na mensagem (hoje, amanhã, sexta); sem data, o próximo dia útil depois de hoje. Se a bola está com o cliente (ele precisa gravar, aprovar, mandar acesso), depende_cliente = true. Agradecimento, ok, explicação ou resposta sem tarefa nossa: {"tem": false}. Se um dos cards abertos listados já é essa mesma tarefa, ponha "card_existente": "<Código do card>" (não cria outro). Use a dica de quem preparou a resposta só se combinar com a mensagem.';
 
 const TEAM_SQL = `team AS (
   SELECT DISTINCT m.autor_jid FROM mensagens m
@@ -35,7 +39,7 @@ const ler = node({ type: 'n8n-nodes-base.code', version: 2, config: { name: 'Ler
 const u = String(b.u || '').toLowerCase();
 return [{ json: { u: /^[0-9a-f]{24}$/.test(u) ? u : 'x', pin: String(b.pin || '').replace(/[^0-9]/g, '').slice(0, 6),
   acao: ['gerente', 'enviado'].includes(b.acao) ? b.acao : 'sugerir',
-  sugestao: String(b.sugestao || '').slice(0, 3000), enviado: String(b.enviado || '').slice(0, 3000),
+  sugestao: String(b.sugestao || '').slice(0, 3000), enviado: String(b.enviado || '').slice(0, 3000), dica: String(b.dica || '').slice(0, 400),
   chat: /^[0-9-]{6,40}@g[.]us$/.test(String(b.chat || '')) ? b.chat : '',
   pedido: String(b.pedido || '').split(String.fromCharCode(13)).join('').trim().slice(0, 600) } }];
 ` } } });
@@ -50,7 +54,7 @@ const ok = !!r.token && r.token === p.u && r.ativo === true && String(r.pin) ===
 let motivo = ok ? '' : 'acesso';
 if (ok && !p.chat) motivo = 'grupo';
 if (ok && p.acao === 'enviado' && (!p.sugestao || !p.enviado)) motivo = 'texto';
-return [{ json: { ok: !motivo, acao: p.acao, chat: p.chat || '-', pedido: p.pedido, sugestao: p.sugestao, enviado: p.enviado, nome: r.nome || '', papel: r.papel || '',
+return [{ json: { ok: !motivo, acao: p.acao, chat: p.chat || '-', pedido: p.pedido, sugestao: p.sugestao, enviado: p.enviado, dica: p.dica, nome: r.nome || '', papel: r.papel || '',
   diretor: r.papel === 'diretor', teste: r.papel === 'teste', resposta: { ok: false, motivo } } }];
 ` } } });
 
@@ -198,8 +202,77 @@ return [{ json: { resposta: r.id ? { ok: true, card: r.url || '' } : { ok: false
 const ehAviso = ifElse({ version: 2.2, config: { name: 'É aviso de envio?', parameters: { conditions: {
   options: { caseSensitive: true, leftValue: '', typeValidation: 'loose' }, conditions: [{ leftValue: '={{ $json.acao }}', rightValue: 'enviado', operator: { type: 'string', operation: 'equals' } }], combinator: 'and' } } } });
 
+const cardsDemanda = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, config: { name: 'Cards abertos (demanda)', credentials: NOTION, alwaysOutputData: true, onError: 'continueRegularOutput', parameters: {
+  method: 'POST', url: `https://api.notion.com/v1/databases/${ENTREGAS_DB}/query`, authentication: 'genericCredentialType', genericAuthType: 'httpHeaderAuth',
+  sendHeaders: true, headerParameters: NOTION_HDR, sendBody: true, specifyBody: 'json',
+  jsonBody: '={{ JSON.stringify({ filter: { and: [{ property: "Cliente", relation: { contains: $json.cliente_id || "00000000000000000000000000000000" } }, { property: "Status", select: { does_not_equal: "Postado" } }, { property: "Status", select: { does_not_equal: "Cancelado" } }, { property: "Status", select: { does_not_equal: "Feito" } }] }, sorts: [{ timestamp: "created_time", direction: "descending" }], page_size: 25 }) }}',
+  options: { response: { response: { neverError: true } } } } } });
+
+const pedirDemanda = node({ type: 'n8n-nodes-base.code', version: 2, config: { name: 'Pedir demanda', parameters: { jsCode: `const v = $('Validar acesso').first().json;
+const agora = DateTime.now().setZone('America/Recife');
+const tx = x => { if (!x) return ''; const a = x.title || x.rich_text; if (a) return a.map(q => q.plain_text).join('').trim(); if (x.select) return x.select.name; if (x.date) return x.date.start || ''; if (x.unique_id) return String(x.unique_id.number); return ''; };
+const abertos = (($input.first().json || {}).results || []).map(p => { const pr = p.properties || {}; return '- Código ' + tx(pr['Código']) + ' · ' + tx(pr['Entrega']) + ' · status ' + tx(pr['Status']) + ' · prazo ' + tx(pr['Prazo']).slice(0, 10); }).join(String.fromCharCode(10));
+const user = 'Hoje é ' + agora.setLocale('pt-BR').toFormat('cccc dd/MM/yyyy') + '.' + String.fromCharCode(10) + 'Cards abertos do cliente:' + String.fromCharCode(10) + (abertos || '(nenhum)') + String.fromCharCode(10) + 'Dica de quem preparou: ' + (v.dica || '(nenhuma)') + String.fromCharCode(10, 10) + 'Mensagem enviada ao cliente:' + String.fromCharCode(10) + v.enviado.replace(/R[$]\\s?[0-9.,]+/g, '[valor]');
+return [{ json: { corpo: JSON.stringify({ model: 'claude-sonnet-4-5', max_tokens: 300, temperature: 0, system: ${JSON.stringify(DEMANDA_SYSTEM)}, messages: [{ role: 'user', content: user }] }) } }];
+` } } });
+
+const claudeDemanda = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, config: { name: 'Achar demanda (Claude)', credentials: ANTH, onError: 'continueRegularOutput', parameters: {
+  method: 'POST', url: 'https://api.anthropic.com/v1/messages', authentication: 'predefinedCredentialType', nodeCredentialType: 'anthropicApi',
+  sendHeaders: true, headerParameters: { parameters: [{ name: 'anthropic-version', value: '2023-06-01' }] },
+  sendBody: true, specifyBody: 'json', jsonBody: '={{ $json.corpo }}', options: { timeout: 60000, response: { response: { neverError: true } } } } } });
+
+const montarDemanda = node({ type: 'n8n-nodes-base.code', version: 2, config: { name: 'Montar demanda', parameters: { jsCode: `const v = $('Validar acesso').first().json;
+const c = $('Juntar cliente').first().json;
+const Z = 'America/Recife', agora = DateTime.now().setZone(Z), hoje = agora.toISODate();
+const DONOS = ${DONOS};
+let d = {};
+try { const t = ((($input.first().json || {}).content || [])[0] || {}).text || ''; d = JSON.parse((t.match(/\\{[\\s\\S]*\\}/) || ['{}'])[0]); } catch (e) { d = {}; }
+const dono = DONOS[String(d.dono || '').toLowerCase()];
+if (d.tem !== true || !d.o_que || !dono || !c.cliente_id) return [{ json: { tem: false } }];
+let quando = /^\\d{4}-\\d{2}-\\d{2}$/.test(String(d.quando || '')) ? d.quando : '';
+if (!quando || quando < hoje) { let x = agora.plus({ days: 1 }); while (x.weekday > 5) x = x.plus({ days: 1 }); quando = x.toISODate(); }
+const TIPOS = ['Vídeo longo', 'Shorts', 'Carrossel', 'Thumbnail', 'Página', 'Arte', 'Organização (Drive/canal)', 'Descrições e links', 'Outro'];
+const tipo = TIPOS.includes(d.tipo) ? d.tipo : 'Outro';
+const TIPO_CARD = ['Vídeo longo', 'Shorts', 'Carrossel', 'Thumbnail', 'Página', 'Arte'].includes(tipo) ? tipo : 'Outro';
+const o = String(d.o_que).trim().slice(0, 90);
+const dd = DateTime.fromISO(quando, { zone: Z }).toFormat('dd/MM');
+const titulo = (c.cliente.toUpperCase() + ' | ' + o.toUpperCase() + ' | ' + dd).slice(0, 180);
+const NL = String.fromCharCode(10);
+const obs = ('[Sugestão de resposta ' + agora.toFormat('dd/MM HH:mm') + '] Prometido ao cliente no grupo por ' + v.nome + '.' + NL + 'Mensagem enviada:' + NL + v.enviado.replace(/R[$]\\s?[0-9.,]+/g, '[valor]')).slice(0, 1990);
+const exist = ((($('Cards abertos (demanda)').first().json || {}).results) || []).find(p => d.card_existente && String(((p.properties || {})['Código'] || {}).unique_id ? p.properties['Código'].unique_id.number : '') === String(d.card_existente).replace(/[^0-9]/g, ''));
+const card = { parent: { database_id: '${ENTREGAS_DB}' }, properties: {
+  'Entrega': { title: [{ text: { content: titulo } }] }, 'Cliente': { relation: [{ id: c.cliente_id }] },
+  'Tipo': { select: { name: TIPO_CARD } }, 'Status': { select: { name: 'A fazer' } }, 'Origem': { select: { name: 'Extra' } },
+  'Prazo': { date: { start: quando } }, 'Responsável': { relation: [{ id: dono[0] }] }, 'Obs': { rich_text: [{ text: { content: obs } }] } } };
+const exDono = exist ? (((exist.properties || {})['Responsável'] || {}).relation || [])[0] : null;
+return [{ json: { tem: true, novo: !exist, card_id: exist ? exist.id : '', card_url: exist ? exist.url : '', dono: exDono ? exDono.id : dono[0],
+  dono_nome: exDono ? (Object.values(DONOS).find(x => x[0] === exDono.id.replace(/-/g, '')) || ['', 'o responsável do card'])[1] : dono[1],
+  quando: exist && ((exist.properties || {})['Prazo'] || {}).date ? exist.properties['Prazo'].date.start.slice(0, 10) : quando, dd, o_que: o, tipo, depende: d.depende_cliente === true, cliente_id: c.cliente_id, corpo: JSON.stringify(card) } }];
+` } } });
+
+const temDemanda = ifElse({ version: 2.2, config: { name: 'Tem demanda?', parameters: { conditions: {
+  options: { caseSensitive: true, leftValue: '', typeValidation: 'loose' }, conditions: [{ leftValue: '={{ $json.tem }}', rightValue: '', operator: { type: 'boolean', operation: 'true', singleValue: true } }], combinator: 'and' } } } });
+
+const cardNovo = ifElse({ version: 2.2, config: { name: 'Card novo?', parameters: { conditions: {
+  options: { caseSensitive: true, leftValue: '', typeValidation: 'loose' }, conditions: [{ leftValue: '={{ $json.novo }}', rightValue: '', operator: { type: 'boolean', operation: 'true', singleValue: true } }], combinator: 'and' } } } });
+
+const criarDemanda = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, config: { name: 'Criar card da demanda', credentials: NOTION, onError: 'continueRegularOutput', parameters: {
+  method: 'POST', url: 'https://api.notion.com/v1/pages', authentication: 'genericCredentialType', genericAuthType: 'httpHeaderAuth',
+  sendHeaders: true, headerParameters: NOTION_HDR, sendBody: true, specifyBody: 'json', jsonBody: '={{ $json.corpo }}',
+  options: { response: { response: { neverError: true } } } } } });
+
+// Promessa já "Com card": o vigia das promessas acompanha o prazo e chama antes de atrasar (sem o gerador duplicar).
+const criarPromessa = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, config: { name: 'Registrar promessa', credentials: NOTION, onError: 'continueRegularOutput', parameters: {
+  method: 'POST', url: 'https://api.notion.com/v1/pages', authentication: 'genericCredentialType', genericAuthType: 'httpHeaderAuth',
+  sendHeaders: true, headerParameters: NOTION_HDR, sendBody: true, specifyBody: 'json',
+  jsonBody: `={{ (() => { const d = $('Montar demanda').first().json; const card = d.card_id || $json.id; const v = $('Validar acesso').first().json; if (!card) return JSON.stringify({}); return JSON.stringify({ parent: { database_id: '${PROMESSAS_DB}' }, properties: { 'Marco': { title: [{ text: { content: d.o_que } }] }, 'Quando': { date: { start: d.quando } }, 'Tipo': { select: { name: d.tipo } }, 'Status': { select: { name: 'Com card' } }, 'Cliente': { relation: [{ id: d.cliente_id }] }, 'Responsável': { relation: [{ id: d.dono }] }, 'Card': { relation: [{ id: card }] }, 'Depende do cliente': { checkbox: d.depende }, 'Origem': { rich_text: [{ text: { content: ('Sugestão de resposta enviada por ' + v.nome + ' em ' + $now.setZone('America/Recife').toFormat('dd/MM HH:mm')).slice(0, 200) } }] } } }); })() }}`,
+  options: { response: { response: { neverError: true } } } } } });
+
 const montarAviso = node({ type: 'n8n-nodes-base.code', version: 2, config: { name: 'Montar aviso', parameters: { jsCode: `const v = $('Validar acesso').first().json;
 const c = $('Juntar cliente').first().json;
+let dem = { tem: false }; try { dem = $('Montar demanda').first().json || dem; } catch (e) {}
+let cardUrl = dem.card_url || ''; if (!cardUrl) { try { cardUrl = ($('Criar card da demanda').first().json || {}).url || ''; } catch (e) {} }
+if (dem.tem && dem.quando) dem.dd = dem.quando.slice(8, 10) + '/' + dem.quando.slice(5, 7);
 const agora = DateTime.now().setZone('America/Recife');
 const norm = s => String(s || '').toLowerCase().normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').replace(/[^a-z0-9 ]+/g, ' ').split(' ').filter(Boolean);
 const a = norm(v.sugestao), b = norm(v.enviado);
@@ -209,15 +282,16 @@ for (let i = 1; i <= n; i++) { const cur = new Array(m + 1).fill(0); for (let j 
 const parecido = Math.round(100 * prev[m] / Math.max(1, n, m));
 const igual = v.sugestao.trim() === v.enviado.trim();
 const NL = String.fromCharCode(10);
-const cita = s => s.trim().slice(0, 850).split(NL).map(l => '> ' + l).join(NL) + (s.trim().length > 850 ? NL + '> (…)' : '');
+const cita = s => s.trim().slice(0, 750).split(NL).map(l => '> ' + l).join(NL) + (s.trim().length > 750 ? NL + '> (…)' : '');
 const selo = igual ? '✅ Enviou igual à sugestão' : (parecido >= 80 ? '✏️ Ajuste leve (' + parecido + '% igual)' : '⚠️ Mudou bastante (' + parecido + '% igual)');
-let content = '**✨ Sugestão usada · ' + c.cliente + '**' + NL + 'Enviada por ' + v.nome + ' às ' + agora.toFormat('HH:mm') + ' · ' + selo + NL + NL
+const demTxt = dem.tem ? (cardUrl ? (dem.novo ? '📌 Demanda criada: ' : '📌 Já tinha card, ligado à promessa: ') + dem.o_que + ' · ' + dem.dono_nome + ' até ' + dem.dd + ' · <' + cardUrl + '>' : '⚠️ Tinha demanda (' + dem.o_que + ') mas o card não foi criado.') : '📭 Sem demanda nova nessa mensagem.';
+let content = '**✨ Sugestão usada · ' + c.cliente + '**' + NL + 'Enviada por ' + v.nome + ' às ' + agora.toFormat('HH:mm') + ' · ' + selo + NL + demTxt + NL + NL
   + (igual ? '**Enviado (igual à sugestão):**' + NL + cita(v.enviado) : '**Sugestão:**' + NL + cita(v.sugestao) + NL + NL + '**Enviado:**' + NL + cita(v.enviado))
   + NL + NL + 'Se ficou ruim: apague no grupo e mande outra pela aba Conversas.';
 content = content.slice(0, 1990);
 return [{ json: { discord: JSON.stringify({ content, allowed_mentions: { parse: [] } }),
   linha: { quando: agora.toISO(), cliente: c.cliente, chat: v.chat, quem: v.nome, sugestao: v.sugestao, enviado: v.enviado, igual, parecido },
-  resposta: { ok: true } } }];
+  resposta: { ok: true, demanda: dem.tem && cardUrl ? { o_que: dem.o_que, dono: dem.dono_nome, prazo: dem.dd } : null } } }];
 ` } } });
 
 const avisarDiscord = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, config: { name: 'Avisar no #sugestoes-enviadas', credentials: DISCORD, onError: 'continueRegularOutput', parameters: {
@@ -255,14 +329,18 @@ const devSemCliente = node({ type: 'n8n-nodes-base.respondToWebhook', version: 1
 const recusar = node({ type: 'n8n-nodes-base.respondToWebhook', version: 1.5, config: { name: 'Recusar', parameters: {
   respondWith: 'json', responseBody: '={{ JSON.stringify($json.resposta) }}', options: {} } } });
 
-const nota = sticky('## Painel · Conversas · Sugerir resposta (V1)\nAba Conversas: "✨ Sugerir resposta" lê as últimas 40 mensagens do grupo + cards do cliente e escreve a resposta no jeito do Henrique (prompt na tabela "Gerente IA · textos", chave sugerir_system, maior versão). Quem pediu edita e envia pela própria aba (fluxo de Conversas). Nada sai daqui.\n"🪄 Passar para a Gerente" cria card CASO no Entregas com Responsável = Gerente IA (as Mãos da Gerente resolvem).\n"Enviado": quando alguém manda a resposta usando a sugestão, avisa no #sugestoes-enviadas (sugestão x enviado, % igual) e registra na tabela "Gerente IA · sugestões enviadas".\nTravas: mesmas pessoas da aba; assunto da diretoria (dinheiro, contrato, jurídico) não ganha sugestão; valores mascarados.', [], { color: 4 });
+const nota = sticky('## Painel · Conversas · Sugerir resposta (V1)\nAba Conversas: "✨ Sugerir resposta" lê as últimas 40 mensagens do grupo + cards do cliente e escreve a resposta no jeito do Henrique (prompt na tabela "Gerente IA · textos", chave sugerir_system, maior versão). Quem pediu edita e envia pela própria aba (fluxo de Conversas). Nada sai daqui.\n"🪄 Passar para a Gerente" cria card CASO no Entregas com Responsável = Gerente IA (as Mãos da Gerente resolvem).\n"Enviado": quando alguém manda a resposta usando a sugestão, acha a tarefa prometida (Claude), cria o card no Entregas para o dono certo com prazo (ou liga ao card que já existe) e registra a promessa no 🗓️ Promessas (o vigia acompanha); depois avisa no #sugestoes-enviadas (sugestão x enviado, % igual) e registra na tabela "Gerente IA · sugestões enviadas".\nTravas: mesmas pessoas da aba; assunto da diretoria (dinheiro, contrato, jurídico) não ganha sugestão; valores mascarados.', [], { color: 4 });
 
 export default workflow('painel-sugerir', 'Painel | Conversas · Sugerir resposta (V1)')
   .add(pedir).to(ler).to(acesso).to(validar)
   .to(podeSeguir
     .onTrue(buscarConversa.to(fichaCliente).to(juntarCliente).to(temCliente
       .onTrue(ehAviso
-        .onTrue(montarAviso.to(avisarDiscord).to(registrarEnvio).to(devAviso))
+        .onTrue(cardsDemanda.to(pedirDemanda).to(claudeDemanda).to(montarDemanda).to(temDemanda
+          .onTrue(cardNovo
+            .onTrue(criarDemanda.to(criarPromessa).to(montarAviso))
+            .onFalse(criarPromessa))
+          .onFalse(montarAviso.to(avisarDiscord).to(registrarEnvio).to(devAviso))))
         .onFalse(ehGerente
           .onTrue(montarCaso.to(criarCaso).to(resultadoCaso).to(devCaso))
           .onFalse(cardsAbertos.to(lerTextos).to(montarPedido).to(vaiPedir

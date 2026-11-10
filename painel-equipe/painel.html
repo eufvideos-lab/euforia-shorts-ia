@@ -3041,7 +3041,7 @@ document.addEventListener('click', async e => {
     try { const r = await api('euforia-painel-conversas', { acao: 'mandar', chat, texto: t }); if (!r || !r.ok) throw new Error((r && r.motivo) || 'erro');
       delete CVRASC[chat]; ocupado = false;
       // Henrique avalia no Discord toda resposta que saiu a partir da sugestão (#sugestoes-enviadas).
-      const sg = CVSUG[chat]; if (sg && sg.texto) { delete CVSUG[chat]; api('euforia-painel-sugerir', { acao: 'enviado', chat, sugestao: sg.texto, enviado: t }).catch(() => {}); }
+      const sg = CVSUG[chat]; if (sg && sg.texto) { delete CVSUG[chat]; api('euforia-painel-sugerir', { acao: 'enviado', chat, sugestao: sg.texto, enviado: t, dica: sg.o_que_produzir || '' }).catch(() => {}); }
       if (CVM && CVM.chat === chat) CVM.mensagens.push({ id: 'local' + Date.now(), eu: true, autor: D.nome.split(' ')[0] + ' (você)', tipo: '', foto: false, oculto: false, texto: t, hora: new Date().toTimeString().slice(0, 5), dia: (CVM.mensagens.length ? CVM.mensagens[CVM.mensagens.length - 1].dia : 'Hoje') });
       const c = CV.conversas.find(x => x.chat === chat); if (c) { c.espera = false; c.naoLidas = 0; }
       render(); cvRolar(); toast('Resposta enviada no grupo.'); setTimeout(() => abrirConversa(chat, true), 6000); }
