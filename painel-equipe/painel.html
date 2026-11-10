@@ -365,6 +365,47 @@ td .sub{font-size:13px}
 .ev-dia .val{font-family:var(--f-mono);font-variant-numeric:tabular-nums;font-weight:700;color:var(--ok)}
 @media (max-width:860px){.ev-sem li{grid-template-columns:90px minmax(0,1fr);}.ev-sem li > span:last-child{grid-column:1 / -1}}
 @media (max-width:860px){.stats.six{grid-template-columns:1fr 1fr}.msgs li{grid-template-columns:minmax(0,1fr);gap:4px}}
+
+/* Conversas (10/11/2026): aba estilo WhatsApp */
+.cv{display:grid;grid-template-columns:minmax(260px,340px) 1fr;border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--surface);height:calc(100vh - 210px);min-height:460px}
+.cv-lista{border-right:1px solid var(--line);display:flex;flex-direction:column;min-height:0}
+.cv-lista .cv-busca{padding:10px;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:8px}
+.cv-lista .cv-busca input{width:100%;box-sizing:border-box;border:1px solid var(--line);border-radius:10px;padding:9px 12px;font:inherit;font-size:14px;background:var(--surface);color:var(--ink)}
+.cv-filtros{display:flex;gap:6px;flex-wrap:wrap}
+.cv-filtros button{border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:999px;padding:4px 10px;font:inherit;font-size:13px;cursor:pointer}
+.cv-filtros button[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.cv-itens{overflow-y:auto;flex:1;margin:0;padding:0;list-style:none}
+.cv-itens button{display:grid;grid-template-columns:1fr auto;gap:2px 8px;width:100%;text-align:left;border:0;border-bottom:1px solid var(--line);background:transparent;color:var(--ink);padding:10px 12px;font:inherit;cursor:pointer}
+.cv-itens button:hover{background:var(--surface-2)}
+.cv-itens button[aria-current="true"]{background:var(--accent-soft)}
+.cv-itens .n{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cv-itens .q{font-size:12px;color:var(--muted);text-align:right}
+.cv-itens .u{font-size:13px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cv-itens .b{justify-self:end;background:var(--accent);color:var(--on-accent);border-radius:999px;font-size:12px;font-weight:700;min-width:20px;padding:0 6px;text-align:center;line-height:20px}
+.cv-chat{display:flex;flex-direction:column;min-height:0;background:var(--surface-2)}
+.cv-topo{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--line);background:var(--surface)}
+.cv-topo b{font-family:var(--f-display);font-size:18px}
+.cv-topo .sub{margin:0;font-size:13px}
+.cv-voltar{display:none}
+.cv-msgs{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:6px}
+.cv-dia{align-self:center;font-size:12px;color:var(--muted);background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:2px 10px;margin:8px 0}
+.cv-m{max-width:78%;padding:7px 10px 5px;border-radius:12px;background:var(--surface);border:1px solid var(--line);align-self:flex-start;white-space:pre-wrap;word-wrap:break-word;font-size:14px;line-height:1.4}
+.cv-m.eu{align-self:flex-end;background:var(--accent-soft);border-color:transparent}
+.cv-m .a{display:block;font-size:12px;font-weight:700;color:var(--accent-text);margin-bottom:2px}
+.cv-m .h{display:block;text-align:right;font-size:11px;color:var(--muted);margin-top:2px}
+.cv-m.oc{font-style:italic;color:var(--muted)}
+.cv-m img{display:block;max-width:100%;max-height:320px;border-radius:8px;margin:4px 0}
+.cv-caixa{display:flex;gap:8px;padding:10px;border-top:1px solid var(--line);background:var(--surface);align-items:flex-end}
+.cv-caixa textarea{flex:1;resize:none;min-height:44px;max-height:160px}
+.cv-aviso{padding:10px 14px;border-top:1px solid var(--line);background:var(--warn-soft);color:var(--warn);font-size:14px}
+.cv-vazio{margin:auto;color:var(--muted);text-align:center;padding:24px}
+@media (max-width:820px){
+  .cv{grid-template-columns:1fr;height:calc(100vh - 170px)}
+  .cv.aberta .cv-lista{display:none}
+  .cv:not(.aberta) .cv-chat{display:none}
+  .cv-voltar{display:inline-flex}
+  .cv-m{max-width:90%}
+}
 </style>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-14 -28 178 178'%3E%3Crect x='-14' y='-28' width='178' height='178' rx='36' fill='%23050505'/%3E%3Cpath fill='%23FF6518' d='M15,0L79.28,0A8,8 0 0 1 83.77,1.38L106.08,16.5A7.39,7.39 0 0 1 101.94,30L15,30A15,15 0 0 1 15,0Z M15,46L125.41,46A8,8 0 0 1 129.9,47.38L140.23,54.38A8,8 0 0 1 140.23,67.62L129.9,74.62A8,8 0 0 1 125.41,76L15,76A15,15 0 0 1 15,46Z M15,92L101.94,92A7.39,7.39 0 0 1 106.08,105.5L83.77,120.62A8,8 0 0 1 79.28,122L15,122A15,15 0 0 1 15,92Z'/%3E%3C/svg%3E"><style id="play-skin">h1,h2,h3{font-stretch:125%;letter-spacing:-.01em}.btn-main{text-shadow:none;box-shadow:none}</style></head>
 <body>
@@ -527,6 +568,7 @@ async function carregar(silencioso){
     D = d; render(); tela('app');
     if (VIEWS.responder.pode()) { carregarRespostas(); if (!W && !diretor()) carregarWhats(); }
     if (VIEWS.calls.pode() && !CC) carregarCalls();
+    if (VIEWS.conversas.pode() && !CV) carregarConversas(true);
     if (diretor()) carregarDiretor();
   } catch (e) {
     if (!D) { tela('tela-aviso'); $('#aviso-t').textContent = 'Não abriu agora'; $('#aviso-p').textContent = 'Confira a internet e tente de novo em alguns minutos. Se continuar, avise a diretoria.'; }
@@ -923,6 +965,8 @@ const VIEWS = {
       <section class="group"><h2>Esperando resposta <span class="count">${R.itens.length}</span></h2>${R.itens.length ? `<ul class="rows">${R.itens.map(item).join('')}</ul>` : '<p class="empty">Ninguém esperando resposta agora. 🎉</p>'}</section>
       <p class="note">A ordem é: assunto sensível, cliente 🔴 em atenção, faixa A, B e C, e depois quem espera há mais tempo. A resposta sai pelo seu número de suporte, com o seu nome em negrito na frente.</p>`;
     } },
+  conversas: { nome: 'Conversas', pode: () => (DEMO || CONVERSAS_NO_AR) && ['revisor', 'calls', 'diretor', 'teste'].includes(papel()), badge: () => CV && CV.conversas ? CV.conversas.filter(x => x.espera).length : 0,
+    html(){ return conversasHtml(); } },
   grade: { nome: 'Grade de postagem', pode: () => true, badge: () => (DEMO || ESTREIAS_NO_AR) && diretor() && ES && ES.estreias ? ES.estreias.filter(e => { const d = diff(e.data); return d >= 0 && d <= 14 && faltaChk(e).length; }).length : 0,
     html(){
       if (!G) { carregarGrade(); return `<div class="head"><div><p class="eyebrow">Quando cada cliente posta</p><h1>Grade de postagem</h1></div></div><p class="sub">Carregando…</p>`; }
@@ -1297,6 +1341,7 @@ function render(){
   if (view === 'pedir' && $('#fpedir')) return;
   $('#main').innerHTML = `<div class="view">${VIEWS[view].html()}</div>`;
   atualizarPedido(); listaAnexos(); listaModelo();
+  if (view === 'conversas') cvRolar();
   if ($('#busca-res') && !$('#busca-res').hidden) buscar();
 }
 
@@ -2889,6 +2934,87 @@ async function carregarCentral(silencioso){
   if ((view === 'central' || view === 'geral') && !ocupado && !$('#layer').innerHTML && !(silencioso && document.activeElement && document.activeElement.matches('#ctq'))) render();
 }
 
+
+// Conversas (10/11/2026, pedido do Henrique): aba estilo WhatsApp. Escolhe o cliente, vê as últimas mensagens do grupo e responde dali.
+// Sai pelo número do suporte com "*Nome:*" na frente (decisão do Henrique). Fluxo "Painel | Conversas com clientes (V1)", webhook euforia-painel-conversas.
+const CONVERSAS_NO_AR = false;
+let CV = null, CVQ = '', CVF = 'todas', CVA = '', CVM = null, CVFOTO = {};
+const CVRASC = {};
+const CV_MOTIVO = { grupo: 'Esse grupo não é de cliente do suporte.', noite: 'Fora do horário (22h às 7h). O texto fica guardado aqui; mande de manhã.', direcao: 'O cliente falou de assunto da diretoria (dinheiro, contrato ou jurídico). A diretoria responde; não responda por aqui.', texto: 'Escreva a resposta.', whatsapp: 'O WhatsApp não mandou. Tente de novo em 1 minuto.', acesso: 'Seu acesso caiu. Abra o painel de novo.', foto: 'Não consegui abrir essa foto agora.' };
+function conversasHtml(){
+  const topo = `<div class="head"><div><p class="eyebrow">WhatsApp do suporte${CV && CV.agora ? ' · atualizado às ' + esc(CV.agora) : ''}</p><h1>Conversas</h1></div><p class="sub">Escolha o cliente, leia as últimas mensagens do grupo e responda daqui. Sai pelo número do suporte com o seu nome em negrito na frente.</p></div>`;
+  if (!CV) { carregarConversas(); return topo + '<p class="sub">Carregando…</p>'; }
+  if (CV.erro) return topo + '<p class="empty">Não abriu agora. Tente de novo em alguns minutos.</p>';
+  const q = CVQ.trim().toLowerCase();
+  const L = CV.conversas.filter(x => (CVF !== 'esperando' || x.espera) && (!q || (x.nome + ' ' + x.grupo).toLowerCase().includes(q)));
+  const esperando = CV.conversas.filter(x => x.espera).length;
+  const item = x => `<li><button data-cv="${esc(x.chat)}" ${x.chat === CVA ? 'aria-current="true"' : ''}><span class="n">${x.atencao ? '🔴 ' : ''}${esc(x.nome)}</span><span class="q">${esc(x.quando)}</span><span class="u">${esc(x.ultima)}</span>${x.naoLidas ? `<span class="b" title="Esperando resposta">${x.naoLidas}</span>` : '<span></span>'}</button></li>`;
+  const lista = `<div class="cv-lista"><div class="cv-busca"><input type="search" id="cvq" placeholder="Buscar cliente" value="${esc(CVQ)}" aria-label="Buscar cliente">
+    <div class="cv-filtros"><button data-cvf="todas" aria-pressed="${CVF === 'todas'}">Todas</button><button data-cvf="esperando" aria-pressed="${CVF === 'esperando'}">Esperando resposta${esperando ? ' (' + esperando + ')' : ''}</button></div></div>
+    <ul class="cv-itens">${L.length ? L.map(item).join('') : '<li class="cv-vazio">Nenhum cliente aqui.</li>'}</ul></div>`;
+  let chat = '<div class="cv-chat"><p class="cv-vazio">Escolha um cliente na lista para ver a conversa.</p></div>';
+  if (CVA) {
+    const x = CV.conversas.find(c => c.chat === CVA) || { nome: '', grupo: '' };
+    const M = CVM && CVM.chat === CVA ? CVM : null;
+    let corpo = '<p class="cv-vazio">Carregando a conversa…</p>', baixo = '';
+    if (M && M.erro) corpo = `<p class="cv-vazio">${esc(CV_MOTIVO[M.erro] || 'Não abriu agora.')}</p>`;
+    else if (M) {
+      let dia = '';
+      corpo = M.mensagens.map(m => { let h = ''; if (m.dia !== dia) { dia = m.dia; h += `<span class="cv-dia">${esc(dia)}</span>`; }
+        const foto = m.foto ? (CVFOTO[m.id] && CVFOTO[m.id] !== 'erro' ? `<img src="${CVFOTO[m.id]}" alt="Foto enviada no grupo" onload="cvRolar()">` : `<button class="btn" data-cvfoto="${esc(m.id)}" style="margin:4px 0">${CVFOTO[m.id] === 'erro' ? 'Não abriu. Tentar de novo' : CVFOTO[m.id] === 'indo' ? 'Abrindo…' : '📷 Ver foto'}</button>`) : (m.tipo && !m.texto ? esc(m.tipo) : '');
+        return h + `<div class="cv-m ${m.eu ? 'eu' : ''} ${m.oculto ? 'oc' : ''}"><span class="a">${esc(m.autor)}</span>${m.oculto ? '🔒 Assunto da diretoria' : foto + (m.foto && m.texto ? '<br>' : '') + esc(m.texto)}<span class="h">${esc(m.hora)}</span></div>`; }).join('') || '<p class="cv-vazio">Sem mensagens nos últimos 60 dias.</p>';
+      if (M.bloqueio === 'direcao') baixo = `<div class="cv-aviso">${CV_MOTIVO.direcao}</div>`;
+      else baixo = `${M.noite ? `<div class="cv-aviso">${CV_MOTIVO.noite}</div>` : ''}<div class="cv-caixa"><textarea id="cvt" rows="2" maxlength="3000" placeholder="Escreva a resposta para o grupo" aria-label="Resposta">${esc(CVRASC[CVA] || '')}</textarea><button class="btn primary" id="cvenviar" ${M.noite ? 'disabled' : ''}>Enviar</button></div>`;
+    }
+    chat = `<div class="cv-chat"><div class="cv-topo"><button class="btn cv-voltar" data-cvvoltar>←</button><div><b>${esc(x.nome)}</b>${x.grupo && x.grupo !== x.nome ? `<p class="sub">${esc(x.grupo)}</p>` : ''}</div></div>
+      <div class="cv-msgs" id="cvmsgs">${corpo}</div>${baixo}</div>`;
+  }
+  return topo + `<div class="cv ${CVA ? 'aberta' : ''}">${lista}${chat}</div>`;
+}
+function cvRolar(){ const el = $('#cvmsgs'); if (el) el.scrollTop = el.scrollHeight; }
+async function carregarConversas(silencioso){
+  if (carregarConversas.indo) return; carregarConversas.indo = true;
+  try { const r = await api('euforia-painel-conversas', { acao: 'lista' }); if (r && r.ok) CV = r; else if (!CV) CV = { erro: true }; }
+  catch (e) { if (!CV) CV = { erro: true }; }
+  carregarConversas.indo = false;
+  if (view === 'conversas' && !ocupado && !(silencioso && document.activeElement && ['cvq', 'cvt'].includes(document.activeElement.id))) { render(); cvRolar(); }
+}
+async function abrirConversa(chat, silencioso){
+  const de = $('#cvmsgs'), noFim = !de || de.scrollHeight - de.scrollTop - de.clientHeight < 80;
+  try { const r = await api('euforia-painel-conversas', { acao: 'abrir', chat }); CVM = r && r.ok ? r : { chat, erro: (r && r.motivo) || 'erro' }; }
+  catch (e) { CVM = { chat, erro: 'erro' }; }
+  if (view === 'conversas' && CVA === chat && !ocupado && !(silencioso && document.activeElement && document.activeElement.id === 'cvt')) { render(); if (!silencioso || noFim) cvRolar(); }
+}
+document.addEventListener('input', e => {
+  if (e.target.id === 'cvq') { CVQ = e.target.value; const pos = e.target.selectionStart; render(); const q = $('#cvq'); if (q) { q.focus(); q.setSelectionRange(pos, pos); } }
+  if (e.target.id === 'cvt') CVRASC[CVA] = e.target.value;
+});
+document.addEventListener('keydown', e => { if (e.target.id === 'cvt' && e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); const b = $('#cvenviar'); if (b && !b.disabled) b.click(); } });
+document.addEventListener('click', async e => {
+  const f = e.target.closest('#main [data-cvf]'); if (f) { CVF = f.dataset.cvf; render(); return; }
+  const it = e.target.closest('#main [data-cv]'); if (it) { CVA = it.dataset.cv; if (!CVM || CVM.chat !== CVA) CVM = null; render(); cvRolar(); abrirConversa(CVA); return; }
+  if (e.target.closest('#main [data-cvvoltar]')) { CVA = ''; render(); return; }
+  const fo = e.target.closest('#main [data-cvfoto]');
+  if (fo) { const id = fo.dataset.cvfoto; CVFOTO[id] = 'indo'; render();
+    try { const r = await api('euforia-painel-conversas', { acao: 'midia', chat: CVA, msg: id }); CVFOTO[id] = r && r.ok ? 'data:' + r.mime + ';base64,' + r.base64 : 'erro'; } catch (x) { CVFOTO[id] = 'erro'; }
+    if (view === 'conversas') render(); return; }
+  const env = e.target.closest('#main #cvenviar');
+  if (env) {
+    const chat = CVA, t = (CVRASC[chat] || '').trim();
+    if (t.length < 2) { toast(CV_MOTIVO.texto); return; }
+    ocupado = true; env.disabled = true; env.textContent = 'Enviando…';
+    try { const r = await api('euforia-painel-conversas', { acao: 'mandar', chat, texto: t }); if (!r || !r.ok) throw new Error((r && r.motivo) || 'erro');
+      delete CVRASC[chat]; ocupado = false;
+      if (CVM && CVM.chat === chat) CVM.mensagens.push({ id: 'local' + Date.now(), eu: true, autor: D.nome.split(' ')[0] + ' (você)', tipo: '', foto: false, oculto: false, texto: t, hora: new Date().toTimeString().slice(0, 5), dia: (CVM.mensagens.length ? CVM.mensagens[CVM.mensagens.length - 1].dia : 'Hoje') });
+      const c = CV.conversas.find(x => x.chat === chat); if (c) { c.espera = false; c.naoLidas = 0; }
+      render(); cvRolar(); toast('Resposta enviada no grupo.'); setTimeout(() => abrirConversa(chat, true), 6000); }
+    catch (er) { ocupado = false; env.disabled = false; env.textContent = 'Enviar'; toast(CV_MOTIVO[er.message] || 'Deu erro, a diretoria está resolvendo.'); if (er.message === 'direcao') abrirConversa(chat, true); }
+  }
+});
+// Atualiza a lista a cada 30 s e a conversa aberta a cada 15 s, só com a aba aberta.
+setInterval(() => { if (D && view === 'conversas' && !document.hidden && VIEWS.conversas.pode()) carregarConversas(true); }, 30000);
+setInterval(() => { if (D && view === 'conversas' && CVA && !document.hidden && VIEWS.conversas.pode()) abrirConversa(CVA, true); }, 15000);
+
 // Demonstração (?demo=1): dados de exemplo, nada é enviado.
 function demoApi(path, b){
   const wait = v => new Promise(r => setTimeout(() => r(v), 350));
@@ -2902,6 +3028,21 @@ function demoApi(path, b){
     return wait({ ok: true, estado: W === 'aguardando' ? (demoApi.n > 2 ? 'conectado' : 'aguardando') : (W || 'desconectado') });
   }
   if (path === 'euforia-painel-responder') return wait({ ok: true, pelo: 'seu número' });
+  if (path === 'euforia-painel-conversas') {
+    if (b.acao === 'lista') return wait({ ok: true, agora: '10:42', conversas: [
+      { chat: 'demo1@g.us', nome: 'Ana Exemplo', grupo: 'ANA EXEMPLO <> EUFORIA', faixa: 'A', atencao: true, ultima: 'Consegue me mandar a thumb do vídeo de hoje?', quando: '10:31', espera: true, naoLidas: 2 },
+      { chat: 'demo2@g.us', nome: 'Bruno Modelo', grupo: 'BRUNO MODELO <> EUFORIA', faixa: 'B', atencao: false, ultima: 'Euforia: Prontinho, já está no ar!', quando: '09:12', espera: false, naoLidas: 0 },
+      { chat: 'demo3@g.us', nome: 'Carla Teste', grupo: 'CARLA TESTE <> EUFORIA', faixa: 'C', atencao: false, ultima: '🔒 Assunto da diretoria', quando: '08/11', espera: true, naoLidas: 1 }] });
+    if (b.acao === 'abrir') return wait(b.chat === 'demo3@g.us'
+      ? { ok: true, chat: b.chat, grupo: 'CARLA TESTE <> EUFORIA', bloqueio: 'direcao', noite: false, mensagens: [{ id: 'd31', eu: true, autor: 'Euforia', tipo: '', texto: 'Bom dia, Carla! Seguem os vídeos da semana.', hora: '09:00', dia: '07/11/2026' }, { id: 'd32', eu: false, autor: 'Carla', tipo: '', oculto: true, texto: '', hora: '18:20', dia: '08/11/2026' }] }
+      : { ok: true, chat: b.chat, grupo: 'ANA EXEMPLO <> EUFORIA', bloqueio: '', noite: false, mensagens: [
+        { id: 'd11', eu: true, autor: 'Euforia', tipo: '', texto: 'Oi, Ana! O vídeo de hoje sai às 18h.', hora: '16:02', dia: 'Ontem' },
+        { id: 'd12', eu: false, autor: 'Ana', tipo: '🎤 Áudio', texto: '🎤 Perfeito, obrigada! Amanhã eu gravo os próximos.', hora: '16:30', dia: 'Ontem' },
+        { id: 'd13', eu: false, autor: 'Ana', tipo: '📷 Foto', foto: true, texto: 'Essa foto serve para a thumb?', hora: '10:29', dia: 'Hoje' },
+        { id: 'd14', eu: false, autor: 'Ana', tipo: '', texto: 'Consegue me mandar a thumb do vídeo de hoje?', hora: '10:31', dia: 'Hoje' }] });
+    if (b.acao === 'midia') return wait({ ok: true, mime: 'image/svg+xml', base64: btoa('<svg xmlns="http://www.w3.org/2000/svg" width="320" height="180"><rect width="320" height="180" fill="#FF6518"/><text x="160" y="98" font-size="22" text-anchor="middle" fill="#fff" font-family="Arial">foto de exemplo</text></svg>') });
+    return wait({ ok: true });
+  }
   if (path === 'euforia-painel-calls') return wait(DEMO_C);
   if (path === 'euforia-painel-call-link') { const c = DEMO_C.calls.find(x => x.id === b.evento); if (c) c.apresentacao = b.link; return wait({ ok: true }); }
   if (path === 'euforia-painel-clientes') return wait(DEMO_CE);
