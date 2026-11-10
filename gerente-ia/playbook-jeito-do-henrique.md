@@ -2,7 +2,7 @@
 
 Tirado das conversas de 04 a 10/11: Priscilia, Willian, Nova Acrópole, Izaias, Rodrigo, Regina, Lucilene, João Victor.
 
-## 1. Os 12 padrões
+## 1. Os 13 padrões
 
 | # | Padrão | Onde apareceu |
 |---|--------|---------------|
@@ -18,6 +18,7 @@ Tirado das conversas de 04 a 10/11: Priscilia, Willian, Nova Acrópole, Izaias, 
 | 10 | **Tira o trabalho de quem trava.** Passa para quem entrega e põe o cliente em foco. | NA ("o Ismael é lento" → Lorena), Priscilia e Lucilene em foco |
 | 11 | **"Resolve aí".** Problema técnico não sobe para ele. | Priscilia e Rodrigo (PDF/Drive) |
 | 12 | **Uma mensagem completa e organizada**, em vez de várias picadas. Cobrança só no privado (Isabela). | Regina ("mensagem completona"), Rodrigo (parcela) |
+| 13 | **Cortesia que saiu do cronograma volta quando o cliente pede (decisão de 10/11).** Ex.: postar também no TikTok o que ele já aprovou. Faz: prepara as peças e passa ao Ismael ou ao Daniel para subir e postar, mas **antes confere se temos acesso à conta**. Sem acesso, pede ao cliente sem dizer que a cortesia tinha saído. | Priscilia (carrosséis aprovados, pediu TikTok) |
 
 **Causa raiz que ele quer matar (Lucilene):** promessa feita no grupo sem card, sem dono e sem prazo. Isso já é a thread "Criar vigia de clientes e promessas".
 
