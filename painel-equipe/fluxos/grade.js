@@ -97,6 +97,8 @@ if (p.acao === 'reativar') props['Status do slot'] = { select: { name: '✅ Publ
 const cria = p.acao === 'salvar' && !s.id;
 return [{ json: { ok: !erro, listar: p.acao === 'listar', marcar: p.acao === 'marcar', podeMudar: muda, podeMarcar: true, teste, desde, bloq: BLOQUEIO[r.ficha] || [],
   marca: { chave: s.id + '|' + p.data, slot: s.id, dia: p.data, status: p.marca, por: r.nome || '', quando: agora.toFormat('dd/MM HH:mm'), link: p.marca ? p.link : '' },
+  // Henrique 10/11: Programado/Postado com link na grade fecha também o card do Entregas daquele cliente e daquela data.
+  card: { fechar: p.acao === 'marcar' && !!p.marca && !!p.link && !teste && !!cliAtual, cliente: cliAtual, formato: txt(ap['Formato']), ficha: r.ficha || '' },
   metodo: cria ? 'POST' : 'PATCH', url: cria ? 'https://api.notion.com/v1/pages' : 'https://api.notion.com/v1/pages/' + s.id,
   body: JSON.stringify(cria ? { parent: { database_id: '2d21b7a7166240f5afaa4d697c3d1ae8' }, properties: props } : { properties: props }),
   resposta: { ok: false, motivo: erro } } }];
@@ -202,20 +204,63 @@ const gravarMarca = node({ type: 'n8n-nodes-base.dataTable', version: 1.1, confi
 const confirmarMarca = node({ type: 'n8n-nodes-base.respondToWebhook', version: 1.5, config: { name: 'Confirmar marcação', parameters: {
   respondWith: 'json', responseBody: '={{ JSON.stringify({ ok: true, marca: $("Validar pedido").first().json.marca }) }}', options: {} } } });
 
+// Fecha o card do Entregas: mesmo cliente, Postar em = data marcada, tipo que bate com o formato do horário.
+const cardsDoHorario = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, config: { name: 'Cards do horário', credentials: NOTION, onError: 'continueRegularOutput', alwaysOutputData: true, parameters: {
+  method: 'POST', url: 'https://api.notion.com/v1/databases/74b3076a325749e3bac4ba6659215e48/query', authentication: 'genericCredentialType', genericAuthType: 'httpHeaderAuth',
+  sendHeaders: true, headerParameters: NOTION_HDR, sendBody: true, specifyBody: 'json',
+  jsonBody: '={{ JSON.stringify({ filter: { and: [ { property: "Cliente", relation: { contains: $("Validar pedido").first().json.card.cliente } }, { property: "Postar em", date: { equals: $("Validar pedido").first().json.marca.dia } }, { property: "Status", select: { does_not_equal: "Cancelado" } } ] }, sorts: [{ timestamp: "created_time", direction: "ascending" }], page_size: 20 }) }}', options: {} } } });
+
+const montarCard = node({ type: 'n8n-nodes-base.code', version: 2, config: { name: 'Montar fechamento do card', parameters: { jsCode: `const v = $('Validar pedido').first().json;
+const m = v.marca, c = v.card;
+const txt = x => { if (!x) return ''; const a = x.title || x.rich_text; if (a) return a.map(t => t.plain_text).join('').trim(); if (x.select) return x.select.name; return ''; };
+const TIPOS = { 'Vídeo padrão': ['Vídeo longo'], 'Corte horizontal': ['Vídeo longo'], 'Podcast': ['Podcast', 'Vídeo longo'], 'Shorts': ['Shorts'], 'Reels': ['Shorts'], 'Carrossel': ['Carrossel'], 'Blog': ['Blog'] };
+const tipos = TIPOS[c.formato] || [];
+const nome = c.formato.toUpperCase();
+const cards = (($input.first().json || {}).results || []).map(p => ({ id: p.id, pr: p.properties || {} }))
+  .filter(k => tipos.includes(txt(k.pr['Tipo'])) && !['Feito', 'Cancelado'].includes(txt(k.pr['Status'])));
+// Mais de um card no mesmo dia: o que tem o formato no nome, depois o que ainda não foi fechado, depois o mais antigo.
+const nota = k => (txt(k.pr['Entrega']).toUpperCase().includes(nome) ? 0 : 2) + (['Postado', 'Agendado'].includes(txt(k.pr['Status'])) ? 1 : 0);
+const k = cards.sort((a, b) => nota(a) - nota(b))[0];
+if (!k) return [{ json: { fechar: false } }];
+const status = txt(k.pr['Status']);
+// O que o Victor agenda ou posta fica em Agendado até o Daniel ou o Ismael conferir (regra de 04/11).
+const assistente = c.ficha === '3ea98c0cdde08182a952f3d9a5b73575';
+const para = status === 'Postado' ? 'Postado' : (m.status === 'postado' && !assistente) ? 'Postado' : 'Agendado';
+const linha = '[Painel ' + m.quando + '] ' + m.por + ' marcou ' + (m.status === 'postado' ? 'Postado' : 'Programado') + ' na grade (' + m.link + ')';
+const obs = (linha + (txt(k.pr['Obs']) ? '\\n' + txt(k.pr['Obs']) : '')).match(/[\\s\\S]{1,1990}/g).slice(0, 10).map(x => ({ type: 'text', text: { content: x } }));
+const props = { 'Status': { select: { name: para } }, 'Link da postagem': { url: m.link }, 'Obs': { rich_text: obs } };
+if (para === 'Postado' && !((k.pr['Postado em'] || {}).date || {}).start) props['Postado em'] = { date: { start: m.dia } };
+return [{ json: { fechar: true, url: 'https://api.notion.com/v1/pages/' + k.id, body: JSON.stringify({ properties: props }) } }];
+` } } });
+
+const temCard = ifElse({ version: 2.2, config: { name: 'Achou o card?', parameters: { conditions: {
+  options: { caseSensitive: true, leftValue: '', typeValidation: 'loose' },
+  conditions: [{ leftValue: '={{ $json.fechar }}', rightValue: '', operator: { type: 'boolean', operation: 'true', singleValue: true } }],
+  combinator: 'and' } } } });
+
+const fecharCard = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, config: { name: 'Fechar card', credentials: NOTION, onError: 'continueRegularOutput', parameters: {
+  method: 'PATCH', url: '={{ $json.url }}', authentication: 'genericCredentialType', genericAuthType: 'httpHeaderAuth',
+  sendHeaders: true, headerParameters: NOTION_HDR, sendBody: true, specifyBody: 'json', jsonBody: '={{ $json.body }}', options: {} } } });
+
+const vaiFechar = ifElse({ version: 2.2, config: { name: 'Fechar card?', parameters: { conditions: {
+  options: { caseSensitive: true, leftValue: '', typeValidation: 'loose' },
+  conditions: [{ leftValue: '={{ $("Validar pedido").first().json.card.fechar }}', rightValue: '', operator: { type: 'boolean', operation: 'true', singleValue: true } }],
+  combinator: 'and' } } } });
+
 const devolver = node({ type: 'n8n-nodes-base.respondToWebhook', version: 1.5, config: { name: 'Devolver grade', parameters: {
   respondWith: 'json', responseBody: '={{ JSON.stringify($json) }}', options: {} } } });
 
 const recusar = node({ type: 'n8n-nodes-base.respondToWebhook', version: 1.5, config: { name: 'Recusar', parameters: {
   respondWith: 'json', responseBody: '={{ JSON.stringify($json.resposta) }}', options: {} } } });
 
-const nota = sticky('## Painel da equipe · grade de postagem (V1)\nLê o banco Grade de Postagem (horários fixos de cada cliente: plataforma, formato, dia, horário, quantidade) e devolve a semana para a aba Grade.\nTodos veem. Ismael (revisor), Rômulo (calls) e o teste podem criar, ajustar, pausar e reativar um horário. Toda mudança vira uma linha [Painel dd/mm] no topo da Obs do horário. Nunca encerra nem apaga.\nTodos marcam Programado ou Postado em cada data, sempre com o link da publicação (tabela Painel · grade marcações; desmarcar grava status vazio).', [], { color: 4 });
+const nota = sticky('## Painel da equipe · grade de postagem (V1)\nLê o banco Grade de Postagem (horários fixos de cada cliente: plataforma, formato, dia, horário, quantidade) e devolve a semana para a aba Grade.\nTodos veem. Ismael (revisor), Rômulo (calls) e o teste podem criar, ajustar, pausar e reativar um horário. Toda mudança vira uma linha [Painel dd/mm] no topo da Obs do horário. Nunca encerra nem apaga.\nTodos marcam Programado ou Postado em cada data, sempre com o link da publicação (tabela Painel · grade marcações; desmarcar grava status vazio).\nDesde 10/11: a marcação com link também fecha o card do Entregas do mesmo cliente e da mesma data (Programado → Agendado, Postado → Postado + Postado em + Link da postagem; o que o Victor marca fica em Agendado). Desmarcar não mexe no card.', [], { color: 4 });
 
 export default workflow('painel-grade', 'Painel | Grade de postagem (V1)')
   .add(pedir).to(ler).to(acesso).to(slotAtual).to(clienteNode).to(validar)
   .to(podeSeguir
     .onTrue(ehListar
       .onTrue(grade.to(clientes).to(marcacoes).to(montar).to(devolver))
-      .onFalse(ehMarcar.onTrue(gravarMarca.to(confirmarMarca))
+      .onFalse(ehMarcar.onTrue(gravarMarca.to(confirmarMarca).to(vaiFechar.onTrue(cardsDoHorario.to(montarCard).to(temCard.onTrue(fecharCard)))))
         .onFalse(ehNovo.onTrue(criar.to(confirmar)).onFalse(ajustar.to(confirmarAjuste)))))
     .onFalse(recusar))
   .add(nota);
