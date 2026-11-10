@@ -639,10 +639,11 @@ $('cicForm').addEventListener('submit',function(e){e.preventDefault();var n=$('c
 function mudaPlacar(n){var d=new Date(plIni+'T00:00:00Z');plIni=isoDia(new Date(d.getTime()+n*7*DIAMS));carregarPlacar();}
 $('pPrev').onclick=function(){mudaPlacar(-1)};$('pNext').onclick=function(){mudaPlacar(1)};$('pHoje').onclick=function(){plIni='';carregarPlacar();};
 // oportunidades (só Henrique e Diogo; o servidor recusa os outros)
-var ETAPAS=[['quente','Lead quente (vai dar resposta)','#e9c46a'],['morno','Lead morno (sumiu, fazer follow-up)','#9b8bd6'],['sinal','Pagou o sinal (7 dias para fechar)','#4fd1c5'],['dados','Aguardando dados do contrato','#7fb3ff'],['vai_pagar','Disse que vai pagar','#f4a261'],['assinado','Contrato assinado (falta pagar)','#FF6518'],['pago','Pago','#2ecc71'],['perdido','Perdido','#555']];
+var ETAPAS=[['quente','Lead quente (vai dar resposta)','#e9c46a'],['morno','Lead morno (sumiu, fazer follow-up)','#9b8bd6'],['sinal','Pagou o sinal (7 dias para fechar)','#4fd1c5'],['dados','Aguardando dados do contrato','#7fb3ff'],['vai_pagar','Disse que vai pagar','#f4a261'],['assinado','Contrato assinado (falta pagar)','#FF6518'],['estorno','Estorno (vai pagar em outro gateway)','#e76f9a'],['pago','Pago','#2ecc71'],['perdido','Perdido','#555']];
 var PRODS=['Assessoria semestral','Assessoria anual','Assessoria mensal','Implementação','Manutenção','Outro'];
 var FORMAS=['Pix à vista','Cartão à vista','Cartão parcelado','Entrada + parcelas','Mensalidade','Boleto','A definir'];
-var COBRAR=['sinal','dados','vai_pagar','assinado'];
+// estorno (pedido do Henrique, 10/11): pagamento estornado, o cliente vai pagar de novo em outro gateway; dinheiro ainda não entrou, conta como a cobrar
+var COBRAR=['sinal','dados','vai_pagar','assinado','estorno'];
 function et(k){return ETAPAS.filter(function(e){return e[0]===k})[0]||['','—','#666']}
 function brl(n){n=Number(n||0);return 'R$ '+n.toLocaleString('pt-BR',{minimumFractionDigits:n%1?2:0,maximumFractionDigits:2})}
 function dbr(s){return s?s.split('-').reverse().slice(0,2).join('/'):'sem data'}
@@ -748,7 +749,7 @@ function mostrarLista(){
 function mostrarCobrar(){
   var hoje=isoDia(recife(Date.now()));
   var l=ops.filter(function(o){return COBRAR.indexOf(o.etapa)>=0}).sort(function(a,b){return (a.dataPrevista||'9')<(b.dataPrevista||'9')?-1:1});
-  if(!l.length){$('cobrarLista').innerHTML='<p class="load">Ninguém para cobrar agora. Aqui aparecem as etapas "Pagou o sinal", "Aguardando dados", "Disse que vai pagar" e "Contrato assinado".</p>';return;}
+  if(!l.length){$('cobrarLista').innerHTML='<p class="load">Ninguém para cobrar agora. Aqui aparecem as etapas "Pagou o sinal", "Aguardando dados", "Disse que vai pagar", "Contrato assinado" e "Estorno".</p>';return;}
   var atr=l.filter(function(o){return o.dataPrevista&&o.dataPrevista<hoje});
   var tot=l.reduce(function(t,o){return t+naData(o)},0);
   $('cobrarLista').innerHTML='<div class="kpis"><div class="kpi tot"><small>A receber</small><b>'+brl(tot)+'</b><span>'+l.length+' lead(s), contando a entrada ou o valor à vista</span></div><div class="kpi"><small>Atrasados</small><b style="color:var(--err)">'+atr.length+'</b><span>'+brl(atr.reduce(function(t,o){return t+naData(o)},0))+'</span></div></div>'
@@ -768,7 +769,7 @@ function mostrarPrev(){
     return '<h2 class="sec">'+esc(nome)+' <span class="hint" style="text-transform:none;font:500 13px Inter">'+esc(rot)+'</span></h2>'
       +'<div class="kpis"><div class="kpi tot"><small>Na mesa (total)</small><b>'+brl(pago+conf+quen)+'</b><span>'+l.length+' oportunidade(s) com data no período</span></div>'
       +'<div class="kpi ok"><small>Já pago</small><b>'+brl(pago)+'</b><span>entrou na data: '+cx(['pago'])+'</span></div>'
-      +'<div class="kpi c"><small>Confirmados</small><b>'+brl(conf)+'</b><span>sinal, dados, vai pagar e assinado · entra na data: '+cx(COBRAR)+'</span></div>'
+      +'<div class="kpi c"><small>Confirmados</small><b>'+brl(conf)+'</b><span>sinal, dados, vai pagar, assinado e estorno · entra na data: '+cx(COBRAR)+'</span></div>'
       +'<div class="kpi q"><small>Para confirmar</small><b>'+brl(quen)+'</b><span>leads quentes · entra na data: '+cx(['quente'])+'</span></div></div>'
       +'<p class="hint">Por produto: '+lista(porProd)+'</p><p class="hint" style="margin-top:4px">Por forma de pagamento: '+lista(porForma)+'</p>';
   };
