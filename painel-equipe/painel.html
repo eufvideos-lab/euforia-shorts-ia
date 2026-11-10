@@ -157,6 +157,25 @@ textarea{min-height:90px;resize:vertical}
 .opt small{color:var(--muted);font-size:13px}
 /* Gaveta */
 .scrim{position:fixed;inset:0;background:rgba(20,20,20,.45);z-index:20}
+/* Leitor do Notion (10/11/2026): a equipe lê roteiro, pautas e estratégia sem conta no Notion */
+.leitor{position:fixed;inset:0;z-index:30;display:flex;justify-content:center;align-items:stretch;background:rgba(20,20,20,.55);padding:16px}
+.leitor-in{background:var(--surface);border-radius:14px;width:min(860px,100%);display:flex;flex-direction:column;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.35)}
+.leitor-top{display:flex;gap:10px;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--line)}
+.leitor-top h3{margin:0;font-size:18px;line-height:1.3;min-width:0;overflow-wrap:anywhere}
+.leitor-corpo{overflow-y:auto;padding:18px 22px 28px;display:flex;flex-direction:column;gap:10px;font-size:16px;line-height:1.6}
+.leitor-corpo h1,.leitor-corpo h2,.leitor-corpo h3{margin:14px 0 2px;line-height:1.3}
+.leitor-corpo h1{font-size:24px}.leitor-corpo h2{font-size:20px}.leitor-corpo h3{font-size:17px}
+.leitor-corpo p{margin:0}.leitor-corpo ul{margin:0;padding-left:22px}
+.leitor-corpo blockquote{margin:0;border-left:3px solid var(--accent);padding:2px 12px;color:var(--muted)}
+.leitor-corpo .call{background:var(--surface-2);border-radius:10px;padding:10px 12px}
+.leitor-corpo .sub{margin-left:18px;display:flex;flex-direction:column;gap:6px}
+.leitor-corpo pre{white-space:pre-wrap;background:var(--surface-2);padding:10px;border-radius:8px;font-size:14px}
+.leitor-corpo img{max-width:100%;border-radius:8px}
+.leitor-corpo table{border-collapse:collapse;font-size:14px}.leitor-corpo td{border:1px solid var(--line);padding:6px 8px;vertical-align:top}
+.leitor-corpo .lpag{background:none;border:1px solid var(--line);border-radius:9px;padding:8px 12px;text-align:left;cursor:pointer;color:var(--ink);font:inherit}
+.leitor-corpo .lpag:hover{border-color:var(--accent)}
+.leitor-corpo .lk{color:var(--accent);text-decoration:underline;cursor:pointer;background:none;border:0;padding:0;font:inherit}
+.leitor-props{display:flex;flex-wrap:wrap;gap:6px}.leitor-props span{font-size:13px;background:var(--surface-2);border-radius:6px;padding:3px 8px}
 .drawer{position:fixed;top:0;right:0;bottom:0;width:min(520px,100%);background:var(--surface);z-index:21;display:flex;flex-direction:column;box-shadow:-12px 0 40px rgba(20,20,20,.2);padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);padding-right:env(safe-area-inset-right,0px)}
 .drawer-in{overflow-y:auto;padding:24px;display:flex;flex-direction:column;gap:18px}
 .dl{display:grid;grid-template-columns:130px minmax(0,1fr);gap:8px 12px;font-size:14px;margin:0}
@@ -404,6 +423,8 @@ const ETAPAS = ['A fazer','Fazendo','Em revisão','Ajustes','Aguardando cliente'
 const ETAPAS_TODAS = ['A fazer','Fazendo','Em revisão','Ajustes','Aguardando cliente','Aprovado','Feito','Agendado','Postado'];
 const NAO_POSTA = ['Roteiro','Página','Funil','Copy','Apresentação','Relatório','Estratégia','Insta-Blindado','ID visual','Limpeza de canal'];
 const naoPosta = c => c.status === 'Feito' || NAO_POSTA.includes(c.tipo);
+const VIDEO_MAQ = ['Vídeo longo', 'Shorts', 'Podcast'];
+const ehNotion = l => /^https:\/\/([\w-]+\.)?notion\.(so|site|com)\//i.test(l || '');
 const FECHADO = ['Postado','Feito','Cancelado'];
 const etapasDo = c => naoPosta(c) ? ['A fazer','Fazendo','Em revisão','Ajustes','Aguardando cliente','Aprovado','Feito'] : ETAPAS;
 const PAPEL = {editor:'Edição', revisor:'Revisão e postagem', calls:'Calls e canal', teste:'Usuário de teste', diretor:'Diretoria'};
@@ -823,7 +844,7 @@ const VIEWS = {
   revisao: { nome: 'Revisão', pode: revisor, badge: () => D.cards.filter(c => c.status === 'Em revisão').length,
     html(){
       const l = ordenar(D.cards.filter(c => c.status === 'Em revisão'));
-      return `<div class="head"><div><p class="eyebrow">Controle de qualidade</p><h1>Revisão</h1></div><p class="sub">Aprovar manda para o cliente aprovar. Pedir ajuste exige o motivo e volta para quem fez.</p></div>
+      return `<div class="head"><div><p class="eyebrow">Controle de qualidade</p><h1>Revisão</h1></div><p class="sub">Revisado libera a peça para o cliente aprovar no portal. Pedir ajuste exige o motivo e volta para quem fez ou para a máquina.</p></div>
       ${grupo('Esperando você', l, 'Nada para revisar agora.')}`;
     } },
   postar: { nome: 'Postar', pode: posta, badge: () => D.cards.filter(c => c.status === 'Aprovado' && diff(c.postar) <= 1).length,
@@ -1317,8 +1338,10 @@ function abrir(id){
     <div class="actions"><button class="btn primary" data-act="gravou">Cliente mandou o material</button></div>`;
   if (revisor() && c.status === 'Em revisão') acoes = `
     <p class="note">Arquivo: ${c.link ? `<a href="${esc(c.link)}" target="_blank" rel="noopener"><b>abrir</b></a>` : '<b>sem link</b>'}</p>
-    <div class="actions"><button class="btn ok" data-act="aprovar">Aprovar e mandar ao cliente</button><button class="btn warn" data-act="mostrar-ajuste">Pedir ajuste</button></div>
-    <label for="motivo" id="lmotivo" hidden>Qual ajuste? (obrigatório)<textarea id="motivo" maxlength="1000" placeholder="Ex.: legenda do minuto 2 cobre o rosto"></textarea><button class="btn warn" data-act="ajuste" type="button">Mandar de volta</button></label>`;
+    <div class="actions"><button class="btn ok" data-act="aprovar">✔ Revisado (vai para o cliente aprovar)</button>${naoPosta(c) ? '<button class="btn" data-act="feito">Revisado · interno (não vai ao cliente)</button>' : ''}<button class="btn warn" data-act="mostrar-ajuste">Pedir ajuste</button></div>
+    <div id="lmotivo" hidden style="display:flex;flex-direction:column;gap:10px"><label for="motivo">Qual ajuste? (obrigatório)<textarea id="motivo" maxlength="1000" placeholder="Ex.: legenda do minuto 2 cobre o rosto"></textarea></label>
+      <div class="actions"><button class="btn warn" data-act="ajuste" type="button">À mão (volta para quem fez)</button><button class="btn warn" data-act="ajustemaq" type="button">Pela máquina</button></div>
+      <p class="note">À mão: o card volta para ${esc((c.resp || []).join(', ') || 'quem fez')} com o seu recado. Pela máquina: ${VIDEO_MAQ.includes(c.tipo) && c.link ? 'o ajuste vai para a máquina que fez o vídeo e ela refaz' : 'o card vai para a fila do Escritório (máquinas)'}.</p></div>`;
   if (posta() && c.status === 'Aprovado' && naoPosta(c)) acoes = `
     ${c.link ? `<p class="note">Arquivo aprovado: <a href="${esc(c.link)}" target="_blank" rel="noopener"><b>abrir</b></a></p>` : ''}${blocoFeito}`;
   else if (posta() && ['Aprovado', 'Agendado'].includes(c.status)) acoes = `
@@ -1337,6 +1360,7 @@ function abrir(id){
     ${cl.faixa || cl.atencao ? `<dt>Cliente</dt><dd>${cl.faixa ? 'Faixa ' + esc(cl.faixa) : ''}${cl.atencao ? ' · 🔴 atenção redobrada' : ''}</dd>` : ''}
     ${cl.padroes ? `<dt>Como editar</dt><dd>${esc(cl.padroes)}</dd>` : ''}${cl.gosta ? `<dt>Gosta / não gosta</dt><dd>${esc(cl.gosta)}</dd>` : ''}
     ${c.voltas ? `<dt>Voltas de ajuste</dt><dd>${c.voltas}</dd>` : ''}</dl>
+    ${ehNotion(c.link) ? '<div class="actions"><button class="btn" data-act="lernotion">📖 Ler aqui no painel (sem precisar do Notion)</button></div>' : ''}
     <div style="display:flex;flex-direction:column;gap:12px">${acoes || '<p class="note">Nada para você fazer neste card agora.</p>'}</div>
     ${passa ? `<details class="passar"><summary>Passar para outra pessoa</summary><div style="display:flex;flex-direction:column;gap:12px;margin-top:12px">
       <label for="pp">Para quem<select id="pp"><option value="">Escolha</option>${PASSAR.map(([v, n]) => `<option value="${v}">${n}</option>`).join('')}</select></label>
@@ -1390,8 +1414,9 @@ function abrir(id){
     const a = e.target.closest('[data-act]'); if (!a || ocupado) return;
     const act = a.dataset.act;
     if (act === 'completar' && $('#ctx').value.trim().length < 3) { $('#ctx').focus(); toast('Escreva o que está faltando antes de devolver.'); return; }
+    if (act === 'lernotion') { abrirLeitor(c.id, ''); return; }
     if (act === 'mostrar-ajuste') { $('#lmotivo').hidden = false; $('#motivo').focus(); return; }
-    if (act === 'ajuste' && $('#motivo').value.trim().length < 3) { $('#motivo').focus(); toast('Escreva o ajuste antes de mandar.'); return; }
+    if ((act === 'ajuste' || act === 'ajustemaq') && $('#motivo').value.trim().length < 3) { $('#motivo').focus(); toast('Escreva o ajuste antes de mandar.'); return; }
     if ((act === 'agendei' || act === 'postei') && !/^https:\/\//.test($('#lpost').value.trim())) { $('#lpost').focus(); toast('Cole o link da postagem (começa com https://).'); return; }
     if (act === 'travei' && $('#trmot').value.trim().length < 3) { $('#trmot').focus(); toast('Escreva o que travou antes de pedir ajuda.'); return; }
     if (act === 'fim' && $('#fmot').value.trim().length < 3) { $('#fmot').focus(); toast('Explique o que aconteceu antes de confirmar.'); return; }
@@ -1402,7 +1427,14 @@ function abrir(id){
     try {
       let link = '', texto = '';
       if (act === 'revisao') { link = arquivo ? await enviar({ card: c.id }, arquivo) : $('#lk').value.trim(); texto = $('#nota').value.trim(); }
-      if (act === 'ajuste') texto = $('#motivo').value.trim();
+      if (act === 'ajuste' || act === 'ajustemaq') texto = $('#motivo').value.trim();
+      // Ajuste pela máquina em vídeo: primeiro o pedido original no quadro de Longos/Shorts volta para "Ajustar".
+      if (act === 'ajustemaq' && VIDEO_MAQ.includes(c.tipo) && /^https:\/\//.test(c.link || '')) {
+        const hoje = String(D.hoje || '').slice(0, 10), pz = c.prazo && String(c.prazo).slice(0, 10) >= hoje ? String(c.prazo).slice(0, 10) : hoje;
+        const rq = await api('euforia-painel-pedido-v2', { cliente: c.cliente, tipo: 'ajvid', modo: 'auto', ferramenta: '', prazo: pz, link: c.link, texto: 'Ajuste pedido na revisão de ' + (c.nome || 'vídeo') + ': ' + texto, anexos: [] });
+        if (!rq || !rq.ok) throw new Error((rq && rq.motivo) || 'erro');
+        link = c.link;
+      }
       if (act === 'agendei' || act === 'postei') link = $('#lpost').value.trim();
       if (act === 'passar') texto = $('#pnota').value.trim();
       if (act === 'travei') texto = $('#trmot').value.trim();
@@ -1420,7 +1452,7 @@ function abrir(id){
       const r = await api('euforia-painel-acao', { card: c.id, acao, texto, link, fim, anexos, para: act === 'passar' ? $('#pp').value : '', prazo: act === 'prazo' ? $('#npz').value : '' });
       if (!r || !r.ok) throw new Error((r && r.motivo) || 'erro');
       ocupado = false; fechar();
-      toast({ comecar: 'Bom trabalho! Card em Fazendo.', revisao: 'Mandado para revisão. O Daniel e o Ismael foram avisados.', aprovar: 'Aprovado. Agora é com o cliente.', ajuste: 'Voltou para ajuste com o seu recado.', agendei: 'Marcado como agendado.', postei: 'Marcado como postado.', feito: 'Marcado como feito.', prazo: 'Prazo mudado.', conferido: 'Conferido. A peça já aparece para o cliente aprovar no portal.', passar: 'Card passado. A pessoa foi avisada.', travei: 'Pedido de ajuda enviado. O guardião do cliente foi chamado.', fim: 'Pronto, ficou registrado e a equipe foi avisada.', pegar: 'É seu! O card já está na sua fila.', completar: 'Pronto! O pedido voltou para a fila do escritório.', naogravou: 'Pronto. O card saiu da fila e está esperando o cliente gravar.', gravou: 'Voltou para a fila em A fazer.' }[act]);
+      toast({ comecar: 'Bom trabalho! Card em Fazendo.', revisao: 'Mandado para revisão. O Daniel e o Ismael foram avisados.', aprovar: 'Revisado. A peça já aparece para o cliente aprovar no portal.', ajuste: 'Voltou para ajuste com o seu recado.', ajustemaq: 'Mandado para a máquina refazer com o seu recado.', agendei: 'Marcado como agendado.', postei: 'Marcado como postado.', feito: 'Marcado como feito.', prazo: 'Prazo mudado.', conferido: 'Conferido. A peça já aparece para o cliente aprovar no portal.', passar: 'Card passado. A pessoa foi avisada.', travei: 'Pedido de ajuda enviado. O guardião do cliente foi chamado.', fim: 'Pronto, ficou registrado e a equipe foi avisada.', pegar: 'É seu! O card já está na sua fila.', completar: 'Pronto! O pedido voltou para a fila do escritório.', naogravou: 'Pronto. O card saiu da fila e está esperando o cliente gravar.', gravou: 'Voltou para a fila em A fazer.' }[act]);
       await carregar(true);
     } catch (err) {
       ocupado = false;
@@ -1477,6 +1509,53 @@ function abrirNova(){
   };
 }
 function fechar(){ $('#layer').innerHTML = ''; }
+// Leitor do Notion (10/11/2026): abre só para leitura a página ligada ao card. Links e páginas dentro abrem aqui mesmo.
+const MOTIVO_LEITOR = { 'sem-notion': 'Esse card não tem link do Notion.', 'nao-achei': 'Não achei essa página. Ela pode ter sido apagada ou movida.', permissao: 'Essa página não faz parte deste card.', card: 'Não achei esse card.', acesso: 'Seu acesso mudou. Entre de novo com o PIN.' };
+let LEITOR = [];
+function rtx(s){ return (s || []).map(t => { let h = esc(t.x || ''); if (t.b) h = '<b>' + h + '</b>'; if (t.i) h = '<i>' + h + '</i>';
+  if (t.p) return `<button type="button" class="lk" data-lpag="${esc(t.p)}">${h}</button>`;
+  if (t.a) return `<a href="${esc(t.a)}" target="_blank" rel="noopener">${h}</a>`; return h; }).join(''); }
+function rbloco(b){
+  const t = rtx(b.s), sub = b.f && b.f.length ? `<div class="sub">${rblocos(b.f)}</div>` : '';
+  switch (b.k) {
+    case 'heading_1': return `<h1>${t}</h1>${sub}`; case 'heading_2': return `<h2>${t}</h2>${sub}`; case 'heading_3': return `<h3>${t}</h3>${sub}`;
+    case 'bulleted_list_item': return `<ul><li>${t}${sub}</li></ul>`; case 'numbered_list_item': return `<ul style="list-style:decimal"><li>${t}${sub}</li></ul>`;
+    case 'to_do': return `<p>${b.c ? '☑' : '☐'} ${t}</p>${sub}`; case 'quote': return `<blockquote>${t}${sub}</blockquote>`;
+    case 'callout': return `<div class="call">${esc(b.e || '💡')} ${t}${sub}</div>`; case 'toggle': return `<details open><summary>${t}</summary>${sub}</details>`;
+    case 'code': return `<pre>${t}</pre>`; case 'divider': return '<hr style="border:0;border-top:1px solid var(--line);width:100%">';
+    case 'child_page': case 'child_database': return `<button type="button" class="lpag" data-lpag="${esc(b.p)}">📄 ${t}</button>`;
+    case 'image': return b.u ? `<img src="${esc(b.u)}" alt="" loading="lazy">${t ? `<p class="note">${t}</p>` : ''}` : '';
+    case 'video': case 'file': case 'pdf': case 'audio': case 'bookmark': case 'embed': case 'link_preview': return b.u ? `<p><a href="${esc(b.u)}" target="_blank" rel="noopener">🔗 ${t || esc(b.u)}</a></p>` : '';
+    case 'table': return `<table>${(b.f || []).map(r => `<tr>${(r.cel || []).map(c => `<td>${rtx(c)}</td>`).join('')}</tr>`).join('')}</table>`;
+    case 'table_row': return `<table><tr>${(b.cel || []).map(c => `<td>${rtx(c)}</td>`).join('')}</tr></table>`;
+    case 'column_list': case 'column': case 'synced_block': return sub;
+    default: return t ? `<p>${t}</p>${sub}` : sub;
+  }
+}
+function rblocos(l){ return (l || []).map(rbloco).join(''); }
+async function abrirLeitor(card, pagina, voltar){
+  let el = $('#leitor'); if (!el) { el = document.createElement('div'); el.id = 'leitor'; el.className = 'leitor'; document.body.appendChild(el); }
+  if (!voltar) LEITOR.push({ card, pagina });
+  const fecharL = () => { LEITOR = []; el.remove(); };
+  const topo = nome => `<div class="leitor-in" role="dialog" aria-modal="true" aria-labelledby="lt-t"><div class="leitor-top"><div style="display:flex;gap:8px;align-items:center;min-width:0">${LEITOR.length > 1 ? '<button class="btn" data-lvoltar type="button">← Voltar</button>' : ''}<h3 id="lt-t">${esc(nome)}</h3></div><button class="close" data-lfechar type="button">Fechar</button></div>`;
+  el.innerHTML = topo('Abrindo…') + '<div class="leitor-corpo"><p class="note">Carregando a página…</p></div></div>';
+  el.onclick = e => {
+    if (e.target === el || e.target.closest('[data-lfechar]')) { fecharL(); return; }
+    if (e.target.closest('[data-lvoltar]')) { LEITOR.pop(); const a = LEITOR[LEITOR.length - 1]; abrirLeitor(a.card, a.pagina, true); return; }
+    const pg = e.target.closest('[data-lpag]'); if (pg) abrirLeitor(card, pg.dataset.lpag);
+  };
+  let r = null;
+  try { r = DEMO ? { ok: true, tipo: 'pagina', nome: 'Roteiro de exemplo', props: [['Status', 'Pronto']], blocos: [{ k: 'heading_2', s: [{ x: 'Gancho' }] }, { k: 'paragraph', s: [{ x: 'Texto de exemplo do roteiro.' }] }] } : await api('euforia-painel-notion', { card, pagina }); } catch (e) { r = null; }
+  if (!document.body.contains(el)) return;
+  if (!r || !r.ok) { el.innerHTML = topo('Não deu para abrir') + `<div class="leitor-corpo"><p>${esc((r && MOTIVO_LEITOR[r.motivo]) || ERRO)}</p></div></div>`; return; }
+  let corpo = '';
+  if (r.props && r.props.length) corpo += `<div class="leitor-props">${r.props.map(([k, v]) => `<span><b>${esc(k)}:</b> ${esc(v)}</span>`).join('')}</div>`;
+  if (r.tipo === 'base') corpo += (r.linhas || []).length ? r.linhas.map(l => `<button type="button" class="lpag" data-lpag="${esc(l.id)}">📄 ${esc(l.t)}${l.s ? ` <span class="mono" style="color:var(--muted)">· ${esc(l.s)}</span>` : ''}</button>`).join('') : '<p class="note">Nada deste cliente nessa base.</p>';
+  else corpo += rblocos(r.blocos) || '<p class="note">Página vazia.</p>';
+  if (r.mais) corpo += '<p class="note">A página continua. Aqui aparecem os 100 primeiros blocos.</p>';
+  el.innerHTML = topo(r.nome || 'Página') + `<div class="leitor-corpo">${corpo}</div></div>`;
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && $('#leitor')) { LEITOR = []; $('#leitor').remove(); } });
 // ---------- Diretoria: tudo vem do fluxo "Painel | Diretor" (só o papel diretor entra) ----------
 const dd = s => { const a = dia(s), h = dia((DD || D).hoje); return a ? Math.round((a - h) / 864e5) : 999; };
 const nomeP = id => ((DD && DD.equipe.find(p => p.id === id)) || {}).nome || 'outro';
@@ -2897,8 +2976,8 @@ function demoApi(path, b){
     if (b.acao === 'naoemeu' || b.acao === 'jafeito') { DEMO_D.cards = DEMO_D.cards.filter(x => x !== c); return wait({ ok: true, status: b.fim || c.status }); }
     if (b.acao === 'naogravou' || b.acao === 'gravou') { c.status = b.acao === 'gravou' ? 'A fazer' : 'Aguardando cliente'; delete c.naogravou; c.obs = '[Painel 27/10 ' + new Date().toTimeString().slice(0, 5) + '] ' + DEMO_D.nome + ' marcou: cliente ' + (b.acao === 'gravou' ? 'mandou o material' : 'ainda não gravou') + (b.texto ? ': ' + b.texto : '') + (c.obs ? '\n' + c.obs : ''); return wait({ ok: true, status: c.status }); }
     if (b.acao === 'passar') { const n = PASSAR.find(x => x[0] === b.para)[1]; c.resp = [n]; c.meu = false; c.obs = '[Painel 26/10 ' + new Date().toTimeString().slice(0, 5) + '] ' + DEMO_D.nome + ' passou para ' + n + (b.texto ? ': ' + b.texto : '') + (c.obs ? '\n' + c.obs : ''); return wait({ ok: true, status: c.status }); }
-    const para = { comecar: 'Fazendo', revisao: 'Em revisão', aprovar: 'Aguardando cliente', ajuste: 'Ajustes', agendei: 'Agendado', postei: 'Postado', feito: 'Feito' }[b.acao];
-    const verbo = { comecar: 'começou', revisao: 'mandou para revisão', aprovar: 'aprovou na revisão', ajuste: 'pediu ajuste', agendei: 'agendou', postei: 'postou', feito: 'marcou como feito' }[b.acao];
+    const para = { comecar: 'Fazendo', revisao: 'Em revisão', aprovar: 'Aguardando cliente', ajuste: 'Ajustes', ajustemaq: 'Ajustes', agendei: 'Agendado', postei: 'Postado', feito: 'Feito' }[b.acao];
+    const verbo = { comecar: 'começou', revisao: 'mandou para revisão', aprovar: 'revisou', ajuste: 'pediu ajuste à mão', ajustemaq: 'pediu ajuste à máquina', agendei: 'agendou', postei: 'postou', feito: 'marcou como feito' }[b.acao];
     c.status = para; c.obs = '[Painel 26/10 ' + new Date().toTimeString().slice(0, 5) + '] ' + DEMO_D.nome + ' ' + verbo + (b.texto ? ': ' + b.texto : '') + (c.obs ? '\n' + c.obs : '');
     if (b.acao === 'revisao') c.link = b.link;
     if (para === 'Postado' || para === 'Feito') DEMO_D.cards = DEMO_D.cards.filter(x => x !== c);
