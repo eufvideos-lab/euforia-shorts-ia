@@ -2937,7 +2937,7 @@ async function carregarCentral(silencioso){
 
 // Conversas (10/11/2026, pedido do Henrique): aba estilo WhatsApp. Escolhe o cliente, vê as últimas mensagens do grupo e responde dali.
 // Sai pelo número do suporte com "*Nome:*" na frente (decisão do Henrique). Fluxo "Painel | Conversas com clientes (V1)", webhook euforia-painel-conversas.
-const CONVERSAS_NO_AR = false;
+const CONVERSAS_NO_AR = true;
 let CV = null, CVQ = '', CVF = 'todas', CVA = '', CVM = null, CVFOTO = {};
 const CVRASC = {};
 const CV_MOTIVO = { grupo: 'Esse grupo não é de cliente do suporte.', noite: 'Fora do horário (22h às 7h). O texto fica guardado aqui; mande de manhã.', direcao: 'O cliente falou de assunto da diretoria (dinheiro, contrato ou jurídico). A diretoria responde; não responda por aqui.', texto: 'Escreva a resposta.', whatsapp: 'O WhatsApp não mandou. Tente de novo em 1 minuto.', acesso: 'Seu acesso caiu. Abra o painel de novo.', foto: 'Não consegui abrir essa foto agora.' };
