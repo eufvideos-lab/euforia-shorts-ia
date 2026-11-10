@@ -397,6 +397,10 @@ td .sub{font-size:13px}
 .cv-m img{display:block;max-width:100%;max-height:320px;border-radius:8px;margin:4px 0}
 .cv-caixa{display:flex;gap:8px;padding:10px;border-top:1px solid var(--line);background:var(--surface);align-items:flex-end}
 .cv-caixa textarea{flex:1;resize:none;min-height:44px;max-height:160px}
+.cv-sug{display:flex;gap:8px;flex-wrap:wrap;padding:10px 10px 0;border-top:1px solid var(--line);background:var(--surface)}
+.cv-sug .btn{font-size:13px;padding:6px 10px}
+.cv-sug-info{padding:8px 12px 0;background:var(--surface);font-size:13px;color:var(--muted);display:grid;gap:4px}
+.cv-sug-info b{color:var(--text)}
 .cv-aviso{padding:10px 14px;border-top:1px solid var(--line);background:var(--warn-soft);color:var(--warn);font-size:14px}
 .cv-vazio{margin:auto;color:var(--muted);text-align:center;padding:24px}
 @media (max-width:820px){
@@ -2940,6 +2944,22 @@ async function carregarCentral(silencioso){
 const CONVERSAS_NO_AR = true;
 let CV = null, CVQ = '', CVF = 'todas', CVA = '', CVM = null, CVFOTO = {};
 const CVRASC = {};
+// Sugerir resposta e Passar para a Gerente (10/11/2026): fluxo "Painel | Conversas · Sugerir resposta (V1)", webhook euforia-painel-sugerir.
+const SUGERIR_NO_AR = false;
+const CVSUG = {};
+const CV_SUG_MOTIVO = { direcao: 'Assunto da diretoria: sem sugestão aqui.', ficha: 'Não achei a ficha desse cliente.', grupo: 'Esse grupo não é de cliente do suporte.', ia: 'A sugestão não veio agora. Tente de novo.', prompt: 'Deu erro, a diretoria está resolvendo.', notion: 'Não consegui criar o caso agora. Tente de novo.', acesso: 'Seu acesso caiu. Abra o painel de novo.' };
+function cvSugHtml(){
+  if (!(DEMO || SUGERIR_NO_AR)) return '';
+  const g = CVSUG[CVA] || {};
+  const info = [];
+  if (g.erro) info.push(`<span>⚠️ ${esc(CV_SUG_MOTIVO[g.erro] || 'Deu erro, a diretoria está resolvendo.')}</span>`);
+  if (g.entender) info.push(`<span><b>O que o cliente quer:</b> ${esc(g.entender)}</span>`);
+  if (g.conferir) info.push(`<span><b>Confira antes de enviar:</b> ${esc(g.conferir)}</span>`);
+  if (g.produzir) info.push(`<span><b>Precisa produzir:</b> ${esc(g.o_que_produzir || 'peça para mandar junto')}. Passe para a Gerente antes de enviar.</span>`);
+  if (g.diretoria) info.push(`<span><b>🚨 Decisão da diretoria:</b> ${esc(g.diretoria)}</span>`);
+  if (g.caso) info.push(`<span>🪄 Caso criado para a Gerente. Ela faz e traz pronto para aprovação.${g.card ? ` <a href="${esc(g.card)}" target="_blank" rel="noopener">Ver card</a>` : ''}</span>`);
+  return `<div class="cv-sug"><button class="btn" data-cvsug ${g.indo ? 'disabled' : ''}>${g.indo === 'sugerir' ? 'Pensando…' : '✨ Sugerir resposta'}</button><button class="btn" data-cvger ${g.indo || g.caso ? 'disabled' : ''}>${g.indo === 'gerente' ? 'Criando…' : '🪄 Passar para a Gerente'}</button></div>${info.length ? `<div class="cv-sug-info">${info.join('')}</div>` : ''}`;
+}
 const CV_MOTIVO = { grupo: 'Esse grupo não é de cliente do suporte.', noite: 'Fora do horário (22h às 7h). O texto fica guardado aqui; mande de manhã.', direcao: 'O cliente falou de assunto da diretoria (dinheiro, contrato ou jurídico). A diretoria responde; não responda por aqui.', texto: 'Escreva a resposta.', whatsapp: 'O WhatsApp não mandou. Tente de novo em 1 minuto.', acesso: 'Seu acesso caiu. Abra o painel de novo.', foto: 'Não consegui abrir essa foto agora.' };
 function conversasHtml(){
   const topo = `<div class="head"><div><p class="eyebrow">WhatsApp do suporte${CV && CV.agora ? ' · atualizado às ' + esc(CV.agora) : ''}</p><h1>Conversas</h1></div><p class="sub">Escolha o cliente, leia as últimas mensagens do grupo e responda daqui. Sai pelo número do suporte com o seu nome em negrito na frente.</p></div>`;
@@ -2964,7 +2984,7 @@ function conversasHtml(){
         const foto = m.foto ? (CVFOTO[m.id] && CVFOTO[m.id] !== 'erro' ? `<img src="${CVFOTO[m.id]}" alt="Foto enviada no grupo">` : `<button class="btn" data-cvfoto="${esc(m.id)}" style="margin:4px 0">${CVFOTO[m.id] === 'erro' ? 'Não abriu. Tentar de novo' : CVFOTO[m.id] === 'indo' ? 'Abrindo…' : '📷 Ver foto'}</button>`) : (m.tipo && !m.texto ? esc(m.tipo) : '');
         return h + `<div class="cv-m ${m.eu ? 'eu' : ''} ${m.oculto ? 'oc' : ''}"><span class="a">${esc(m.autor)}</span>${m.oculto ? '🔒 Assunto da diretoria' : foto + (m.foto && m.texto ? '<br>' : '') + esc(m.texto)}<span class="h">${esc(m.hora)}</span></div>`; }).join('') || '<p class="cv-vazio">Sem mensagens nos últimos 60 dias.</p>';
       if (M.bloqueio === 'direcao') baixo = `<div class="cv-aviso">${CV_MOTIVO.direcao}</div>`;
-      else baixo = `${M.noite ? `<div class="cv-aviso">${CV_MOTIVO.noite}</div>` : ''}<div class="cv-caixa"><textarea id="cvt" rows="2" maxlength="3000" placeholder="Escreva a resposta para o grupo" aria-label="Resposta">${esc(CVRASC[CVA] || '')}</textarea><button class="btn primary" id="cvenviar" ${M.noite ? 'disabled' : ''}>Enviar</button></div>`;
+      else baixo = `${M.noite ? `<div class="cv-aviso">${CV_MOTIVO.noite}</div>` : ''}${cvSugHtml()}<div class="cv-caixa"><textarea id="cvt" rows="2" maxlength="3000" placeholder="Escreva a resposta para o grupo" aria-label="Resposta">${esc(CVRASC[CVA] || '')}</textarea><button class="btn primary" id="cvenviar" ${M.noite ? 'disabled' : ''}>Enviar</button></div>`;
     }
     chat = `<div class="cv-chat"><div class="cv-topo"><button class="btn cv-voltar" data-cvvoltar>←</button><div><b>${esc(x.nome)}</b>${x.grupo && x.grupo !== x.nome ? `<p class="sub">${esc(x.grupo)}</p>` : ''}</div></div>
       <div class="cv-msgs" id="cvmsgs">${corpo}</div>${baixo}</div>`;
@@ -2999,6 +3019,20 @@ document.addEventListener('click', async e => {
   if (fo) { const id = fo.dataset.cvfoto; CVFOTO[id] = 'indo'; render();
     try { const r = await api('euforia-painel-conversas', { acao: 'midia', chat: CVA, msg: id }); CVFOTO[id] = r && r.ok ? 'data:' + r.mime + ';base64,' + r.base64 : 'erro'; } catch (x) { CVFOTO[id] = 'erro'; }
     if (view === 'conversas') render(); return; }
+  if (e.target.closest('#main [data-cvsug]')) { const chat = CVA; CVSUG[chat] = { indo: 'sugerir' }; render();
+    try { const r = await api('euforia-painel-sugerir', { acao: 'sugerir', chat, pedido: '' });
+      if (!r || !r.ok) throw new Error((r && r.motivo) || 'erro');
+      CVSUG[chat] = r; CVRASC[chat] = r.texto; }
+    catch (er) { CVSUG[chat] = { erro: er.message }; }
+    if (view === 'conversas' && CVA === chat) { render(); const t = $('#cvt'); if (t) { t.style.height = Math.min(160, t.scrollHeight) + 'px'; t.focus(); } } return; }
+  if (e.target.closest('#main [data-cvger]')) { const chat = CVA, g = CVSUG[chat] || {};
+    const pedido = prompt('O que a Gerente deve resolver para esse cliente?', g.o_que_produzir || g.entender || '');
+    if (pedido === null) return; CVSUG[chat] = Object.assign({}, g, { indo: 'gerente' }); render();
+    try { const r = await api('euforia-painel-sugerir', { acao: 'gerente', chat, pedido });
+      if (!r || !r.ok) throw new Error((r && r.motivo) || 'erro');
+      CVSUG[chat] = Object.assign({}, g, { indo: '', caso: true, card: r.card, erro: '' }); toast('Caso criado para a Gerente.'); }
+    catch (er) { CVSUG[chat] = Object.assign({}, g, { indo: '', erro: er.message }); }
+    if (view === 'conversas' && CVA === chat) render(); return; }
   const env = e.target.closest('#main #cvenviar');
   if (env) {
     const chat = CVA, t = (CVRASC[chat] || '').trim();
@@ -3029,6 +3063,13 @@ function demoApi(path, b){
     return wait({ ok: true, estado: W === 'aguardando' ? (demoApi.n > 2 ? 'conectado' : 'aguardando') : (W || 'desconectado') });
   }
   if (path === 'euforia-painel-responder') return wait({ ok: true, pelo: 'seu número' });
+  if (path === 'euforia-painel-sugerir') {
+    if (b.acao === 'gerente') return wait({ ok: true, card: '' });
+    if (b.chat === 'demo3@g.us') return wait({ ok: false, motivo: 'direcao' });
+    return wait({ ok: true, entender: 'Quer a thumb do vídeo de hoje e saber se a foto que mandou serve.',
+      texto: 'Ana, a foto ficou ótima e já entrou na thumb do vídeo de hoje! 😊\n\nSegue a thumb para você ver como ficou. O vídeo vai ao ar às 18h, como combinado.\n\nPara os próximos, pode gravar amanhã do mesmo jeito que a gente já organiza tudo na sequência.',
+      produzir: true, o_que_produzir: 'thumb do vídeo de hoje com a foto que ela mandou', diretoria: '', conferir: 'A thumb do vídeo de hoje já está pronta?' });
+  }
   if (path === 'euforia-painel-conversas') {
     if (b.acao === 'lista') return wait({ ok: true, agora: '10:42', conversas: [
       { chat: 'demo1@g.us', nome: 'Ana Exemplo', grupo: 'ANA EXEMPLO <> EUFORIA', faixa: 'A', atencao: true, ultima: 'Consegue me mandar a thumb do vídeo de hoje?', quando: '10:31', espera: true, naoLidas: 2 },
