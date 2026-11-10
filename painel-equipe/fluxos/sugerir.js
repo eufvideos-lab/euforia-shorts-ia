@@ -8,6 +8,7 @@ import { workflow, node, trigger, ifElse, sticky } from '@n8n/workflow-sdk';
 const PG = { postgres: { id: '2QBGXkxxr41tWTQw', name: 'Postgres account' } };
 const NOTION = { httpHeaderAuth: { id: 'VYOze6gUMvjy3QXF', name: 'Notion Euforia' } };
 const ANTH = { anthropicApi: { id: 'NSAFLaAWGkUDHJLn', name: 'Anthropic account' } };
+const GCAL = { googleCalendarOAuth2Api: { id: '3WJH3L4Izc9Ytx7o', name: 'Google Agenda Euforia' } };
 const DISCORD = { httpHeaderAuth: { id: 'PY2ZcN5kAVFaS1io', name: 'Discord Bot' } };
 const CANAL_SUG = '1569805651872579607'; // #sugestoes-enviadas (DIREÇÃO, só diretoria)
 const ENVIADAS = { __rl: true, mode: 'id', value: 'BHS6qiCR4FlF20J5', cachedResultName: 'Gerente IA · sugestões enviadas' };
@@ -115,6 +116,14 @@ const cardsAbertos = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, co
   jsonBody: '={{ JSON.stringify({ filter: { and: [{ property: "Cliente", relation: { contains: $json.cliente_id } }, { property: "Status", select: { does_not_equal: "Postado" } }, { property: "Status", select: { does_not_equal: "Cancelado" } }] }, sorts: [{ timestamp: "last_edited_time", direction: "descending" }], page_size: 30 }) }}',
   options: { response: { response: { neverError: true } } } } } });
 
+// Agenda das calls da equipe (Assessoria EDL): a sugestão só propõe horário livre (Henrique, 10/11).
+const agendaEquipe = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, config: { name: 'Agenda da equipe', credentials: GCAL, alwaysOutputData: true, onError: 'continueRegularOutput', parameters: {
+  method: 'GET', url: 'https://www.googleapis.com/calendar/v3/calendars/estrategia%40euforiamedia.com.br/events', authentication: 'predefinedCredentialType', nodeCredentialType: 'googleCalendarOAuth2Api',
+  sendQuery: true, queryParameters: { parameters: [
+    { name: 'timeMin', value: '={{ $now.toISO() }}' }, { name: 'timeMax', value: '={{ $now.plus({ days: 10 }).endOf("day").toISO() }}' },
+    { name: 'singleEvents', value: 'true' }, { name: 'orderBy', value: 'startTime' }, { name: 'maxResults', value: '150' }, { name: 'timeZone', value: 'America/Recife' }] },
+  options: { response: { response: { neverError: true } } } } } });
+
 const lerTextos = node({ type: 'n8n-nodes-base.dataTable', version: 1.1, config: { name: 'Ler textos', alwaysOutputData: true, parameters: {
   resource: 'row', operation: 'get', dataTableId: TEXTOS, matchType: 'allConditions',
   filters: { conditions: [{ keyName: 'chave', condition: 'eq', keyValue: 'sugerir_system' }] } } } });
@@ -140,12 +149,26 @@ const ddmm = d => d ? d.slice(8, 10) + '/' + d.slice(5, 7) : '';
 const cards = (($('Cards abertos').first().json || {}).results || []).map(p => { const pr = p.properties || {};
   return '- ' + txt(pr['Código']) + ' · ' + txt(pr['Entrega']) + ' · ' + txt(pr['Tipo']) + ' · status ' + txt(pr['Status']) + (txt(pr['Prazo']) ? ' · prazo ' + ddmm(txt(pr['Prazo']).slice(0, 10)) : '') + (txt(pr['Postar em']) ? ' · posta ' + ddmm(txt(pr['Postar em']).slice(0, 10)) : ''); });
 const agora = DateTime.now().setZone(Z);
+const ag = $('Agenda da equipe').first().json || {};
+let agenda = '(agenda indisponível agora: não proponha horário, diga que o time confere a agenda e confirma por aqui)';
+if (Array.isArray(ag.items)) {
+  const ev = ag.items.filter(e => e.status !== 'cancelled' && e.start && e.start.dateTime && e.eventType !== 'workingLocation' && e.eventType !== 'outOfOffice')
+    .map(e => [DateTime.fromISO(e.start.dateTime).setZone(Z), DateTime.fromISO(e.end.dateTime).setZone(Z)]);
+  const dias = []; let x = agora.startOf('day');
+  while (dias.length < 7) { if (x.weekday <= 5) dias.push(x); x = x.plus({ days: 1 }); }
+  agenda = dias.map(d => {
+    const ocup = ev.filter(([i]) => i.hasSame(d, 'day')).map(([i, f]) => i.toFormat('HH:mm') + '-' + f.toFormat('HH:mm'));
+    const livres = [9, 10, 11, 14, 15, 16, 17].filter(h => { const i = d.set({ hour: h, minute: 0 }), f = i.plus({ hours: 1 }); return i > agora.plus({ hours: 2 }) && !ev.some(([a, b]) => a < f && b > i); }).map(h => String(h).padStart(2, '0') + 'h');
+    return '- ' + d.setLocale('pt-BR').toFormat('cccc dd/MM') + ': ocupado ' + (ocup.join(', ') || 'nada') + ' · livre ' + (livres.join(', ') || 'nenhum');
+  }).join(String.fromCharCode(10));
+}
 const CAL = Array.from({ length: 8 }, (_, k) => agora.plus({ days: k }).setLocale('pt-BR').toFormat('cccc dd/MM')).join(', ');
 const user = 'Hoje é ' + agora.setLocale('pt-BR').toFormat('cccc dd/MM/yyyy HH:mm') + '. Próximos dias: ' + CAL + '.'
   + String.fromCharCode(10) + 'Cliente: ' + c.cliente + (c.atencao ? ' (🔴 atenção redobrada)' : '') + (c.foco ? ' (⭐ em foco)' : '')
   + String.fromCharCode(10) + 'Quem vai enviar: ' + String(v.nome || '').split(' ')[0] + (v.diretor ? ' (diretoria)' : ' (equipe)')
   + (v.pedido ? String.fromCharCode(10) + 'Orientação de quem pediu a sugestão: ' + v.pedido : '')
   + String.fromCharCode(10, 10) + 'Cards do cliente (Entregas, mais recentes primeiro):' + String.fromCharCode(10) + (cards.join(String.fromCharCode(10)) || '(nenhum)')
+  + String.fromCharCode(10, 10) + 'Agenda das calls e tutorias da equipe (próximos dias úteis; só proponha horário que esteja livre aqui):' + String.fromCharCode(10) + agenda
   + String.fromCharCode(10, 10) + 'Conversa do grupo (mais antiga em cima):' + String.fromCharCode(10) + (conversa || '(sem mensagens)');
 return [{ json: { pular: false, corpo: JSON.stringify({ model: 'claude-sonnet-4-5', max_tokens: 900, temperature: 0.4, system: SYSTEM, messages: [{ role: 'user', content: user }] }) } }];
 ` } } });
@@ -329,7 +352,7 @@ const devSemCliente = node({ type: 'n8n-nodes-base.respondToWebhook', version: 1
 const recusar = node({ type: 'n8n-nodes-base.respondToWebhook', version: 1.5, config: { name: 'Recusar', parameters: {
   respondWith: 'json', responseBody: '={{ JSON.stringify($json.resposta) }}', options: {} } } });
 
-const nota = sticky('## Painel · Conversas · Sugerir resposta (V1)\nAba Conversas: "✨ Sugerir resposta" lê as últimas 40 mensagens do grupo + cards do cliente e escreve a resposta no jeito do Henrique (prompt na tabela "Gerente IA · textos", chave sugerir_system, maior versão). Quem pediu edita e envia pela própria aba (fluxo de Conversas). Nada sai daqui.\n"🪄 Passar para a Gerente" cria card CASO no Entregas com Responsável = Gerente IA (as Mãos da Gerente resolvem).\n"Enviado": quando alguém manda a resposta usando a sugestão, acha a tarefa prometida (Claude), cria o card no Entregas para o dono certo com prazo (ou liga ao card que já existe) e registra a promessa no 🗓️ Promessas (o vigia acompanha); depois avisa no #sugestoes-enviadas (sugestão x enviado, % igual) e registra na tabela "Gerente IA · sugestões enviadas".\nTravas: mesmas pessoas da aba; assunto da diretoria (dinheiro, contrato, jurídico) não ganha sugestão; valores mascarados.', [], { color: 4 });
+const nota = sticky('## Painel · Conversas · Sugerir resposta (V1)\nAba Conversas: "✨ Sugerir resposta" lê as últimas 40 mensagens do grupo + cards do cliente e escreve a resposta no jeito do Henrique (prompt na tabela "Gerente IA · textos", chave sugerir_system, maior versão). Consulta a agenda das calls da equipe (Assessoria EDL) para só propor horário livre. Quem pediu edita e envia pela própria aba (fluxo de Conversas). Nada sai daqui.\n"🪄 Passar para a Gerente" cria card CASO no Entregas com Responsável = Gerente IA (as Mãos da Gerente resolvem).\n"Enviado": quando alguém manda a resposta usando a sugestão, acha a tarefa prometida (Claude), cria o card no Entregas para o dono certo com prazo (ou liga ao card que já existe) e registra a promessa no 🗓️ Promessas (o vigia acompanha); depois avisa no #sugestoes-enviadas (sugestão x enviado, % igual) e registra na tabela "Gerente IA · sugestões enviadas".\nTravas: mesmas pessoas da aba; assunto da diretoria (dinheiro, contrato, jurídico) não ganha sugestão; valores mascarados.', [], { color: 4 });
 
 export default workflow('painel-sugerir', 'Painel | Conversas · Sugerir resposta (V1)')
   .add(pedir).to(ler).to(acesso).to(validar)
@@ -343,7 +366,7 @@ export default workflow('painel-sugerir', 'Painel | Conversas · Sugerir respost
           .onFalse(montarAviso.to(avisarDiscord).to(registrarEnvio).to(devAviso))))
         .onFalse(ehGerente
           .onTrue(montarCaso.to(criarCaso).to(resultadoCaso).to(devCaso))
-          .onFalse(cardsAbertos.to(lerTextos).to(montarPedido).to(vaiPedir
+          .onFalse(cardsAbertos.to(agendaEquipe).to(lerTextos).to(montarPedido).to(vaiPedir
             .onTrue(claude.to(lerSugestao).to(devSugestao))
             .onFalse(devSemSugestao)))))
       .onFalse(devSemCliente)))
