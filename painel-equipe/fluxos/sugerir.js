@@ -8,6 +8,9 @@ import { workflow, node, trigger, ifElse, sticky } from '@n8n/workflow-sdk';
 const PG = { postgres: { id: '2QBGXkxxr41tWTQw', name: 'Postgres account' } };
 const NOTION = { httpHeaderAuth: { id: 'VYOze6gUMvjy3QXF', name: 'Notion Euforia' } };
 const ANTH = { anthropicApi: { id: 'NSAFLaAWGkUDHJLn', name: 'Anthropic account' } };
+const DISCORD = { httpHeaderAuth: { id: 'PY2ZcN5kAVFaS1io', name: 'Discord Bot' } };
+const CANAL_SUG = '1569805651872579607'; // #sugestoes-enviadas (DIREÇÃO, só diretoria)
+const ENVIADAS = { __rl: true, mode: 'id', value: 'BHS6qiCR4FlF20J5', cachedResultName: 'Gerente IA · sugestões enviadas' };
 const NOTION_HDR = { parameters: [{ name: 'Notion-Version', value: '2022-06-28' }] };
 const ORIGENS = 'https://lp.grupoeuforia.tech,https://grupoeuforia.com.br,https://www.grupoeuforia.com.br';
 const ACESSO = { __rl: true, mode: 'id', value: 'ilXDZWGAcOjoajx7', cachedResultName: 'Painel equipe · acesso' };
@@ -31,7 +34,8 @@ const pedir = trigger({ type: 'n8n-nodes-base.webhook', version: 2.1, config: { 
 const ler = node({ type: 'n8n-nodes-base.code', version: 2, config: { name: 'Ler pedido', parameters: { jsCode: `const b = ($input.first().json.body) || {};
 const u = String(b.u || '').toLowerCase();
 return [{ json: { u: /^[0-9a-f]{24}$/.test(u) ? u : 'x', pin: String(b.pin || '').replace(/[^0-9]/g, '').slice(0, 6),
-  acao: b.acao === 'gerente' ? 'gerente' : 'sugerir',
+  acao: ['gerente', 'enviado'].includes(b.acao) ? b.acao : 'sugerir',
+  sugestao: String(b.sugestao || '').slice(0, 3000), enviado: String(b.enviado || '').slice(0, 3000),
   chat: /^[0-9-]{6,40}@g[.]us$/.test(String(b.chat || '')) ? b.chat : '',
   pedido: String(b.pedido || '').split(String.fromCharCode(13)).join('').trim().slice(0, 600) } }];
 ` } } });
@@ -45,7 +49,8 @@ const r = $input.first().json || {};
 const ok = !!r.token && r.token === p.u && r.ativo === true && String(r.pin) === p.pin && ${PAPEIS}.includes(r.papel);
 let motivo = ok ? '' : 'acesso';
 if (ok && !p.chat) motivo = 'grupo';
-return [{ json: { ok: !motivo, acao: p.acao, chat: p.chat || '-', pedido: p.pedido, nome: r.nome || '', papel: r.papel || '',
+if (ok && p.acao === 'enviado' && (!p.sugestao || !p.enviado)) motivo = 'texto';
+return [{ json: { ok: !motivo, acao: p.acao, chat: p.chat || '-', pedido: p.pedido, sugestao: p.sugestao, enviado: p.enviado, nome: r.nome || '', papel: r.papel || '',
   diretor: r.papel === 'diretor', teste: r.papel === 'teste', resposta: { ok: false, motivo } } }];
 ` } } });
 
@@ -189,6 +194,56 @@ const resultadoCaso = node({ type: 'n8n-nodes-base.code', version: 2, config: { 
 return [{ json: { resposta: r.id ? { ok: true, card: r.url || '' } : { ok: false, motivo: 'notion' } } }];
 ` } } });
 
+// ---------- AVISO: resposta enviada usando a sugestão (pedido do Henrique, 10/11) ----------
+const ehAviso = ifElse({ version: 2.2, config: { name: 'É aviso de envio?', parameters: { conditions: {
+  options: { caseSensitive: true, leftValue: '', typeValidation: 'loose' }, conditions: [{ leftValue: '={{ $json.acao }}', rightValue: 'enviado', operator: { type: 'string', operation: 'equals' } }], combinator: 'and' } } } });
+
+const montarAviso = node({ type: 'n8n-nodes-base.code', version: 2, config: { name: 'Montar aviso', parameters: { jsCode: `const v = $('Validar acesso').first().json;
+const c = $('Juntar cliente').first().json;
+const agora = DateTime.now().setZone('America/Recife');
+const norm = s => String(s || '').toLowerCase().normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').replace(/[^a-z0-9 ]+/g, ' ').split(' ').filter(Boolean);
+const a = norm(v.sugestao), b = norm(v.enviado);
+// Parecido = palavras em comum na mesma ordem (LCS) sobre o tamanho do maior texto.
+const n = a.length, m = b.length; let prev = new Array(m + 1).fill(0);
+for (let i = 1; i <= n; i++) { const cur = new Array(m + 1).fill(0); for (let j = 1; j <= m; j++) cur[j] = a[i - 1] === b[j - 1] ? prev[j - 1] + 1 : Math.max(prev[j], cur[j - 1]); prev = cur; }
+const parecido = Math.round(100 * prev[m] / Math.max(1, n, m));
+const igual = v.sugestao.trim() === v.enviado.trim();
+const NL = String.fromCharCode(10);
+const cita = s => s.trim().slice(0, 850).split(NL).map(l => '> ' + l).join(NL) + (s.trim().length > 850 ? NL + '> (…)' : '');
+const selo = igual ? '✅ Enviou igual à sugestão' : (parecido >= 80 ? '✏️ Ajuste leve (' + parecido + '% igual)' : '⚠️ Mudou bastante (' + parecido + '% igual)');
+let content = '**✨ Sugestão usada · ' + c.cliente + '**' + NL + 'Enviada por ' + v.nome + ' às ' + agora.toFormat('HH:mm') + ' · ' + selo + NL + NL
+  + (igual ? '**Enviado (igual à sugestão):**' + NL + cita(v.enviado) : '**Sugestão:**' + NL + cita(v.sugestao) + NL + NL + '**Enviado:**' + NL + cita(v.enviado))
+  + NL + NL + 'Se ficou ruim: apague no grupo e mande outra pela aba Conversas.';
+content = content.slice(0, 1990);
+return [{ json: { discord: JSON.stringify({ content, allowed_mentions: { parse: [] } }),
+  linha: { quando: agora.toISO(), cliente: c.cliente, chat: v.chat, quem: v.nome, sugestao: v.sugestao, enviado: v.enviado, igual, parecido },
+  resposta: { ok: true } } }];
+` } } });
+
+const avisarDiscord = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, config: { name: 'Avisar no #sugestoes-enviadas', credentials: DISCORD, onError: 'continueRegularOutput', parameters: {
+  method: 'POST', url: `https://discord.com/api/v10/channels/${CANAL_SUG}/messages`, authentication: 'genericCredentialType', genericAuthType: 'httpHeaderAuth',
+  sendBody: true, specifyBody: 'json', jsonBody: '={{ $json.discord }}', options: {} } } });
+
+const registrarEnvio = node({ type: 'n8n-nodes-base.dataTable', version: 1.1, config: { name: 'Registrar sugestão enviada', onError: 'continueRegularOutput', parameters: {
+  resource: 'row', operation: 'insert', dataTableId: ENVIADAS,
+  columns: { mappingMode: 'defineBelow', value: {
+      quando: '={{ $("Montar aviso").first().json.linha.quando }}', cliente: '={{ $("Montar aviso").first().json.linha.cliente }}', chat: '={{ $("Montar aviso").first().json.linha.chat }}',
+      quem: '={{ $("Montar aviso").first().json.linha.quem }}', sugestao: '={{ $("Montar aviso").first().json.linha.sugestao }}', enviado: '={{ $("Montar aviso").first().json.linha.enviado }}',
+      igual: '={{ $("Montar aviso").first().json.linha.igual }}', parecido: '={{ $("Montar aviso").first().json.linha.parecido }}' },
+    matchingColumns: [], schema: [
+      { id: 'quando', displayName: 'quando', required: false, defaultMatch: false, display: true, type: 'string', canBeUsedToMatch: true },
+      { id: 'cliente', displayName: 'cliente', required: false, defaultMatch: false, display: true, type: 'string', canBeUsedToMatch: true },
+      { id: 'chat', displayName: 'chat', required: false, defaultMatch: false, display: true, type: 'string', canBeUsedToMatch: true },
+      { id: 'quem', displayName: 'quem', required: false, defaultMatch: false, display: true, type: 'string', canBeUsedToMatch: true },
+      { id: 'sugestao', displayName: 'sugestao', required: false, defaultMatch: false, display: true, type: 'string', canBeUsedToMatch: true },
+      { id: 'enviado', displayName: 'enviado', required: false, defaultMatch: false, display: true, type: 'string', canBeUsedToMatch: true },
+      { id: 'igual', displayName: 'igual', required: false, defaultMatch: false, display: true, type: 'boolean', canBeUsedToMatch: true },
+      { id: 'parecido', displayName: 'parecido', required: false, defaultMatch: false, display: true, type: 'number', canBeUsedToMatch: true }] },
+  options: {} } } });
+
+const devAviso = node({ type: 'n8n-nodes-base.respondToWebhook', version: 1.5, config: { name: 'Confirmar aviso', parameters: {
+  respondWith: 'json', responseBody: '={{ JSON.stringify($("Montar aviso").first().json.resposta) }}', options: {} } } });
+
 const devSugestao = node({ type: 'n8n-nodes-base.respondToWebhook', version: 1.5, config: { name: 'Devolver sugestão', parameters: {
   respondWith: 'json', responseBody: '={{ JSON.stringify($json.resposta) }}', options: {} } } });
 const devSemSugestao = node({ type: 'n8n-nodes-base.respondToWebhook', version: 1.5, config: { name: 'Sem sugestão', parameters: {
@@ -200,17 +255,19 @@ const devSemCliente = node({ type: 'n8n-nodes-base.respondToWebhook', version: 1
 const recusar = node({ type: 'n8n-nodes-base.respondToWebhook', version: 1.5, config: { name: 'Recusar', parameters: {
   respondWith: 'json', responseBody: '={{ JSON.stringify($json.resposta) }}', options: {} } } });
 
-const nota = sticky('## Painel · Conversas · Sugerir resposta (V1)\nAba Conversas: "✨ Sugerir resposta" lê as últimas 40 mensagens do grupo + cards do cliente e escreve a resposta no jeito do Henrique (prompt na tabela "Gerente IA · textos", chave sugerir_system, maior versão). Quem pediu edita e envia pela própria aba (fluxo de Conversas). Nada sai daqui.\n"🪄 Passar para a Gerente" cria card CASO no Entregas com Responsável = Gerente IA (as Mãos da Gerente resolvem).\nTravas: mesmas pessoas da aba; assunto da diretoria (dinheiro, contrato, jurídico) não ganha sugestão; valores mascarados.', [], { color: 4 });
+const nota = sticky('## Painel · Conversas · Sugerir resposta (V1)\nAba Conversas: "✨ Sugerir resposta" lê as últimas 40 mensagens do grupo + cards do cliente e escreve a resposta no jeito do Henrique (prompt na tabela "Gerente IA · textos", chave sugerir_system, maior versão). Quem pediu edita e envia pela própria aba (fluxo de Conversas). Nada sai daqui.\n"🪄 Passar para a Gerente" cria card CASO no Entregas com Responsável = Gerente IA (as Mãos da Gerente resolvem).\n"Enviado": quando alguém manda a resposta usando a sugestão, avisa no #sugestoes-enviadas (sugestão x enviado, % igual) e registra na tabela "Gerente IA · sugestões enviadas".\nTravas: mesmas pessoas da aba; assunto da diretoria (dinheiro, contrato, jurídico) não ganha sugestão; valores mascarados.', [], { color: 4 });
 
 export default workflow('painel-sugerir', 'Painel | Conversas · Sugerir resposta (V1)')
   .add(pedir).to(ler).to(acesso).to(validar)
   .to(podeSeguir
     .onTrue(buscarConversa.to(fichaCliente).to(juntarCliente).to(temCliente
-      .onTrue(ehGerente
-        .onTrue(montarCaso.to(criarCaso).to(resultadoCaso).to(devCaso))
-        .onFalse(cardsAbertos.to(lerTextos).to(montarPedido).to(vaiPedir
-          .onTrue(claude.to(lerSugestao).to(devSugestao))
-          .onFalse(devSemSugestao))))
+      .onTrue(ehAviso
+        .onTrue(montarAviso.to(avisarDiscord).to(registrarEnvio).to(devAviso))
+        .onFalse(ehGerente
+          .onTrue(montarCaso.to(criarCaso).to(resultadoCaso).to(devCaso))
+          .onFalse(cardsAbertos.to(lerTextos).to(montarPedido).to(vaiPedir
+            .onTrue(claude.to(lerSugestao).to(devSugestao))
+            .onFalse(devSemSugestao)))))
       .onFalse(devSemCliente)))
     .onFalse(recusar))
   .add(nota);

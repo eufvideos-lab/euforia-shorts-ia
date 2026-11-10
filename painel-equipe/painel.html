@@ -2945,7 +2945,7 @@ const CONVERSAS_NO_AR = true;
 let CV = null, CVQ = '', CVF = 'todas', CVA = '', CVM = null, CVFOTO = {};
 const CVRASC = {};
 // Sugerir resposta e Passar para a Gerente (10/11/2026): fluxo "Painel | Conversas · Sugerir resposta (V1)", webhook euforia-painel-sugerir.
-const SUGERIR_NO_AR = false;
+const SUGERIR_NO_AR = true;
 const CVSUG = {};
 const CV_SUG_MOTIVO = { direcao: 'Assunto da diretoria: sem sugestão aqui.', ficha: 'Não achei a ficha desse cliente.', grupo: 'Esse grupo não é de cliente do suporte.', ia: 'A sugestão não veio agora. Tente de novo.', prompt: 'Deu erro, a diretoria está resolvendo.', notion: 'Não consegui criar o caso agora. Tente de novo.', acesso: 'Seu acesso caiu. Abra o painel de novo.' };
 function cvSugHtml(){
@@ -3040,6 +3040,8 @@ document.addEventListener('click', async e => {
     ocupado = true; env.disabled = true; env.textContent = 'Enviando…';
     try { const r = await api('euforia-painel-conversas', { acao: 'mandar', chat, texto: t }); if (!r || !r.ok) throw new Error((r && r.motivo) || 'erro');
       delete CVRASC[chat]; ocupado = false;
+      // Henrique avalia no Discord toda resposta que saiu a partir da sugestão (#sugestoes-enviadas).
+      const sg = CVSUG[chat]; if (sg && sg.texto) { delete CVSUG[chat]; api('euforia-painel-sugerir', { acao: 'enviado', chat, sugestao: sg.texto, enviado: t }).catch(() => {}); }
       if (CVM && CVM.chat === chat) CVM.mensagens.push({ id: 'local' + Date.now(), eu: true, autor: D.nome.split(' ')[0] + ' (você)', tipo: '', foto: false, oculto: false, texto: t, hora: new Date().toTimeString().slice(0, 5), dia: (CVM.mensagens.length ? CVM.mensagens[CVM.mensagens.length - 1].dia : 'Hoje') });
       const c = CV.conversas.find(x => x.chat === chat); if (c) { c.espera = false; c.naoLidas = 0; }
       render(); cvRolar(); toast('Resposta enviada no grupo.'); setTimeout(() => abrirConversa(chat, true), 6000); }
@@ -3065,6 +3067,7 @@ function demoApi(path, b){
   if (path === 'euforia-painel-responder') return wait({ ok: true, pelo: 'seu número' });
   if (path === 'euforia-painel-sugerir') {
     if (b.acao === 'gerente') return wait({ ok: true, card: '' });
+    if (b.acao === 'enviado') return wait({ ok: true });
     if (b.chat === 'demo3@g.us') return wait({ ok: false, motivo: 'direcao' });
     return wait({ ok: true, entender: 'Quer a thumb do vídeo de hoje e saber se a foto que mandou serve.',
       texto: 'Ana, a foto ficou ótima e já entrou na thumb do vídeo de hoje! 😊\n\nSegue a thumb para você ver como ficou. O vídeo vai ao ar às 18h, como combinado.\n\nPara os próximos, pode gravar amanhã do mesmo jeito que a gente já organiza tudo na sequência.',
