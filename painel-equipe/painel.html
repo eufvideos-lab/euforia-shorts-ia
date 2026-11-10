@@ -2961,7 +2961,7 @@ function conversasHtml(){
     else if (M) {
       let dia = '';
       corpo = M.mensagens.map(m => { let h = ''; if (m.dia !== dia) { dia = m.dia; h += `<span class="cv-dia">${esc(dia)}</span>`; }
-        const foto = m.foto ? (CVFOTO[m.id] && CVFOTO[m.id] !== 'erro' ? `<img src="${CVFOTO[m.id]}" alt="Foto enviada no grupo" onload="cvRolar()">` : `<button class="btn" data-cvfoto="${esc(m.id)}" style="margin:4px 0">${CVFOTO[m.id] === 'erro' ? 'Não abriu. Tentar de novo' : CVFOTO[m.id] === 'indo' ? 'Abrindo…' : '📷 Ver foto'}</button>`) : (m.tipo && !m.texto ? esc(m.tipo) : '');
+        const foto = m.foto ? (CVFOTO[m.id] && CVFOTO[m.id] !== 'erro' ? `<img src="${CVFOTO[m.id]}" alt="Foto enviada no grupo">` : `<button class="btn" data-cvfoto="${esc(m.id)}" style="margin:4px 0">${CVFOTO[m.id] === 'erro' ? 'Não abriu. Tentar de novo' : CVFOTO[m.id] === 'indo' ? 'Abrindo…' : '📷 Ver foto'}</button>`) : (m.tipo && !m.texto ? esc(m.tipo) : '');
         return h + `<div class="cv-m ${m.eu ? 'eu' : ''} ${m.oculto ? 'oc' : ''}"><span class="a">${esc(m.autor)}</span>${m.oculto ? '🔒 Assunto da diretoria' : foto + (m.foto && m.texto ? '<br>' : '') + esc(m.texto)}<span class="h">${esc(m.hora)}</span></div>`; }).join('') || '<p class="cv-vazio">Sem mensagens nos últimos 60 dias.</p>';
       if (M.bloqueio === 'direcao') baixo = `<div class="cv-aviso">${CV_MOTIVO.direcao}</div>`;
       else baixo = `${M.noite ? `<div class="cv-aviso">${CV_MOTIVO.noite}</div>` : ''}<div class="cv-caixa"><textarea id="cvt" rows="2" maxlength="3000" placeholder="Escreva a resposta para o grupo" aria-label="Resposta">${esc(CVRASC[CVA] || '')}</textarea><button class="btn primary" id="cvenviar" ${M.noite ? 'disabled' : ''}>Enviar</button></div>`;
@@ -2972,6 +2972,7 @@ function conversasHtml(){
   return topo + `<div class="cv ${CVA ? 'aberta' : ''}">${lista}${chat}</div>`;
 }
 function cvRolar(){ const el = $('#cvmsgs'); if (el) el.scrollTop = el.scrollHeight; }
+document.addEventListener('load', e => { if (e.target.tagName === 'IMG' && e.target.closest('#cvmsgs')) cvRolar(); }, true);
 async function carregarConversas(silencioso){
   if (carregarConversas.indo) return; carregarConversas.indo = true;
   try { const r = await api('euforia-painel-conversas', { acao: 'lista' }); if (r && r.ok) CV = r; else if (!CV) CV = { erro: true }; }
