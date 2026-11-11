@@ -1101,17 +1101,18 @@ function blocoCallsAnteriores(){
   const btn = `<button class="btn" data-callsant style="align-self:flex-start">${CAA ? 'Esconder calls anteriores' : 'Ver calls anteriores'}</button>`;
   if (!CAA) return `<section class="group" style="margin-top:28px">${btn}</section>`;
   return `<section class="group" style="margin-top:28px">${btn}
-    <h2 style="margin-top:14px">Calls anteriores <span class="count">${CA && CA.calls ? CA.calls.length : ''}</span></h2>
-    <p class="sub">Últimos 45 dias, da mais recente para a mais antiga. Use "Pôr link" se a apresentação foi feita por fora.</p>
-    ${CA && CA.calls && CA.calls.length ? '<div class="filtros"><label for="caq">Buscar<input type="text" id="caq" placeholder="Cliente ou tipo de call" autocomplete="off" value="' + esc(CAQ) + '"></label></div>' : ''}
+    <h2 style="margin-top:14px">Calls anteriores</h2>
+    <p class="sub">Digite o nome do cliente para ver as calls dele dos últimos 45 dias, com a apresentação. Use "Pôr link" se a apresentação foi feita por fora.</p>
+    <div class="filtros"><label for="caq">Buscar cliente<input type="text" id="caq" placeholder="Nome do cliente" autocomplete="off" value="${esc(CAQ)}"></label></div>
     <div id="cares">${listaCallsAnteriores()}</div></section>`;
 }
 function listaCallsAnteriores(){
   if (!CA) return '<p class="sub">Carregando…</p>';
   if (CA.erro) return '<p class="empty">Não consegui ler a agenda agora. Tente de novo em alguns minutos.</p>';
   const q = CAQ.trim().toLowerCase();
-  const l = CA.calls.filter(c => !q || (c.cliente + ' ' + (c.tipo || '')).toLowerCase().includes(q));
-  if (!l.length) return `<p class="empty">${q ? 'Nenhuma call anterior com esse nome.' : 'Nenhuma call nos últimos 45 dias.'}</p>`;
+  if (q.length < 2) return '';
+  const l = CA.calls.filter(c => (c.cliente + ' ' + (c.tipo || '')).toLowerCase().includes(q));
+  if (!l.length) return '<p class="empty">Nenhuma call desse cliente nos últimos 45 dias.</p>';
   const it = c => `<li class="item"><span class="stripe"></span>
     <div class="main" style="cursor:default"><span class="t">${esc(fmt(c.dia))} · ${esc(c.cliente)}</span>
     <span class="meta">${c.tipo ? `<span class="chip">${esc(c.tipo)}</span>` : ''}<span class="chip">${esc(c.hora)} às ${esc(c.fimHora)}</span>${/^https:/.test(c.apresentacao || '') ? '' : '<span class="chip">Sem link de apresentação</span>'}</span></div>
@@ -1120,7 +1121,7 @@ function listaCallsAnteriores(){
 }
 async function carregarCallsAnteriores(){
   try { const r = await api('euforia-painel-calls', { antigas: true }); CA = r && r.ok ? r : { erro: true, calls: [] }; } catch (e) { CA = { erro: true, calls: [] }; }
-  if (view === 'calls' && !ocupado) render();
+  const r = $('#cares'); if (r) r.innerHTML = listaCallsAnteriores(); else if (view === 'calls' && !ocupado) render();
 }
 function apresDaCall(k){
   const l = DD.cards.filter(c => ehApresCall(c) && c.status !== 'Cancelado');
@@ -2322,7 +2323,7 @@ document.addEventListener('click', async e => {
   const kcl = e.target.closest('#main [data-cli]'); if (kcl) { abrirCliente(kcl.dataset.cli); return; }
   const kf = e.target.closest('#main [data-clf]'); if (kf) { CLF = CLF === kf.dataset.clf ? '' : kf.dataset.clf; render(); return; }
   const ap = e.target.closest('#main [data-apagaped]'); if (ap) { apagarPedido(ap); return; }
-  if (e.target.closest('#main [data-callsant]')) { CAA = !CAA; if (CAA && !CA) carregarCallsAnteriores(); render(); return; }
+  if (e.target.closest('#main [data-callsant]')) { CAA = !CAA; if (CAA && !CA) carregarCallsAnteriores(); render(); if (CAA) { const i = $('#caq'); if (i) i.focus(); } return; }
   const la = e.target.closest('#main [data-linkcallant]'); if (la) { const k = CA && CA.calls && CA.calls.find(x => x.id === la.dataset.linkcallant); if (k) abrirLinkCall(k); return; }
   const lc = e.target.closest('#main [data-linkcall]'); if (lc) { const k = CC && CC.calls.find(x => x.id === lc.dataset.linkcall); if (k) abrirLinkCall(k); return; }
   const ac = e.target.closest('#main [data-acessos]'); if (ac) { const k = CE.clientes.find(x => x.id === ac.dataset.acessos); if (k) abrirAcessos(k); return; }
