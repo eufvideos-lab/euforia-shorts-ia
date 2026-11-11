@@ -522,6 +522,7 @@ let D = null, R = null, W = null, WQR = '', PIN = '', view = '', ocupado = false
 let G = null, GC = '', GP = 'YouTube', GW = 0;
 const RASC = {};
 let MP = null, MPQ = '', CC = null;
+let CA = null, CAA = false, CAQ = ''; // Calls anteriores (11/11/2026): só carrega quando a pessoa abre
 let CE = null, CEQ = '', CEF = '';
 let FO = null, FOQ = '', FOF = '';
 let CT = null, CTQ = '', CTT = '', CTO = '', CTN = 40;
@@ -921,7 +922,8 @@ const VIEWS = {
         <div class="stat"><span class="v">${CC.calls.filter(c => Math.round((dia(c.dia) - dia(CC.hoje)) / 864e5) === 1).length}</span><span>amanhã</span></div>
         <div class="stat"><span class="v">${CC.calls.filter(c => !passou(c)).length}</span><span>nas próximas 3 semanas</span></div>
         <div class="stat ${novas ? 'hot' : ''}"><span class="v">${novas}</span><span>marcadas nas últimas 24h</span></div></div>
-      ${dias.length ? dias.map(d => { const l = CC.calls.filter(c => c.dia === d && !passou(c)); return l.length ? `<section class="group"><h2>${esc(nomeDia(d))} <span class="count">${l.length}</span></h2><ul class="rows">${l.map(item).join('')}</ul></section>` : ''; }).join('') : '<p class="empty">Nenhuma call marcada nas próximas 3 semanas.</p>'}`;
+      ${dias.length ? dias.map(d => { const l = CC.calls.filter(c => c.dia === d && !passou(c)); return l.length ? `<section class="group"><h2>${esc(nomeDia(d))} <span class="count">${l.length}</span></h2><ul class="rows">${l.map(item).join('')}</ul></section>` : ''; }).join('') : '<p class="empty">Nenhuma call marcada nas próximas 3 semanas.</p>'}
+      ${blocoCallsAnteriores()}`;
     } },
   carteira: { nome: 'Clientes', pode: () => (DEMO || CARTEIRA_NO_AR) && ['revisor', 'calls', 'teste'].includes(papel()), badge: () => CE && CE.clientes ? CE.clientes.filter(k => k.contrato && k.contrato.faltamDias !== null && k.contrato.faltamDias >= 0 && k.contrato.faltamDias <= 15).length : 0,
     html(){
@@ -1094,6 +1096,32 @@ const VIEWS = {
 // Visão geral do diretor: calls de hoje e amanhã com a apresentação de cada uma, apresentações que ainda não ficaram prontas e pedidos parados por falta de informação.
 const ehApresCall = c => /APRESENTAÇÃO DE CALL/i.test(c.titulo || c.nome || '');
 const apresPronta = c => !!c.link && !ABERTO.includes(c.status);
+// Calls anteriores (pedido do Rômulo, 11/11/2026): recolhido no fim da aba, últimos 45 dias, mais recente primeiro, com busca por cliente.
+function blocoCallsAnteriores(){
+  const btn = `<button class="btn" data-callsant style="align-self:flex-start">${CAA ? 'Esconder calls anteriores' : 'Ver calls anteriores'}</button>`;
+  if (!CAA) return `<section class="group" style="margin-top:28px">${btn}</section>`;
+  return `<section class="group" style="margin-top:28px">${btn}
+    <h2 style="margin-top:14px">Calls anteriores <span class="count">${CA && CA.calls ? CA.calls.length : ''}</span></h2>
+    <p class="sub">Últimos 45 dias, da mais recente para a mais antiga. Use "Pôr link" se a apresentação foi feita por fora.</p>
+    ${CA && CA.calls && CA.calls.length ? '<div class="filtros"><label for="caq">Buscar<input type="text" id="caq" placeholder="Cliente ou tipo de call" autocomplete="off" value="' + esc(CAQ) + '"></label></div>' : ''}
+    <div id="cares">${listaCallsAnteriores()}</div></section>`;
+}
+function listaCallsAnteriores(){
+  if (!CA) return '<p class="sub">Carregando…</p>';
+  if (CA.erro) return '<p class="empty">Não consegui ler a agenda agora. Tente de novo em alguns minutos.</p>';
+  const q = CAQ.trim().toLowerCase();
+  const l = CA.calls.filter(c => !q || (c.cliente + ' ' + (c.tipo || '')).toLowerCase().includes(q));
+  if (!l.length) return `<p class="empty">${q ? 'Nenhuma call anterior com esse nome.' : 'Nenhuma call nos últimos 45 dias.'}</p>`;
+  const it = c => `<li class="item"><span class="stripe"></span>
+    <div class="main" style="cursor:default"><span class="t">${esc(fmt(c.dia))} · ${esc(c.cliente)}</span>
+    <span class="meta">${c.tipo ? `<span class="chip">${esc(c.tipo)}</span>` : ''}<span class="chip">${esc(c.hora)} às ${esc(c.fimHora)}</span>${/^https:/.test(c.apresentacao || '') ? '' : '<span class="chip">Sem link de apresentação</span>'}</span></div>
+    <span class="act" style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">${/^https:/.test(c.apresentacao || '') ? `<a class="btn primary" href="${esc(c.apresentacao)}" target="_blank" rel="noopener">Abrir apresentação</a>` : ''}<button class="btn" data-linkcallant="${esc(c.id)}">${/^https:/.test(c.apresentacao || '') ? 'Trocar link' : 'Pôr link'}</button></span></li>`;
+  return `<ul class="rows">${l.map(it).join('')}</ul>`;
+}
+async function carregarCallsAnteriores(){
+  try { const r = await api('euforia-painel-calls', { antigas: true }); CA = r && r.ok ? r : { erro: true, calls: [] }; } catch (e) { CA = { erro: true, calls: [] }; }
+  if (view === 'calls' && !ocupado) render();
+}
 function apresDaCall(k){
   const l = DD.cards.filter(c => ehApresCall(c) && c.status !== 'Cancelado');
   const nome = String(k.cliente || '').toLowerCase().split(' ')[0];
@@ -1819,7 +1847,7 @@ function abrirLinkCall(k){
     ocupado = true;
     try { const r = await api('euforia-painel-call-link', { evento: k.id, cliente: k.cliente, tipo: k.tipo, dia: k.dia, link }); if (!r || !r.ok) throw new Error((r && r.motivo) || 'erro'); toast(link ? 'Link salvo. Já aparece em "Abrir apresentação".' : 'Link tirado.'); }
     catch (er) { ocupado = false; toast(er.message === 'campos' ? 'Esse link não parece certo. Confira e tente de novo.' : (MOTIVO[er.message] || ERRO)); return; }
-    ocupado = false; k.apresentacao = link; fechar(); render(); carregarCalls();
+    ocupado = false; k.apresentacao = link; fechar(); render(); carregarCalls(); if (CA) carregarCallsAnteriores();
   };
   $('#flink').onsubmit = e => { e.preventDefault(); salvar($('#lc-l').value.trim()); };
   $('#layer').onclick = e => {
@@ -2294,6 +2322,8 @@ document.addEventListener('click', async e => {
   const kcl = e.target.closest('#main [data-cli]'); if (kcl) { abrirCliente(kcl.dataset.cli); return; }
   const kf = e.target.closest('#main [data-clf]'); if (kf) { CLF = CLF === kf.dataset.clf ? '' : kf.dataset.clf; render(); return; }
   const ap = e.target.closest('#main [data-apagaped]'); if (ap) { apagarPedido(ap); return; }
+  if (e.target.closest('#main [data-callsant]')) { CAA = !CAA; if (CAA && !CA) carregarCallsAnteriores(); render(); return; }
+  const la = e.target.closest('#main [data-linkcallant]'); if (la) { const k = CA && CA.calls && CA.calls.find(x => x.id === la.dataset.linkcallant); if (k) abrirLinkCall(k); return; }
   const lc = e.target.closest('#main [data-linkcall]'); if (lc) { const k = CC && CC.calls.find(x => x.id === lc.dataset.linkcall); if (k) abrirLinkCall(k); return; }
   const ac = e.target.closest('#main [data-acessos]'); if (ac) { const k = CE.clientes.find(x => x.id === ac.dataset.acessos); if (k) abrirAcessos(k); return; }
   const ga = e.target.closest('#main [data-gaba]'); if (ga) { GP = ga.dataset.gaba; render(); return; }
@@ -2369,6 +2399,7 @@ document.addEventListener('input', e => {
   if (e.target.id === 'foq') { FOQ = e.target.value; $('#fores').innerHTML = listaFormularios(); }
   if (e.target.id === 'ctq') { CTQ = e.target.value; CTN = 40; $('#ctres').innerHTML = listaCentral(); }
   if (e.target.id === 'mq') { MQ = e.target.value; $('#dres').innerHTML = listaMensagens(); }
+  if (e.target.id === 'caq') { CAQ = e.target.value; $('#cares').innerHTML = listaCallsAnteriores(); }
   if (e.target.id === 'mpq') { MPQ = e.target.value; $('#dres').innerHTML = listaPedidos(); }
   if (e.target.dataset && e.target.dataset.rtxt) RASC[e.target.dataset.rtxt] = e.target.value;
 });
@@ -3088,7 +3119,7 @@ function demoApi(path, b){
     if (b.acao === 'midia') return wait({ ok: true, mime: 'image/svg+xml', base64: btoa('<svg xmlns="http://www.w3.org/2000/svg" width="320" height="180"><rect width="320" height="180" fill="#FF6518"/><text x="160" y="98" font-size="22" text-anchor="middle" fill="#fff" font-family="Arial">foto de exemplo</text></svg>') });
     return wait({ ok: true });
   }
-  if (path === 'euforia-painel-calls') return wait(DEMO_C);
+  if (path === 'euforia-painel-calls') return wait(b && b.antigas ? DEMO_CA : DEMO_C);
   if (path === 'euforia-painel-call-link') { const c = DEMO_C.calls.find(x => x.id === b.evento); if (c) c.apresentacao = b.link; return wait({ ok: true }); }
   if (path === 'euforia-painel-clientes') return wait(DEMO_CE);
   if (path === 'euforia-painel-formularios') return wait(DEMO_FO);
@@ -3313,6 +3344,10 @@ const DEMO_C = {"ok":true,"hoje":"2026-10-26","agora":"10:20","calls":[
   {"id":"k2","cliente":"Instituto Aurora (exemplo)","tipo":"Alinhamento","dia":"2026-10-26","hora":"15:00","fimHora":"16:00","meet":"https://meet.google.com/","convidados":2,"novo":true,"agora":false,"apresentacao":"producao"},
   {"id":"k3","cliente":"Marcos Lima (exemplo)","tipo":"Reunião de Estratégia","dia":"2026-10-27","hora":"09:00","fimHora":"10:00","meet":"https://meet.google.com/","convidados":1,"novo":false,"agora":false,"apresentacao":"https://grupoeuforia.com.br/"},
   {"id":"k4","cliente":"Paula Reis (exemplo)","tipo":"Reunião de Lançamento do Canal","dia":"2026-10-29","hora":"16:00","fimHora":"17:00","meet":"https://meet.google.com/","convidados":0,"novo":true,"agora":false}]};
+const DEMO_CA = {"ok":true,"antigas":true,"hoje":"2026-10-26","agora":"10:20","calls":[
+  {"id":"a1","cliente":"Instituto Aurora (exemplo)","tipo":"Reunião de Estratégia","dia":"2026-10-23","hora":"14:00","fimHora":"15:00","convidados":2,"apresentacao":"https://grupoeuforia.com.br/"},
+  {"id":"a2","cliente":"Paula Reis (exemplo)","tipo":"Reunião de Onboarding + Oferta","dia":"2026-10-20","hora":"10:00","fimHora":"11:00","convidados":1,"apresentacao":""},
+  {"id":"a3","cliente":"Dra. Helena (exemplo)","tipo":"Alinhamento","dia":"2026-10-08","hora":"16:00","fimHora":"17:00","convidados":1,"apresentacao":"https://grupoeuforia.com.br/"}]};
 const DEMO_R = {"ok":true,"agora":"11:58","itens":[
   {"chat":"1@g.us","msg":"m1","grupo":"EUFORIA | Paula Reis","cliente":"Paula Reis (exemplo)","faixa":"B","atencao":true,"sensivel":true,"direcao":false,"tema":"reclamação","resumo":"Reclama que o vídeo de ontem saiu com legenda errada","autor":"Paula","texto":"Gente, o vídeo de ontem saiu com o nome do curso errado na legenda 😕","contexto":"25/10 18:02 Euforia: Vídeo 03 no ar!\n26/10 09:14 Paula: Gente, o vídeo de ontem saiu com o nome do curso errado na legenda 😕","qtd":1,"desde":"26/10 09:14","espera":164},
   {"chat":"2@g.us","msg":"m2","grupo":"EUFORIA | Dra. Helena","cliente":"Dra. Helena (exemplo)","faixa":"A","atencao":true,"sensivel":true,"direcao":true,"tema":"financeiro","resumo":"","autor":"Helena","texto":"","contexto":"","qtd":1,"desde":"26/10 11:20","espera":38},
