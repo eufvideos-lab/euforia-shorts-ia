@@ -25,6 +25,9 @@ const PROMESSAS_DB = '824c669471e5424d8c846936a63c16d4';
 const DONOS = "{ ismael: ['3ea98c0cdde0812d9cb4c41ce70df4ae', 'Ismael'], daniel: ['3ea98c0cdde0817e87aee637a96d4fd1', 'Daniel'], lorena: ['3ea98c0cdde08163bd16f0213b098cb5', 'Lorena'], romulo: ['3ea98c0cdde081299709cf901fac7275', 'Rômulo'], escritorio: ['3ea98c0cdde0812bba06cba7e4261426', 'Escritório'] }";
 const DEMANDA_SYSTEM = 'Você lê a mensagem que o time do Grupo Euforia acabou de mandar no grupo de WhatsApp de um cliente e diz se ela promete alguma tarefa do nosso lado (enviar, postar, refazer, ajustar, conferir, preparar). Responda SÓ com JSON válido: {"tem": true, "o_que": "tarefa curta, verbo no infinitivo, até 70 letras", "tipo": "Vídeo longo|Shorts|Carrossel|Thumbnail|Página|Arte|Organização (Drive/canal)|Descrições e links|Outro", "dono": "ismael|daniel|lorena|romulo|escritorio", "quando": "AAAA-MM-DD", "depende_cliente": false, "card_existente": ""}. Dono: editar vídeo, cortar shorts, thumb, subir página pronta = ismael; postar, publicar ou agendar em qualquer rede (YouTube, Instagram, TikTok) = daniel; revisar ou conferir peça = lorena; acesso, setup, limpeza de canal, call ou alinhamento = romulo; roteiro, pauta, carrossel novo, PDF, relatório, apresentação, página nova = escritorio. Quando: a data dita ou implícita na mensagem (hoje, amanhã, sexta); sem data, o próximo dia útil depois de hoje. Se a bola está com o cliente (ele precisa gravar, aprovar, mandar acesso), depende_cliente = true. Agradecimento, ok, explicação ou resposta sem tarefa nossa: {"tem": false}. Se um dos cards abertos listados já é essa mesma tarefa, ponha "card_existente": "<Código do card>" (não cria outro). Use a dica de quem preparou a resposta só se combinar com a mensagem.';
 
+// Reunião confirmada na sugestão (Henrique, 11/11): o texto já sai com o link do Meet, sem "o link segue em breve".
+const REUNIAO_REGRA = '\n\nREUNIÃO CONFIRMADA: quando a sua resposta confirma uma reunião com data e hora já aceitas pelo cliente (ele escolheu um dos horários livres), escreva no texto uma linha "Link da reunião: [LINK DA REUNIÃO]" (exatamente assim; o sistema cria o evento na agenda e troca pelo link do Meet) e nunca escreva que o link segue depois. Inclua no JSON o campo "reuniao": {"data": "AAAA-MM-DD", "hora": "HH:MM", "tipo": "onboarding|estrategia|audiovisual|audiovisual_estrategia|alinhamento|tutoria|lancamento|outro"} (onboarding = primeira reunião, Onboarding + Oferta). Se a reunião ainda não está fechada (só propondo horários), não use [LINK DA REUNIÃO] nem o campo reuniao.';
+
 const TEAM_SQL = `team AS (
   SELECT DISTINCT m.autor_jid FROM mensagens m
   WHERE m.chat_id IN (SELECT chat_id FROM chats WHERE nome ILIKE '%pend%ncias%')
@@ -100,6 +103,7 @@ if (!conv.grupo || !conv.do_suporte || (v.teste && !/teste/i.test(conv.grupo))) 
 else if (!f) motivo = 'ficha';
 return [{ json: { ok: !motivo, acao: v.acao, cliente_id: f ? f.id : '', cliente: f ? txt(pr[nomeProp]) : '', grupo: conv.grupo || '',
   atencao: f ? txt(pr['🔴 Atenção redobrada']) === 'sim' : false, foco: f ? txt(pr['⭐ Foco até']) : '',
+  email: ((txt(pr['Resumo do contrato']).match(/e-?mail:\\s*([^\\s,;]+@[^\\s,;]+[a-z])/i) || [])[1] || '').toLowerCase(),
   mensagens: conv.mensagens || [], resposta: { ok: false, motivo } } }];
 ` } } });
 
@@ -170,7 +174,7 @@ const user = 'Hoje é ' + agora.setLocale('pt-BR').toFormat('cccc dd/MM/yyyy HH:
   + String.fromCharCode(10, 10) + 'Cards do cliente (Entregas, mais recentes primeiro):' + String.fromCharCode(10) + (cards.join(String.fromCharCode(10)) || '(nenhum)')
   + String.fromCharCode(10, 10) + 'Agenda das calls e tutorias da equipe (próximos dias úteis; só proponha horário que esteja livre aqui):' + String.fromCharCode(10) + agenda
   + String.fromCharCode(10, 10) + 'Conversa do grupo (mais antiga em cima):' + String.fromCharCode(10) + (conversa || '(sem mensagens)');
-return [{ json: { pular: false, corpo: JSON.stringify({ model: 'claude-sonnet-4-5', max_tokens: 900, temperature: 0.4, system: SYSTEM, messages: [{ role: 'user', content: user }] }) } }];
+return [{ json: { pular: false, corpo: JSON.stringify({ model: 'claude-sonnet-4-5', max_tokens: 900, temperature: 0.4, system: SYSTEM + ${JSON.stringify(REUNIAO_REGRA)}, messages: [{ role: 'user', content: user }] }) } }];
 ` } } });
 
 const vaiPedir = ifElse({ version: 2.2, config: { name: 'Pedir ao Claude?', parameters: { conditions: {
@@ -186,9 +190,55 @@ let s = {};
 try { const t = ((r.content || [])[0] || {}).text || ''; s = JSON.parse((t.match(/\\{[\\s\\S]*\\}/) || ['{}'])[0]); } catch (e) { s = {}; }
 const resposta = String(s.resposta || '').replace(/R[$]\\s?[0-9.,]+/g, '').trim().slice(0, 2500);
 if (!resposta) return [{ json: { resposta: { ok: false, motivo: 'ia' } } }];
-return [{ json: { resposta: { ok: true, texto: resposta, entender: String(s.entender || '').slice(0, 300),
+const out = { resposta: { ok: true, texto: resposta, entender: String(s.entender || '').slice(0, 300),
   produzir: s.produzir === true, o_que_produzir: String(s.o_que_produzir || '').slice(0, 400),
-  diretoria: String(s.diretoria || '').slice(0, 300), conferir: String(s.conferir || '').slice(0, 300) } } }];
+  diretoria: String(s.diretoria || '').slice(0, 300), conferir: String(s.conferir || '').slice(0, 300) }, criar: false, link: '', aviso: '' };
+// Reunião confirmada: cria o evento na agenda Assessoria EDL com Meet e põe o link no texto (Henrique, 11/11).
+const r0 = s.reuniao || null;
+if (!resposta.includes('[LINK DA REUNIÃO]')) return [{ json: out }];
+const Z = 'America/Recife', c = $('Juntar cliente').first().json, v = $('Validar acesso').first().json;
+const ini = r0 && /^\\d{4}-\\d{2}-\\d{2}$/.test(String(r0.data || '')) && /^\\d{1,2}:\\d{2}$/.test(String(r0.hora || '')) ? DateTime.fromISO(r0.data + 'T' + String(r0.hora).padStart(5, '0'), { zone: Z }) : null;
+const agora = DateTime.now().setZone(Z);
+if (!ini || !ini.isValid || ini < agora.plus({ hours: 1 }) || ini > agora.plus({ days: 45 }) || ini.weekday > 5 || ini.hour < 8 || ini.hour > 18) { out.aviso = 'Não deu para criar o evento (data ou hora fora do padrão). Marque na agenda e mande o link.'; return [{ json: out }]; }
+const fim = ini.plus({ minutes: 60 });
+const ag = (($('Agenda da equipe').first().json || {}).items || []).filter(e => e.status !== 'cancelled' && e.start && e.start.dateTime);
+const mesmo = ag.find(e => { const a = DateTime.fromISO(e.start.dateTime).setZone(Z); const pp = ((e.extendedProperties || {}).private || {});
+  return a.equals(ini) && e.hangoutLink && (pp.chat === v.chat || String(e.summary || '').toLowerCase().includes(String(c.cliente || '').toLowerCase())); });
+if (mesmo) { out.link = mesmo.hangoutLink; out.aviso = 'A reunião já estava na agenda: usei o link dela.'; return [{ json: out }]; }
+const choque = ag.find(e => { const a = DateTime.fromISO(e.start.dateTime).setZone(Z), b = DateTime.fromISO(e.end.dateTime).setZone(Z); return e.eventType !== 'workingLocation' && a < fim && b > ini; });
+if (choque) { out.aviso = 'Esse horário já tem outra reunião na agenda (' + String(choque.summary || '').slice(0, 60) + '). Confira antes de enviar; o evento não foi criado.'; return [{ json: out }]; }
+const TIPOS = { onboarding: 'Reunião de Onboarding + Oferta', estrategia: 'Call de Estratégia', audiovisual: 'Consultoria Audiovisual', audiovisual_estrategia: 'Consultoria Audiovisual + Estratégia', alinhamento: 'Alinhamento', tutoria: 'Tutoria', lancamento: 'Reunião de Lançamento' };
+const tipo = TIPOS[String(r0.tipo || '').toLowerCase()] || 'Reunião';
+out.criar = true;
+out.evento = JSON.stringify({ summary: '[EUFORIA] ' + tipo + ' [' + c.cliente + ']',
+  start: { dateTime: ini.toISO({ suppressMilliseconds: true }), timeZone: Z }, end: { dateTime: fim.toISO({ suppressMilliseconds: true }), timeZone: Z },
+  conferenceData: { createRequest: { requestId: 'sug-' + Date.now() + '-' + Math.floor(Math.random() * 1e6), conferenceSolutionKey: { type: 'hangoutsMeet' } } },
+  extendedProperties: { private: { origem: 'sugerir', chat: v.chat, cliente_id: c.cliente_id, convidar: c.email || '' } } });
+out.quando = ini.setLocale('pt-BR').toFormat("cccc dd/MM 'às' HH'h'");
+return [{ json: out }];
+` } } });
+
+const criarEvento = ifElse({ version: 2.2, config: { name: 'Criar evento?', parameters: { conditions: {
+  options: { caseSensitive: true, leftValue: '', typeValidation: 'loose' }, conditions: [{ leftValue: '={{ $json.criar }}', rightValue: '', operator: { type: 'boolean', operation: 'true', singleValue: true } }], combinator: 'and' } } } });
+
+// Sem convidado e sem e-mail agora: o convite só vai ao cliente quando a mensagem é enviada (ação "enviado").
+const eventoMeet = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, config: { name: 'Criar evento com Meet', credentials: GCAL, onError: 'continueRegularOutput', parameters: {
+  method: 'POST', url: 'https://www.googleapis.com/calendar/v3/calendars/estrategia%40euforiamedia.com.br/events', authentication: 'predefinedCredentialType', nodeCredentialType: 'googleCalendarOAuth2Api',
+  sendQuery: true, queryParameters: { parameters: [{ name: 'conferenceDataVersion', value: '1' }, { name: 'sendUpdates', value: 'none' }] },
+  sendBody: true, specifyBody: 'json', jsonBody: '={{ $json.evento }}', options: { response: { response: { neverError: true } } } } } });
+
+const porLink = node({ type: 'n8n-nodes-base.code', version: 2, config: { name: 'Pôr link na sugestão', parameters: { jsCode: `const s = $('Ler sugestão').first().json;
+const r = Object.assign({}, s.resposta);
+if (!r.ok) return [{ json: { resposta: r } }];
+let link = s.link, aviso = s.aviso;
+if (s.criar) { let e = {}; try { e = $('Criar evento com Meet').first().json || {}; } catch (x) {}
+  link = e.hangoutLink || ''; aviso = link ? '📅 Evento criado na agenda (' + s.quando + ') com link do Meet. O convite vai para o e-mail do cliente quando você enviar.' : 'Não deu para criar o evento agora. Marque na agenda e mande o link.'; }
+const NL = String.fromCharCode(10);
+r.texto = link ? r.texto.split('[LINK DA REUNIÃO]').join(link)
+  : r.texto.split(NL).map(l => l.includes('[LINK DA REUNIÃO]') ? 'O link da reunião segue aqui em breve.' : l).join(NL);
+if (aviso) r.conferir = (aviso + (r.conferir ? ' ' + r.conferir : '')).slice(0, 400);
+if (link) r.reuniao = { link };
+return [{ json: { resposta: r } }];
 ` } } });
 
 // ---------- PASSAR PARA A GERENTE: card CASO no Entregas ----------
@@ -225,10 +275,47 @@ return [{ json: { resposta: r.id ? { ok: true, card: r.url || '' } : { ok: false
 const ehAviso = ifElse({ version: 2.2, config: { name: 'É aviso de envio?', parameters: { conditions: {
   options: { caseSensitive: true, leftValue: '', typeValidation: 'loose' }, conditions: [{ leftValue: '={{ $json.acao }}', rightValue: 'enviado', operator: { type: 'string', operation: 'equals' } }], combinator: 'and' } } } });
 
+// Reunião da sugestão: se o link foi enviado, convida o cliente (e-mail do contrato); se tiraram o link, apaga o evento.
+const verReuniao = node({ type: 'n8n-nodes-base.code', version: 2, config: { name: 'Ver reunião enviada', parameters: { jsCode: `const v = $('Validar acesso').first().json;
+const m = v.sugestao.match(/https:[/][/]meet[.]google[.]com[/][a-z]{3}-[a-z]{4}-[a-z]{3}/);
+return [{ json: { tem: !!m, link: m ? m[0] : '', usou: !!m && v.enviado.includes(m[0].slice(8)) } }];
+` } } });
+
+const temReuniao = ifElse({ version: 2.2, config: { name: 'Tinha reunião?', parameters: { conditions: {
+  options: { caseSensitive: true, leftValue: '', typeValidation: 'loose' }, conditions: [{ leftValue: '={{ $json.tem }}', rightValue: '', operator: { type: 'boolean', operation: 'true', singleValue: true } }], combinator: 'and' } } } });
+
+const acharEvento = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, config: { name: 'Achar evento da sugestão', credentials: GCAL, alwaysOutputData: true, onError: 'continueRegularOutput', parameters: {
+  method: 'GET', url: '={{ "https://www.googleapis.com/calendar/v3/calendars/estrategia%40euforiamedia.com.br/events?singleEvents=true&maxResults=50&privateExtendedProperty=origem%3Dsugerir&privateExtendedProperty=" + encodeURIComponent("chat=" + $("Validar acesso").first().json.chat) + "&timeMin=" + encodeURIComponent($now.toISO()) }}',
+  authentication: 'predefinedCredentialType', nodeCredentialType: 'googleCalendarOAuth2Api', options: { response: { response: { neverError: true } } } } } });
+
+const decidirEvento = node({ type: 'n8n-nodes-base.code', version: 2, config: { name: 'Convidar ou apagar', parameters: { jsCode: `const r = $('Ver reunião enviada').first().json;
+const e = ((($input.first().json || {}).items) || []).find(x => x.hangoutLink === r.link && x.status !== 'cancelled');
+if (!e) return [{ json: { acao: 'nada' } }];
+const pp = (e.extendedProperties || {}).private || {};
+const ja = (e.attendees || []).map(a => String(a.email || '').toLowerCase());
+if (!r.usou) return [{ json: { acao: (e.attendees || []).length ? 'nada' : 'apagar', id: e.id } }];
+if (!pp.convidar || ja.includes(pp.convidar)) return [{ json: { acao: 'nada' } }];
+return [{ json: { acao: 'convidar', id: e.id, corpo: JSON.stringify({ attendees: (e.attendees || []).concat([{ email: pp.convidar }]) }) } }];
+` } } });
+
+const ehConvidar = ifElse({ version: 2.2, config: { name: 'Convidar?', parameters: { conditions: {
+  options: { caseSensitive: true, leftValue: '', typeValidation: 'loose' }, conditions: [{ leftValue: '={{ $json.acao }}', rightValue: 'convidar', operator: { type: 'string', operation: 'equals' } }], combinator: 'and' } } } });
+const ehApagar = ifElse({ version: 2.2, config: { name: 'Apagar?', parameters: { conditions: {
+  options: { caseSensitive: true, leftValue: '', typeValidation: 'loose' }, conditions: [{ leftValue: '={{ $json.acao }}', rightValue: 'apagar', operator: { type: 'string', operation: 'equals' } }], combinator: 'and' } } } });
+
+const convidar = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, config: { name: 'Convidar cliente', credentials: GCAL, onError: 'continueRegularOutput', parameters: {
+  method: 'PATCH', url: '={{ "https://www.googleapis.com/calendar/v3/calendars/estrategia%40euforiamedia.com.br/events/" + $json.id }}', authentication: 'predefinedCredentialType', nodeCredentialType: 'googleCalendarOAuth2Api',
+  sendQuery: true, queryParameters: { parameters: [{ name: 'sendUpdates', value: 'all' }] },
+  sendBody: true, specifyBody: 'json', jsonBody: '={{ $json.corpo }}', options: { response: { response: { neverError: true } } } } } });
+
+const apagar = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, config: { name: 'Apagar evento não usado', credentials: GCAL, onError: 'continueRegularOutput', parameters: {
+  method: 'DELETE', url: '={{ "https://www.googleapis.com/calendar/v3/calendars/estrategia%40euforiamedia.com.br/events/" + $json.id }}', authentication: 'predefinedCredentialType', nodeCredentialType: 'googleCalendarOAuth2Api',
+  sendQuery: true, queryParameters: { parameters: [{ name: 'sendUpdates', value: 'none' }] }, options: { response: { response: { neverError: true } } } } } });
+
 const cardsDemanda = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, config: { name: 'Cards abertos (demanda)', credentials: NOTION, alwaysOutputData: true, onError: 'continueRegularOutput', parameters: {
   method: 'POST', url: `https://api.notion.com/v1/databases/${ENTREGAS_DB}/query`, authentication: 'genericCredentialType', genericAuthType: 'httpHeaderAuth',
   sendHeaders: true, headerParameters: NOTION_HDR, sendBody: true, specifyBody: 'json',
-  jsonBody: '={{ JSON.stringify({ filter: { and: [{ property: "Cliente", relation: { contains: $json.cliente_id || "00000000000000000000000000000000" } }, { property: "Status", select: { does_not_equal: "Postado" } }, { property: "Status", select: { does_not_equal: "Cancelado" } }, { property: "Status", select: { does_not_equal: "Feito" } }] }, sorts: [{ timestamp: "created_time", direction: "descending" }], page_size: 25 }) }}',
+  jsonBody: '={{ JSON.stringify({ filter: { and: [{ property: "Cliente", relation: { contains: $("Juntar cliente").first().json.cliente_id || "00000000000000000000000000000000" } }, { property: "Status", select: { does_not_equal: "Postado" } }, { property: "Status", select: { does_not_equal: "Cancelado" } }, { property: "Status", select: { does_not_equal: "Feito" } }] }, sorts: [{ timestamp: "created_time", direction: "descending" }], page_size: 25 }) }}',
   options: { response: { response: { neverError: true } } } } } });
 
 const pedirDemanda = node({ type: 'n8n-nodes-base.code', version: 2, config: { name: 'Pedir demanda', parameters: { jsCode: `const v = $('Validar acesso').first().json;
@@ -352,22 +439,30 @@ const devSemCliente = node({ type: 'n8n-nodes-base.respondToWebhook', version: 1
 const recusar = node({ type: 'n8n-nodes-base.respondToWebhook', version: 1.5, config: { name: 'Recusar', parameters: {
   respondWith: 'json', responseBody: '={{ JSON.stringify($json.resposta) }}', options: {} } } });
 
-const nota = sticky('## Painel · Conversas · Sugerir resposta (V1)\nAba Conversas: "✨ Sugerir resposta" lê as últimas 40 mensagens do grupo + cards do cliente e escreve a resposta no jeito do Henrique (prompt na tabela "Gerente IA · textos", chave sugerir_system, maior versão). Consulta a agenda das calls da equipe (Assessoria EDL) para só propor horário livre. Quem pediu edita e envia pela própria aba (fluxo de Conversas). Nada sai daqui.\n"🪄 Passar para a Gerente" cria card CASO no Entregas com Responsável = Gerente IA (as Mãos da Gerente resolvem).\n"Enviado": quando alguém manda a resposta usando a sugestão, acha a tarefa prometida (Claude), cria o card no Entregas para o dono certo com prazo (ou liga ao card que já existe) e registra a promessa no 🗓️ Promessas (o vigia acompanha); depois avisa no #sugestoes-enviadas (sugestão x enviado, % igual) e registra na tabela "Gerente IA · sugestões enviadas".\nTravas: mesmas pessoas da aba; assunto da diretoria (dinheiro, contrato, jurídico) não ganha sugestão; valores mascarados.', [], { color: 4 });
+const nota = sticky('## Painel · Conversas · Sugerir resposta (V1)\nAba Conversas: "✨ Sugerir resposta" lê as últimas 40 mensagens do grupo + cards do cliente e escreve a resposta no jeito do Henrique (prompt na tabela "Gerente IA · textos", chave sugerir_system, maior versão). Consulta a agenda das calls da equipe (Assessoria EDL) para só propor horário livre. Reunião confirmada: cria o evento com Meet e o texto já sai com o link; no envio convida o cliente (e-mail do contrato) ou apaga o evento se tiraram o link. Quem pediu edita e envia pela própria aba (fluxo de Conversas). Nada sai daqui.\n"🪄 Passar para a Gerente" cria card CASO no Entregas com Responsável = Gerente IA (as Mãos da Gerente resolvem).\n"Enviado": quando alguém manda a resposta usando a sugestão, acha a tarefa prometida (Claude), cria o card no Entregas para o dono certo com prazo (ou liga ao card que já existe) e registra a promessa no 🗓️ Promessas (o vigia acompanha); depois avisa no #sugestoes-enviadas (sugestão x enviado, % igual) e registra na tabela "Gerente IA · sugestões enviadas".\nTravas: mesmas pessoas da aba; assunto da diretoria (dinheiro, contrato, jurídico) não ganha sugestão; valores mascarados.', [], { color: 4 });
 
 export default workflow('painel-sugerir', 'Painel | Conversas · Sugerir resposta (V1)')
   .add(pedir).to(ler).to(acesso).to(validar)
   .to(podeSeguir
     .onTrue(buscarConversa.to(fichaCliente).to(juntarCliente).to(temCliente
       .onTrue(ehAviso
-        .onTrue(cardsDemanda.to(pedirDemanda).to(claudeDemanda).to(montarDemanda).to(temDemanda
-          .onTrue(cardNovo
-            .onTrue(criarDemanda.to(criarPromessa).to(montarAviso))
-            .onFalse(criarPromessa))
-          .onFalse(montarAviso.to(avisarDiscord).to(registrarEnvio).to(devAviso))))
+        .onTrue(verReuniao.to(temReuniao
+          .onTrue(acharEvento.to(decidirEvento).to(ehConvidar
+            .onTrue(convidar.to(cardsDemanda.to(pedirDemanda).to(claudeDemanda).to(montarDemanda).to(temDemanda
+              .onTrue(cardNovo
+                .onTrue(criarDemanda.to(criarPromessa).to(montarAviso))
+                .onFalse(criarPromessa))
+              .onFalse(montarAviso.to(avisarDiscord).to(registrarEnvio).to(devAviso)))))
+            .onFalse(ehApagar
+              .onTrue(apagar.to(cardsDemanda))
+              .onFalse(cardsDemanda))))
+          .onFalse(cardsDemanda)))
         .onFalse(ehGerente
           .onTrue(montarCaso.to(criarCaso).to(resultadoCaso).to(devCaso))
           .onFalse(cardsAbertos.to(agendaEquipe).to(lerTextos).to(montarPedido).to(vaiPedir
-            .onTrue(claude.to(lerSugestao).to(devSugestao))
+            .onTrue(claude.to(lerSugestao).to(criarEvento
+              .onTrue(eventoMeet.to(porLink).to(devSugestao))
+              .onFalse(porLink)))
             .onFalse(devSemSugestao)))))
       .onFalse(devSemCliente)))
     .onFalse(recusar))
