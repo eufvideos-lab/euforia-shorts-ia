@@ -50,6 +50,9 @@ checklist): grafia, nome certo, título fiel ao corte, nada de outro cliente, id
    e o que fica com ele. Depois o rascunho, com destinatário e canal. Termine pedindo o "pode mandar".
 3. Só envie no grupo depois do "pode mandar" dele nesta thread. Um OK vale para uma mensagem.
 4. Card do caso: Status "Em revisão", com os links e o rascunho. Depois do envio, "Feito".
+   Se quem manda é a equipe (não a Érica), crie o card de envio no painel de quem manda (Responsável = Rômulo, salvo
+   outra pessoa no pedido): `<CLIENTE> | ENVIAR <O QUE É> | dd/mm`, Status "A fazer", Prazo, Link do arquivo e o
+   texto pronto no Obs (regra de 11/11/2026: tudo que vai para cliente vira demanda no painel, não só aviso no Discord).
 5. Uma linha na tabela n8n "Gerente IA · casos" (mxoPhpAKT8BRkZZQ, projeto ltJhXmOTpQNXt9Sq) com
    `add_data_table_rows`: quando, cliente, origem, pedido, status ("pronto" | "precisa_direcao" | "erro"),
    resultado (1 linha), links, thread. Sem valores nem texto de cliente.

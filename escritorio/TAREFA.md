@@ -71,6 +71,12 @@ Só abra a ficha do cliente quando houver mais cards do que a rodada atende.
    cores do cliente (nunca o laranja Euforia em peça de cliente).
 5. Card: Link do arquivo (pasta/arquivo no Drive ou página no Notion), Obs com 1–2 linhas do que foi feito e o que
    a equipe deve conferir, Status = **Em revisão**, "🏢 Escritório IA" = Feito pela IA.
+6. **Se a peça vai para o cliente** (regra da diretoria, 11/11/2026): crie também um card de envio no banco Entregas,
+   para quem manda ao cliente (Responsável = Rômulo, guardião de todos os clientes, salvo se o pedido disser outra
+   pessoa). Título `<CLIENTE> | ENVIAR <O QUE É> | dd/mm`, mesmo Cliente, Status "A fazer", Prazo = o prometido (ou o
+   próximo dia útil), Prioridade = a do card original, Link do arquivo = o mesmo da peça. No Obs: onde mandar (grupo e
+   para quem), como mandar (baixar em PDF, nunca link do Claude) e o **texto pronto** da mensagem, em parágrafos curtos
+   com linha em branco, sem falar de IA, terminando com o próximo passo do cliente. Aviso no Discord não substitui o card.
 
 ## 4. Avisar a equipe (uma mensagem por rodada, só se algo ficou pronto)
 No #dia-a-dia, curto, assinado como Érica:
