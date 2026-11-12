@@ -48,7 +48,9 @@ SELECT n.chat_id, n.qtd, n.primeira, n.ultima, n.textos,
   (SELECT string_agg(to_char(x.enviado_em AT TIME ZONE 'America/Recife','DD/MM HH24:MI') || ' ' ||
       CASE WHEN x.da_equipe THEN 'Euforia' ELSE COALESCE(x.autor_nome,'Cliente') END || ': ' || left(COALESCE(x.texto,'['||x.tipo||']'),300), E'\\n' ORDER BY x.enviado_em)
      FROM (SELECT * FROM msgs y WHERE y.chat_id = n.chat_id AND y.enviado_em < n.primeira AND y.tipo NOT IN ('reactionMessage','protocolMessage') ORDER BY y.enviado_em DESC LIMIT 8) x) AS contexto,
-  EXISTS (SELECT 1 FROM msgs z WHERE z.chat_id = n.chat_id AND z.da_equipe AND z.enviado_em > n.ultima) AS equipe_ja_respondeu
+  EXISTS (SELECT 1 FROM msgs z WHERE z.chat_id = n.chat_id AND z.da_equipe AND z.enviado_em > n.ultima) AS equipe_ja_respondeu,
+  (SELECT string_agg(to_char(z.enviado_em AT TIME ZONE 'America/Recife','DD/MM HH24:MI') || ' Euforia: ' || left(COALESCE(z.texto,'['||z.tipo||']'),300), E'\\n' ORDER BY z.enviado_em)
+     FROM msgs z WHERE z.chat_id = n.chat_id AND z.da_equipe AND z.enviado_em > n.ultima) AS resposta_equipe
 FROM novos n
 WHERE n.chat_id NOT IN (SELECT chat_id FROM internos)
   AND EXISTS (SELECT 1 FROM chats c WHERE c.chat_id = n.chat_id AND c.origem LIKE 'suporte%')
@@ -110,6 +112,8 @@ for (const it of $('Clientes com grupo').all()) for (const p of (it.json.results
 const TRAVAS = [
   ['dinheiro', /r\\$|\\bpix\\b|boleto|pagament|\\bpagar\\b|paguei|cobranc|\\bcobrar|fatura|nota fiscal|reembols|estorn|parcela|mensalidade|\\bvalor(es)?\\b|desconto|\\bmulta\\b|\\breais\\b|transferencia|comprovante/],
   ['contrato', /contrato|cancelar|cancelament|rescis|distrato|reembolso|quero sair|nao quero mais/],
+  // Caso Maíra (Henrique 05/11, aprovado 12/11): insatisfação vai direto para o 🚨 Fica com você, nunca resposta automática.
+  ['insatisfação', /nao (estou|estamos|to) (animad|satisfeit|gostando|alinhad)|nao estamos alinhad|(achando|ta|esta|muito) demorad|demorando (muito|demais)|esperava mais|insatisf|decepcion|frustrad|nao gostei|nao foi o combinado|deixa(ndo)? a desejar|ninguem (me )?respond/],
   ['jurídico', /advogad|procon|reclame ?aqui|processar|processo judicial|na justica|juridic|notificacao extrajudicial|danos morais/]
 ];
 const mascara = s => String(s || '')
@@ -127,7 +131,7 @@ for (const it of entrada) {
   for (const [nome, re] of TRAVAS) if (re.test(base)) { palavra = nome; break; }
   out.push({ json: {
     chat_id: r.chat_id, grupo: r.grupo, cliente: c.nome, cliente_id: c.id, ativo: c.ativo, faixa: c.faixa, atencao: c.atencao, foco: c.foco,
-    qtd: Number(r.qtd) || 1, ultima: r.ultima, equipe_ja_respondeu: r.equipe_ja_respondeu === true,
+    qtd: Number(r.qtd) || 1, ultima: r.ultima, equipe_ja_respondeu: r.equipe_ja_respondeu === true, resposta_equipe: mascara(r.resposta_equipe || '').slice(0, 1500),
     textos: mascara(r.textos).slice(0, 3000), contexto: mascara(r.contexto).slice(0, 2500),
     trava: !!palavra, palavra, hoje
   } });
@@ -148,7 +152,7 @@ const vai_para_a_IA = node({
 const classificar_Claude = node({
   type: 'n8n-nodes-base.httpRequest',
   version: 4.4,
-  config: { name: 'Classificar (Claude)', parameters: { method: 'POST', url: 'https://api.anthropic.com/v1/messages', authentication: 'predefinedCredentialType', nodeCredentialType: 'anthropicApi', sendHeaders: true, headerParameters: { parameters: [{ name: 'anthropic-version', value: '2023-06-01' }] }, sendBody: true, specifyBody: 'json', jsonBody: expr('{{ JSON.stringify({ model: \'claude-haiku-4-5\', max_tokens: 300, temperature: 0, system: "Voc\\u00ea \\u00e9 a Gerente IA de opera\\u00e7\\u00e3o do Grupo Euforia, empresa de m\\u00eddia que cria e cuida do ecossistema digital (YouTube e redes sociais) de especialistas. Voc\\u00ea l\\u00ea as mensagens novas de um cliente num grupo de WhatsApp e classifica. Responda S\\u00d3 com um JSON v\\u00e1lido, sem nenhum texto fora dele, neste formato:\\n{\\"classe\\": \\"pedido\\", \\"tipo_peca\\": \\"shorts\\", \\"resumo\\": \\"...\\", \\"prazo_citado\\": \\"\\", \\"irritado\\": false}\\n\\nclasse (uma s\\u00f3):\\n- pedido: pede conte\\u00fado novo (v\\u00eddeo longo, shorts, carrossel, thumb, post, p\\u00e1gina, roteiro).\\n- ajuste: pede mudan\\u00e7a em pe\\u00e7a j\\u00e1 feita, enviada ou postada (trocar thumb, cortar trecho, corrigir texto, legenda).\\n- status: pergunta prazo, andamento, quando sai, se recebemos algo, o que falta.\\n- material: manda arquivo, foto, v\\u00eddeo, link de pasta, depoimento, ou avisa que j\\u00e1 gravou ou mandou o material. Se s\\u00f3 avisa que AINDA VAI mandar ou gravar (ex.: vou enviar at\\u00e9 o fim do dia), \\u00e9 sem_acao.\\n- serio: dinheiro, pagamento, cobran\\u00e7a, contrato, cancelamento, pausa, amea\\u00e7a, advogado, Procon, Reclame Aqui, processo, cliente irritado, decepcionado, reclamando forte ou pedindo para falar com respons\\u00e1vel.\\n- sem_acao: ok, obrigado, bom dia, emoji, elogio, aprova\\u00e7\\u00e3o simples ou conversa que n\\u00e3o pede nada.\\nSe houver mais de uma, escolha a mais importante. serio vence todas.\\ntipo_peca: longo, shorts, carrossel, thumb, outro ou nenhum.\\nresumo: at\\u00e9 15 palavras em portugu\\u00eas dizendo o que o cliente quer. Nunca escreva valores em dinheiro.\\nprazo_citado: data no formato AAAA-MM-DD se o cliente disse uma data ou dia para a entrega; sen\\u00e3o \\"\\".\\nirritado: true se o tom for de irrita\\u00e7\\u00e3o, cobran\\u00e7a dura ou reclama\\u00e7\\u00e3o.", messages: [{ role: \'user\', content: \'Hoje é \' + $json.hoje + \' (\' + DateTime.now().setZone(\'America/Recife\').setLocale(\'pt-BR\').toFormat(\'cccc\') + \'). Próximos dias: \' + Array.from({ length: 8 }, (_, k) => DateTime.now().setZone(\'America/Recife\').plus({ days: k }).setLocale(\'pt-BR\').toFormat(\'cccc dd/MM/yyyy\')).join(\', \') + \'.\\nCliente: \' + $json.cliente + \'\\nGrupo: \' + $json.grupo + \'\\n\\nConversa antes (contexto):\\n\' + ($json.contexto || \'(sem mensagens anteriores)\') + \'\\n\\nMensagens novas do cliente:\\n\' + $json.textos }] }) }}'), options: { batching: { batch: { batchSize: 1, batchInterval: 400 } }, timeout: 60000 } }, credentials: { anthropicApi: { id: 'NSAFLaAWGkUDHJLn', name: 'Anthropic account' } }, position: [1120, 192], onError: 'continueRegularOutput' }
+  config: { name: 'Classificar (Claude)', parameters: { method: 'POST', url: 'https://api.anthropic.com/v1/messages', authentication: 'predefinedCredentialType', nodeCredentialType: 'anthropicApi', sendHeaders: true, headerParameters: { parameters: [{ name: 'anthropic-version', value: '2023-06-01' }] }, sendBody: true, specifyBody: 'json', jsonBody: expr('{{ JSON.stringify({ model: \'claude-haiku-4-5\', max_tokens: 300, temperature: 0, system: "Voc\\u00ea \\u00e9 a Gerente IA de opera\\u00e7\\u00e3o do Grupo Euforia, empresa de m\\u00eddia que cria e cuida do ecossistema digital (YouTube e redes sociais) de especialistas. Voc\\u00ea l\\u00ea as mensagens novas de um cliente num grupo de WhatsApp e classifica. Responda S\\u00d3 com um JSON v\\u00e1lido, sem nenhum texto fora dele, neste formato:\\n{\\"classe\\": \\"pedido\\", \\"tipo_peca\\": \\"shorts\\", \\"resumo\\": \\"...\\", \\"prazo_citado\\": \\"\\", \\"irritado\\": false, \\"respondido\\": false}\\n\\nclasse (uma s\\u00f3):\\n- pedido: pede conte\\u00fado novo (v\\u00eddeo longo, shorts, carrossel, thumb, post, p\\u00e1gina, roteiro).\\n- ajuste: pede mudan\\u00e7a em pe\\u00e7a j\\u00e1 feita, enviada ou postada (trocar thumb, cortar trecho, corrigir texto, legenda).\\n- status: pergunta prazo, andamento, quando sai, se recebemos algo, o que falta.\\n- material: manda arquivo, foto, v\\u00eddeo, link de pasta, depoimento, ou avisa que j\\u00e1 gravou ou mandou o material. Se s\\u00f3 avisa que AINDA VAI mandar ou gravar (ex.: vou enviar at\\u00e9 o fim do dia), \\u00e9 sem_acao.\\n- serio: dinheiro, pagamento, cobran\\u00e7a, contrato, cancelamento, pausa, amea\\u00e7a, advogado, Procon, Reclame Aqui, processo, cliente irritado, decepcionado, reclamando forte ou pedindo para falar com respons\\u00e1vel.\\n- sem_acao: ok, obrigado, bom dia, emoji, elogio, aprova\\u00e7\\u00e3o simples ou conversa que n\\u00e3o pede nada.\\nSe houver mais de uma, escolha a mais importante. serio vence todas.\\ntipo_peca: longo, shorts, carrossel, thumb, outro ou nenhum.\\nresumo: at\\u00e9 15 palavras em portugu\\u00eas dizendo o que o cliente quer. Nunca escreva valores em dinheiro.\\nprazo_citado: data no formato AAAA-MM-DD se o cliente disse uma data ou dia para a entrega; sen\\u00e3o \\"\\".\\nirritado: true se o tom for de irrita\\u00e7\\u00e3o, cobran\\u00e7a dura, reclama\\u00e7\\u00e3o ou insatisfa\\u00e7\\u00e3o (ex.: n\\u00e3o estou animada, estou achando demorado, n\\u00e3o estamos alinhados).\\nrespondido: true s\\u00f3 se o que a equipe escreveu DEPOIS das mensagens novas j\\u00e1 responde ou resolve o que o cliente perguntou ou pediu. false se a equipe escreveu sobre outro assunto, respondeu s\\u00f3 parte, ou n\\u00e3o escreveu nada.", messages: [{ role: \'user\', content: \'Hoje é \' + $json.hoje + \' (\' + DateTime.now().setZone(\'America/Recife\').setLocale(\'pt-BR\').toFormat(\'cccc\') + \'). Próximos dias: \' + Array.from({ length: 8 }, (_, k) => DateTime.now().setZone(\'America/Recife\').plus({ days: k }).setLocale(\'pt-BR\').toFormat(\'cccc dd/MM/yyyy\')).join(\', \') + \'.\\nCliente: \' + $json.cliente + \'\\nGrupo: \' + $json.grupo + \'\\n\\nConversa antes (contexto):\\n\' + ($json.contexto || \'(sem mensagens anteriores)\') + \'\\n\\nMensagens novas do cliente:\\n\' + $json.textos + \'\\n\\nO que a equipe escreveu no grupo depois:\\n\' + ($json.resposta_equipe || \'(nada)\') }] }) }}'), options: { batching: { batch: { batchSize: 1, batchInterval: 400 } }, timeout: 60000 } }, credentials: { anthropicApi: { id: 'NSAFLaAWGkUDHJLn', name: 'Anthropic account' } }, position: [1120, 192], onError: 'continueRegularOutput' }
 });
 
 const ler_classifica_o = node({
@@ -169,7 +173,7 @@ return $input.all().map((it, i) => {
   const temArquivo = /\\[[a-z]+message\\]|https?:\\/\\//.test(so);
   const vaiMandar = /\\bvou (te )?(enviar|mandar|gravar|subir)|\\b(envio|mando|gravo|subo) (ate|hoje|amanha|mais tarde|no final|logo)|\\bvai chegar\\b|\\bja ja (envio|mando)/.test(so);
   if (['material', 'pedido'].includes(classe) && vaiMandar && !temArquivo) classe = 'sem_acao';
-  return { json: { ...b, classe, tipo_peca: String(c.tipo_peca || 'nenhum'), resumo: String(c.resumo || '').replace(/r\\$\\s*[\\d.,]+/gi, '[valor]').slice(0, 200), prazo_citado: /^\\d{4}-\\d{2}-\\d{2}$/.test(String(c.prazo_citado || '')) ? c.prazo_citado : '', irritado: c.irritado === true, motivo: c.irritado === true ? 'tom irritado' : (classe === 'serio' ? 'assunto sério (IA)' : '') } };
+  return { json: { ...b, classe, tipo_peca: String(c.tipo_peca || 'nenhum'), resumo: String(c.resumo || '').replace(/r\\$\\s*[\\d.,]+/gi, '[valor]').slice(0, 200), prazo_citado: /^\\d{4}-\\d{2}-\\d{2}$/.test(String(c.prazo_citado || '')) ? c.prazo_citado : '', irritado: c.irritado === true, respondido: c.respondido === true, motivo: c.irritado === true ? 'tom irritado' : (classe === 'serio' ? 'assunto sério (IA)' : '') } };
 });
 `
     },
@@ -210,13 +214,17 @@ for (const it of $input.all()) {
   if (x.classe === 'material') acao = 'marcar "Cliente mandou o material" no card que esperava e preparar a confirmação de recebido';
   if (x.classe === 'serio') acao = 'parar e te avisar. Não respondo nada e não crio card';
   if (x.classe === 'indefinido') acao = 'nada (vou melhorar a leitura)';
-  const rascunho = noTeste(x) && ACAO.includes(x.classe) && !x.equipe_ja_respondeu;
+  // Ajuste A (Henrique 12/11): a equipe ter escrito depois não basta; só não faz rascunho se a IA viu que a resposta resolveu o que o cliente pediu.
+  const respondeu = x.equipe_ja_respondeu && x.respondido === true;
+  // Material vai sempre para o card (ajuste E), mesmo com a equipe já tendo respondido; aí sai só o card, sem rascunho.
+  x.so_card = respondeu && x.classe === 'material';
+  const rascunho = noTeste(x) && ACAO.includes(x.classe) && (!respondeu || x.so_card);
   let msg = '';
   if (rascunho) msg = '';
   else if (x.classe === 'serio') {
-    msg = '🚨 **Assunto sério · ' + x.cliente + '**' + (selo ? ' (' + selo.trim() + ')' : '') + '\\nMotivo: ' + x.motivo + '\\n> ' + trecho + '\\n' + (x.resumo ? '📝 ' + x.resumo + '\\n' : '') + 'Não respondi nada. Fica com você.' + (x.equipe_ja_respondeu ? '\\n(A equipe já escreveu no grupo depois disso.)' : '');
+    msg = '🚨 **Assunto sério · ' + x.cliente + '**' + (selo ? ' (' + selo.trim() + ')' : '') + '\\nMotivo: ' + x.motivo + '\\n> ' + trecho + '\\n' + (x.resumo ? '📝 ' + x.resumo + '\\n' : '') + 'Não respondi nada. Fica com você.' + (respondeu ? '\\n(A equipe já respondeu no grupo.)' : x.equipe_ja_respondeu ? '\\n(A equipe escreveu depois, mas não respondeu isso.)' : '');
   } else if (x.classe !== 'sem_acao') {
-    msg = '🧪 **Modo leitura · ' + x.cliente + '**' + (selo ? ' (' + selo.trim() + ')' : '') + ' · ' + x.qtd + ' msg\\n> ' + trecho + '\\n**Classe:** ' + NOMES[x.classe] + (x.resumo ? ' · ' + x.resumo : '') + '\\n**Eu faria:** ' + acao + (x.equipe_ja_respondeu ? '\\n(A equipe já respondeu no grupo.)' : '');
+    msg = '🧪 **Modo leitura · ' + x.cliente + '**' + (selo ? ' (' + selo.trim() + ')' : '') + ' · ' + x.qtd + ' msg\\n> ' + trecho + '\\n**Classe:** ' + NOMES[x.classe] + (x.resumo ? ' · ' + x.resumo : '') + '\\n**Eu faria:** ' + acao + (respondeu ? '\\n(A equipe já respondeu no grupo.)' : '');
   }
   out.push({ json: {
     rascunho, dados: rascunho ? x : null,
@@ -289,10 +297,10 @@ return $('Cards abertos do cliente').all().map((it, i) => {
   const cards = (it.json.results || []).slice(0, 25).map(p => {
     const pr = p.properties || {};
     const st = txt(pr['Status']);
-    return { codigo: txt(pr['Código']), titulo: txt(pr['Entrega']), tipo: txt(pr['Tipo']), status: st, status_cliente: STATUS_CLIENTE[st] || st, prazo: txt(pr['Prazo']).slice(0, 10), postar: txt(pr['Postar em']).slice(0, 10), url: p.url };
+    return { id: p.id, codigo: txt(pr['Código']), titulo: txt(pr['Entrega']), tipo: txt(pr['Tipo']), status: st, status_cliente: STATUS_CLIENTE[st] || st, prazo: txt(pr['Prazo']).slice(0, 10), postar: txt(pr['Postar em']).slice(0, 10), url: p.url, obs: txt(pr['Obs']).slice(0, 1700) };
   });
   const lista = cards.length ? cards.map(c => '- ' + c.codigo + ' · ' + c.titulo + ' · ' + c.tipo + ' (' + c.status_cliente + ')' + (c.prazo ? ' · pronto até ' + ddmm(c.prazo) : '') + (c.postar ? ' · posta ' + ddmm(c.postar) : '')).join('\\n') : '(nenhum card aberto)';
-  const user = 'Hoje é ' + d.hoje + ' (' + DateTime.now().setZone('America/Recife').setLocale('pt-BR').toFormat('cccc') + '). Próximos dias: ' + CAL + '.\\nCliente: ' + d.cliente + '\\nClasse já decidida: ' + d.classe + (d.tipo_peca && d.tipo_peca !== 'nenhum' ? ' (' + d.tipo_peca + ')' : '') + '\\nResumo: ' + (d.resumo || '') + (d.prazo_citado ? '\\nData citada pelo cliente: ' + d.prazo_citado : '') + '\\n\\nCards abertos do cliente:\\n' + lista + '\\n\\nConversa antes (contexto):\\n' + (d.contexto || '(sem mensagens anteriores)') + '\\n\\nMensagens novas do cliente:\\n' + d.textos;
+  const user = 'Hoje é ' + d.hoje + ' (' + DateTime.now().setZone('America/Recife').setLocale('pt-BR').toFormat('cccc') + '). Próximos dias: ' + CAL + '.\\nCliente: ' + d.cliente + '\\nClasse já decidida: ' + d.classe + (d.tipo_peca && d.tipo_peca !== 'nenhum' ? ' (' + d.tipo_peca + ')' : '') + '\\nResumo: ' + (d.resumo || '') + (d.prazo_citado ? '\\nData citada pelo cliente: ' + d.prazo_citado : '') + '\\n\\nCards abertos do cliente:\\n' + lista + '\\n\\nConversa antes (contexto):\\n' + (d.contexto || '(sem mensagens anteriores)') + '\\n\\nMensagens novas do cliente:\\n' + d.textos + (d.resposta_equipe ? '\\n\\nO que a equipe já escreveu depois (não repita; complete só o que faltou):\\n' + d.resposta_equipe : '');
   return { pairedItem: { item: 0 }, json: { dados: d, cards, corpo: JSON.stringify({ model: 'claude-sonnet-4-5', max_tokens: 700, temperature: 0.3, system: SYSTEM, messages: [{ role: 'user', content: user }] }) } };
 });
 `
@@ -327,7 +335,7 @@ return $input.all().map((it, i) => {
   const d = base.dados;
   let r = {};
   try { const t = ((it.json.content || [])[0] || {}).text || ''; r = JSON.parse((t.match(/\\{[\\s\\S]*\\}/) || ['{}'])[0]); } catch (e) { r = {}; }
-  const resposta = mascara(String(r.resposta || '').trim()).replace(/\\bcanal\\b/gi, 'ecossistema digital').slice(0, 900);
+  const resposta = d.so_card ? '' : mascara(String(r.resposta || '').trim()).replace(/\\bcanal\\b/gi, 'ecossistema digital').slice(0, 900);
   let urg = ['padrao', 'urgente', 'hiperurgente'].includes(r.urgencia) ? r.urgencia : 'padrao';
   // Só vale urgente/hiperurgente se o cliente usou palavra de pressa (data citada sozinha não conta).
   const pressa = /urgent|hoje|amanh|agora|quanto antes|mais rapido|asap|correndo|emergen|ainda hoje/.test(String(d.textos || '').normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').toLowerCase());
@@ -341,19 +349,36 @@ return $input.all().map((it, i) => {
     prazo = d.prazo_citado < agora.toISODate() ? agora.toISODate() : d.prazo_citado;
     if (prazo <= agora.plus({ hours: 12 }).toISODate() && urg !== 'hiperurgente') urg = prazo === agora.toISODate() ? 'hiperurgente' : 'urgente';
   }
-  const precisaCard = r.criar_card === true && ['pedido', 'ajuste'].includes(d.classe);
+  let precisaCard = r.criar_card === true && ['pedido', 'ajuste'].includes(d.classe);
+  // Ajuste E (caso Maíra, Henrique 12/11): material que chegou sempre vira card. Se há card esperando o cliente, ele volta
+  // para "A fazer" com a marca "cliente mandou o material" (mesma marca do painel); se não há card dessa peça, nasce um com prazo padrão.
+  const TIPO_PECA = { longo: 'Vídeo longo', shorts: 'Shorts', carrossel: 'Carrossel', thumb: 'Thumbnail' };
+  let material = '', card_id_existente = '', card_material = null;
+  if (d.classe === 'material') {
+    const cards = base.cards || [];
+    const tp = TIPO_PECA[d.tipo_peca] || '';
+    const esperando = cards.filter(x => x.status === 'Aguardando cliente' && (!tp || x.tipo === tp));
+    const emProducao = cards.filter(x => ['A fazer', 'Fazendo', 'Ajustes', 'Em revisão'].includes(x.status) && (!tp || x.tipo === tp));
+    if (esperando.length) { card_material = esperando[0]; material = 'atualizar'; }
+    else if (emProducao.length) { card_material = emProducao[0]; material = 'ja_em_producao'; }
+    else if (tp || !cards.length) material = 'criar';
+    else material = 'conferir';
+    if (material === 'criar') precisaCard = true;
+    if (material === 'atualizar') card_id_existente = card_material.id;
+  }
   const c = r.card || {};
   const tipo = TIPOS.includes(c.tipo) ? c.tipo : 'Outro';
   const ligado = d.classe === 'ajuste' ? (base.cards || []).find(x => x.codigo && x.codigo === r.card_ligado) : null;
-  const titulo = (d.cliente.toUpperCase() + ' | ' + (d.classe === 'ajuste' ? 'AJUSTE ' : '') + tipo.toUpperCase() + ' | ' + String(c.titulo || d.resumo || 'pedido do grupo').toUpperCase()).slice(0, 180);
+  const tipoFinal = d.classe === 'material' ? (TIPO_PECA[d.tipo_peca] || (TIPOS.includes(c.tipo) ? c.tipo : 'Vídeo longo')) : tipo;
+  const titulo = (d.cliente.toUpperCase() + ' | ' + (d.classe === 'ajuste' ? 'AJUSTE ' : '') + tipoFinal.toUpperCase() + ' | ' + String(d.classe === 'material' ? 'material recebido no grupo · ' + (c.titulo || d.resumo || '') : (c.titulo || d.resumo || 'pedido do grupo')).toUpperCase()).slice(0, 180);
   const resp_id = tipo === 'Roteiro' ? ESCRITORIO : ISMAEL;
   const resp_nome = resp_id === ESCRITORIO ? 'o Escritório' : 'o Ismael';
   const quando = DateTime.fromJSDate(new Date(d.ultima)).setZone('America/Recife').toFormat('dd/MM HH:mm');
-  const obs = ('[Gerente IA ' + agora.toFormat('dd/MM HH:mm') + '] Pedido no grupo em ' + quando + ' (' + (urg === 'padrao' ? 'prazo padrão 72h' : urg) + ').\\n' + mascara(c.obs || d.resumo || '') + (ligado ? '\\nAjuste do card ' + ligado.codigo + ': ' + ligado.url : '')).slice(0, 1900);
+  const obs = ('[Gerente IA ' + agora.toFormat('dd/MM HH:mm') + '] ' + (d.classe === 'material' ? 'Cliente mandou o material no grupo em ' : 'Pedido no grupo em ') + quando + ' (' + (urg === 'padrao' ? 'prazo padrão 72h' : urg) + ').\\n' + mascara(c.obs || d.resumo || '') + (ligado ? '\\nAjuste do card ' + ligado.codigo + ': ' + ligado.url : '')).slice(0, 1900);
   const props = {
     'Entrega': { title: [{ text: { content: titulo } }] },
     'Cliente': { relation: [{ id: d.cliente_id }] },
-    'Tipo': { select: { name: tipo } },
+    'Tipo': { select: { name: tipoFinal } },
     'Status': { select: { name: 'A fazer' } },
     'Prioridade': { select: { name: urg === 'padrao' ? 'Normal' : 'Urgente' } },
     'Prazo': { date: { start: prazo } },
@@ -364,12 +389,19 @@ return $input.all().map((it, i) => {
   };
   const q = Number(c.quantidade);
   if (q > 1 && q < 50) props['Quantidade'] = { number: q };
-  const card_corpo = precisaCard ? JSON.stringify({ parent: { database_id: ENTREGAS_DB }, properties: props }) : '';
+  let card_corpo = precisaCard ? JSON.stringify({ parent: { database_id: ENTREGAS_DB }, properties: props }) : '';
+  let card_metodo = 'POST', card_api = 'https://api.notion.com/v1/pages';
+  if (material === 'atualizar') {
+    const linha = '[Gerente IA ' + agora.toFormat('dd/MM HH:mm') + '] marcou: cliente mandou o material (no grupo em ' + quando + ')';
+    card_corpo = JSON.stringify({ properties: { 'Status': { select: { name: 'A fazer' } }, 'Obs': { rich_text: [{ text: { content: (linha + '\\n' + (card_material.obs || '')).slice(0, 1900) } }] } } });
+    card_metodo = 'PATCH'; card_api = 'https://api.notion.com/v1/pages/' + card_id_existente;
+  }
   // Fato que só a equipe sabe (acesso, bruto, entrega hoje): a mensagem espera o sim do Rômulo ou do Ismael (Henrique 05/11).
   const confirmar = mascara(String(r.confirmar || '').trim()).slice(0, 220);
   const confirmar_quem = confirmar ? (r.confirmar_quem === 'romulo' ? 'romulo' : 'ismael') : '';
-  return { json: { dados: d, cards: base.cards, resposta, urgencia: urg, prazo, tipo, titulo, ok: !!resposta, confirmar, confirmar_quem, resp_nome,
-    criar_agora: precisaCard && urg !== 'hiperurgente' && !!resposta, card_corpo, card_id: '', card_url: '', card_codigo: '' } };
+  return { json: { dados: d, cards: base.cards, resposta, urgencia: urg, prazo, tipo: tipoFinal, titulo, ok: !!resposta, confirmar, confirmar_quem, resp_nome,
+    criar_agora: (material === 'atualizar' || (precisaCard && urg !== 'hiperurgente')) && !!card_corpo && (!!resposta || d.classe === 'material'), card_corpo, card_metodo, card_api,
+    material, card_material: card_material ? { codigo: card_material.codigo, url: card_material.url, status: card_material.status } : null, card_id: '', card_url: '', card_codigo: '' } };
 });
 `
     },
@@ -386,7 +418,7 @@ const criar_card_agora = node({
 const criar_card_no_Entregas = node({
   type: 'n8n-nodes-base.httpRequest',
   version: 4.4,
-  config: { name: 'Criar card no Entregas', parameters: { method: 'POST', url: 'https://api.notion.com/v1/pages', authentication: 'genericCredentialType', genericAuthType: 'httpHeaderAuth', sendHeaders: true, headerParameters: { parameters: [{ name: 'Notion-Version', value: '2022-06-28' }] }, sendBody: true, specifyBody: 'json', jsonBody: expr('{{ $json.card_corpo }}'), options: { batching: { batch: { batchSize: 1, batchInterval: 400 } } } }, credentials: { httpHeaderAuth: { id: 'VYOze6gUMvjy3QXF', name: 'Notion Euforia' } }, position: [3584, 320], onError: 'continueRegularOutput' }
+  config: { name: 'Criar card no Entregas', parameters: { method: expr('{{ $json.card_metodo || "POST" }}'), url: expr('{{ $json.card_api || "https://api.notion.com/v1/pages" }}'), authentication: 'genericCredentialType', genericAuthType: 'httpHeaderAuth', sendHeaders: true, headerParameters: { parameters: [{ name: 'Notion-Version', value: '2022-06-28' }] }, sendBody: true, specifyBody: 'json', jsonBody: expr('{{ $json.card_corpo }}'), options: { batching: { batch: { batchSize: 1, batchInterval: 400 } } } }, credentials: { httpHeaderAuth: { id: 'VYOze6gUMvjy3QXF', name: 'Notion Euforia' } }, position: [3584, 320], onError: 'continueRegularOutput' }
 });
 
 const anexar_card = node({
@@ -431,9 +463,17 @@ return $input.all().map(it => {
   else if (x.card_corpo && x.urgencia === 'hiperurgente') linhaCard = '⚡ **Hiperurgente:** o card (' + x.tipo + ', pronto hoje) só nasce quando você enviar.';
   else if (x.card_corpo && x.card_erro) linhaCard = '⚠️ ' + x.card_erro + ' (crio de novo quando você enviar).';
   else if (d.classe === 'pedido' || d.classe === 'ajuste') linhaCard = '📋 Sem card novo (não achei peça concreta no pedido).';
+  if (d.classe === 'material') {
+    if (x.material === 'atualizar' && x.card_url) linhaCard = '📥 Material chegou: card [' + (x.card_codigo || 'abrir') + '](<' + x.card_url + '>) voltou de Aguardando cliente para A fazer.';
+    else if (x.material === 'criar' && x.card_url) linhaCard = '📥 Material chegou e não havia card dessa peça: criei [' + (x.card_codigo || 'abrir') + '](<' + x.card_url + '>) · ' + x.tipo + ' · pronto até ' + ddmm(x.prazo) + ' · com ' + (x.resp_nome || 'o Ismael');
+    else if (x.material === 'ja_em_producao' && x.card_material) linhaCard = '📥 Material chegou para o card [' + (x.card_material.codigo || 'abrir') + '](<' + x.card_material.url + '>), que já está em ' + x.card_material.status + '.';
+    else if (x.material === 'conferir') linhaCard = '📥 Material chegou, mas não sei de qual peça: confira no grupo e ligue ao card certo.';
+    else if (x.card_erro) linhaCard = '⚠️ Material chegou, mas ' + x.card_erro + '.';
+  }
   // Henrique 05/11: aprovação só pelo painel (Minha mesa › Aprovar). O Discord fica como aviso curto, sem o texto do rascunho.
   const QUEM = { romulo: 'Rômulo', ismael: 'Ismael' };
   const conf = x.confirmar ? '\\n⏳ Antes de sair, o ' + QUEM[x.confirmar_quem] + ' confirma no 1x1: ' + x.confirmar : '';
+  if (d.so_card) return { json: { ...x, discord: JSON.stringify({ content: ('📥 **' + d.cliente + '**' + (selo ? ' (' + selo.trim() + ')' : '') + ' · Envio de material' + (d.resumo ? ' · ' + d.resumo : '') + '\\n' + (linhaCard || '') + '\\n(A equipe já respondeu no grupo, então não fiz rascunho.)').slice(0, 1990), allowed_mentions: { parse: [] } }) } };
   const msg2 = '✍️ Resposta para aprovar: **' + d.cliente + '**' + (selo ? ' (' + selo.trim() + ')' : '') + ' · ' + (NOMES[d.classe] || d.classe) + (d.resumo ? ' · ' + d.resumo : '') + (x.ok ? '' : ' · ⚠️ sem rascunho') + '\\n' + (linhaCard ? linhaCard + '\\n' : '') + conf.replace(/^\\n/, '') + (conf ? '\\n' : '') + '👉 Aprove no painel: Minha mesa › Aprovar.';
   return { json: { ...x, discord: JSON.stringify({ content: msg2.slice(0, 1990), allowed_mentions: { parse: [] } }) } };
 });
@@ -462,11 +502,11 @@ $input.all().forEach((it, i) => {
   const x = $('Montar post').itemMatching(i).json; const d = x.dados;
   const m = it.json || {};
   if (!m.id) return;
-  linhas.push({ chat_id: d.chat_id, cliente: d.cliente, cliente_id: d.cliente_id, classe: d.classe, urgencia: x.urgencia, ultima_cliente: d.ultima, texto: x.resposta, card_id: x.card_id || null, card_url: x.card_url || null, card_corpo: (!x.card_id && x.card_corpo) ? x.card_corpo : null, discord_msg: m.id, confirmar: x.confirmar || null, confirmar_quem: x.confirmar_quem || null });
+  if (!d.so_card) linhas.push({ chat_id: d.chat_id, cliente: d.cliente, cliente_id: d.cliente_id, classe: d.classe, urgencia: x.urgencia, ultima_cliente: d.ultima, texto: x.resposta, card_id: x.card_id || null, card_url: x.card_url || null, card_corpo: (!x.card_id && x.card_corpo && x.card_metodo !== 'PATCH') ? x.card_corpo : null, discord_msg: m.id, confirmar: x.confirmar || null, confirmar_quem: x.confirmar_quem || null });
   // Sem reações: o aviso no Discord não aprova nada (05/11).
   const base = { quando: agora.toISO(), dia: agora.toISODate(), modo: 'piloto', chat_id: d.chat_id, cliente: d.cliente, classe: d.classe, qtd_msgs: d.qtd, trava_palavra: false, minutos: Math.max(0, Math.round(agora.diff(DateTime.fromJSDate(new Date(d.ultima)), 'minutes').minutes)) };
-  eventos.push({ ...base, evento: 'rascunho', ref: x.urgencia });
-  if (x.card_id) eventos.push({ ...base, evento: 'demanda_criada', ref: x.card_codigo || x.card_id });
+  if (!d.so_card) eventos.push({ ...base, evento: 'rascunho', ref: x.urgencia });
+  if (x.card_id) eventos.push({ ...base, evento: x.card_metodo === 'PATCH' ? 'material_no_card' : 'demanda_criada', ref: x.card_codigo || x.card_id });
 });
 return [{ json: { linhas: JSON.stringify(linhas), eventos, reacoes } }];
 `
