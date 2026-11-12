@@ -1,10 +1,11 @@
-import { workflow, node, trigger, sticky } from '@n8n/workflow-sdk';
+import { workflow, node, trigger, sticky, languageModel, outputParser } from '@n8n/workflow-sdk';
 
 // Gerente IA | Sombra do fora do horário (05/11/2026). Henrique escolheu "Sombra 1 semana, depois troca":
 // a Gerente calcula o que mandaria fora do horário/almoço (mesmas regras do Monitor de respostas ZKssPuYTO3JlJmNH),
 // grava em gerente_sombra e NÃO manda nada ao cliente. Em 12/11 comparo com atendimento_estado (o que o Monitor mandou)
-// e, com o ok do Henrique, a Gerente assume o envio e o Monitor para essa parte. Classificação aqui é por regra
-// (sem IA): a comparação mostra se ela basta. Arquivar este fluxo depois da troca.
+// e, com o ok do Henrique, a Gerente assume o envio e o Monitor para essa parte. Arquivar este fluxo depois da troca.
+// V2 (12/11, Henrique escolheu "Manter Monitor e corrigir"): a regra sozinha respondia "obrigada/feito"; agora a
+// classificação é a mesma do Monitor (Claude Haiku), e a TRAVA por palavra continua como segurança extra.
 
 const PG = { postgres: { id: '2QBGXkxxr41tWTQw', name: 'Postgres account' } };
 
@@ -37,9 +38,16 @@ ult AS (
 )
 SELECT u.chat_id,
   COALESCE((SELECT c.nome FROM chats c WHERE c.chat_id = u.chat_id AND c.nome IS NOT NULL LIMIT 1), u.chat_id) AS grupo,
-  u.msg_id, u.tipo, COALESCE(u.texto, '[' || u.tipo || ']') AS texto, u.enviado_em,
-  EXISTS (SELECT 1 FROM gerente_sombra s WHERE s.chat_id = u.chat_id AND s.acao IN ('fora_horario','fora_urgente') AND s.criado_em > now() - interval '14 hours'
-          AND NOT (EXTRACT(ISODOW FROM s.criado_em AT TIME ZONE 'America/Recife') <= 5 AND EXTRACT(HOUR FROM s.criado_em AT TIME ZONE 'America/Recife') IN (12, 13))) AS recente
+  u.msg_id, COALESCE(u.autor_nome, 'Cliente') AS autor, u.tipo, COALESCE(u.texto, '[' || u.tipo || ']') AS texto, u.enviado_em,
+  (SELECT string_agg(to_char(x.enviado_em AT TIME ZONE 'America/Recife','DD/MM HH24:MI') || ' ' ||
+      CASE WHEN x.da_equipe THEN 'Euforia' ELSE COALESCE(x.autor_nome,'Cliente') END ||
+      ': ' || left(COALESCE(x.texto,'['||x.tipo||']'),300), E'\\n' ORDER BY x.enviado_em)
+     FROM (SELECT * FROM msgs y WHERE y.chat_id = u.chat_id ORDER BY y.enviado_em DESC LIMIT 10) x) AS contexto,
+  EXISTS (SELECT 1 FROM gerente_sombra s WHERE s.chat_id = u.chat_id AND s.acao IN ('fora_horario','fora_urgente')
+          AND ((s.criado_em > now() - interval '14 hours'
+                AND NOT (EXTRACT(ISODOW FROM s.criado_em AT TIME ZONE 'America/Recife') <= 5 AND EXTRACT(HOUR FROM s.criado_em AT TIME ZONE 'America/Recife') IN (12, 13)))
+            OR (s.criado_em > now() - interval '3 hours'
+                AND EXTRACT(ISODOW FROM s.criado_em AT TIME ZONE 'America/Recife') <= 5 AND EXTRACT(HOUR FROM s.criado_em AT TIME ZONE 'America/Recife') IN (12, 13)))) AS recente
 FROM ult u
 WHERE NOT u.da_equipe
   AND u.chat_id NOT IN (SELECT chat_id FROM internos)
@@ -67,10 +75,6 @@ function retorno() {
   const dias = Math.round(d.diff(now.startOf('day'), 'days').days);
   return dias === 1 ? 'amanhã, a partir das 8h,' : 'na ' + DIAS[d.weekday] + ', a partir das 8h,';
 }
-const TRAVA = /r\\$|\\bpix\\b|boleto|pagament|\\bpagar\\b|paguei|cobranc|fatura|nota fiscal|reembols|estorn|parcela|mensalidade|\\bvalor(es)?\\b|desconto|\\bmulta\\b|contrato|cancelar|cancelament|rescis|distrato|advogad|procon|reclame ?aqui|processo|juridic|insatisf|decepcion|absurdo|falar com (o )?respons/;
-const SO_OK = /^(ok+|okay|blz|beleza|boa|show|top|perfeito|combinado|obrigad[oa]s?|valeu|amei|lindo|maravilh\\w*|otimo|bom dia|boa tarde|boa noite|sim|certo|entendi|fechado|isso|kk+|rs+|[\\p{Extended_Pictographic}\\s]+)[\\s!.,\\p{Extended_Pictographic}\\u{FE0F}]*$/u;
-const sem = s => String(s || '').normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').toLowerCase().trim();
-const SEM_AUTO = ['120363426418022941@g.us'];
 const ret = retorno();
 const out = [];
 for (const it of $input.all()) {
@@ -83,28 +87,59 @@ for (const it of $input.all()) {
   if (!almoco && ehExpediente(msg) && !r.recente && idadeH <= 14) { quer = true; pendente = espera >= 30; }
   else if (!ehUtil(msg) && !r.recente && idadeH <= 12) quer = true;
   if (!quer) continue;
-  const t = sem(r.texto);
-  const midia = /^\\[/.test(String(r.texto || ''));
-  let acao, motivo;
-  if (!midia && SO_OK.test(t)) { acao = 'ignorar'; motivo = 'só confirmação/agradecimento'; }
-  else if (TRAVA.test(t)) { acao = madrugada ? 'urgente' : 'fora_urgente'; motivo = 'assunto sensível'; }
-  else { acao = 'fora_horario'; motivo = midia ? 'mídia sem texto' : 'precisa de resposta'; }
-  if (madrugada && acao === 'fora_horario') continue; // como o Monitor: comum fica para depois das 7h
-  if (SEM_AUTO.includes(r.chat_id) && acao !== 'ignorar') acao = 'urgente';
-  let resposta = '';
-  if (acao === 'fora_horario' || acao === 'fora_urgente') resposta = almoco ? 'Oi! Recebemos sua mensagem 😊 Nossa equipe está no horário de almoço e, a partir das 14h, damos sequência por aqui.'
-    : pendente ? 'Oi! Já estamos vendo isso para você. ' + ret.charAt(0).toUpperCase() + ret.slice(1) + ' te damos o retorno por aqui.'
-    : 'Oi! Recebemos sua mensagem 😊 Nossa equipe já encerrou o expediente, mas ' + ret + ' damos sequência por aqui. Obrigada pela paciência!';
-  out.push({ json: { params: [r.msg_id, r.chat_id, r.grupo, acao, motivo, String(r.texto || '').slice(0, 300), resposta, r.enviado_em] } });
+  out.push({ json: { msg_id: r.msg_id, chat_id: r.chat_id, grupo: r.grupo, autor: r.autor, texto: r.texto, contexto: r.contexto, enviado_em: r.enviado_em, pendente, almoco, madrugada, ret } });
 }
 return out;` } } });
 
+const haiku = languageModel({ type: '@n8n/n8n-nodes-langchain.lmChatAnthropic', version: 1.5, config: { name: 'Claude Haiku', credentials: { anthropicApi: { id: 'NSAFLaAWGkUDHJLn', name: 'Anthropic account' } }, parameters: { model: { __rl: true, mode: 'id', value: 'claude-haiku-4-5' }, options: { maxTokensToSample: 400, temperature: 0 } } } });
+
+const formato = outputParser({ type: '@n8n/n8n-nodes-langchain.outputParserStructured', version: 1.3, config: { name: 'Formato da classificação', parameters: { jsonSchemaExample: '{ "precisa_resposta": true, "sensivel": false, "tema": "entrega", "resumo": "cliente pede o link do vídeo" }' } } });
+
+// Mesmo prompt do Monitor de respostas (atendimento/monitor.js), para a comparação ser justa.
+const classificar = node({ type: '@n8n/n8n-nodes-langchain.chainLlm', version: 1.9, config: { name: 'Classificar mensagem', parameters: {
+  promptType: 'define',
+  text: `=Grupo: {{ $json.grupo }}
+Últimas mensagens (a mais recente por último):
+{{ $json.contexto }}
+
+Última mensagem do cliente ({{ $json.autor }}): {{ $json.texto }}`,
+  hasOutputParser: true,
+  messages: { messageValues: [{ message: `Você analisa mensagens de clientes de uma empresa de mídia (conteúdo para YouTube e redes sociais) em grupos de WhatsApp. Responda só com o JSON pedido.
+- precisa_resposta: true se a última mensagem do cliente pergunta algo, pede algo, cobra algo, envia material que precisa de confirmação ou reclama. false se for só agradecimento, confirmação (ok, boa, combinado, perfeito, obrigado), emoji, parabéns, bom dia sem pedido, ou algo que não espera retorno. Áudio, arquivo ou imagem sem texto: true.
+- sensivel: true se envolver dinheiro, pagamento, cobrança, boleto, reembolso, cancelamento, pausa ou rescisão do contrato, ameaça jurídica (advogado, processo, Procon, Reclame Aqui), reclamação forte, irritação clara ou pedido para falar com uma pessoa ou responsável.
+- tema: uma palavra (entrega, prazo, dúvida, material, financeiro, cancelamento, reclamação, outro).
+- resumo: até 15 palavras em português dizendo o que o cliente quer.` }] },
+  batching: {} },
+  subnodes: { model: haiku, outputParser: formato } } });
+
+const montar = node({ type: 'n8n-nodes-base.code', version: 2, config: { name: 'Montar (sombra)', parameters: { jsCode: `const base = $('Decidir (sombra)').all();
+const TRAVA = /r\\$|\\bpix\\b|boleto|pagament|\\bpagar\\b|paguei|cobranc|fatura|nota fiscal|reembols|estorn|parcela|mensalidade|\\bvalor(es)?\\b|desconto|\\bmulta\\b|contrato|cancelar|cancelament|rescis|distrato|advogad|procon|reclame ?aqui|processo|juridic|insatisf|decepcion|absurdo|falar com (o )?respons/;
+const sem = s => String(s || '').normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').toLowerCase().trim();
+const SEM_AUTO = ['120363426418022941@g.us'];
+const out = [];
+$input.all().forEach((it, i) => {
+  const r = base[i].json;
+  const c = it.json.output || {};
+  const sensivel = c.sensivel === true || TRAVA.test(sem(r.texto));
+  let acao, motivo;
+  if (c.precisa_resposta === false && !sensivel) { acao = 'ignorar'; motivo = 'IA: não precisa de resposta' + (c.resumo ? ' (' + c.resumo + ')' : ''); }
+  else if (sensivel) { acao = r.madrugada ? 'urgente' : 'fora_urgente'; motivo = 'sensível: ' + (c.tema || 'palavra') + (c.resumo ? ' (' + c.resumo + ')' : ''); }
+  else { acao = 'fora_horario'; motivo = 'IA: ' + (c.resumo || 'precisa de resposta'); }
+  if (r.madrugada && acao === 'fora_horario') return; // como o Monitor: comum fica para depois das 7h
+  if (SEM_AUTO.includes(r.chat_id) && acao !== 'ignorar') acao = 'urgente';
+  let resposta = '';
+  if (acao === 'fora_horario' || acao === 'fora_urgente') resposta = r.almoco ? 'Oi! Recebemos sua mensagem 😊 Nossa equipe está no horário de almoço e, a partir das 14h, damos sequência por aqui.'
+    : r.pendente ? 'Oi! Já estamos vendo isso para você. ' + r.ret.charAt(0).toUpperCase() + r.ret.slice(1) + ' te damos o retorno por aqui.'
+    : 'Oi! Recebemos sua mensagem 😊 Nossa equipe já encerrou o expediente, mas ' + r.ret + ' damos sequência por aqui. Obrigada pela paciência!';
+  out.push({ json: { params: [r.msg_id, r.chat_id, r.grupo, acao, motivo, String(r.texto || '').slice(0, 300), resposta, r.enviado_em] }, pairedItem: { item: i } });
+});
+return out;` } } });
 const gravar = node({ type: 'n8n-nodes-base.postgres', version: 2.6, config: { name: 'Gravar sombra', credentials: PG, parameters: { operation: 'executeQuery',
   query: 'INSERT INTO gerente_sombra (msg_id, chat_id, grupo, acao, motivo, texto_cliente, texto_resposta, msg_em) VALUES ($1, $2, $3, $4, $5, $6, $7, $8::timestamptz) ON CONFLICT (msg_id) DO NOTHING RETURNING msg_id;',
   options: { queryReplacement: '={{ $json.params }}' } } } });
 
-const nota = sticky('## Gerente IA · sombra do fora do horário (V1)\nSó registra (tabela gerente_sombra) o que a Gerente mandaria fora do horário e no almoço. **Não manda nada ao cliente.** O Monitor de respostas continua enviando. Comparação em 12/11; depois da troca, arquivar este fluxo.', [decidir], { color: 5 });
+const nota = sticky('## Gerente IA · sombra do fora do horário (V2)\nClassificação com Claude Haiku (mesmo prompt do Monitor) + trava por palavra. Só registra (tabela gerente_sombra) o que a Gerente mandaria fora do horário e no almoço. **Não manda nada ao cliente.** O Monitor de respostas continua enviando. Nova comparação ~19/11; depois da troca, arquivar este fluxo.', [decidir], { color: 5 });
 
-export default workflow('gerente-sombra-fora-horario', 'Gerente IA | Sombra do fora do horário (V1)', { executionOrder: 'v1', availableInMCP: true, timezone: 'America/Recife' })
-  .add(cada5).to(candidatos).to(decidir).to(gravar)
+export default workflow('gerente-sombra-fora-horario', 'Gerente IA | Sombra do fora do horário (V2)', { executionOrder: 'v1', availableInMCP: true, timezone: 'America/Recife' })
+  .add(cada5).to(candidatos).to(decidir).to(classificar).to(montar).to(gravar)
   .add(nota);
