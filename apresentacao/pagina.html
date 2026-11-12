@@ -948,6 +948,14 @@ body.pl-light #plbg{opacity:0}
 .pl-lite .playbtn::before{opacity:.5;transform:scale(1.18)}
 .pl-lite .slide.on .pl-in2{animation-name:plfade}
 .pl-lite .slide.on .pl-ghost{animation-name:plfade}
+
+/* ===== capa repensada (só visual; os textos são os mesmos) ===== */
+#plsym{position:absolute;left:1140px;top:310px;width:700px;height:520px;pointer-events:none}
+/* título maior e moldura de cena */
+.pl-capa>p.pl-ghost{-webkit-text-stroke-color:rgba(255,101,24,.22)!important}
+.pl-capa::before{content:"";position:absolute;left:64px;top:64px;width:54px;height:54px;border-left:5px solid #FF6518;border-top:5px solid #FF6518}
+.pl-capa::after{content:"";position:absolute;right:64px;bottom:64px;width:54px;height:54px;border-right:5px solid #FF6518;border-bottom:5px solid #FF6518}
+.slide.on.pl-capa::before,.slide.on.pl-capa::after{animation:plfade .8s ease 1s both}
 </style><script id="play-js">/* Camada Play (demo): movimento e interação por cima dos slides. Não altera texto, ordem nem navegação. */
 (function(){
 'use strict';
@@ -1043,14 +1051,14 @@ function tick(t){if(!running)return;requestAnimationFrame(tick);var el=t-last;if
   if(liteSet===null&&!LITE&&seen<120){seen++;if(el>55)slow++;if(seen===120&&slow>30){setLite(true,false);size();}}
   var dt=Math.min(el/1000||0,.066);last=t;boost*=Math.pow(.02,dt);if(Math.abs(boost)<1)boost=0;
   /* parado = custo zero: o fundo só anima nas trocas de slide; na capa o símbolo gira ao abrir e enquanto o mouse mexe */
-  var capa=symOn&&t<wakeT;
+  var capa=SY&&symOn&&t<wakeT;
   if(!boost&&!ups.length&&!capa&&(symA<.02||symOn)){if(++idleT>3){running=false;idleT=0;return;}}else idleT=0;
   draw(dt);}
 function start(){if(RM||running||document.hidden)return;running=true;last=performance.now()-33;requestAnimationFrame(tick);}
 document.addEventListener('visibilitychange',function(){if(document.hidden)running=false;else start();});
-size();symInit();addEventListener('resize',size);start();
+size();addEventListener('resize',size);start();
 function burst(){if(RM)return;start();for(var i=0;i<(LITE?24:44);i++){var h=12+Math.random()*36;ups.push({x:Math.random()*W,y:H+80+Math.random()*H*1.1,h:h,w:h*(2.6+Math.random()*3),v:700+Math.random()*1100,c:Math.random()<.6?'#FF6518':(Math.random()<.5?'#F4F2EE':'#262626')});}}
-addEventListener('pointermove',function(e){if(e.pointerType==='touch')return;hasPtr=true;mx=e.clientX/innerWidth*2-1;my=e.clientY/innerHeight*2-1;if(symOn){wakeT=Math.max(wakeT,performance.now()+(LITE?1500:4000));start();}},{passive:true});
+addEventListener('pointermove',function(e){if(e.pointerType==='touch')return;hasPtr=true;mx=e.clientX/innerWidth*2-1;my=e.clientY/innerHeight*2-1;if(SY&&symOn){wakeT=Math.max(wakeT,performance.now()+(LITE?1500:4000));start();}},{passive:true});
 addEventListener('keydown',function(e){if((e.key==='l'||e.key==='L')&&!e.ctrlKey&&!e.metaKey){liteSet='x';setLite(!LITE,true);size();start();}});
 
 /* ---------- cards: inclinação e marcação com clique ---------- */
@@ -1059,7 +1067,6 @@ if(matchMedia('(hover:hover)').matches&&!RM&&!LITE){var curc=null;
   stage.addEventListener('pointerleave',function(){if(curc){curc.style.removeProperty('--rx');curc.style.removeProperty('--ry');curc=null;}});}
 stage.addEventListener('click',function(e){
   var t=e.target;if(!t.closest)return;
-  if(curEl&&curEl.id==='capa'){wakeT=performance.now()+2500;start();}
   if(curEl&&curEl.id==='capa')symKick(e.clientX/innerWidth*W,e.clientY/innerHeight*H,46);
   if(t.closest('.playwrap'))return;
   var z=t.closest('.pl-zoom');if(z){openLB(z);return;}
@@ -1073,6 +1080,32 @@ function openLB(im){lb.firstChild.src=im.currentSrc||im.src;lb.firstChild.alt=im
 function closeLB(){lb.hidden=true;}
 lb.addEventListener('click',closeLB);
 addEventListener('keydown',function(e){if(lb.hidden)return;closeLB();if(e.key==='Escape'){e.stopImmediatePropagation();e.preventDefault();}},true);
+
+/* ---------- capa: símbolo em 3D sólido (três barras com espessura), gira devagar, segue o mouse e abre com um clique ---------- */
+(function(){var capa=document.getElementById('capa');if(!capa)return;capa.classList.add('pl-capa');
+  var P=['M15,0L79.28,0A8,8 0 0 1 83.77,1.38L106.08,16.5A7.39,7.39 0 0 1 101.94,30L15,30A15,15 0 0 1 15,0Z','M15,46L125.41,46A8,8 0 0 1 129.9,47.38L140.23,54.38A8,8 0 0 1 140.23,67.62L129.9,74.62A8,8 0 0 1 125.41,76L15,76A15,15 0 0 1 15,46Z','M15,92L101.94,92A7.39,7.39 0 0 1 106.08,105.5L83.77,120.62A8,8 0 0 1 79.28,122L15,122A15,15 0 0 1 15,92Z'];
+  try{P=P.map(function(d){return new Path2D(d);});}catch(e){return;}
+  var c=document.createElement('canvas');c.id='plsym';c.setAttribute('aria-hidden','true');var CW=700,CH=520,d=LITE?1:Math.min(devicePixelRatio||1,1.5);c.width=CW*d;c.height=CH*d;capa.appendChild(c);
+  var x=c.getContext('2d'),S=3.45,D=62,t0=0,on=false,loop=false,lastT=0,wake=0,open=0,openT=0,ca=-.5,cb=.2,pmx=0,pmy=0;
+  function ease(p){p=p<0?0:p>1?1:p;return 1-Math.pow(1-p,4);}
+  function draw(t){var el=(t-t0)/1000,ta=-.52+Math.sin(t*.0005)*.2+pmx*.5,tb=.2+Math.cos(t*.0004)*.05-pmy*.28;
+    if(RM){ta=-.5;tb=.2;el=9;}
+    ca+=(ta-ca)*.12;cb+=(tb-cb)*.12;open+=(openT-open)*.12;
+    var cs=Math.cos(ca),sn=Math.sin(ca),cbb=Math.cos(cb),sbb=Math.sin(cb),n=Math.max(2,Math.ceil((D*Math.abs(sn)+D*Math.abs(sbb))/3));x.lineJoin='round';
+    x.setTransform(1,0,0,1,0,0);x.clearRect(0,0,c.width,c.height);
+    for(var i=0;i<3;i++){var p=ease((el-.15-i*.13)/1.1),xin=(1-p)*900,zo=(1-i)*open*70;if(p<=0)continue;x.globalAlpha=Math.min(1,p*2.5);
+      for(var k=0;k<=n;k++){var Z=-D/2+D*k/n+zo;
+        x.setTransform(d*S*cs,d*S*sn*sbb,0,d*S*cbb,d*(CW/2+Z*sn+xin+(i-1)*open*-14),d*(CH/2-Z*cs*sbb));x.translate(-73,-61);
+        x.fillStyle=k===n?'#FF6518':'#C2410C';x.fill(P[i]);if(k<n){x.strokeStyle='#C2410C';x.lineWidth=1.2;x.stroke(P[i]);}}}
+    x.globalAlpha=1;}
+  function tick(t){if(!on){loop=false;return;}if(t-lastT>=31){lastT=t;draw(t);}
+    if(t>wake&&Math.abs(open-openT)<.01){loop=false;return;}requestAnimationFrame(tick);}
+  function go(ms){wake=Math.max(wake,performance.now()+ms);if(on&&!loop&&!document.hidden){loop=true;requestAnimationFrame(tick);}}
+  addEventListener('pointermove',function(e){if(e.pointerType==='touch'||!on)return;pmx=e.clientX/innerWidth*2-1;pmy=e.clientY/innerHeight*2-1;go(LITE?1500:3000);},{passive:true});
+  capa.addEventListener('click',function(){openT=openT?0:1;go(1500);});
+  document.addEventListener('visibilitychange',function(){if(!document.hidden)go(1000);});
+  window.__plcapa=function(v){if(v&&!on){on=true;t0=performance.now();ca=-.9;go(RM?100:(LITE?4000:9000));}else if(!v){on=false;}};
+})();
 
 /* ---------- números que sobem ---------- */
 function countUp(node,dur,delay){var full=node.textContent,m=full.match(/\d[\d.]*(?:,\d+)?/);if(!m||RM)return;
@@ -1093,6 +1126,7 @@ var curEl=null,curIdx=-1;
 function onChange(){var cur=stage.querySelector('.slide.on');if(!cur||cur===curEl)return;
   var idx=slides.indexOf(cur),first=curEl===null,dir=idx>=curIdx?1:-1,chap=!first&&!RM&&dir>0&&CHAPTER[cur.id]&&Math.abs(idx-curIdx)===1;
   curEl=cur;curIdx=idx;closeLB();
+  if(window.__plcapa)window.__plcapa(cur.id==='capa');
   var so=cur.id==='capa';if(so&&!symOn)symScatter();symOn=so;if(so)wakeT=performance.now()+(LITE?4500:9000);
   var bg=(st(cur).match(/background:(?:linear-gradient\()?(#[0-9A-Fa-f]{6})/)||[])[1]||'#050505';document.body.style.backgroundColor=bg;document.documentElement.style.backgroundColor=bg;document.body.classList.toggle('pl-light',/^#F/i.test(bg));
   cur.style.setProperty('--d0',chap?'.34s':'0s');
