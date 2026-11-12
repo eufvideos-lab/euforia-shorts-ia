@@ -28,7 +28,8 @@ vai na frente. Entre eles, e depois entre os outros, vale a ordem de sempre.
 ## 2. Preparar a máquina
 ```
 bash instalar.sh
-python3 -m pip install --break-system-packages -q numpy pillow
+python3 -m pip install --break-system-packages -q numpy pillow mediapipe
+apt-get install -y -q libegl1 libgles2 >/dev/null 2>&1 || (apt-get update -q >/dev/null && apt-get install -y -q libegl1 libgles2 >/dev/null)
 ```
 
 ## 3. Para o pedido
@@ -59,6 +60,8 @@ python3 -m pip install --break-system-packages -q numpy pillow
    com o pedaço errado e a 1ª passada das regravações; lista o que tirou: cole no log). Depois
    `python3 longos/cortar.py pedidos/<id-curto>` (corta e aplica o zoom; ~16 min para um bruto de 14 min).
    Confira 3 emendas: tire quadros e ouça se nenhuma palavra foi comida (veja a transcrição das bordas).
+6b. `python3 longos/olhar.py pedidos/<id-curto>`: lista os trechos em que a pessoa não olha para a câmera. Cubra
+   TODOS no plano (B-roll, foto ou cartão; regra em plano_longo.md) antes de seguir. O `montar.py` para se faltar.
 7. `python3 longos/brolls.py pedidos/<id-curto>` e olhe `brolls.png`. O que não mostra o que a pessoa fala sai do
    plano (troque a busca e rode `brolls.py pasta <id>` só daquele).
 8. `python3 longos/montar.py pedidos/<id-curto> --previa` e olhe 6 quadros da prévia (90 s). Depois
@@ -67,7 +70,10 @@ python3 -m pip install --break-system-packages -q numpy pillow
    longo, ou fique conferindo com `sleep 120` em loop até terminar.
 9. Confira o final: 12 quadros espalhados (cartões, textos, B-rolls, tela final) e a duração.
 10. Pasta de entrega: a do pedido ou, sem ela, crie "VIDEO LONGO IA - <AAAA-MM-DD>" ao lado do bruto no Drive.
-    Suba com `python3 -c "import sys; sys.path.insert(0,'pipeline'); import ponte; print(ponte.subir('pedidos/<id>/final.mp4','<pasta>','<Cliente> - <título>.mp4'))"`.
+    Suba o final EM 1080p, sem comprimir, com
+    `python3 -c "import sys; sys.path.insert(0,'pipeline'); import ponte; print(ponte.subir_grande('pedidos/<id>/final.mp4','<pasta>','<Cliente> - <título>.mp4'))"`
+    (upload retomável direto no Drive; aguenta 300+ MB). Nunca reduza a resolução para caber: se o upload falhar,
+    é erro (#ia-status), não entrega comprimida. Confira com ffprobe que o final tem 1920x1080 antes de subir.
     Suba também o `plano.json` para a pasta da máquina (1rF9yJwVPCp4IvTHfb6Gm3YbdLhWdX3eI) com o nome
     `plano-longo-<id-curto>.json` (é o que permite um "Ajustar" depois).
 11. Atualize o pedido: "Vídeo pronto" (link), "Entregue em" (agora), Status "Pronto para revisão" e um resumo
