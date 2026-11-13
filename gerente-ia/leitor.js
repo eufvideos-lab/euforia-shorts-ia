@@ -152,7 +152,7 @@ const vai_para_a_IA = node({
 const classificar_Claude = node({
   type: 'n8n-nodes-base.httpRequest',
   version: 4.4,
-  config: { name: 'Classificar (Claude)', parameters: { method: 'POST', url: 'https://api.anthropic.com/v1/messages', authentication: 'predefinedCredentialType', nodeCredentialType: 'anthropicApi', sendHeaders: true, headerParameters: { parameters: [{ name: 'anthropic-version', value: '2023-06-01' }] }, sendBody: true, specifyBody: 'json', jsonBody: expr('{{ JSON.stringify({ model: \'claude-haiku-4-5\', max_tokens: 300, temperature: 0, system: "Voc\\u00ea \\u00e9 a Gerente IA de opera\\u00e7\\u00e3o do Grupo Euforia, empresa de m\\u00eddia que cria e cuida do ecossistema digital (YouTube e redes sociais) de especialistas. Voc\\u00ea l\\u00ea as mensagens novas de um cliente num grupo de WhatsApp e classifica. Responda S\\u00d3 com um JSON v\\u00e1lido, sem nenhum texto fora dele, neste formato:\\n{\\"classe\\": \\"pedido\\", \\"tipo_peca\\": \\"shorts\\", \\"resumo\\": \\"...\\", \\"prazo_citado\\": \\"\\", \\"irritado\\": false, \\"respondido\\": false}\\n\\nclasse (uma s\\u00f3):\\n- pedido: pede conte\\u00fado novo (v\\u00eddeo longo, shorts, carrossel, thumb, post, p\\u00e1gina, roteiro).\\n- ajuste: pede mudan\\u00e7a em pe\\u00e7a j\\u00e1 feita, enviada ou postada (trocar thumb, cortar trecho, corrigir texto, legenda).\\n- status: pergunta prazo, andamento, quando sai, se recebemos algo, o que falta.\\n- material: manda arquivo, foto, v\\u00eddeo, link de pasta, depoimento, ou avisa que j\\u00e1 gravou ou mandou o material. Se s\\u00f3 avisa que AINDA VAI mandar ou gravar (ex.: vou enviar at\\u00e9 o fim do dia), \\u00e9 sem_acao.\\n- serio: dinheiro, pagamento, cobran\\u00e7a, contrato, cancelamento, pausa, amea\\u00e7a, advogado, Procon, Reclame Aqui, processo, cliente irritado, decepcionado, reclamando forte ou pedindo para falar com respons\\u00e1vel.\\n- sem_acao: ok, obrigado, bom dia, emoji, elogio, aprova\\u00e7\\u00e3o simples ou conversa que n\\u00e3o pede nada.\\nSe houver mais de uma, escolha a mais importante. serio vence todas.\\ntipo_peca: longo, shorts, carrossel, thumb, outro ou nenhum.\\nresumo: at\\u00e9 15 palavras em portugu\\u00eas dizendo o que o cliente quer. Nunca escreva valores em dinheiro.\\nprazo_citado: data no formato AAAA-MM-DD se o cliente disse uma data ou dia para a entrega; sen\\u00e3o \\"\\".\\nirritado: true se o tom for de irrita\\u00e7\\u00e3o, cobran\\u00e7a dura, reclama\\u00e7\\u00e3o ou insatisfa\\u00e7\\u00e3o (ex.: n\\u00e3o estou animada, estou achando demorado, n\\u00e3o estamos alinhados).\\nrespondido: true s\\u00f3 se o que a equipe escreveu DEPOIS das mensagens novas j\\u00e1 responde ou resolve o que o cliente perguntou ou pediu. false se a equipe escreveu sobre outro assunto, respondeu s\\u00f3 parte, ou n\\u00e3o escreveu nada.", messages: [{ role: \'user\', content: \'Hoje é \' + $json.hoje + \' (\' + DateTime.now().setZone(\'America/Recife\').setLocale(\'pt-BR\').toFormat(\'cccc\') + \'). Próximos dias: \' + Array.from({ length: 8 }, (_, k) => DateTime.now().setZone(\'America/Recife\').plus({ days: k }).setLocale(\'pt-BR\').toFormat(\'cccc dd/MM/yyyy\')).join(\', \') + \'.\\nCliente: \' + $json.cliente + \'\\nGrupo: \' + $json.grupo + \'\\n\\nConversa antes (contexto):\\n\' + ($json.contexto || \'(sem mensagens anteriores)\') + \'\\n\\nMensagens novas do cliente:\\n\' + $json.textos + \'\\n\\nO que a equipe escreveu no grupo depois:\\n\' + ($json.resposta_equipe || \'(nada)\') }] }) }}'), options: { batching: { batch: { batchSize: 1, batchInterval: 400 } }, timeout: 60000 } }, credentials: { anthropicApi: { id: 'NSAFLaAWGkUDHJLn', name: 'Anthropic account' } }, position: [1120, 192], onError: 'continueRegularOutput' }
+  config: { name: 'Classificar (Claude)', parameters: { method: 'POST', url: 'https://api.anthropic.com/v1/messages', authentication: 'predefinedCredentialType', nodeCredentialType: 'anthropicApi', sendHeaders: true, headerParameters: { parameters: [{ name: 'anthropic-version', value: '2023-06-01' }] }, sendBody: true, specifyBody: 'json', jsonBody: expr('{{ JSON.stringify({ model: \'claude-haiku-4-5\', max_tokens: 300, temperature: 0, system: "Voc\\u00ea \\u00e9 a Gerente IA de opera\\u00e7\\u00e3o do Grupo Euforia, empresa de m\\u00eddia que cria e cuida do ecossistema digital (YouTube e redes sociais) de especialistas. Voc\\u00ea l\\u00ea as mensagens novas de um cliente num grupo de WhatsApp e classifica. Responda S\\u00d3 com um JSON v\\u00e1lido, sem nenhum texto fora dele, neste formato:\\n{\\"classe\\": \\"pedido\\", \\"tipo_peca\\": \\"shorts\\", \\"resumo\\": \\"...\\", \\"prazo_citado\\": \\"\\", \\"irritado\\": false, \\"respondido\\": false}\\n\\nclasse (uma s\\u00f3):\\n- pedido: pede conte\\u00fado novo (v\\u00eddeo longo, shorts, carrossel, thumb, post, p\\u00e1gina, roteiro).\\n- ajuste: pede mudan\\u00e7a em pe\\u00e7a j\\u00e1 feita, enviada ou postada (trocar thumb, cortar trecho, corrigir texto, legenda).\\n- status: pergunta prazo, andamento, quando sai, se recebemos algo, o que falta.\\n- material: manda arquivo, foto, v\\u00eddeo, link de pasta, depoimento, ou avisa que j\\u00e1 gravou ou mandou o material. Se s\\u00f3 avisa que AINDA VAI mandar ou gravar (ex.: vou enviar at\\u00e9 o fim do dia), \\u00e9 sem_acao.\\n- serio: dinheiro, pagamento, cobran\\u00e7a, contrato, cancelamento, pausa, amea\\u00e7a, advogado, Procon, Reclame Aqui, processo, cliente irritado, decepcionado, reclamando forte ou pedindo para falar com respons\\u00e1vel.\\n- aprovacao: aprova uma pe\\u00e7a que a equipe mandou para aprovar (ex.: ok, v\\u00eddeo ok, aprovado, pode postar, pode seguir, gostei pode subir). Se aprova mas pede alguma mudan\\u00e7a, \\u00e9 ajuste.\\n- sem_acao: obrigado, bom dia, emoji, elogio solto ou conversa que n\\u00e3o pede nada.\\nSe houver mais de uma, escolha a mais importante. serio vence todas.\\ntipo_peca: longo, shorts, carrossel, thumb, outro ou nenhum (na aprovacao, a pe\\u00e7a aprovada).\\nresumo: at\\u00e9 15 palavras em portugu\\u00eas dizendo o que o cliente quer. Nunca escreva valores em dinheiro.\\nprazo_citado: data no formato AAAA-MM-DD se o cliente disse uma data ou dia para a entrega; sen\\u00e3o \\"\\".\\nirritado: true se o tom for de irrita\\u00e7\\u00e3o, cobran\\u00e7a dura, reclama\\u00e7\\u00e3o ou insatisfa\\u00e7\\u00e3o (ex.: n\\u00e3o estou animada, estou achando demorado, n\\u00e3o estamos alinhados).\\nrespondido: true s\\u00f3 se o que a equipe escreveu DEPOIS das mensagens novas j\\u00e1 responde ou resolve o que o cliente perguntou ou pediu. false se a equipe escreveu sobre outro assunto, respondeu s\\u00f3 parte, ou n\\u00e3o escreveu nada.", messages: [{ role: \'user\', content: \'Hoje é \' + $json.hoje + \' (\' + DateTime.now().setZone(\'America/Recife\').setLocale(\'pt-BR\').toFormat(\'cccc\') + \'). Próximos dias: \' + Array.from({ length: 8 }, (_, k) => DateTime.now().setZone(\'America/Recife\').plus({ days: k }).setLocale(\'pt-BR\').toFormat(\'cccc dd/MM/yyyy\')).join(\', \') + \'.\\nCliente: \' + $json.cliente + \'\\nGrupo: \' + $json.grupo + \'\\n\\nConversa antes (contexto):\\n\' + ($json.contexto || \'(sem mensagens anteriores)\') + \'\\n\\nMensagens novas do cliente:\\n\' + $json.textos + \'\\n\\nO que a equipe escreveu no grupo depois:\\n\' + ($json.resposta_equipe || \'(nada)\') }] }) }}'), options: { batching: { batch: { batchSize: 1, batchInterval: 400 } }, timeout: 60000 } }, credentials: { anthropicApi: { id: 'NSAFLaAWGkUDHJLn', name: 'Anthropic account' } }, position: [1120, 192], onError: 'continueRegularOutput' }
 });
 
 const ler_classifica_o = node({
@@ -161,7 +161,7 @@ const ler_classifica_o = node({
   config: {
     name: 'Ler classificação',
     parameters: {
-      jsCode: `const CLASSES = ['pedido', 'ajuste', 'status', 'material', 'serio', 'sem_acao'];
+      jsCode: `const CLASSES = ['pedido', 'ajuste', 'status', 'material', 'aprovacao', 'serio', 'sem_acao'];
 return $input.all().map((it, i) => {
   const b = $('Separar e travar').itemMatching(i).json;
   let c = {};
@@ -192,7 +192,7 @@ const montar_evento_e_aviso = node({
   config: {
     name: 'Montar evento e aviso',
     parameters: {
-      jsCode: `const NOMES = { pedido: 'Pedido de conteúdo', ajuste: 'Ajuste', status: 'Dúvida de prazo/status', material: 'Envio de material', serio: 'Assunto sério', sem_acao: 'Sem ação', indefinido: 'Não consegui classificar' };
+      jsCode: `const NOMES = { pedido: 'Pedido de conteúdo', ajuste: 'Ajuste', status: 'Dúvida de prazo/status', material: 'Envio de material', aprovacao: 'Aprovação de peça', serio: 'Assunto sério', sem_acao: 'Sem ação', indefinido: 'Não consegui classificar' };
 const MAQ = ['longo', 'shorts', 'carrossel'];
 const ddmm = d => d ? d.slice(8, 10) + '/' + d.slice(5, 7) : '';
 const agora = DateTime.now().setZone('America/Recife');
@@ -200,7 +200,7 @@ const PILOTO = ['120363431906438683@g.us', '120363430027024594@g.us', '120363428
 // Teste em todos os grupos de clientes ATIVOS (Henrique, 05/11/2026): rascunho + card em todos, não só no piloto. Para parar, TODOS = false.
 const TODOS = true;
 const noTeste = x => PILOTO.includes(x.chat_id) || (TODOS && x.ativo === true);
-const ACAO = ['pedido', 'ajuste', 'status', 'material'];
+const ACAO = ['pedido', 'ajuste', 'status', 'material', 'aprovacao'];
 const out = [];
 for (const it of $input.all()) {
   const x = it.json;
@@ -212,13 +212,15 @@ for (const it of $input.all()) {
   if (x.classe === 'ajuste') acao = 'achar o card da peça e abrir um card de ajuste ligado a ele';
   if (x.classe === 'status') acao = 'ler o card e a promessa do cliente e preparar a resposta de status para você aprovar';
   if (x.classe === 'material') acao = 'marcar "Cliente mandou o material" no card que esperava e preparar a confirmação de recebido';
+  if (x.classe === 'aprovacao') acao = 'passar o card que esperava o cliente para Aprovado e avisar quem posta';
   if (x.classe === 'serio') acao = 'parar e te avisar. Não respondo nada e não crio card';
   if (x.classe === 'indefinido') acao = 'nada (vou melhorar a leitura)';
   // Ajuste A (Henrique 12/11): a equipe ter escrito depois não basta; só não faz rascunho se a IA viu que a resposta resolveu o que o cliente pediu.
   const respondeu = x.equipe_ja_respondeu && x.respondido === true;
   // Material vai sempre para o card (ajuste E), mesmo com a equipe já tendo respondido; aí sai só o card, sem rascunho.
   x.so_card = respondeu && x.classe === 'material';
-  const rascunho = noTeste(x) && ACAO.includes(x.classe) && (!respondeu || x.so_card);
+  // Aprovação (Henrique 13/11, caso Regina): sempre vai ao card, mesmo com a equipe já tendo respondido.
+  const rascunho = noTeste(x) && ACAO.includes(x.classe) && (!respondeu || x.so_card || x.classe === 'aprovacao');
   let msg = '';
   if (rascunho) msg = '';
   else if (x.classe === 'serio') {
@@ -335,13 +337,13 @@ return $input.all().map((it, i) => {
   const d = base.dados;
   let r = {};
   try { const t = ((it.json.content || [])[0] || {}).text || ''; r = JSON.parse((t.match(/\\{[\\s\\S]*\\}/) || ['{}'])[0]); } catch (e) { r = {}; }
-  const resposta = d.so_card ? '' : mascara(String(r.resposta || '').trim()).replace(/\\bcanal\\b/gi, 'ecossistema digital').slice(0, 900);
+  let resposta = d.so_card ? '' : mascara(String(r.resposta || '').trim()).replace(/\\bcanal\\b/gi, 'ecossistema digital').slice(0, 900);
   let urg = ['padrao', 'urgente', 'hiperurgente'].includes(r.urgencia) ? r.urgencia : 'padrao';
   // Só vale urgente/hiperurgente se o cliente usou palavra de pressa (data citada sozinha não conta).
   const pressa = /urgent|hoje|amanh|agora|quanto antes|mais rapido|asap|correndo|emergen|ainda hoje/.test(String(d.textos || '').normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').toLowerCase());
   if (!pressa) urg = 'padrao';
   // Revisora 05/11: material e status não têm urgência de produção.
-  if (['material', 'status'].includes(d.classe)) urg = 'padrao';
+  if (['material', 'status', 'aprovacao'].includes(d.classe)) urg = 'padrao';
   // Prazo pela regra da diretoria; se o cliente citou data mais cedo, vale a data dele.
   let prazo = agora.plus({ hours: urg === 'urgente' ? 24 : 72 }).toISODate();
   if (urg === 'hiperurgente') prazo = agora.toISODate();
@@ -350,6 +352,21 @@ return $input.all().map((it, i) => {
     if (prazo <= agora.plus({ hours: 12 }).toISODate() && urg !== 'hiperurgente') urg = prazo === agora.toISODate() ? 'hiperurgente' : 'urgente';
   }
   let precisaCard = r.criar_card === true && ['pedido', 'ajuste'].includes(d.classe);
+  // Aprovação (Henrique 13/11, caso Regina): cliente aprovou no grupo. Se dá para saber qual card (um só esperando o cliente,
+  // ou o código que o rascunho apontou), ele passa sozinho de "Aguardando cliente" para "Aprovado" e quem posta é avisado.
+  // Se não dá para saber, nada muda: vai para aprovação no painel com a lista dos cards esperando.
+  let aprov = '', card_aprov = null, candidatos = [];
+  if (d.classe === 'aprovacao') {
+    const TP = { longo: 'Vídeo longo', shorts: 'Shorts', carrossel: 'Carrossel', thumb: 'Thumbnail' };
+    const tpa = TP[d.tipo_peca] || '';
+    const todos = (base.cards || []).filter(x => x.status === 'Aguardando cliente');
+    candidatos = todos.filter(x => !tpa || x.tipo === tpa);
+    if (!candidatos.length) candidatos = todos;
+    const pelo = candidatos.find(x => x.codigo && (x.codigo === r.card_ligado || x.codigo === (r.card || {}).codigo));
+    if (pelo) card_aprov = pelo; else if (candidatos.length === 1) card_aprov = candidatos[0];
+    aprov = card_aprov ? 'atualizar' : (candidatos.length ? 'conferir' : 'sem_card');
+    if (aprov === 'atualizar') resposta = '';
+  }
   // Ajuste E (caso Maíra, Henrique 12/11): material que chegou sempre vira card. Se há card esperando o cliente, ele volta
   // para "A fazer" com a marca "cliente mandou o material" (mesma marca do painel); se não há card dessa peça, nasce um com prazo padrão.
   const TIPO_PECA = { longo: 'Vídeo longo', shorts: 'Shorts', carrossel: 'Carrossel', thumb: 'Thumbnail' };
@@ -396,11 +413,17 @@ return $input.all().map((it, i) => {
     card_corpo = JSON.stringify({ properties: { 'Status': { select: { name: 'A fazer' } }, 'Obs': { rich_text: [{ text: { content: (linha + '\\n' + (card_material.obs || '')).slice(0, 1900) } }] } } });
     card_metodo = 'PATCH'; card_api = 'https://api.notion.com/v1/pages/' + card_id_existente;
   }
+  if (aprov === 'atualizar') {
+    const linhaA = '[Gerente IA ' + agora.toFormat('dd/MM HH:mm') + '] cliente aprovou no grupo em ' + quando + ': passei para Aprovado';
+    card_corpo = JSON.stringify({ properties: { 'Status': { select: { name: 'Aprovado' } }, 'Obs': { rich_text: [{ text: { content: (linhaA + '\\n' + (card_aprov.obs || '')).slice(0, 1900) } }] } } });
+    card_metodo = 'PATCH'; card_api = 'https://api.notion.com/v1/pages/' + card_aprov.id;
+  } else if (d.classe === 'aprovacao') card_corpo = '';
   // Fato que só a equipe sabe (acesso, bruto, entrega hoje): a mensagem espera o sim do Rômulo ou do Ismael (Henrique 05/11).
   const confirmar = mascara(String(r.confirmar || '').trim()).slice(0, 220);
   const confirmar_quem = confirmar ? (r.confirmar_quem === 'romulo' ? 'romulo' : 'ismael') : '';
   return { json: { dados: d, cards: base.cards, resposta, urgencia: urg, prazo, tipo: tipoFinal, titulo, ok: !!resposta, confirmar, confirmar_quem, resp_nome,
-    criar_agora: (material === 'atualizar' || (precisaCard && urg !== 'hiperurgente')) && !!card_corpo && (!!resposta || d.classe === 'material'), card_corpo, card_metodo, card_api,
+    criar_agora: (material === 'atualizar' || aprov === 'atualizar' || (precisaCard && urg !== 'hiperurgente')) && !!card_corpo && (!!resposta || ['material', 'aprovacao'].includes(d.classe)), card_corpo, card_metodo, card_api,
+    aprov, sem_rascunho: d.so_card || aprov === 'atualizar', card_aprov: card_aprov ? { codigo: card_aprov.codigo, url: card_aprov.url, titulo: card_aprov.titulo, postar: card_aprov.postar } : null, candidatos: candidatos.slice(0, 6).map(x => ({ codigo: x.codigo, titulo: x.titulo, url: x.url })),
     material, card_material: card_material ? { codigo: card_material.codigo, url: card_material.url, status: card_material.status } : null, card_id: '', card_url: '', card_codigo: '' } };
 });
 `
@@ -451,7 +474,7 @@ const montar_post = node({
     name: 'Montar post',
     parameters: {
       jsCode: `// Monta a mensagem do rascunho no #aprovações-gerente.
-const NOMES = { pedido: 'Pedido de conteúdo', ajuste: 'Ajuste', status: 'Dúvida de prazo/status', material: 'Envio de material' };
+const NOMES = { pedido: 'Pedido de conteúdo', ajuste: 'Ajuste', status: 'Dúvida de prazo/status', material: 'Envio de material', aprovacao: 'Aprovação de peça' };
 const ddmm = d => d ? d.slice(8, 10) + '/' + d.slice(5, 7) : '';
 const URG = { padrao: 'padrão (72h)', urgente: '⚠️ urgente (24h)', hiperurgente: '⚡ HIPERURGENTE (hoje)' };
 return $input.all().map(it => {
@@ -470,9 +493,19 @@ return $input.all().map(it => {
     else if (x.material === 'conferir') linhaCard = '📥 Material chegou, mas não sei de qual peça: confira no grupo e ligue ao card certo.';
     else if (x.card_erro) linhaCard = '⚠️ Material chegou, mas ' + x.card_erro + '.';
   }
+  if (d.classe === 'aprovacao') {
+    if (x.aprov === 'atualizar' && x.card_url) linhaCard = '✅ Cliente aprovou: card [' + (x.card_codigo || 'abrir') + '](<' + x.card_url + '>) passou de Aguardando cliente para Aprovado. Avisei o Ismael e o Daniel para postar.';
+    else if (x.aprov === 'atualizar') linhaCard = '⚠️ Cliente aprovou o card [' + ((x.card_aprov || {}).codigo || 'abrir') + '](<' + (x.card_aprov || {}).url + '>), mas não consegui mudar o status. Mude para Aprovado no painel.';
+    else if (x.aprov === 'conferir') linhaCard = '✅ Cliente aprovou, mas não sei qual peça. Cards esperando o cliente: ' + (x.candidatos || []).map(c => '[' + c.codigo + '](<' + c.url + '>)').join(', ') + '. Confira e mude o certo para Aprovado.';
+    else linhaCard = '✅ Cliente aprovou, mas não há card em Aguardando cliente. Confira no grupo.';
+  }
   // Henrique 05/11: aprovação só pelo painel (Minha mesa › Aprovar). O Discord fica como aviso curto, sem o texto do rascunho.
   const QUEM = { romulo: 'Rômulo', ismael: 'Ismael' };
   const conf = x.confirmar ? '\\n⏳ Antes de sair, o ' + QUEM[x.confirmar_quem] + ' confirma no 1x1: ' + x.confirmar : '';
+  // Aviso a quem posta (Ismael e Daniel) quando o card passou para Aprovado.
+  const ap = x.card_aprov || {};
+  const aviso_postar = (d.classe === 'aprovacao' && x.aprov === 'atualizar' && x.card_url) ? '✅ **' + d.cliente + '** aprovou no grupo: [' + (x.card_codigo || ap.codigo || 'abrir') + '](<' + x.card_url + '>) ' + (ap.titulo || '') + ' já está em **Aprovado**' + (ap.postar ? ' (postar em ' + ddmm(ap.postar) + ')' : '') + '. Pode programar a postagem.' : '';
+  if (d.classe === 'aprovacao' && x.sem_rascunho) return { json: { ...x, aviso_postar, discord: JSON.stringify({ content: ('✅ **' + d.cliente + '**' + (selo ? ' (' + selo.trim() + ')' : '') + ' · Aprovação de peça' + (d.resumo ? ' · ' + d.resumo : '') + '\\n' + linhaCard).slice(0, 1990), allowed_mentions: { parse: [] } }) } };
   if (d.so_card) return { json: { ...x, discord: JSON.stringify({ content: ('📥 **' + d.cliente + '**' + (selo ? ' (' + selo.trim() + ')' : '') + ' · Envio de material' + (d.resumo ? ' · ' + d.resumo : '') + '\\n' + (linhaCard || '') + '\\n(A equipe já respondeu no grupo, então não fiz rascunho.)').slice(0, 1990), allowed_mentions: { parse: [] } }) } };
   const msg2 = '✍️ Resposta para aprovar: **' + d.cliente + '**' + (selo ? ' (' + selo.trim() + ')' : '') + ' · ' + (NOMES[d.classe] || d.classe) + (d.resumo ? ' · ' + d.resumo : '') + (x.ok ? '' : ' · ⚠️ sem rascunho') + '\\n' + (linhaCard ? linhaCard + '\\n' : '') + conf.replace(/^\\n/, '') + (conf ? '\\n' : '') + '👉 Aprove no painel: Minha mesa › Aprovar.';
   return { json: { ...x, discord: JSON.stringify({ content: msg2.slice(0, 1990), allowed_mentions: { parse: [] } }) } };
@@ -489,6 +522,23 @@ const postar_rascunho = node({
   config: { name: 'Postar rascunho', parameters: { method: 'POST', url: 'https://discord.com/api/v10/channels/1567643418270634136/messages', authentication: 'genericCredentialType', genericAuthType: 'httpHeaderAuth', sendBody: true, specifyBody: 'json', jsonBody: expr('{{ $json.discord }}'), options: { batching: { batch: { batchSize: 1, batchInterval: 1200 } } } }, credentials: { httpHeaderAuth: { id: 'PY2ZcN5kAVFaS1io', name: 'Discord Bot' } }, position: [4480, 384], onError: 'continueRegularOutput' }
 });
 
+const avisos_de_postagem = node({
+  type: 'n8n-nodes-base.code',
+  version: 2,
+  config: { name: 'Avisos de postagem', parameters: { jsCode: `// Henrique 13/11: card aprovado pelo cliente no grupo avisa quem posta (Ismael e Daniel) no 1x1.
+const QUEM = [{ canal: '1556650886678454403', id: '1410287139169763471' }, { canal: '1556650902448771104', id: '1470387767337816128' }];
+const out = [];
+for (const it of $input.all()) { const t = it.json.aviso_postar; if (!t) continue; for (const q of QUEM) out.push({ json: { canal: q.canal, corpo: JSON.stringify({ content: ('<@' + q.id + '> ' + t).slice(0, 1990), allowed_mentions: { users: [q.id] } }) } }); }
+return out;
+` }, position: [4480, 576] }
+});
+
+const postar_aviso_de_postagem = node({
+  type: 'n8n-nodes-base.httpRequest',
+  version: 4.4,
+  config: { name: 'Postar aviso de postagem', parameters: { method: 'POST', url: expr('https://discord.com/api/v10/channels/{{ $json.canal }}/messages'), authentication: 'genericCredentialType', genericAuthType: 'httpHeaderAuth', sendBody: true, specifyBody: 'json', jsonBody: expr('{{ $json.corpo }}'), options: { batching: { batch: { batchSize: 1, batchInterval: 1200 } } } }, credentials: { httpHeaderAuth: { id: 'PY2ZcN5kAVFaS1io', name: 'Discord Bot' } }, position: [4704, 576], onError: 'continueRegularOutput' }
+});
+
 const preparar_registro = node({
   type: 'n8n-nodes-base.code',
   version: 2,
@@ -502,11 +552,11 @@ $input.all().forEach((it, i) => {
   const x = $('Montar post').itemMatching(i).json; const d = x.dados;
   const m = it.json || {};
   if (!m.id) return;
-  if (!d.so_card) linhas.push({ chat_id: d.chat_id, cliente: d.cliente, cliente_id: d.cliente_id, classe: d.classe, urgencia: x.urgencia, ultima_cliente: d.ultima, texto: x.resposta, card_id: x.card_id || null, card_url: x.card_url || null, card_corpo: (!x.card_id && x.card_corpo && x.card_metodo !== 'PATCH') ? x.card_corpo : null, discord_msg: m.id, confirmar: x.confirmar || null, confirmar_quem: x.confirmar_quem || null });
+  if (!x.sem_rascunho) linhas.push({ chat_id: d.chat_id, cliente: d.cliente, cliente_id: d.cliente_id, classe: d.classe, urgencia: x.urgencia, ultima_cliente: d.ultima, texto: x.resposta, card_id: x.card_id || null, card_url: x.card_url || null, card_corpo: (!x.card_id && x.card_corpo && x.card_metodo !== 'PATCH') ? x.card_corpo : null, discord_msg: m.id, confirmar: x.confirmar || null, confirmar_quem: x.confirmar_quem || null });
   // Sem reações: o aviso no Discord não aprova nada (05/11).
   const base = { quando: agora.toISO(), dia: agora.toISODate(), modo: 'piloto', chat_id: d.chat_id, cliente: d.cliente, classe: d.classe, qtd_msgs: d.qtd, trava_palavra: false, minutos: Math.max(0, Math.round(agora.diff(DateTime.fromJSDate(new Date(d.ultima)), 'minutes').minutes)) };
-  if (!d.so_card) eventos.push({ ...base, evento: 'rascunho', ref: x.urgencia });
-  if (x.card_id) eventos.push({ ...base, evento: x.card_metodo === 'PATCH' ? 'material_no_card' : 'demanda_criada', ref: x.card_codigo || x.card_id });
+  if (!x.sem_rascunho) eventos.push({ ...base, evento: 'rascunho', ref: x.urgencia });
+  if (x.card_id) eventos.push({ ...base, evento: x.card_metodo === 'PATCH' ? (d.classe === 'aprovacao' ? 'aprovado_no_card' : 'material_no_card') : 'demanda_criada', ref: x.card_codigo || x.card_id });
 });
 return [{ json: { linhas: JSON.stringify(linhas), eventos, reacoes } }];
 `
@@ -590,11 +640,14 @@ export default wf
       .to(anexar_card)))]))
   .add(juntar_card)
   .to(montar_post
-  .to(postar_rascunho)
-  .to(preparar_registro
   .to([
-    guardar_rascunhos,
-    lista_de_rea_es
-    .to(p_r_e),
-    eventos_do_piloto
-    .to(gravar_eventos_do_piloto)])))
+    postar_rascunho
+    .to(preparar_registro
+    .to([
+      guardar_rascunhos,
+      lista_de_rea_es
+      .to(p_r_e),
+      eventos_do_piloto
+      .to(gravar_eventos_do_piloto)])),
+    avisos_de_postagem
+    .to(postar_aviso_de_postagem)]))
