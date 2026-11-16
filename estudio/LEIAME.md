@@ -17,6 +17,12 @@ mostra a prévia, deixa ajustar e **renderiza com a força do próprio PC**.
 - No Studio: tirar pedaços da fala (S divide na agulha), mover/tirar/trocar elementos, volume da trilha.
 - Render: `longo.js`, com o ffmpeg completo que vai no instalador (`resources/ffmpeg`), igual ao `montar.py`.
 
+## Título e descrição (16/11/2026)
+- A máquina escreve o pacote de publicação de cada vídeo (`prompts/publicacao.md` → `pipeline/publicacao.py`) e põe em
+  `projeto-N.json` → `publicacao`. O Studio mostra a seção "Título e descrição" na coluna da esquerda: 3 títulos para
+  escolher, descrição (com capítulos no longo), tags, botões de copiar. O que a pessoa muda fica salvo no PC.
+- O mesmo texto vai num "título e descrição.txt" ao lado do vídeo no Drive (para quem não abre o Studio).
+
 ## Atualização automática
 - Pasta do Drive `00 - SHORTS IA (MÁQUINA)/STUDIO`: instalador + `versao.json` (`{"versao","arquivo","novidades"}`).
 - O app confere ao abrir e a cada 30 min; mostra "Atualizar agora". Para lançar: subir o .exe novo e trocar o versao.json.
