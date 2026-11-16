@@ -7,7 +7,7 @@
 <title>Hudson · Grupo Euforia</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800;900&family=Lato:wght@400;700;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root{--preto:#050505;--off:#F2EFEA;--laranja:#FF6518;--brasa:#C2410C;--cinza:#8A857E;--linha:#2A2A2A}
 *{box-sizing:border-box;margin:0;padding:0}
@@ -74,6 +74,49 @@ p,li{font-size:46px;line-height:1.3}
 .feito{display:grid;grid-template-columns:repeat(3,1fr);gap:30px}
 .feito div{border:3px solid var(--linha);border-radius:26px;padding:34px 38px;font-size:38px;line-height:1.22;font-weight:500}
 .feito div b{display:block;font-family:Archivo;font-weight:800;font-size:44px;color:var(--laranja);margin-bottom:10px}
+.car{display:grid;grid-template-columns:repeat(3,480px);justify-content:space-between}
+.car .m{display:flex;flex-direction:column;gap:18px}
+.car .m small{font-family:Archivo;font-weight:800;font-size:28px;letter-spacing:.12em;text-transform:uppercase;color:var(--laranja)}
+.cv{aspect-ratio:4/5;border-radius:22px;overflow:hidden;position:relative;font-family:Lato,sans-serif;display:flex;flex-direction:column;justify-content:space-between;padding:44px 40px}
+.cv .k{font-size:22px;font-weight:900;letter-spacing:.16em;text-transform:uppercase}
+.cv h4{font-family:Lato;font-weight:900;font-size:58px;line-height:1.02;letter-spacing:-.01em}
+.cv .ft{display:flex;justify-content:space-between;align-items:center;font-size:22px;font-weight:700}
+.cv .sw{font-size:22px;font-weight:900}
+.cv1{background:#291A73;color:#fff}
+.cv1 h4 em{font-style:normal;color:#8E91FF}
+.cv1:after{content:"";position:absolute;right:-80px;bottom:110px;width:200px;height:200px;border-radius:50%;border:26px solid #4C50EC;z-index:0}
+.cv>*{position:relative;z-index:1}
+.cv2{background:#F4F2FF;color:#291A73}
+.cv2 .k{color:#4C50EC}
+.cv2 .big{font-size:190px;font-weight:900;line-height:.8;color:#4C50EC;letter-spacing:-.04em}
+.cv2 .bar{height:12px;background:#291A73;width:120px;border-radius:6px}
+.cv3{background:#4C50EC;color:#fff}
+.cv3 .q{font-size:160px;line-height:.6;font-weight:900;color:#291A73}
+.cv3 h4{font-size:50px;font-weight:700}
+.cv3 .ft{color:#E6E6FF}
+/* instagram */
+.ig-wrap{display:grid;grid-template-columns:560px 1fr;gap:90px;align-items:center}
+.phone{width:560px;height:940px;border-radius:64px;background:#000;border:10px solid #1E1E1E;padding:30px 0 0;overflow:hidden;box-shadow:0 0 0 2px #333;font-family:Inter,sans-serif;color:#fff}
+.ig-top{display:flex;justify-content:space-between;align-items:center;padding:6px 30px 18px;font-weight:700;font-size:26px}
+.ig-head{display:flex;align-items:center;gap:30px;padding:0 30px}
+.ig-av{width:132px;height:132px;border-radius:50%;padding:5px;background:conic-gradient(#4C50EC,#291A73,#4C50EC);flex:none}
+.ig-av div{width:100%;height:100%;border-radius:50%;background:#291A73;border:5px solid #000;display:flex;align-items:center;justify-content:center;font-family:Lato;font-weight:900;font-size:46px;color:#fff}
+.ig-st{display:flex;gap:26px;text-align:center;font-size:18px;color:#ddd}
+.ig-st b{display:block;font-size:24px;color:#fff}
+.ig-bio{padding:16px 30px 0;font-size:19px;line-height:1.38;color:#eee}
+.ig-bio b{font-size:20px;color:#fff}
+.ig-bio .lk{color:#A9B4FF;font-weight:600}
+.ig-bt{display:flex;gap:10px;padding:16px 30px 0}
+.ig-bt span{flex:1;background:#262626;border-radius:12px;text-align:center;padding:12px 0;font-size:18px;font-weight:600}
+.ig-bt span.pri{background:#4C50EC}
+.ig-hl{display:flex;gap:20px;padding:20px 30px 16px}
+.ig-hl div{text-align:center;font-size:15px;color:#ddd;width:84px}
+.ig-hl i{display:flex;width:80px;height:80px;border-radius:50%;border:3px solid #333;background:#291A73;margin:0 auto 8px;align-items:center;justify-content:center;font-style:normal;font-family:Lato;font-weight:900;font-size:26px;color:#fff}
+.ig-hl div:nth-child(even) i{background:#4C50EC}
+.ig-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:3px;border-top:1px solid #262626;padding-top:3px}
+.ig-grid div{aspect-ratio:4/5;font-family:Lato;font-weight:900;font-size:17px;line-height:1.05;padding:12px;display:flex;align-items:flex-end;overflow:hidden}
+.g1{background:#291A73;color:#fff}.g2{background:#F4F2FF;color:#291A73}.g3{background:#4C50EC;color:#fff}
+.ig-side h2{margin-bottom:40px}
 .nav{position:fixed;bottom:18px;right:22px;display:flex;gap:10px;z-index:5;opacity:.35;transition:opacity .2s}
 .nav:hover{opacity:1}
 .nav button{background:#1C1C1C;color:var(--off);border:1px solid #333;border-radius:10px;width:46px;height:40px;font-size:20px;cursor:pointer}
@@ -207,6 +250,64 @@ p,li{font-size:46px;line-height:1.3}
   <div class="pg">09</div>
 </section>
 
+<!-- carrosseis -->
+<section class="s">
+  <div class="tag">Carrosséis · 3 modelos</div>
+  <h2 style="margin-bottom:30px">A sua identidade no feed</h2>
+  <div class="car">
+    <div class="m"><small>Modelo 1 · Manifesto</small>
+      <div class="cv cv1"><span class="k">Mapa da Dignidade</span>
+        <h4>Seu primeiro emprego <em>não define</em> a sua carreira.</h4>
+        <div class="ft"><span>Anselmo Hudson</span><span class="sw">Arraste →</span></div></div></div>
+    <div class="m"><small>Modelo 2 · Lista</small>
+      <div class="cv cv2"><span class="k">Despertar</span>
+        <div><div class="big">3</div><h4 style="margin-top:14px">sinais de que você parou de crescer no trabalho</h4></div>
+        <div class="ft"><span class="bar"></span><span class="sw">Arraste →</span></div></div></div>
+    <div class="m"><small>Modelo 3 · Frase</small>
+      <div class="cv cv3"><span class="q">“</span>
+        <h4>Dignidade profissional é saber o seu valor antes de alguém dizer qual é.</h4>
+        <div class="ft"><span>Anselmo Hudson</span><span class="sw">Arraste →</span></div></div></div>
+  </div>
+  <div class="pg">10</div>
+</section>
+
+<!-- instagram -->
+<section class="s">
+  <div class="ig-wrap">
+    <div class="phone">
+      <div class="ig-top"><span>Anselmo Hudson</span><span>☰</span></div>
+      <div class="ig-head">
+        <div class="ig-av"><div>AH</div></div>
+        <div class="ig-st"><div><b>9</b>posts</div><div><b>·</b>seguidores</div><div><b>·</b>seguindo</div></div>
+      </div>
+      <div class="ig-bio"><b>Anselmo Hudson</b><br>Desenvolvimento de jovens profissionais<br>Criador do Mapa da Dignidade<br>Despertar · Desenvolver · Prosperar<br><span class="lk">Acesse o Mapa da Dignidade ↓</span></div>
+      <div class="ig-bt"><span class="pri">Seguir</span><span>Mensagem</span></div>
+      <div class="ig-hl"><div><i>D</i>Despertar</div><div><i>D</i>Desenvolver</div><div><i>P</i>Prosperar</div><div><i>M</i>O Mapa</div><div><i>▶</i>YouTube</div></div>
+      <div class="ig-grid">
+        <div class="g1">Seu primeiro emprego não define a sua carreira.</div>
+        <div class="g2">3 sinais de que você parou de crescer</div>
+        <div class="g3">“Saiba o seu valor.”</div>
+        <div class="g3">Despertar: por onde começar</div>
+        <div class="g1">O que a faculdade não te ensinou</div>
+        <div class="g2">5 hábitos de quem cresce rápido</div>
+        <div class="g2">Como pedir o primeiro aumento</div>
+        <div class="g3">“Carreira é construção.”</div>
+        <div class="g1">Desenvolver: a fase que muda tudo</div>
+      </div>
+    </div>
+    <div class="ig-side">
+      <div class="tag">Simulação</div>
+      <h2>Como fica o seu Instagram</h2>
+      <ul class="lista">
+        <li><i>→</i>Feed com 3 modelos alternados</li>
+        <li><i>→</i>Destaques nas etapas do Mapa</li>
+        <li><i>→</i>Bio levando para a plataforma</li>
+      </ul>
+    </div>
+  </div>
+  <div class="pg">11</div>
+</section>
+
 <!-- 9 projeto -->
 <section class="s">
   <div class="tag">Próximos passos</div>
@@ -216,7 +317,7 @@ p,li{font-size:46px;line-height:1.3}
     <li><i>02</i>Lançar a sua página</li>
     <li><i>03</i>Mapa da Dignidade: plataforma e módulos</li>
   </ul>
-  <div class="pg">10</div>
+  <div class="pg">12</div>
 </section>
 
 <!-- 9b ponto de partida -->
@@ -228,7 +329,7 @@ p,li{font-size:46px;line-height:1.3}
     <li><i>→</i>O que estiver pronto, aproveitamos</li>
     <li><i>→</i>O que precisar, atualizamos no padrão novo</li>
   </ul>
-  <div class="pg">11</div>
+  <div class="pg">13</div>
 </section>
 
 <!-- 10 feedback da transição -->
@@ -236,14 +337,14 @@ p,li{font-size:46px;line-height:1.3}
   <div class="tag">A sua opinião</div>
   <p class="pergunta">Na fase de mudanças do nosso time, o que fez falta para você?</p>
   <p class="pergunta" style="color:#C2410C;margin-bottom:0">O que não pode se repetir?</p>
-  <div class="pg">12</div>
+  <div class="pg">14</div>
 </section>
 
 <!-- 11 feedback padrão -->
 <section class="s laranja">
   <div class="tag">Feedback</div>
   <h1 style="font-size:112px">O que você está achando do Grupo Euforia até agora?</h1>
-  <div class="pg" style="color:#050505">13</div>
+  <div class="pg" style="color:#050505">15</div>
 </section>
 
 <!-- 12 obrigado -->
