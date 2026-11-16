@@ -5,7 +5,8 @@ Lê plano.json, segmentos.json (de cortar.py) e broll/ (de brolls.py). Gera fina
 "modelo": "nova-acropole" (cortes de palestra): legenda amarela o vídeo todo, marca d'água da NA (Instagram + logo)
 cartões brancos de citação (aspas, foto redonda e nome do autor) e de frase-chave, e o encerramento da Acrópole Play
 no fim; sem textos-chave, lowers, trilha nem tela final.
---sem-gfx reaproveita os grafismos já gerados; --previa renderiza só os primeiros 90 s, rápido, para conferir."""
+--sem-gfx reaproveita os grafismos já gerados; --previa renderiza só os primeiros 90 s, rápido, para conferir.
+--studio SAIDA [--cliente X --titulo Y]: não renderiza; grava o projeto para o Euforia Studio (ver studio.py)."""
 import json, os, re, subprocess, sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'pipeline'))
@@ -263,6 +264,23 @@ def legendas_na(arq):
         '', '[Events]', 'Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text'] + linhas) + '\n')
     return len(blocos)
 
+
+if '--studio' in sys.argv:
+    # Euforia Studio (16/11/2026): grava o projeto para a equipe revisar/ajustar e renderizar no próprio PC
+    if NA:
+        raise SystemExit('o modelo Nova Acrópole ainda não abre no Studio')
+    import studio
+    def _opc(n):
+        return sys.argv[sys.argv.index(n) + 1] if n in sys.argv else None
+    mus = os.path.join(pasta, 'musica.aac')
+    if not os.path.exists(mus) and plano.get('musica_file_id'):
+        try:
+            import ponte; ponte.baixar(plano['musica_file_id'], mus)
+        except Exception as e:
+            print('sem trilha:', e)
+    studio.exportar(pasta, _opc('--studio'), plano=plano, segs=segs, W=W, EV=EV, TOTAL=TOTAL, END=END, gfx_dir=O,
+                    musica=mus, cliente=_opc('--cliente'), titulo=_opc('--titulo'))
+    sys.exit(0)
 
 order = {'broll': 0, 'full': 1, 'kw': 2, 'lw': 3}; EV.sort(key=lambda e: (order[e[0]], e[2]))
 previa = '--previa' in sys.argv
