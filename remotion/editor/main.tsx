@@ -6,6 +6,7 @@ import { Player, type PlayerRef } from '@remotion/player';
 import { ShortViral } from '../src/ShortViral';
 import { ShortInstitucional } from '../src/ShortInstitucional';
 import { anotar, diferencas, durSeg, limpar, removerCorte, type Projeto, type PropsEditor } from './projeto';
+import { Estudio, type Pacote } from './estudio';
 import '@fontsource/montserrat/600.css';
 import '@fontsource/montserrat/700.css';
 import '@fontsource/montserrat/800.css';
@@ -23,18 +24,22 @@ const ler = (k: string) => { try { return localStorage.getItem(k) ?? ''; } catch
 const gravar = (k: string, v: string) => { try { localStorage.setItem(k, v); } catch { /* sem armazenamento */ } };
 
 /* ------------------------------------------------------------------ abrir projeto */
+// staticFile do Remotion só aceita caminho no mesmo endereço do editor: mídia e editor ficam juntos na hospedagem
+function usarProjeto(p: Projeto, urlProjeto?: string) {
+  window.remotion_staticBase = new URL(p.base || '.', urlProjeto ?? window.location.href).pathname.replace(/\/$/, '');
+}
+
 function App() {
   const [proj, setProj] = useState<Projeto | null>(null);
   const [erro, setErro] = useState('');
 
   const usar = useCallback((p: Projeto, urlProjeto?: string) => {
-    // staticFile do Remotion só aceita caminho no mesmo endereço do editor: mídia e editor ficam juntos na hospedagem
-    const base = new URL(p.base || '.', urlProjeto ?? window.location.href).pathname.replace(/\/$/, '');
-    window.remotion_staticBase = base;
+    usarProjeto(p, urlProjeto);
     setProj(p);
   }, []);
 
   useEffect(() => {
+    if (window.estudio) return; // no app, a tela de projetos abre os projetos
     // sem ?projeto=, tenta o projeto padrão ao lado do editor (demonstração)
     const u = new URLSearchParams(window.location.search).get('projeto') ?? 'projetos/projeto-1.json';
     const abs = new URL(u, window.location.href).href;
@@ -44,6 +49,7 @@ function App() {
       .catch((e) => { if (new URLSearchParams(window.location.search).get('projeto')) setErro(`Não abriu o projeto (${e.message}).`); });
   }, [usar]);
 
+  if (window.estudio) return <Estudio Editor={Editor} usar={usarProjeto} />;
   if (proj) return <Editor proj={proj} />;
   return (
     <div className="abrir">
@@ -63,7 +69,7 @@ function App() {
 }
 
 /* ------------------------------------------------------------------ editor */
-function Editor({ proj }: { proj: Projeto }) {
+function Editor({ proj, aoVoltar, aoRenderizar }: { proj: Projeto; aoVoltar?: () => void; aoRenderizar?: (p: Pacote) => void }) {
   const original = useMemo(() => anotar(proj.props), [proj]);
   // estado + histórico juntos, para desfazer/refazer sem corrida
   const [est, setEst] = useState<{ p: PropsEditor; antes: PropsEditor[]; depois: PropsEditor[] }>({ p: original, antes: [], depois: [] });
@@ -137,6 +143,7 @@ function Editor({ proj }: { proj: Projeto }) {
       ajustes: modo === 'automatico' ? [] : ajustes,
       props: limpar(modo === 'automatico' ? original : props),
     };
+    if (aoRenderizar) { player.current?.pause(); aoRenderizar(pacote); return; } // app: renderiza neste PC
     const json = JSON.stringify(pacote, null, 1);
     let foi = false;
     if (proj.salvar) {
@@ -181,7 +188,8 @@ function Editor({ proj }: { proj: Projeto }) {
   return (
     <div className="app">
       <header className="topo">
-        <div className="marca">euforia <b>editor</b></div>
+        {aoVoltar && <button className="bt" onClick={aoVoltar}>← Projetos</button>}
+        <div className="marca">euforia <b>{aoRenderizar ? 'studio' : 'editor'}</b></div>
         <button className="bt" onClick={desfazer} disabled={!hist.antes.length} title="Ctrl+Z">↶ Desfazer</button>
         <button className="bt" onClick={refazer} disabled={!hist.depois.length} title="Ctrl+Shift+Z">↷ Refazer</button>
         <div className="titulo">
@@ -192,8 +200,8 @@ function Editor({ proj }: { proj: Projeto }) {
           <option value="">Quem está editando?</option>
           {['Ismael', 'Daniel', 'Lorena', 'Rômulo', 'Victor', 'Escritório'].map((n) => <option key={n}>{n}</option>)}
         </select>
-        <button className="bt" onClick={() => exportar('automatico')} title="Renderiza exatamente o que a máquina montou">Aprovar como está</button>
-        <button className="bt pri" onClick={() => exportar('ajustado')} disabled={!ajustes.length}>Exportar com {ajustes.length} ajuste{ajustes.length === 1 ? '' : 's'}</button>
+        <button className="bt" onClick={() => exportar('automatico')} title="Renderiza exatamente o que a máquina montou">{aoRenderizar ? 'Renderizar como está' : 'Aprovar como está'}</button>
+        <button className="bt pri" onClick={() => exportar('ajustado')} disabled={!ajustes.length}>{aoRenderizar ? 'Renderizar' : 'Exportar'} com {ajustes.length} ajuste{ajustes.length === 1 ? '' : 's'}</button>
       </header>
 
       <div className="meio">

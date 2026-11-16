@@ -98,3 +98,72 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .modal > div { background: var(--painel); border: 1px solid var(--linha); border-radius: 14px; padding: 22px; width: min(520px, calc(100% - 32px)); max-height: 80vh; overflow: auto; }
 .modal h2 { margin: 0 0 6px; font-family: Archivo, sans-serif; }
 .abrir { height: 100vh; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 14px; text-align: center; padding: 16px; }
+
+/* ================================================================ Euforia Studio (app) */
+.st { display: grid; grid-template-columns: 248px 1fr; height: 100vh; }
+.st-lado { background: #0a0a0a; border-right: 1px solid var(--linha); padding: 22px 18px; display: flex; flex-direction: column; gap: 6px; min-height: 0; }
+.st-logo { width: 150px; display: block; }
+.st-app { font: 800 13px Archivo, sans-serif; letter-spacing: 0.32em; text-transform: uppercase; color: var(--laranja); margin: 2px 0 22px 2px; }
+.st-nav { display: grid; gap: 4px; }
+.st-nav button { text-align: left; background: none; border: 0; padding: 9px 12px; border-radius: 8px; color: var(--fraco); cursor: pointer; font-weight: 600; }
+.st-nav button.ativo { background: #1a1410; color: var(--txt); box-shadow: inset 3px 0 0 var(--laranja); }
+.st-pc { margin-top: auto; background: var(--painel2); border: 1px solid var(--linha); border-radius: 12px; padding: 14px; display: grid; gap: 6px; }
+.st-pc-rot { font: 700 10px Archivo, sans-serif; letter-spacing: 0.1em; text-transform: uppercase; color: var(--fraco); }
+.st-pc strong { font-family: Archivo, sans-serif; font-size: 15px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.st-pc span { font-size: 12px; color: var(--txt); }
+.st-pc small { font-size: 11px; color: var(--fraco); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.st-nucleos { display: grid; grid-template-columns: repeat(8, 1fr); gap: 3px; margin: 4px 0; }
+.st-nucleos i { height: 8px; border-radius: 2px; background: var(--laranja); opacity: 0.85; animation: nucleo 2.4s ease-in-out infinite; }
+.st-nucleos i:nth-child(3n) { animation-delay: .4s; } .st-nucleos i:nth-child(3n+1) { animation-delay: .9s; }
+@keyframes nucleo { 50% { opacity: 0.35; } }
+.st-versao { font-size: 11px; color: #4d4842; margin-top: 8px; }
+
+.st-main { overflow: auto; padding: 28px 32px 40px; min-width: 0; }
+.st-topo { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap; margin-bottom: 18px; }
+.st-topo h1 { margin: 0; font: 800 34px/1.05 Archivo, sans-serif; letter-spacing: -0.02em; }
+.st-topo p { margin: 6px 0 0; color: var(--fraco); }
+.st-acoes { display: flex; gap: 8px; }
+.st-busca { background: var(--painel2); border: 1px solid var(--linha); border-radius: 8px; padding: 7px 12px; width: 240px; }
+.st-busca:focus { outline: none; border-color: var(--laranja); }
+.st-filtros { display: flex; align-items: center; gap: 6px; margin-bottom: 22px; flex-wrap: wrap; }
+.st-filtros > button:not(.bt) { background: none; border: 1px solid var(--linha); border-radius: 99px; padding: 6px 14px; cursor: pointer; color: var(--fraco); }
+.st-filtros > button.on { background: var(--txt); color: var(--bg); border-color: var(--txt); font-weight: 600; }
+.st-pasta { margin-left: auto; font-size: 12px; color: var(--fraco); max-width: 420px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.st-grade { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 18px; }
+.st-card { background: var(--painel); border: 1px solid var(--linha); border-radius: 14px; overflow: hidden; display: flex; flex-direction: column; transition: transform .15s, border-color .15s; }
+.st-card:hover { transform: translateY(-2px); border-color: #3a2a20; }
+.st-capa { position: relative; aspect-ratio: 9 / 13; background: #000; border: 0; padding: 0; cursor: pointer; overflow: hidden; }
+.st-capa video { width: 100%; height: 100%; object-fit: cover; display: block; }
+.st-capa::after { content: ''; position: absolute; inset: 0; background: linear-gradient(to top, #050505cc, transparent 40%); pointer-events: none; }
+.st-dur { position: absolute; right: 10px; bottom: 10px; z-index: 1; font: 600 12px ui-monospace, Menlo, monospace; background: #050505b3; padding: 2px 7px; border-radius: 6px; }
+.st-status { position: absolute; left: 10px; top: 10px; z-index: 1; font-size: 11px; font-weight: 600; padding: 3px 9px; border-radius: 99px; background: var(--laranja); color: #050505; }
+.st-status.ok { background: #13281c; color: var(--ok); border: 1px solid #1f5b37; }
+.st-card-txt { padding: 12px 14px 14px; display: grid; gap: 6px; }
+.st-card-txt small { color: var(--laranja); font-weight: 600; font-size: 12px; }
+.st-card-txt h3 { margin: 0; font: 700 16px/1.25 Archivo, sans-serif; }
+.st-conf { display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--fraco); }
+.st-conf div { flex: 1; height: 4px; background: #222; border-radius: 99px; overflow: hidden; }
+.st-conf i { display: block; height: 100%; }
+.st-card-pe { display: flex; justify-content: space-between; align-items: center; gap: 6px; margin-top: 4px; font-size: 11px; color: var(--fraco); }
+.st-card-pe div { display: flex; gap: 6px; }
+.st-vazio { border: 1px dashed #333; border-radius: 16px; padding: 48px 24px; text-align: center; color: var(--fraco); }
+.st-vazio h2 { color: var(--txt); font-family: Archivo, sans-serif; margin: 0 0 8px; }
+
+.st-render { position: fixed; inset: 0; z-index: 60; background: radial-gradient(circle at 50% 35%, #1b0f08f2, #050505f7 60%); display: flex; align-items: center; justify-content: center; padding: 16px; }
+.st-render-box { text-align: center; max-width: 560px; display: grid; justify-items: center; gap: 6px; }
+.st-render-cli { color: var(--laranja); font-weight: 600; letter-spacing: 0.04em; }
+.st-render-box h2 { margin: 0 0 8px; font: 800 26px/1.15 Archivo, sans-serif; }
+.st-render-box h3 { margin: 6px 0 0; font: 700 20px Archivo, sans-serif; }
+.st-render-box p { margin: 0 0 16px; color: var(--fraco); }
+.st-anel { width: 260px; height: 260px; }
+.st-anel circle { fill: none; stroke-width: 14; }
+.st-anel .fundo { stroke: #1d1d1d; }
+.st-anel .frente { stroke: var(--laranja); stroke-linecap: round; transform: rotate(-90deg); transform-origin: 140px 140px; transition: stroke-dashoffset .4s ease; }
+.st-anel.motor .frente, .st-anel.preparando .frente { animation: girar 1.4s linear infinite; stroke-dashoffset: 560; }
+.st-anel.pronto .frente { stroke: var(--ok); }
+.st-anel.erro .frente { stroke: var(--brasa); stroke-dashoffset: 0; }
+.st-anel .pct { fill: var(--txt); font: 800 54px Archivo, sans-serif; }
+.st-anel .falta { fill: var(--fraco); font: 500 14px Inter, sans-serif; }
+@keyframes girar { to { transform: rotate(270deg); } }
+@media (prefers-reduced-motion: reduce) { .st-nucleos i, .st-anel .frente { animation: none !important; } }

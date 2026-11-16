@@ -1,0 +1,62 @@
+{
+  "name": "euforia-studio",
+  "productName": "Euforia Studio",
+  "version": "0.1.0",
+  "description": "Editor da Euforia: ver, ajustar e renderizar no próprio PC os vídeos que a máquina monta",
+  "main": "main.js",
+  "author": "Grupo Euforia",
+  "license": "UNLICENSED",
+  "private": true,
+  "scripts": {
+    "preparar": "node preparar.mjs",
+    "dev": "node preparar.mjs && electron .",
+    "windows": "node preparar.mjs && electron-builder --win --x64 --publish never"
+  },
+  "dependencies": {
+    "@remotion/renderer": "4.0.534"
+  },
+  "devDependencies": {
+    "electron": "33.2.1",
+    "electron-builder": "25.1.8"
+  },
+  "build": {
+    "appId": "br.com.grupoeuforia.studio",
+    "productName": "Euforia Studio",
+    "asar": false,
+    "files": [
+      "main.js",
+      "preload.js",
+      "package.json",
+      "build/**",
+      "!build/**/*.map",
+      "ui/**",
+      "node_modules/**",
+      "!node_modules/@remotion/compositor-linux-*/**",
+      "!node_modules/@remotion/compositor-darwin-*/**"
+    ],
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "ui/icone.ico"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "shortcutName": "Euforia Studio",
+      "artifactName": "Euforia-Studio-Setup-${version}.exe"
+    },
+    "publish": null
+  },
+  "optionalDependencies": {
+    "@remotion/compositor-win32-x64-msvc": "4.0.534"
+  }
+}
