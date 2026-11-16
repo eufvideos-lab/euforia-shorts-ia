@@ -8,6 +8,7 @@ import { ShortInstitucional } from '../src/ShortInstitucional';
 import { anotar, diferencas, durSeg, limpar, removerCorte, type Projeto, type PropsEditor } from './projeto';
 import { Estudio, type Pacote } from './estudio';
 import { EditorLongo } from './longo';
+import { PainelPublicacao } from './publicacao';
 import type { ProjetoLongo } from './longo-projeto';
 import '@fontsource/montserrat/600.css';
 import '@fontsource/montserrat/700.css';
@@ -216,6 +217,7 @@ function Editor({ proj, aoVoltar, aoRenderizar }: { proj: Projeto; aoVoltar?: ()
       <div className="meio">
         {/* ---------- esquerda: o que a máquina fez + biblioteca ---------- */}
         <aside className="col">
+          <PainelPublicacao id={proj.id} pub={proj.publicacao} />
           <div className="sec">
             <h3>Registro da máquina {nota != null && <span style={{ color: nota < 0.6 ? '#ff9a6b' : 'var(--ok)' }}>confiança {Math.round(nota * 100)}%</span>}</h3>
             {proj.maquina?.por_que && <p style={{ margin: '0 0 8px', fontSize: 13 }}>{proj.maquina.por_que}</p>}

@@ -2,6 +2,7 @@
 // Trechos = pedaços do base.mp4 (a fala já cortada pela máquina) que ficam, na ordem; elementos = B-roll, telas cheias
 // (título, cartões, mapa), textos-chave e lowers, com tempo no vídeo final. Funções puras, sem React.
 import type { Ajuste } from './projeto';
+import type { Publicacao } from './publicacao';
 
 export type Camada = 'broll' | 'full' | 'kw' | 'lw';
 export type Elemento = { camada: Camada; arquivo: string; inicio: number; dur: number; rotulo: string; w: number; h: number; y: number };
@@ -17,6 +18,7 @@ export type ProjetoLongo = {
   versao: 1; tipo: 'longo'; id: string; cliente: string; titulo: string; composicao: 'Longo'; base: string;
   longo: DadosLongo; registro?: string[]; maquina?: { por_que?: string; nota_confianca?: number };
   biblioteca?: { src: string; descricao: string }[];
+  publicacao?: Publicacao; // título, descrição e tags sugeridos (pipeline/publicacao.py)
 };
 type ComId<T> = T & { _id: string };
 export type LongoEd = Omit<DadosLongo, 'trechos' | 'elementos'> & { trechos: ComId<Trecho>[]; elementos: ComId<Elemento>[] };
