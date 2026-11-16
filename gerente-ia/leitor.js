@@ -425,7 +425,7 @@ return $input.all().map((it, i) => {
   // texto fixo (sem data, sem nome, sem promessa), sai 10 min depois se ninguém cancelar no painel. Fica de fora: cliente 🔴,
   // mensagem com pergunta, qualquer coisa que peça confirmação da equipe. Assunto sério, valores e jurídico nem chegam aqui.
   const AUTO_LIGADO = true;
-  const AUTO_SO_TESTE = true; // true = só no grupo de teste; false = todos os clientes ativos
+  const AUTO_SO_TESTE = false; // true = só no grupo de teste; false = todos os clientes ativos (ligado 16/11 após teste)
   const semPergunta = !/\\?/.test(String(d.textos || ''));
   const auto = AUTO_LIGADO && (!AUTO_SO_TESTE || d.chat_id === '120363414189297847@g.us') && !d.atencao && !d.trava && !confirmar && semPergunta
     && ((d.classe === 'material' && !d.so_card) || (d.classe === 'aprovacao' && aprov === 'atualizar'));
