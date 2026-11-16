@@ -159,12 +159,12 @@ def transcrever(audio_mp3, idioma='pt', prompt=None):
 
 def subir_grande(caminho, folder_id, nome, mime='video/mp4'):
     """Sobe arquivo grande (ex.: vídeo longo final em 1080p, 300+ MB) SEM comprimir: o n8n abre uma sessão de upload
-    retomável do Drive (fluxo "Longos IA | Sessão de upload 1080p", mesma senha da ponte) e a máquina manda direto para
+    retomável do Drive (fluxo "Longos IA | Sessão de upload 1080p (Drive) · caminho Shorts IA", mesma senha da ponte; o caminho começa com shorts-ia porque o ambiente das rotinas só libera esses) e a máquina manda direto para
     o Google em pedaços de 64 MB. Devolve {"id", "name", ...} do arquivo no Drive."""
     tam = os.path.getsize(caminho)
     r = json.loads(_curl(['-X', 'POST', '-H', 'Content-Type: application/json', '-d',
                           json.dumps({'nome': nome, 'mime': mime, 'tamanho': tam, 'folder_id': folder_id}),
-                          f'{BASE}/longos-ia-sessao-upload'], timeout=120))
+                          f'{BASE}/shorts-ia-longos-sessao-upload'], timeout=120))
     if not r.get('sessao'):
         raise RuntimeError('sessão de upload não abriu')
     url, PED, ini = r['sessao'], 64 * 1024 * 1024, 0
