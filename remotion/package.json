@@ -4,7 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "editor": "vite --config editor/vite.config.mjs",
+    "editor:build": "vite build --config editor/vite.config.mjs"
   },
   "keywords": [],
   "author": "",
@@ -21,5 +23,10 @@
     "react-dom": "^18.3.1",
     "remotion": "^4.0.534",
     "typescript": "^7.0.2"
+  },
+  "devDependencies": {
+    "@remotion/player": "^4.0.534",
+    "@vitejs/plugin-react": "^4.3.4",
+    "vite": "^5.4.11"
   }
 }
