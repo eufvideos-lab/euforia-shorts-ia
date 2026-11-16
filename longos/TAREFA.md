@@ -89,8 +89,8 @@ apt-get install -y -q libegl1 libgles2 >/dev/null 2>&1 || (apt-get update -q >/d
     (upload retomável direto no Drive; aguenta 300+ MB). Nunca reduza a resolução para caber: se o upload falhar,
     é erro (#ia-status), não entrega comprimida. Confira com ffprobe que o final tem 1920x1080 antes de subir.
     Suba o "título e descrição" ao lado do vídeo:
-    `python3 pipeline/publicacao.py pedidos/<id-curto> --cliente "<nome>" --pasta-drive <pasta> --studio pedidos/<id-curto>/studio`
-    (se o modelo não abre no Studio, rode sem `--studio`).
+    `python3 pipeline/publicacao.py pedidos/<id-curto> --cliente "<nome>" --pasta-drive <pasta> --studio pedidos/<id-curto>/studio --cliente-id <id da ficha do cliente> --pedido <link do pedido>`
+    (vai também para o Painel da Equipe, na gaveta do horário da Grade; se o modelo não abre no Studio, rode sem `--studio`).
     Suba também o `plano.json` para a pasta da máquina (1rF9yJwVPCp4IvTHfb6Gm3YbdLhWdX3eI) com o nome
     `plano-longo-<id-curto>.json` (é o que permite um "Ajustar" depois).
 11. Atualize o pedido: "Vídeo pronto" (link), "Entregue em" (agora), Status "Pronto para revisão" e um resumo

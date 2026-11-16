@@ -1,11 +1,14 @@
 #!/usr/bin/env python3
 """Pacote de publicação (título, descrição, tags, capítulos) de cada vídeo do pedido (16/11/2026).
 Uso: python3 pipeline/publicacao.py PASTA_DO_PEDIDO --cliente "Nome" [--pasta-drive ID] [--studio DIR]
+       [--cliente-id ID_DA_FICHA --pedido URL]
 Lê PASTA/publicacao.json (escrito pelo Claude com prompts/publicacao.md), confere as regras do YouTube, converte os
 capítulos (índice de palavra) para minuto:segundo do vídeo final (com segmentos.json da máquina de longos) e grava:
   PASTA/publicacao/<nome> - título e descrição.txt   (um por vídeo: o que a equipe copia e cola no YouTube)
   PASTA/publicacao-final.json                        (tudo montado; vai no log e no Notion)
 --pasta-drive: sobe os .txt para a pasta de entrega (ao lado dos vídeos).
+--cliente-id: id da ficha do cliente no Notion; manda o pacote para o Painel da Equipe (gaveta do horário na Grade),
+  pelo fluxo n8n "Painel | Título e descrição (V1)" (shorts-ia-publicacao).
 --studio DIR: põe o pacote em DIR/projeto-N.json ("publicacao"), antes do studio_drive.py; o Studio mostra a aba.
 Para (código 1) com a lista do que corrigir se algo quebra regra do YouTube; avisos não param."""
 import argparse, json, os, re, sys
@@ -148,6 +151,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('pasta'); ap.add_argument('--cliente', required=True)
     ap.add_argument('--pasta-drive', default=None); ap.add_argument('--studio', default=None)
+    ap.add_argument('--cliente-id', default=None); ap.add_argument('--pedido', default='')
     a = ap.parse_args()
     pasta = os.path.abspath(a.pasta)
     pub = json.load(open(os.path.join(pasta, 'publicacao.json')))
@@ -211,6 +215,19 @@ def main():
     final = [{'nome': p['_nome'], 'tipo': p['_tipo'], 'titulo': p['titulos'][0], 'outros_titulos': p['titulos'][1:],
               'descricao': p['descricao_final'], 'tags': p['tags'], 'arquivo': os.path.basename(p['_arquivo']),
               'drive': p.get('_link')} for p in feitos]
+    if a.cliente_id:
+        import ponte, subprocess
+        corpo = {'cliente_id': a.cliente_id, 'cliente': a.cliente, 'pedido': a.pedido,
+                 'videos': [dict(v, comentario=p.get('comentario_fixado') or '', thumb=p.get('texto_thumb') or '')
+                            for v, p in zip(final, feitos)]}
+        tmp = os.path.join(pasta, 'publicacao-painel.json')
+        json.dump(corpo, open(tmp, 'w'), ensure_ascii=False)
+        try:
+            r = ponte._curl(['-X', 'POST', '-H', 'Content-Type: application/json', '--data-binary', f'@{tmp}',
+                             f'{ponte.BASE}/shorts-ia-publicacao'], timeout=120)
+            print('painel:', r.strip()[:200])
+        except Exception as e:  # o painel é conveniência: não trava a entrega
+            print('aviso: não foi para o painel:', str(e)[:300])
     json.dump({'videos': final, 'avisos': avisos}, open(os.path.join(pasta, 'publicacao-final.json'), 'w'),
               ensure_ascii=False, indent=1)
     print(f'OK: {len(final)} pacote(s) de publicação' + (f', {len(avisos)} aviso(s)' if avisos else ''))
