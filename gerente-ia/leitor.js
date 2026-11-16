@@ -302,7 +302,7 @@ return $('Cards abertos do cliente').all().map((it, i) => {
     return { id: p.id, codigo: txt(pr['Código']), titulo: txt(pr['Entrega']), tipo: txt(pr['Tipo']), status: st, status_cliente: STATUS_CLIENTE[st] || st, prazo: txt(pr['Prazo']).slice(0, 10), postar: txt(pr['Postar em']).slice(0, 10), url: p.url, obs: txt(pr['Obs']).slice(0, 1700) };
   });
   const lista = cards.length ? cards.map(c => '- ' + c.codigo + ' · ' + c.titulo + ' · ' + c.tipo + ' (' + c.status_cliente + ')' + (c.prazo ? ' · pronto até ' + ddmm(c.prazo) : '') + (c.postar ? ' · posta ' + ddmm(c.postar) : '')).join('\\n') : '(nenhum card aberto)';
-  const user = 'Hoje é ' + d.hoje + ' (' + DateTime.now().setZone('America/Recife').setLocale('pt-BR').toFormat('cccc') + '). Próximos dias: ' + CAL + '.\\nCliente: ' + d.cliente + '\\nClasse já decidida: ' + d.classe + (d.tipo_peca && d.tipo_peca !== 'nenhum' ? ' (' + d.tipo_peca + ')' : '') + '\\nResumo: ' + (d.resumo || '') + (d.prazo_citado ? '\\nData citada pelo cliente: ' + d.prazo_citado : '') + '\\n\\nCards abertos do cliente:\\n' + lista + '\\n\\nConversa antes (contexto):\\n' + (d.contexto || '(sem mensagens anteriores)') + '\\n\\nMensagens novas do cliente:\\n' + d.textos + (d.resposta_equipe ? '\\n\\nO que a equipe já escreveu depois (não repita; complete só o que faltou):\\n' + d.resposta_equipe : '');
+  const user = 'Hoje é ' + d.hoje + ' (' + DateTime.now().setZone('America/Recife').setLocale('pt-BR').toFormat('cccc') + '), agora são ' + DateTime.now().setZone('America/Recife').toFormat('HH:mm') + '. Próximos dias: ' + CAL + '.\\nCliente: ' + d.cliente + '\\nClasse já decidida: ' + d.classe + (d.tipo_peca && d.tipo_peca !== 'nenhum' ? ' (' + d.tipo_peca + ')' : '') + '\\nResumo: ' + (d.resumo || '') + (d.prazo_citado ? '\\nData citada pelo cliente: ' + d.prazo_citado : '') + '\\n\\nCards abertos do cliente:\\n' + lista + '\\n\\nConversa antes (contexto):\\n' + (d.contexto || '(sem mensagens anteriores)') + '\\n\\nMensagens novas do cliente:\\n' + d.textos + (d.resposta_equipe ? '\\n\\nO que a equipe já escreveu depois (não repita; complete só o que faltou):\\n' + d.resposta_equipe : '');
   return { pairedItem: { item: 0 }, json: { dados: d, cards, corpo: JSON.stringify({ model: 'claude-sonnet-4-5', max_tokens: 700, temperature: 0.3, system: SYSTEM, messages: [{ role: 'user', content: user }] }) } };
 });
 `
@@ -421,9 +421,18 @@ return $input.all().map((it, i) => {
   // Fato que só a equipe sabe (acesso, bruto, entrega hoje): a mensagem espera o sim do Rômulo ou do Ismael (Henrique 05/11).
   const confirmar = mascara(String(r.confirmar || '').trim()).slice(0, 220);
   const confirmar_quem = confirmar ? (r.confirmar_quem === 'romulo' ? 'romulo' : 'ismael') : '';
+  // Resposta automática (Henrique 16/11, "corrigir e liberar só o simples"): só material recebido e aprovação com card certo,
+  // texto fixo (sem data, sem nome, sem promessa), sai 10 min depois se ninguém cancelar no painel. Fica de fora: cliente 🔴,
+  // mensagem com pergunta, qualquer coisa que peça confirmação da equipe. Assunto sério, valores e jurídico nem chegam aqui.
+  const AUTO_LIGADO = true;
+  const AUTO_SO_TESTE = true; // true = só no grupo de teste; false = todos os clientes ativos
+  const semPergunta = !/\\?/.test(String(d.textos || ''));
+  const auto = AUTO_LIGADO && (!AUTO_SO_TESTE || d.chat_id === '120363414189297847@g.us') && !d.atencao && !d.trava && !confirmar && semPergunta
+    && ((d.classe === 'material' && !d.so_card) || (d.classe === 'aprovacao' && aprov === 'atualizar'));
+  if (auto) resposta = d.classe === 'material' ? 'Recebemos o material, muito obrigada! 🙌\\n\\nJá está com a equipe.' : 'Perfeito, aprovação registrada! ✅\\n\\nA equipe já segue com a programação da postagem conforme a grade.';
   return { json: { dados: d, cards: base.cards, resposta, urgencia: urg, prazo, tipo: tipoFinal, titulo, ok: !!resposta, confirmar, confirmar_quem, resp_nome,
     criar_agora: (material === 'atualizar' || aprov === 'atualizar' || (precisaCard && urg !== 'hiperurgente')) && !!card_corpo && (!!resposta || ['material', 'aprovacao'].includes(d.classe)), card_corpo, card_metodo, card_api,
-    aprov, sem_rascunho: d.so_card || aprov === 'atualizar', card_aprov: card_aprov ? { codigo: card_aprov.codigo, url: card_aprov.url, titulo: card_aprov.titulo, postar: card_aprov.postar } : null, candidatos: candidatos.slice(0, 6).map(x => ({ codigo: x.codigo, titulo: x.titulo, url: x.url })),
+    aprov, auto, sem_rascunho: d.so_card || (aprov === 'atualizar' && !auto), card_aprov: card_aprov ? { codigo: card_aprov.codigo, url: card_aprov.url, titulo: card_aprov.titulo, postar: card_aprov.postar } : null, candidatos: candidatos.slice(0, 6).map(x => ({ codigo: x.codigo, titulo: x.titulo, url: x.url })),
     material, card_material: card_material ? { codigo: card_material.codigo, url: card_material.url, status: card_material.status } : null, card_id: '', card_url: '', card_codigo: '' } };
 });
 `
@@ -505,6 +514,7 @@ return $input.all().map(it => {
   // Aviso a quem posta (Ismael e Daniel) quando o card passou para Aprovado.
   const ap = x.card_aprov || {};
   const aviso_postar = (d.classe === 'aprovacao' && x.aprov === 'atualizar' && x.card_url) ? '✅ **' + d.cliente + '** aprovou no grupo: [' + (x.card_codigo || ap.codigo || 'abrir') + '](<' + x.card_url + '>) ' + (ap.titulo || '') + ' já está em **Aprovado**' + (ap.postar ? ' (postar em ' + ddmm(ap.postar) + ')' : '') + '. Pode programar a postagem.' : '';
+  if (x.auto) return { json: { ...x, aviso_postar, discord: JSON.stringify({ content: ('🤖 **' + d.cliente + '**' + (selo ? ' (' + selo.trim() + ')' : '') + ' · ' + (NOMES[d.classe] || d.classe) + (d.resumo ? ' · ' + d.resumo : '') + '\\n' + (linhaCard ? linhaCard + '\\n' : '') + 'Resposta automática sai às ' + DateTime.now().setZone('America/Recife').plus({ minutes: 10 }).toFormat('HH:mm') + ' se ninguém cancelar no painel (Minha mesa › Aprovar).').slice(0, 1990), allowed_mentions: { parse: [] } }) } };
   if (d.classe === 'aprovacao' && x.sem_rascunho) return { json: { ...x, aviso_postar, discord: JSON.stringify({ content: ('✅ **' + d.cliente + '**' + (selo ? ' (' + selo.trim() + ')' : '') + ' · Aprovação de peça' + (d.resumo ? ' · ' + d.resumo : '') + '\\n' + linhaCard).slice(0, 1990), allowed_mentions: { parse: [] } }) } };
   if (d.so_card) return { json: { ...x, discord: JSON.stringify({ content: ('📥 **' + d.cliente + '**' + (selo ? ' (' + selo.trim() + ')' : '') + ' · Envio de material' + (d.resumo ? ' · ' + d.resumo : '') + '\\n' + (linhaCard || '') + '\\n(A equipe já respondeu no grupo, então não fiz rascunho.)').slice(0, 1990), allowed_mentions: { parse: [] } }) } };
   const msg2 = '✍️ Resposta para aprovar: **' + d.cliente + '**' + (selo ? ' (' + selo.trim() + ')' : '') + ' · ' + (NOMES[d.classe] || d.classe) + (d.resumo ? ' · ' + d.resumo : '') + (x.ok ? '' : ' · ⚠️ sem rascunho') + '\\n' + (linhaCard ? linhaCard + '\\n' : '') + conf.replace(/^\\n/, '') + (conf ? '\\n' : '') + '👉 Aprove no painel: Minha mesa › Aprovar.';
@@ -552,10 +562,10 @@ $input.all().forEach((it, i) => {
   const x = $('Montar post').itemMatching(i).json; const d = x.dados;
   const m = it.json || {};
   if (!m.id) return;
-  if (!x.sem_rascunho) linhas.push({ chat_id: d.chat_id, cliente: d.cliente, cliente_id: d.cliente_id, classe: d.classe, urgencia: x.urgencia, ultima_cliente: d.ultima, texto: x.resposta, card_id: x.card_id || null, card_url: x.card_url || null, card_corpo: (!x.card_id && x.card_corpo && x.card_metodo !== 'PATCH') ? x.card_corpo : null, discord_msg: m.id, confirmar: x.confirmar || null, confirmar_quem: x.confirmar_quem || null });
+  if (!x.sem_rascunho) linhas.push({ chat_id: d.chat_id, cliente: d.cliente, cliente_id: d.cliente_id, classe: d.classe, urgencia: x.urgencia, ultima_cliente: d.ultima, texto: x.resposta, card_id: x.card_id || null, card_url: x.card_url || null, card_corpo: (!x.card_id && x.card_corpo && x.card_metodo !== 'PATCH') ? x.card_corpo : null, discord_msg: m.id, confirmar: x.confirmar || null, confirmar_quem: x.confirmar_quem || null, auto_em: x.auto ? agora.plus({ minutes: 10 }).toISO() : null });
   // Sem reações: o aviso no Discord não aprova nada (05/11).
   const base = { quando: agora.toISO(), dia: agora.toISODate(), modo: 'piloto', chat_id: d.chat_id, cliente: d.cliente, classe: d.classe, qtd_msgs: d.qtd, trava_palavra: false, minutos: Math.max(0, Math.round(agora.diff(DateTime.fromJSDate(new Date(d.ultima)), 'minutes').minutes)) };
-  if (!x.sem_rascunho) eventos.push({ ...base, evento: 'rascunho', ref: x.urgencia });
+  if (!x.sem_rascunho) eventos.push({ ...base, evento: 'rascunho', ref: x.auto ? 'automatica' : x.urgencia });
   if (x.card_id) eventos.push({ ...base, evento: x.card_metodo === 'PATCH' ? (d.classe === 'aprovacao' ? 'aprovado_no_card' : 'material_no_card') : 'demanda_criada', ref: x.card_codigo || x.card_id });
 });
 return [{ json: { linhas: JSON.stringify(linhas), eventos, reacoes } }];
@@ -572,10 +582,10 @@ const guardar_rascunhos = node({
     name: 'Guardar rascunhos',
     parameters: {
       operation: 'executeQuery',
-      query: `ALTER TABLE gerente_rascunhos ADD COLUMN IF NOT EXISTS confirmar TEXT, ADD COLUMN IF NOT EXISTS confirmar_quem TEXT, ADD COLUMN IF NOT EXISTS confirmar_msg TEXT, ADD COLUMN IF NOT EXISTS confirmado TEXT, ADD COLUMN IF NOT EXISTS confirmar_em TIMESTAMPTZ;
-INSERT INTO gerente_rascunhos (chat_id, cliente, cliente_id, classe, urgencia, ultima_cliente, texto, card_id, card_url, card_corpo, discord_msg, confirmar, confirmar_quem)
-SELECT x.chat_id, x.cliente, x.cliente_id, x.classe, x.urgencia, x.ultima_cliente, x.texto, x.card_id, x.card_url, x.card_corpo, x.discord_msg, x.confirmar, x.confirmar_quem
-FROM json_to_recordset($1::json) AS x(chat_id text, cliente text, cliente_id text, classe text, urgencia text, ultima_cliente timestamptz, texto text, card_id text, card_url text, card_corpo text, discord_msg text, confirmar text, confirmar_quem text)
+      query: `ALTER TABLE gerente_rascunhos ADD COLUMN IF NOT EXISTS confirmar TEXT, ADD COLUMN IF NOT EXISTS confirmar_quem TEXT, ADD COLUMN IF NOT EXISTS confirmar_msg TEXT, ADD COLUMN IF NOT EXISTS confirmado TEXT, ADD COLUMN IF NOT EXISTS confirmar_em TIMESTAMPTZ, ADD COLUMN IF NOT EXISTS auto_em TIMESTAMPTZ;
+INSERT INTO gerente_rascunhos (chat_id, cliente, cliente_id, classe, urgencia, ultima_cliente, texto, card_id, card_url, card_corpo, discord_msg, confirmar, confirmar_quem, auto_em)
+SELECT x.chat_id, x.cliente, x.cliente_id, x.classe, x.urgencia, x.ultima_cliente, x.texto, x.card_id, x.card_url, x.card_corpo, x.discord_msg, x.confirmar, x.confirmar_quem, x.auto_em
+FROM json_to_recordset($1::json) AS x(chat_id text, cliente text, cliente_id text, classe text, urgencia text, ultima_cliente timestamptz, texto text, card_id text, card_url text, card_corpo text, discord_msg text, confirmar text, confirmar_quem text, auto_em timestamptz)
 RETURNING id;`,
       options: { queryReplacement: expr('{{ [ $json.linhas ] }}') }
     },
