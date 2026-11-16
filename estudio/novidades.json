@@ -2,7 +2,10 @@
   "0.3.0": [
     "Novo projeto com bruto: escolha um vídeo do PC e corte à mão, vendo a onda do áudio (S divide, Delete tira).",
     "Tirar silêncios: corta as pausas longas do bruto de uma vez (Ctrl+Z desfaz).",
-    "O corte sai renderizado em 1080p, com voz tratada e no volume do YouTube. O bruto original não é copiado nem mexido."
+    "O corte sai renderizado em 1080p, com voz tratada e no volume do YouTube. O bruto original não é copiado nem mexido.",
+    "＋ Texto: põe texto-chave, lower ou cartão em qualquer vídeo longo ou bruto, nas cores do cliente (*palavra* fica em destaque).",
+    "Cores dos textos: escolha as cores do cliente e salve para usar de novo.",
+    "🤖 Mandar para a máquina: o corte do bruto vai para a máquina, que põe textos, B-roll e trilha, e o projeto volta na pasta EDITOR."
   ],
   "0.2.1": [
     "Selo 🔎 Revisão obrigatória: a máquina marca os vídeos que a Lorena precisa revisar (cliente 🔴, confiança baixa ou cliente novo) e mostra o motivo no cartão.",

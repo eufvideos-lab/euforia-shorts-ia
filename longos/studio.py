@@ -115,6 +115,7 @@ def exportar(pasta, saida, *, plano, segs, W, EV, TOTAL, END, gfx_dir, musica, c
             'fim': {'arquivo': fim, 'dur': END} if fim else None,
             'musica': mus,
             'palavras': palavras,
+            'paleta': plano.get('paleta') or {},  # cores do cliente: os textos novos do Studio saem nelas
         },
         'biblioteca': [{'src': e['arquivo'], 'descricao': e['rotulo']} for e in elementos if e['camada'] == 'broll'],
     }

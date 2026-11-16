@@ -2,9 +2,11 @@
 // Trechos = pedaços do base.mp4 (a fala já cortada pela máquina) que ficam, na ordem; elementos = B-roll, telas cheias
 // (título, cartões, mapa), textos-chave e lowers, com tempo no vídeo final. Funções puras, sem React.
 import type { Ajuste } from './projeto';
+import { ALTURA, PALETA_EUFORIA, type Paleta } from '../src/longo/Grafismos';
 
 export type Camada = 'broll' | 'full' | 'kw' | 'lw';
-export type Elemento = { camada: Camada; arquivo: string; inicio: number; dur: number; rotulo: string; w: number; h: number; y: number };
+/** Elemento por cima da fala. Com `texto`, é um grafismo feito no Studio (desenhado na hora, nas cores do cliente). */
+export type Elemento = { camada: Camada; arquivo: string; inicio: number; dur: number; rotulo: string; w: number; h: number; y: number; texto?: string; sub?: string };
 export type Trecho = { ini: number; fim: number };
 export type DadosLongo = {
   fps: number; largura: number; altura: number; video: string; previa: string;
@@ -14,6 +16,8 @@ export type DadosLongo = {
   palavras: { w: string; t: number }[];
   /** Bruto aberto no Studio: picos do áudio (0..1) a cada `passo` segundos, para ver e cortar pela onda. */
   onda?: { passo: number; picos: number[] };
+  /** Cores do cliente (a máquina grava as do plano; o Studio deixa mudar). */
+  paleta?: Partial<Paleta>;
 };
 export type ProjetoLongo = {
   versao: 1; tipo: 'longo'; id: string; cliente: string; titulo: string; composicao: 'Longo'; base: string;
@@ -143,8 +147,11 @@ export function diferencasLongo(orig: LongoEd, atual: LongoEd, nomeArq: (s: stri
   }
   const ids = new Set(orig.elementos.map((e) => e._id));
   for (const n of atual.elementos) {
-    if (!ids.has(n._id)) out.push({ tipo: 'broll_novo', alvo: n._id, para: nomeArq(n.arquivo), texto: `Pôs o B-roll "${nomeArq(n.arquivo)}" em ${tc(n.inicio)}` });
+    if (!ids.has(n._id) && n.texto != null) out.push({ tipo: 'texto_novo', alvo: n._id, para: n.texto, texto: `Pôs ${NOME_CAMADA[n.camada].toLowerCase()} "${n.rotulo}" em ${tc(n.inicio)}` });
+    else if (!ids.has(n._id)) out.push({ tipo: 'broll_novo', alvo: n._id, para: nomeArq(n.arquivo), texto: `Pôs o B-roll "${nomeArq(n.arquivo)}" em ${tc(n.inicio)}` });
   }
+  const po = JSON.stringify(paletaDe(orig)), pa = JSON.stringify(paletaDe(atual));
+  if (po !== pa && atual.elementos.some((e) => e.texto != null)) out.push({ tipo: 'paleta', alvo: 'paleta', de: paletaDe(orig), para: paletaDe(atual), texto: 'Mudou as cores dos textos' });
   if (orig.musica && atual.musica && orig.musica.volume_db !== atual.musica.volume_db) {
     out.push({ tipo: 'musica_volume', alvo: 'musica', de: orig.musica.volume_db, para: atual.musica.volume_db, texto: `Trilha de ${orig.musica.volume_db} dB para ${atual.musica.volume_db} dB` });
   }
@@ -190,4 +197,20 @@ export function tirarSilencios(L: LongoEd, novoId: () => string, min = 0.6, folg
   }
   if (!cortes || !trechos.length) return { L, cortes: 0, segundos: 0 };
   return { L: { ...L, trechos }, cortes, segundos: r3(segundos) };
+}
+
+/** Quadro do vídeo final: o do bruto, reduzido para 1080p quando a fonte é maior (igual ao render). */
+export function quadro(L: { largura: number; altura: number }): { w: number; h: number } {
+  const { largura: w, altura: h } = L;
+  if (w <= 1920 && h <= 1920) return { w, h };
+  const par = (x: number) => Math.round(x / 2) * 2;
+  return w >= h ? { w: 1920, h: par((h * 1920) / w) } : { w: par((w * 1920) / h), h: 1920 };
+}
+export const paletaDe = (L: { paleta?: Partial<Paleta> }): Paleta => ({ ...PALETA_EUFORIA, ...(L.paleta ?? {}) });
+/** Novo texto do Studio (texto-chave, lower ou cartão) no ponto `inicio`. */
+export function novoTexto(L: LongoEd, id: string, camada: 'kw' | 'lw' | 'full', texto: string, inicio: number, dur: number, sub?: string): LongoEd {
+  const q = quadro(L);
+  const h = ALTURA(camada, q.h);
+  const el = { _id: id, camada, arquivo: '', texto, sub: sub || undefined, inicio: r3(inicio), dur, rotulo: texto.replace(/[*|]/g, ' ').replace(/\s+/g, ' ').trim(), w: q.w, h, y: q.h - h };
+  return { ...L, elementos: [...L.elementos, el] };
 }

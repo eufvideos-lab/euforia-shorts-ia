@@ -12,7 +12,7 @@ export type ItemProjeto = {
 export type InfoPC = { versao: string; nucleos: number; cpu: string; memoria: number; raiz: string; raizExiste: boolean; pc: string };
 export type Progresso = {
   fase: 'motor' | 'preparando' | 'renderizando' | 'pronto' | 'erro'; progresso: number; frames?: number; total?: number;
-  restante?: number; nucleos?: number; saida?: string; segundos?: number; msg?: string;
+  restante?: number; nucleos?: number; saida?: string; segundos?: number; msg?: string; maquina?: boolean;
 };
 export type Pacote = { projeto: string; modo: string; composicao: string; [k: string]: unknown };
 type API = {
@@ -269,12 +269,12 @@ function TelaRender({ r, info, api, fechar, voltar }: {
   const { p } = r;
   const pct = Math.round((p.progresso || 0) * 100);
   const R = 120, C = 2 * Math.PI * R;
-  const titulo = { motor: 'Preparando o motor de render', preparando: 'Abrindo o projeto', renderizando: 'Renderizando', pronto: 'Pronto', erro: 'Não deu certo' }[p.fase];
+  const titulo = { motor: 'Preparando o motor de render', preparando: p.msg ? 'Desenhando os textos' : r.pacote.destino === 'maquina' ? 'Gravando o corte' : 'Abrindo o projeto', renderizando: 'Renderizando', pronto: 'Pronto', erro: 'Não deu certo' }[p.fase];
   const sub = {
     motor: 'Só na primeira vez: baixando o navegador que desenha os quadros.',
-    preparando: 'Lendo o vídeo e os grafismos.',
+    preparando: p.msg ?? 'Lendo o vídeo e os grafismos.',
     renderizando: `Usando ${p.nucleos ?? '?'} de ${info?.nucleos ?? '?'} núcleos deste PC${p.frames != null && p.total ? ` · quadro ${p.frames} de ${p.total}` : ''}`,
-    pronto: `Feito em ${p.segundos ?? 0} s com ${p.nucleos ?? '?'} núcleos deste PC. Salvo na pasta do projeto${r.pacote.modo === 'ajustado' ? ', junto com os ajustes' : ''}.`,
+    pronto: p.maquina ? 'Enviado para a máquina. Ela transcreve, põe textos, B-roll e trilha, e o projeto volta na pasta EDITOR para revisar.' : `Feito em ${p.segundos ?? 0} s com ${p.nucleos ?? '?'} núcleos deste PC. Salvo na pasta do projeto${r.pacote.modo === 'ajustado' ? ', junto com os ajustes' : ''}.`,
     erro: p.msg ?? 'Erro desconhecido.',
   }[p.fase];
   const falta = p.fase === 'renderizando' && p.restante ? Math.max(1, Math.round(p.restante / 1000)) : null;
@@ -295,7 +295,7 @@ function TelaRender({ r, info, api, fechar, voltar }: {
         <p>{sub}</p>
         <div className="linha" style={{ justifyContent: 'center' }}>
           {p.fase === 'pronto' && p.saida && <>
-            <button className="bt pri" onClick={() => api.abrir(p.saida!)}>▶ Assistir</button>
+            {!p.maquina && <button className="bt pri" onClick={() => api.abrir(p.saida!)}>▶ Assistir</button>}
             <button className="bt" onClick={() => api.mostrar(p.saida!)}>Mostrar na pasta</button>
             <button className="bt" onClick={voltar}>Voltar aos projetos</button>
           </>}

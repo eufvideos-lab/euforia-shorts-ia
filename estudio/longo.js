@@ -30,7 +30,8 @@ function comando(L, midia, saida) {
   const esc = L.largura > 1920 || L.altura > 1920 ? (L.largura >= L.altura ? 'scale=1920:-2,' : 'scale=-2:1920,') : '';
   const inteiro = trechos.length === L.trechos.length && trechos.every((t, i) => i === 0 || Math.abs(t.ini - trechos[i - 1].fim) < 0.002);
   if (inteiro && trechos[0].ini < 0.002) {
-    fc.push(`[0:v]${esc}fps=30,setsar=1[bv]`, '[0:a]anull[ba]');
+    // um trecho só a partir do zero: corta no fim dele (o bruto pode continuar depois)
+    fc.push(`[0:v]${esc}fps=30,trim=end=${f3(TOTAL)},setpts=PTS-STARTPTS,setsar=1[bv]`, `[0:a]atrim=end=${f3(TOTAL)},asetpts=PTS-STARTPTS[ba]`);
   } else {
     const expr = trechos.map((t) => `gte(t,${f3(t.ini)})*lt(t,${f3(t.fim)})`).join('+');
     fc.push(`[0:v]${esc}fps=30,select='${expr}',setpts=N/(30*TB),setsar=1[bv]`);
@@ -39,7 +40,8 @@ function comando(L, midia, saida) {
 
   // elementos por cima, na mesma ordem de camadas do montar.py
   const ordem = { broll: 0, full: 1, kw: 2, lw: 3 };
-  const EV = L.elementos.filter((e) => e.inicio < TOTAL - 0.1)
+  // cru = só o corte (para a máquina terminar): sem elementos, sem tratar a voz, sem tela final nem trilha
+  const EV = L.cru ? [] : L.elementos.filter((e) => e.inicio < TOTAL - 0.1)
     .map((e) => ({ ...e, dur: Math.min(e.dur, TOTAL - e.inicio) }))
     .sort((a, b) => ordem[a.camada] - ordem[b.camada] || a.inicio - b.inicio);
   for (const e of EV) {
@@ -64,6 +66,14 @@ function comando(L, midia, saida) {
     last = `[v${k}]`;
   });
   let n = EV.length + 1;
+  if (L.cru) {
+    fc.push(`${last}fps=30,format=yuv420p,setsar=1[vo]`, '[ba]aformat=channel_layouts=stereo:sample_rates=48000[ao]');
+    const script = saida.replace(/\.mp4$/, '.filtro.txt');
+    fs.writeFileSync(script, fc.join(';\n'));
+    args.push('-filter_complex_script', script, '-map', '[vo]', '-map', '[ao]', '-c:v', 'libx264', '-preset', 'fast', '-crf', '17',
+      '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-b:a', '256k', '-movflags', '+faststart', saida);
+    return { args, script, DUR: TOTAL, elementos: 0 };
+  }
   fc.push('[ba]highpass=f=70,acompressor=threshold=-20dB:ratio=3:attack=10:release=150:makeup=2,aformat=channel_layouts=stereo:sample_rates=48000[aa]');
   fc.push(`${last}fps=30,format=yuv420p,setsar=1[vm]`);
   if (L.fim) {

@@ -5,10 +5,11 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Player, type PlayerRef } from '@remotion/player';
 import { AbsoluteFill, Audio, Img, Sequence, Video, interpolate, staticFile, useCurrentFrame } from 'remotion';
 import {
-  NOME_CAMADA, anotarLongo, diferencasLongo, dividirTrecho, duracao, inicios, limparLongo, ondaNormal, palavrasSaida, removerTrecho,
+  NOME_CAMADA, anotarLongo, diferencasLongo, dividirTrecho, duracao, inicios, limparLongo, novoTexto, ondaNormal, paletaDe, palavrasSaida, quadro, removerTrecho,
   sobreposicoes, tc, textoDoTrecho, tirarSilencios, type Camada, type LongoEd, type ProjetoLongo,
 } from './longo-projeto';
 import type { Pacote } from './estudio';
+import { Grafismo, PALETA_EUFORIA, type Paleta } from '../src/longo/Grafismos';
 
 type Sel = { tipo: 'tr' | 'el'; id: string } | null;
 const r2 = (x: number) => Math.round(x * 100) / 100;
@@ -35,6 +36,8 @@ export const PreviaLongo: React.FC<{ L: LongoEd }> = ({ L }) => {
   const os_ = inicios(L);
   const total = duracao(L);
   const fr = (s: number) => Math.round(s * fps);
+  const q = quadro(L);
+  const pal = paletaDe(L);
   return (
     <AbsoluteFill style={{ background: '#000', overflow: 'hidden' }}>
       {L.trechos.map((t, i) => (
@@ -42,15 +45,23 @@ export const PreviaLongo: React.FC<{ L: LongoEd }> = ({ L }) => {
           <Video src={staticFile(L.previa)} trimBefore={fr(t.ini)} style={{ width: '100%', height: '100%' }} />
         </Sequence>
       ))}
+      <AbsoluteFill style={{ width: q.w, height: q.h, transform: `scale(${L.largura / q.w})`, transformOrigin: '0 0' }}>
       {[...L.elementos].sort((a, b) => ({ broll: 0, full: 1, kw: 2, lw: 3 }[a.camada] - { broll: 0, full: 1, kw: 2, lw: 3 }[b.camada]) || a.inicio - b.inicio).map((e) => (
         <Sequence key={e._id} from={fr(e.inicio)} durationInFrames={Math.max(1, fr(e.dur))} premountFor={fps}>
+          {e.texto != null ? (
+            <div style={{ position: 'absolute', left: 0, top: e.y, width: q.w, height: e.h }}>
+              <Grafismo tipo={e.camada as 'kw' | 'lw' | 'full'} texto={e.texto} sub={e.sub} dur={e.dur} paleta={pal} largura={q.w} altura={q.h} />
+            </div>
+          ) : <>
           {e.camada === 'broll' && <Fade dur={e.dur} fd={0.18} fps={fps}><KenBurns src={e.arquivo} dur={e.dur} fps={fps} /></Fade>}
           {e.camada === 'full' && <Fade dur={e.dur} fd={0.15} fps={fps}><Video src={staticFile(e.arquivo)} muted style={{ width: '100%', height: '100%' }} /></Fade>}
           {(e.camada === 'kw' || e.camada === 'lw') && (
             <Video src={staticFile(e.arquivo)} muted style={{ position: 'absolute', left: 0, top: e.y, width: e.w, height: e.h }} />
           )}
+          </>}
         </Sequence>
       ))}
+      </AbsoluteFill>
       {L.fim && (
         <Sequence from={fr(total)} durationInFrames={Math.max(1, fr(L.fim.dur))}>
           <Video src={staticFile(L.fim.arquivo)} muted style={{ width: '100%', height: '100%' }} />
@@ -117,6 +128,26 @@ export function EditorLongo({ proj, aoVoltar, aoRenderizar }: { proj: ProjetoLon
     avisar('Trecho dividido na agulha');
   };
   const bruto = proj.origem === 'bruto';
+  const [novo, setNovo] = useState<{ camada: 'kw' | 'lw' | 'full'; texto: string; sub: string; dur: number }>({ camada: 'kw', texto: '', sub: '', dur: 3 });
+  const porTexto = () => {
+    if (!novo.texto.trim()) { avisar('Escreva o texto primeiro'); return; }
+    const id = `en${++contador.current}`;
+    const ini = Math.min(t, Math.max(0, total - novo.dur));
+    mudar((p) => novoTexto(p, id, novo.camada, novo.texto.trim(), ini, novo.dur, novo.sub.trim()));
+    setSel({ tipo: 'el', id });
+    setNovo((n) => ({ ...n, texto: '', sub: '' }));
+    avisar(`${NOME_CAMADA[novo.camada]} posto em ${tc(ini)}`);
+  };
+  const pal = paletaDe(L);
+  const [nomePal, setNomePal] = useState(proj.cliente && proj.cliente !== 'Bruto' ? proj.cliente : '');
+  const [salvas, setSalvas] = useState<Record<string, Paleta>>(() => { try { return JSON.parse(ler('paletas') || '{}'); } catch { return {}; } });
+  const mudarPaleta = (x: Partial<Paleta>) => mudar((p) => ({ ...p, paleta: { ...paletaDe(p), ...x } }));
+  const salvarPaleta = () => {
+    const nome = nomePal.trim();
+    if (!nome) { avisar('Escreva o nome do cliente para salvar as cores'); return; }
+    const n = { ...salvas, [nome]: pal };
+    setSalvas(n); gravar('paletas', JSON.stringify(n)); avisar(`Cores salvas como "${nome}"`);
+  };
   const silencios = () => {
     const r = tirarSilencios(L, () => `tn${++contador.current}`);
     if (!r.cortes) { avisar('Não achei pausa longa para tirar'); return; }
@@ -159,6 +190,19 @@ export function EditorLongo({ proj, aoVoltar, aoRenderizar }: { proj: ProjetoLon
     avisar(`B-roll posto em ${tc(ini)}`);
   };
 
+  const [envio, setEnvio] = useState<{ cliente: string; titulo: string; observacoes: string } | null>(null);
+  const mandarMaquina = () => {
+    if (!envio || !aoRenderizar) return;
+    if (!envio.cliente.trim()) { avisar('Diga de qual cliente é o vídeo'); return; }
+    player.current?.pause();
+    aoRenderizar({
+      projeto: proj.id, tipo: 'longo', composicao: 'Longo', modo: 'ajustado', destino: 'maquina',
+      cliente: envio.cliente.trim(), titulo: envio.titulo.trim() || proj.titulo, observacoes: envio.observacoes.trim(),
+      editado_por: quem || 'sem nome', editado_em: new Date().toISOString(), ajustes, longo: limparLongo(L),
+    });
+    setEnvio(null);
+  };
+
   const exportar = (modo: 'automatico' | 'ajustado') => {
     const pacote: Pacote = {
       projeto: proj.id, tipo: 'longo', cliente: proj.cliente, titulo: proj.titulo, composicao: 'Longo', modo,
@@ -195,7 +239,11 @@ export function EditorLongo({ proj, aoVoltar, aoRenderizar }: { proj: ProjetoLon
           <option value="">Quem está editando?</option>
           {['Ismael', 'Daniel', 'Lorena', 'Rômulo', 'Escritório'].map((n) => <option key={n}>{n}</option>)}
         </select>
-        <button className="bt" onClick={() => exportar('automatico')} title="Renderiza exatamente o que a máquina montou">{aoRenderizar ? 'Renderizar como está' : 'Aprovar como está'}</button>
+        {bruto && aoRenderizar && (
+          <button className="bt" onClick={() => setEnvio({ cliente: ler('ultimo-cliente'), titulo: proj.titulo, observacoes: '' })}
+            title="A máquina transcreve e põe textos, B-roll e trilha no seu corte">🤖 Mandar para a máquina</button>
+        )}
+        {!bruto && <button className="bt" onClick={() => exportar('automatico')} title="Renderiza exatamente o que a máquina montou">{aoRenderizar ? 'Renderizar como está' : 'Aprovar como está'}</button>}
         <button className="bt pri" onClick={() => exportar('ajustado')} disabled={!ajustes.length}>{aoRenderizar ? 'Renderizar' : 'Exportar'} com {ajustes.length} ajuste{ajustes.length === 1 ? '' : 's'}</button>
       </header>
 
@@ -223,6 +271,54 @@ export function EditorLongo({ proj, aoVoltar, aoRenderizar }: { proj: ProjetoLon
               </ul>
             </div>
           )}
+          <div className="sec">
+            <h3>＋ Texto</h3>
+            <div className="campo">
+              <div className="linha" role="radiogroup">
+                {(['kw', 'lw', 'full'] as const).map((c) => (
+                  <button key={c} className={'bt mini' + (novo.camada === c ? ' pri' : '')} onClick={() => setNovo((n) => ({ ...n, camada: c, dur: c === 'lw' ? 4 : 3 }))}>
+                    {{ kw: 'Texto-chave', lw: 'Lower', full: 'Cartão' }[c]}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="campo">
+              <textarea rows={2} value={novo.texto} placeholder={novo.camada === 'lw' ? 'Ex.: Inscreva-se no canal' : 'Ex.: Somos *líderes*|não chefes'}
+                onChange={(e) => setNovo((n) => ({ ...n, texto: e.target.value }))} />
+            </div>
+            {novo.camada === 'full' && (
+              <div className="campo"><input type="text" value={novo.sub} placeholder="Linha de cima (opcional)" onChange={(e) => setNovo((n) => ({ ...n, sub: e.target.value }))} /></div>
+            )}
+            <div className="linha">
+              <select value={novo.dur} onChange={(e) => setNovo((n) => ({ ...n, dur: Number(e.target.value) }))}>
+                {[2, 2.5, 3, 4, 5, 6].map((d) => <option key={d} value={d}>{String(d).replace('.', ',')} s</option>)}
+              </select>
+              <button className="bt pri" onClick={porTexto}>Pôr na agulha ({tc(t)})</button>
+            </div>
+            <p className="dica"><b>*palavra*</b> fica na cor do cliente · <b>|</b> quebra a linha</p>
+          </div>
+          <div className="sec">
+            <h3>Cores dos textos</h3>
+            <div className="cores">
+              {([['destaque', 'Destaque'], ['destaque2', 'Destaque 2'], ['texto', 'Texto'], ['fundo', 'Fundo do cartão']] as const).map(([k, n]) => (
+                <label key={k}><input type="color" value={pal[k]} onPointerDown={marcarHist}
+                  onChange={(e) => mudarSemHist((p) => ({ ...p, paleta: { ...paletaDe(p), [k]: e.target.value } }))} /> {n}</label>
+              ))}
+              <label><input type="checkbox" checked={pal.degrade} onChange={(e) => mudarPaleta({ degrade: e.target.checked })} /> Degradê no destaque</label>
+            </div>
+            <div className="linha" style={{ marginTop: 8 }}>
+              <select value="" onChange={(e) => { const v = e.target.value; if (v === '__euforia') mudarPaleta(PALETA_EUFORIA); else if (salvas[v]) mudarPaleta(salvas[v]); }}>
+                <option value="">Usar cores de…</option>
+                <option value="__euforia">Grupo Euforia</option>
+                {Object.keys(salvas).sort().map((n) => <option key={n} value={n}>{n}</option>)}
+              </select>
+            </div>
+            <div className="linha" style={{ marginTop: 6 }}>
+              <input type="text" className="mini-in" value={nomePal} placeholder="Cliente" onChange={(e) => setNomePal(e.target.value)} />
+              <button className="bt mini" onClick={salvarPaleta}>Salvar cores</button>
+            </div>
+            {!bruto && L.elementos.some((e) => e.texto == null && e.camada !== 'broll') && <p className="dica">Muda só os textos feitos aqui; os da máquina já vêm desenhados.</p>}
+          </div>
           {bruto && (
             <div className="sec">
               <h3>Cortar o bruto</h3>
@@ -274,15 +370,30 @@ export function EditorLongo({ proj, aoVoltar, aoRenderizar }: { proj: ProjetoLon
             {el && (
               <>
                 <h3>{NOME_CAMADA[el.camada]} <span className="tempo">{tc(el.inicio)}–{tc(el.inicio + el.dur)}</span></h3>
-                <p style={{ margin: '0 0 10px' }}>{el.rotulo}</p>
-                {el.camada === 'broll' && (
+                {el.texto != null ? (
                   <>
                     <div className="campo">
+                      <label>Texto</label>
+                      <textarea rows={2} value={el.texto} onFocus={marcarHist}
+                        onChange={(e) => { const v = e.target.value; mudarSemHist((p) => ({ ...p, elementos: p.elementos.map((x) => (x._id === el._id ? { ...x, texto: v, rotulo: v.replace(/[*|]/g, ' ').replace(/\s+/g, ' ').trim() } : x)) })); }} />
+                    </div>
+                    {el.camada === 'full' && (
+                      <div className="campo">
+                        <label>Linha de cima</label>
+                        <input type="text" value={el.sub ?? ''} onFocus={marcarHist}
+                          onChange={(e) => { const v = e.target.value; mudarSemHist((p) => ({ ...p, elementos: p.elementos.map((x) => (x._id === el._id ? { ...x, sub: v || undefined } : x)) })); }} />
+                      </div>
+                    )}
+                  </>
+                ) : <p style={{ margin: '0 0 10px' }}>{el.rotulo}</p>}
+                {(el.camada === 'broll' || el.texto != null) && (
+                  <>
+                    {el.camada === 'broll' && <div className="campo">
                       <label>Arquivo</label>
                       <select value={el.arquivo} onChange={(e) => mudarEl((x) => ({ ...x, arquivo: e.target.value, rotulo: nomeArq(e.target.value) }))}>
                         {[...new Set([el.arquivo, ...bibl.map((b) => b.src)])].map((s) => <option key={s} value={s}>{nomeArq(s)}</option>)}
                       </select>
-                    </div>
+                    </div>}
                     <div className="campo">
                       <label>Duração</label>
                       <div className="linha">
@@ -306,7 +417,7 @@ export function EditorLongo({ proj, aoVoltar, aoRenderizar }: { proj: ProjetoLon
                   <button className="bt mini" onClick={() => irPara(el.inicio)}>Ver</button>
                   <button className="bt mini perigo" onClick={tirar}>Tirar {NOME_CAMADA[el.camada].toLowerCase()}</button>
                 </div>
-                {el.camada !== 'broll' && <p className="dica">Texto e animação vêm prontos da máquina: aqui dá para mover ou tirar. Para trocar o texto, peça ajuste à máquina.</p>}
+                {el.camada !== 'broll' && el.texto == null && <p className="dica">Texto e animação vêm prontos da máquina: aqui dá para mover ou tirar. Para trocar o texto, peça ajuste à máquina.</p>}
               </>
             )}
 
@@ -348,6 +459,24 @@ export function EditorLongo({ proj, aoVoltar, aoRenderizar }: { proj: ProjetoLon
       <LinhaLonga L={L} t={t} total={total} comFim={comFim} tocando={tocando} sel={sel} setSel={setSel} irPara={irPara} mexidos={mexidos}
         play={() => player.current?.toggle()} mudarSemHist={mudarSemHist} marcarHist={marcarHist} dividir={dividir} bruto={bruto} />
       {aviso && <div className="aviso">{aviso}</div>}
+      {envio && (
+        <div className="modal" onClick={() => setEnvio(null)}>
+          <div onClick={(e) => e.stopPropagation()}>
+            <h2>Mandar para a máquina</h2>
+            <p className="dica" style={{ marginTop: 0 }}>O corte ({tc(total)}) vai para a máquina de longos. Ela transcreve, põe textos-chave, lowers, cartões, B-roll, trilha e tela final nas cores do cliente, e o projeto volta na pasta EDITOR para revisar.</p>
+            <div className="campo"><label>Cliente</label>
+              <input type="text" value={envio.cliente} placeholder="Nome como está no Notion" onChange={(e) => setEnvio({ ...envio, cliente: e.target.value })} /></div>
+            <div className="campo"><label>Título do vídeo</label>
+              <input type="text" value={envio.titulo} onChange={(e) => setEnvio({ ...envio, titulo: e.target.value })} /></div>
+            <div className="campo"><label>Observações para a máquina (opcional)</label>
+              <textarea rows={3} value={envio.observacoes} placeholder="Ex.: sem trilha; destacar o nome do produto" onChange={(e) => setEnvio({ ...envio, observacoes: e.target.value })} /></div>
+            <div className="linha">
+              <button className="bt pri" onClick={() => { gravar('ultimo-cliente', envio.cliente.trim()); mandarMaquina(); }}>Mandar</button>
+              <button className="bt" onClick={() => setEnvio(null)}>Cancelar</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -440,7 +569,7 @@ function LinhaLonga({ L, t, total, comFim, tocando, sel, setSel, irPara, mexidos
                 <div key={e._id} className={`bloco ${tr.cls}` + ativo('el', e._id)} style={bloco(e.inicio, e.inicio + e.dur)}
                   onPointerDown={(ev) => arrastar(ev, e._id, 'mover')} title={e.rotulo}>
                   {e.rotulo}
-                  {e.camada === 'broll' && <span className="alca d" onPointerDown={(ev) => arrastar(ev, e._id, 'd')} />}
+                  {(e.camada === 'broll' || e.texto != null) && <span className="alca d" onPointerDown={(ev) => arrastar(ev, e._id, 'd')} />}
                 </div>
               ))}
             </div>

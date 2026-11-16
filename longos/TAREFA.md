@@ -18,6 +18,16 @@ Status "Editar" ou "Ajustar" no quadro 🎞️ Pedidos de Vídeos Longos IA. Tud
   - #ia-status (1559987978774777998): diretoria. Todo detalhe técnico de erro vai aqui.
 
 ## 1. Ver se há trabalho
+**0. Cortes que chegaram do Euforia Studio (16/11/2026).** Antes do quadro, liste com o Google Drive a pasta
+ENTRADA DO STUDIO (1twie2jOhRBxclY1sbXpLKqQIYJk5q5yu). Para cada `.json` ali (o `.mp4` de mesmo nome é o corte):
+leia o json (`cliente`, `titulo`, `observacoes`, `enviado_por`) e crie um pedido no quadro com Status "Editar", o
+cliente, o título, "Vídeo bruto" = link do `.mp4` e nas "Observações para a máquina":
+"CORTE DO STUDIO (feito à mão por <enviado_por>): NÃO tire nenhum trecho da fala, só os comandos ⛔ se houver.
+<observacoes>". Depois mova o `.json` e o `.mp4` para a subpasta `_recebidos` (crie se não houver; update_file com
+parentId). Cliente que não bate com nenhuma ficha: não crie o pedido, avise no #ia-status e deixe os arquivos lá.
+No pedido com "CORTE DO STUDIO", o plano mantém toda a fala (um segmento do início ao fim; o `texto.py
+--limpar-plano` só tira os comandos) e segue o resto igual (textos, lowers, cartões, B-roll, trilha, tela final).
+
 Consulte o quadro com notion-query-data-sources em modo view, SEM filtro (view://1f712af7-3e70-44b6-9dbc-d3a5f34134d3),
 e escolha você as linhas com Status "Editar" ou "Ajustar". Atenção: Status é um campo de seleção (select), não do tipo
 "status"; um filtro "status_is" volta vazio. Se não houver pedido, encerre. Atenda 1 pedido por rodada, o mais antigo.

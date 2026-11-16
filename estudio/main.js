@@ -151,15 +151,32 @@ async function renderizar(evento, { pasta, pacote }) {
     // longo: ffmpeg do motor, com o mesmo acabamento da máquina de longos
     const { renderizarLongo } = require('./longo');
     const nucleos = os.cpus().length;
+    // textos feitos no Studio: desenha cada um (Remotion) antes, e o ffmpeg põe por cima como os da máquina
+    const maquina = pacote.destino === 'maquina';
+    if (!maquina && longo.elementos.some((e) => e.texto != null)) await desenharTextos(longo, rendersDir, envia);
     const projArq = JSON.parse(fs.readFileSync(path.join(dir, fs.readdirSync(dir).find((f) => /^projeto-\d+\.json$/.test(f))), 'utf8'));
     const midia = path.join(dir, projArq.base || 'midia');
-    const saida = path.join(rendersDir, nome + '.mp4');
+    let saida = path.join(rendersDir, nome + '.mp4');
+    let pedido = null;
+    if (maquina) { // o corte vai para a ENTRADA DO STUDIO no Drive; a máquina de longos pega e termina
+      const limpo = (s) => String(s || '').replace(/[\\/:*?"<>|]/g, '').trim().slice(0, 80);
+      const base = `${limpo(pacote.cliente) || 'Sem cliente'} - ${limpo(pacote.titulo) || 'Sem título'} ${carimbo}`;
+      const entrada = pastaEntrada();
+      fs.mkdirSync(entrada, { recursive: true });
+      saida = path.join(entrada, base + '.mp4');
+      pedido = { versao: 1, cliente: pacote.cliente, titulo: pacote.titulo, observacoes: pacote.observacoes || '', enviado_por: pacote.editado_por,
+        pc: os.hostname(), enviado_em: new Date().toISOString(), video: base + '.mp4', duracao: longo.trechos.reduce((n, x) => n + x.fim - x.ini, 0),
+        cortes: longo.trechos.length - 1, origem: path.basename(longo.video || '') };
+      longo.cru = true;
+    }
     envia({ fase: 'preparando', progresso: 0, nucleos });
     const r = renderizarLongo(longo, midia, saida, (x) => envia({ fase: 'renderizando', progresso: x.progresso, restante: x.restante, nucleos }));
     cancelar = r.cancelar;
     try {
       const { segundos } = await r.pronto;
-      envia({ fase: 'pronto', progresso: 1, saida, segundos, nucleos });
+      // o .json por último: a máquina só pega o pedido quando ele aparece (o vídeo já terminou de gravar)
+      if (pedido) fs.writeFileSync(saida.replace(/\.mp4$/, '.json'), JSON.stringify(pedido, null, 1));
+      envia({ fase: 'pronto', progresso: 1, saida, segundos, nucleos, maquina });
       return { saida, segundos };
     } finally { cancelar = null; }
   }
@@ -193,6 +210,54 @@ async function renderizar(evento, { pasta, pacote }) {
   const segundos = Math.round((Date.now() - t0) / 1000);
   envia({ fase: 'pronto', progresso: 1, saida, segundos, nucleos: concurrency });
   return { saida, segundos };
+}
+
+/** Desenha os textos novos (texto-chave e lower com transparência, cartão em mp4) e troca o arquivo de cada um.
+ *  Guarda por conteúdo: o mesmo texto com as mesmas cores não é desenhado de novo. */
+async function desenharTextos(L, rendersDir, envia) {
+  const crypto = require('node:crypto');
+  const { ensureBrowser, selectComposition, renderMedia } = require('@remotion/renderer');
+  const browserExecutable = process.env.ESTUDIO_CHROME || null;
+  process.chdir(app.getPath('userData'));
+  envia({ fase: 'motor', progresso: 0 });
+  await ensureBrowser({ browserExecutable, onBrowserDownload: () => ({ version: null, onProgress: ({ percent }) => envia({ fase: 'motor', progresso: percent }) }) });
+  const pasta = path.join(rendersDir, 'textos');
+  fs.mkdirSync(pasta, { recursive: true });
+  const { w, h } = quadro(L);
+  const paleta = { fundo: '#050505', destaque: '#FF6518', destaque2: '#FEB089', texto: '#FFFFFF', degrade: true, ...(L.paleta || {}) };
+  const serveUrl = `http://127.0.0.1:${porta}/render/_/`;
+  const textos = L.elementos.filter((e) => e.texto != null);
+  const nucleos = os.cpus().length;
+  for (const [i, e] of textos.entries()) {
+    const props = { tipo: e.camada, texto: e.texto, sub: e.sub, dur: e.dur, paleta, largura: w, altura: h };
+    const alfa = e.camada !== 'full';
+    const saida = path.join(pasta, crypto.createHash('sha1').update(JSON.stringify(props)).digest('hex').slice(0, 16) + (alfa ? '.mov' : '.mp4'));
+    envia({ fase: 'preparando', progresso: i / textos.length, msg: `Desenhando os textos (${i + 1} de ${textos.length})` });
+    if (!fs.existsSync(saida)) {
+      const id = { kw: 'TextoChave', lw: 'Lower', full: 'Cartao' }[e.camada];
+      const composition = await selectComposition({ serveUrl, id, inputProps: props, browserExecutable });
+      const tmp = saida + '.parte' + (alfa ? '.mov' : '.mp4');
+      await renderMedia({
+        composition, serveUrl, inputProps: props, browserExecutable, outputLocation: tmp, concurrency: Math.max(1, Math.min(nucleos - 1, 8)),
+        ...(alfa ? { codec: 'prores', proResProfile: '4444', imageFormat: 'png', pixelFormat: 'yuva444p10le' } : { codec: 'h264', crf: 16 }),
+      });
+      fs.renameSync(tmp, saida);
+    }
+    e.arquivo = saida; // caminho completo: o longo.js aceita
+  }
+}
+/** ENTRADA DO STUDIO: ao lado da pasta EDITOR no Drive (a máquina lê de lá); sem Drive, nos Documentos. */
+function pastaEntrada() {
+  if (process.env.ESTUDIO_ENTRADA) return process.env.ESTUDIO_ENTRADA;
+  const r = raiz();
+  if (path.basename(r).toUpperCase() === 'EDITOR' && fs.existsSync(path.dirname(r))) return path.join(path.dirname(r), 'ENTRADA DO STUDIO');
+  return path.join(app.getPath('documents'), 'Euforia Studio', 'Para a máquina');
+}
+function quadro(L) { // igual ao do editor: até 1080p
+  const { largura: w, altura: h } = L;
+  if (w <= 1920 && h <= 1920) return { w, h };
+  const par = (x) => Math.round(x / 2) * 2;
+  return w >= h ? { w: 1920, h: par((h * 1920) / w) } : { w: par((w * 1920) / h), h: 1920 };
 }
 
 /* ---------------------------------------------------------------- janela */
