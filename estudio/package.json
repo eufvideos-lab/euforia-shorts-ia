@@ -1,7 +1,7 @@
 {
   "name": "euforia-studio",
   "productName": "Euforia Studio",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Editor da Euforia: ver, ajustar e renderizar no próprio PC os vídeos que a máquina monta",
   "main": "main.js",
   "author": "Grupo Euforia",
@@ -10,7 +10,7 @@
   "scripts": {
     "preparar": "node preparar.mjs",
     "dev": "node preparar.mjs && electron .",
-    "windows": "node preparar.mjs && electron-builder --win --x64 --publish never"
+    "windows": "node preparar.mjs && node ffmpeg-windows.mjs && electron-builder --win --x64 --publish never"
   },
   "dependencies": {
     "@remotion/renderer": "4.0.534"
@@ -26,6 +26,9 @@
     "files": [
       "main.js",
       "preload.js",
+      "longo.js",
+      "atualizar.js",
+      "novidades.json",
       "package.json",
       "build/**",
       "!build/**/*.map",
@@ -46,7 +49,13 @@
           ]
         }
       ],
-      "icon": "ui/icone.ico"
+      "icon": "ui/icone.ico",
+      "extraResources": [
+        {
+          "from": "ffmpeg-win/node_modules/ffmpeg-static/ffmpeg.exe",
+          "to": "ffmpeg/ffmpeg.exe"
+        }
+      ]
     },
     "nsis": {
       "oneClick": true,

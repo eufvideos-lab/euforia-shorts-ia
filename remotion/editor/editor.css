@@ -167,3 +167,20 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .st-anel .falta { fill: var(--fraco); font: 500 14px Inter, sans-serif; }
 @keyframes girar { to { transform: rotate(270deg); } }
 @media (prefers-reduced-motion: reduce) { .st-nucleos i, .st-anel .frente { animation: none !important; } }
+
+/* ================================================================ vídeo longo */
+.app.longo .palco .video { height: auto; width: 100%; max-height: 100%; aspect-ratio: 16 / 9; }
+.app.longo .tl { grid-template-rows: 36px 1fr; }
+.bloco.kw { background: #2b2410; border-color: #5c4a14; color: var(--legenda); cursor: grab; }
+.bloco.lw { background: #10291f; border-color: #1f5b37; color: #8fe0b1; cursor: grab; }
+.trilha.fala .bloco.co { overflow: hidden; }
+.trilha.fala .pal { position: absolute; top: 6px; font-size: 10px; color: #8a8580; white-space: nowrap; pointer-events: none; }
+.bib img { width: 100%; aspect-ratio: 16 / 10; object-fit: cover; display: block; }
+.st-card.longo { grid-column: span 2; }
+.st-card.longo .st-capa { aspect-ratio: 16 / 9.6; }
+.st-tipo { position: absolute; right: 10px; top: 10px; z-index: 1; font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 6px; background: #050505b3; color: var(--txt); letter-spacing: .04em; }
+.st-nova { background: #1a1008; border: 1px solid var(--brasa); border-radius: 12px; padding: 14px; display: grid; gap: 6px; margin-top: auto; margin-bottom: 10px; }
+.st-nova strong { font-family: Archivo, sans-serif; font-size: 15px; }
+.st-nova ul { margin: 0 0 4px; padding-left: 16px; font-size: 11px; color: var(--fraco); display: grid; gap: 3px; max-height: 120px; overflow: auto; }
+.st-nova + .st-pc { margin-top: 0; }
+.st-novas { margin: 8px 0 16px; padding-left: 18px; display: grid; gap: 8px; }

@@ -1,0 +1,9 @@
+{
+  "0.2.0": [
+    "Vídeos longos: o Studio abre o longo que a máquina montou, com a fala, B-roll, cartões, textos e lowers na linha do tempo.",
+    "Dá para tirar pedaços da fala (S divide no ponto da agulha), mover, tirar ou trocar elementos e mexer no volume da trilha.",
+    "O longo é renderizado no seu PC com o mesmo acabamento da máquina (voz tratada, trilha que abaixa quando a pessoa fala).",
+    "Atualização automática: quando sair versão nova, aparece o botão Atualizar. Não precisa mais baixar instalador."
+  ],
+  "0.1.0": ["Primeira versão: shorts da máquina, prévia, ajustes e render no PC."]
+}

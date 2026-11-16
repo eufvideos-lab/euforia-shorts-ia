@@ -5,7 +5,7 @@ import logo from './logo-claro.svg';
 import type { Projeto } from './projeto';
 
 export type ItemProjeto = {
-  pasta: string; arquivo: string; id: string; cliente: string; titulo: string; composicao: string;
+  pasta: string; arquivo: string; id: string; tipo?: 'short' | 'longo'; cliente: string; titulo: string; composicao: string;
   duracao: number; confianca: number | null; url: string; capa: string | null; inicioCapa: number;
   criadoEm: number; render: string | null; renderEm: number | null;
 };
@@ -20,7 +20,10 @@ type API = {
   renderizar(p: { pasta: string; pacote: Pacote }): Promise<{ saida: string; segundos: number }>;
   cancelar(): Promise<boolean>; mostrar(a: string): Promise<boolean>; abrir(a: string): Promise<string>;
   aoProgresso(cb: (p: Progresso) => void): () => void;
+  atualizacao?(): Promise<Atualizacao | null>; atualizar?(instalador: string): Promise<boolean>;
+  novidades?(): Promise<{ versao: string; itens: string[] } | null>; aoBaixar?(cb: (p: number) => void): () => void;
 };
+export type Atualizacao = { versao: string; novidades: string[]; instalador: string };
 declare global { interface Window { estudio?: API } }
 
 const dur = (s: number) => `${Math.floor(s / 60)}:${String(Math.round(s % 60)).padStart(2, '0')}`;
@@ -42,6 +45,25 @@ export function Estudio({ Editor, usar }: {
   const [itens, setItens] = useState<ItemProjeto[] | null>(null);
   const [aberto, setAberto] = useState<{ item: ItemProjeto; proj: Projeto } | null>(null);
   const [render, setRender] = useState<{ item: ItemProjeto; pacote: Pacote; p: Progresso } | null>(null);
+  const [nova, setNova] = useState<Atualizacao | null>(null);
+  const [baixando, setBaixando] = useState<number | null>(null);
+  const [novidades, setNovidades] = useState<{ versao: string; itens: string[] } | null>(null);
+
+  // versão nova no Drive: confere ao abrir e a cada 30 min
+  useEffect(() => {
+    if (!api.atualizacao) return;
+    const ver = () => api.atualizacao!().then(setNova).catch(() => {});
+    ver();
+    const id = setInterval(ver, 30 * 60 * 1000);
+    api.novidades?.().then((n) => n?.itens.length && setNovidades(n)).catch(() => {});
+    const tira = api.aoBaixar?.((p) => setBaixando(p));
+    return () => { clearInterval(id); tira?.(); };
+  }, [api]);
+  const atualizar = async () => {
+    if (!nova || !api.atualizar) return;
+    setBaixando(0);
+    try { await api.atualizar(nova.instalador); } catch { setBaixando(null); }
+  };
 
   const carregar = useCallback(async () => {
     setInfo(await api.info());
@@ -74,7 +96,16 @@ export function Estudio({ Editor, usar }: {
         ? <Editor key={aberto.item.url} proj={aberto.proj} aoVoltar={() => { setAberto(null); carregar(); }} aoRenderizar={(p) => renderizar(aberto.item, p)} />
         : <Inicio info={info} itens={itens} abrir={abrir} recarregar={carregar}
             trocarPasta={async () => { if (await api.escolherPasta()) carregar(); }}
-            assistir={(a) => api.abrir(a)} />}
+            assistir={(a) => api.abrir(a)} nova={nova} baixando={baixando} atualizar={atualizar} />}
+      {novidades && (
+        <div className="modal" onClick={() => setNovidades(null)}>
+          <div onClick={(e) => e.stopPropagation()}>
+            <h2>Novidades da versão {novidades.versao}</h2>
+            <ul className="st-novas">{novidades.itens.map((x, i) => <li key={i}>{x}</li>)}</ul>
+            <button className="bt pri" onClick={() => setNovidades(null)}>Bora</button>
+          </div>
+        </div>
+      )}
       {render && (
         <TelaRender r={render} info={info} api={api}
           fechar={() => setRender(null)}
@@ -85,9 +116,10 @@ export function Estudio({ Editor, usar }: {
 }
 
 /* ------------------------------------------------------------------ início: projetos */
-function Inicio({ info, itens, abrir, recarregar, trocarPasta, assistir }: {
+function Inicio({ info, itens, abrir, recarregar, trocarPasta, assistir, nova, baixando, atualizar }: {
   info: InfoPC | null; itens: ItemProjeto[] | null; abrir: (i: ItemProjeto) => void; recarregar: () => void;
   trocarPasta: () => void; assistir: (a: string) => void;
+  nova: Atualizacao | null; baixando: number | null; atualizar: () => void;
 }) {
   const [filtro, setFiltro] = useState<'todos' | 'revisar' | 'prontos'>('todos');
   const [busca, setBusca] = useState('');
@@ -105,6 +137,16 @@ function Inicio({ info, itens, abrir, recarregar, trocarPasta, assistir }: {
         <nav className="st-nav">
           <button className="ativo">▸ Projetos</button>
         </nav>
+        {nova && (
+          <div className="st-nova">
+            <div className="st-pc-rot">Versão nova</div>
+            <strong>Studio {nova.versao}</strong>
+            <ul>{nova.novidades.slice(0, 3).map((x, i) => <li key={i}>{x}</li>)}</ul>
+            <button className="bt pri" onClick={atualizar} disabled={baixando !== null}>
+              {baixando === null ? 'Atualizar agora' : baixando < 1 ? `Baixando ${Math.round(baixando * 100)}%` : 'Abrindo o instalador…'}
+            </button>
+          </div>
+        )}
         <div className="st-pc">
           <div className="st-pc-rot">Este computador</div>
           <strong>{info?.pc ?? '…'}</strong>
@@ -141,7 +183,7 @@ function Inicio({ info, itens, abrir, recarregar, trocarPasta, assistir }: {
           : !lista.length ? (
             <div className="st-vazio">
               <h2>{itens.length ? 'Nada neste filtro' : 'Nenhum projeto nesta pasta ainda'}</h2>
-              <p>{itens.length ? 'Troque o filtro ou a busca.' : 'Quando a máquina terminar um short, o projeto aparece aqui sozinho (a pasta é a do Drive). Também dá para escolher outra pasta.'}</p>
+              <p>{itens.length ? 'Troque o filtro ou a busca.' : 'Quando a máquina terminar um short ou um longo, o projeto aparece aqui sozinho (a pasta é a do Drive). Também dá para escolher outra pasta.'}</p>
               {!itens.length && <button className="bt pri" onClick={trocarPasta}>Escolher pasta</button>}
             </div>
           ) : (
@@ -157,7 +199,7 @@ function Inicio({ info, itens, abrir, recarregar, trocarPasta, assistir }: {
 function Cartao({ i, abrir, assistir }: { i: ItemProjeto; abrir: () => void; assistir: () => void }) {
   const conf = i.confianca;
   return (
-    <article className="st-card">
+    <article className={`st-card ${i.tipo === 'longo' ? 'longo' : ''}`}>
       <button className="st-capa" onClick={abrir} aria-label={`Abrir ${i.titulo}`}>
         {i.capa && (
           <video src={`${i.capa}#t=${i.inicioCapa + 1}`} muted preload="metadata"
@@ -165,6 +207,7 @@ function Cartao({ i, abrir, assistir }: { i: ItemProjeto; abrir: () => void; ass
             onMouseLeave={(e) => e.currentTarget.pause()} />
         )}
         <span className="st-dur">{dur(i.duracao)}</span>
+        <span className="st-tipo">{i.tipo === 'longo' ? 'LONGO' : 'SHORT'}</span>
         <span className={`st-status ${i.render ? 'ok' : ''}`}>{i.render ? '✓ Renderizado' : '● Para revisar'}</span>
       </button>
       <div className="st-card-txt">

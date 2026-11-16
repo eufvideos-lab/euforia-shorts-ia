@@ -90,15 +90,17 @@ function listar() {
       try {
         const full = path.join(r, pasta, arquivo);
         const p = JSON.parse(fs.readFileSync(full, 'utf8'));
+        const longo = p.tipo === 'longo' ? p.longo : null;
         const rendersDir = path.join(r, pasta, 'renders');
         const renders = fs.existsSync(rendersDir) ? fs.readdirSync(rendersDir).filter((f) => f.startsWith(p.id) && f.endsWith('.mp4')) : [];
         const ultimo = renders.map((f) => ({ f, t: fs.statSync(path.join(rendersDir, f)).mtimeMs })).sort((a, b) => b.t - a.t)[0];
         out.push({
-          pasta, arquivo, id: p.id, cliente: p.cliente, titulo: p.titulo, composicao: p.composicao,
-          duracao: p.props?.duration ?? 0, confianca: p.maquina?.nota_confianca ?? null,
+          pasta, arquivo, id: p.id, tipo: longo ? 'longo' : 'short', cliente: p.cliente, titulo: p.titulo, composicao: p.composicao,
+          duracao: longo ? longo.trechos.reduce((n, t) => n + t.fim - t.ini, 0) : p.props?.duration ?? 0,
+          confianca: p.maquina?.nota_confianca ?? null,
           url: `/projetos/${encodeURIComponent(pasta)}/${arquivo}`,
-          capa: p.props?.video ? `/projetos/${encodeURIComponent(pasta)}/${p.base || 'midia'}/${p.props.video}` : null,
-          inicioCapa: p.props?.segments?.[0]?.srcStart ?? 0,
+          capa: (longo?.previa || p.props?.video) ? `/projetos/${encodeURIComponent(pasta)}/${p.base || 'midia'}/${longo ? longo.previa : p.props.video}` : null,
+          inicioCapa: longo ? 4 : p.props?.segments?.[0]?.srcStart ?? 0,
           criadoEm: fs.statSync(full).mtimeMs,
           render: ultimo ? path.join(rendersDir, ultimo.f) : null,
           renderEm: ultimo?.t ?? null,
@@ -121,8 +123,25 @@ async function renderizar(evento, { pasta, pacote }) {
   const carimbo = new Date().toISOString().slice(0, 16).replace(/[:T]/g, '-');
   const nome = `${pacote.projeto} ${pacote.modo === 'automatico' ? 'maquina' : 'ajustado'} ${carimbo}`;
   fs.writeFileSync(path.join(rendersDir, nome + '.json'), JSON.stringify(pacote, null, 1));
-  const { props, ...semProps } = pacote;
+  const { props, longo, ...semProps } = pacote;
   fs.appendFileSync(path.join(dir, 'ajustes.jsonl'), JSON.stringify({ ...semProps, pc: os.hostname() }) + '\n');
+
+  if (pacote.tipo === 'longo') {
+    // longo: ffmpeg do motor, com o mesmo acabamento da máquina de longos
+    const { renderizarLongo } = require('./longo');
+    const nucleos = os.cpus().length;
+    const projArq = JSON.parse(fs.readFileSync(path.join(dir, fs.readdirSync(dir).find((f) => /^projeto-\d+\.json$/.test(f))), 'utf8'));
+    const midia = path.join(dir, projArq.base || 'midia');
+    const saida = path.join(rendersDir, nome + '.mp4');
+    envia({ fase: 'preparando', progresso: 0, nucleos });
+    const r = renderizarLongo(longo, midia, saida, (x) => envia({ fase: 'renderizando', progresso: x.progresso, restante: x.restante, nucleos }));
+    cancelar = r.cancelar;
+    try {
+      const { segundos } = await r.pronto;
+      envia({ fase: 'pronto', progresso: 1, saida, segundos, nucleos });
+      return { saida, segundos };
+    } finally { cancelar = null; }
+  }
 
   // o Chrome do render baixa só na primeira vez, para a pasta do app
   process.chdir(app.getPath('userData'));
@@ -165,6 +184,23 @@ function criarJanela() {
   w.loadURL(`http://127.0.0.1:${porta}/`);
   w.webContents.setWindowOpenHandler(({ url }) => { shell.openExternal(url); return { action: 'deny' }; });
 }
+
+const atualizacao = require('./atualizar');
+ipcMain.handle('estudio:atualizacao', () => atualizacao.procurar(app.getVersion(), raiz()));
+ipcMain.handle('estudio:atualizar', async (e, instalador) => {
+  await atualizacao.instalar(instalador, (p) => !e.sender.isDestroyed() && e.sender.send('estudio:baixando', p));
+  setTimeout(() => app.quit(), 800); // o instalador fecha e reabre o Studio na versão nova
+  return true;
+});
+// novidades: mostra uma vez, na primeira vez que a versão abre
+ipcMain.handle('estudio:novidades', () => {
+  const c = lerConfig();
+  const v = app.getVersion();
+  if (c.ultimaVersao === v) return null;
+  gravarConfig({ ...c, ultimaVersao: v });
+  if (!c.ultimaVersao) return null; // instalação nova: nada a contar
+  try { return { versao: v, itens: JSON.parse(fs.readFileSync(path.join(__dirname, 'novidades.json'), 'utf8'))[v] || [] }; } catch { return null; }
+});
 
 ipcMain.handle('estudio:info', () => {
   const cpus = os.cpus();

@@ -11,6 +11,17 @@ mostra a prévia, deixa ajustar e **renderiza com a força do próprio PC**.
   para a pasta do app. O vídeo sai em `<projeto>/renders/` e os ajustes vão para `<projeto>/ajustes.jsonl`
   (é o que a máquina vai ler para aprender). Como é a pasta do Drive, sobe sozinho.
 
+## Vídeos longos (0.2.0)
+- A máquina de longos grava o projeto com `python3 longos/montar.py PEDIDO --sem-gfx --studio "<EDITOR>/<pasta>" --cliente X --titulo Y`
+  (fala cortada em `base.mp4` + prévia leve, grafismos com transparência em .webm, B-rolls e trilha).
+- No Studio: tirar pedaços da fala (S divide na agulha), mover/tirar/trocar elementos, volume da trilha.
+- Render: `longo.js`, com o ffmpeg completo que vai no instalador (`resources/ffmpeg`), igual ao `montar.py`.
+
+## Atualização automática
+- Pasta do Drive `00 - SHORTS IA (MÁQUINA)/STUDIO`: instalador + `versao.json` (`{"versao","arquivo","novidades"}`).
+- O app confere ao abrir e a cada 30 min; mostra "Atualizar agora". Para lançar: subir o .exe novo e trocar o versao.json.
+- `novidades.json` aparece uma vez, na primeira abertura de cada versão.
+
 ## Gerar o instalador
 ```
 cd estudio
@@ -23,4 +34,5 @@ npm run windows        # precisa do wine em Linux; sai em dist/Euforia-Studio-Se
 ## Falta
 - A máquina de shorts gravar o projeto direto na pasta EDITOR (hoje: `projeto_editor.py` à mão).
 - Assinar o instalador (o Windows avisa "editor desconhecido" na primeira vez).
-- Atualização automática do app.
+- A máquina de longos rodar o `--studio` sozinha (hoje: à mão) e o modelo Nova Acrópole no Studio.
+- Trocar texto de cartão/texto-chave no Studio (hoje: só mover/tirar).

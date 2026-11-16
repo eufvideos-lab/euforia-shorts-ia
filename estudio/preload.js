@@ -9,6 +9,14 @@ contextBridge.exposeInMainWorld('estudio', {
   cancelar: () => ipcRenderer.invoke('estudio:cancelar'),
   mostrar: (arq) => ipcRenderer.invoke('estudio:mostrar', arq),
   abrir: (arq) => ipcRenderer.invoke('estudio:abrir', arq),
+  atualizacao: () => ipcRenderer.invoke('estudio:atualizacao'),
+  atualizar: (instalador) => ipcRenderer.invoke('estudio:atualizar', instalador),
+  novidades: () => ipcRenderer.invoke('estudio:novidades'),
+  aoBaixar: (cb) => {
+    const f = (_e, x) => cb(x);
+    ipcRenderer.on('estudio:baixando', f);
+    return () => ipcRenderer.removeListener('estudio:baixando', f);
+  },
   aoProgresso: (cb) => {
     const f = (_e, x) => cb(x);
     ipcRenderer.on('estudio:progresso', f);

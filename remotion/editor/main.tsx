@@ -7,6 +7,8 @@ import { ShortViral } from '../src/ShortViral';
 import { ShortInstitucional } from '../src/ShortInstitucional';
 import { anotar, diferencas, durSeg, limpar, removerCorte, type Projeto, type PropsEditor } from './projeto';
 import { Estudio, type Pacote } from './estudio';
+import { EditorLongo } from './longo';
+import type { ProjetoLongo } from './longo-projeto';
 import '@fontsource/montserrat/600.css';
 import '@fontsource/montserrat/700.css';
 import '@fontsource/montserrat/800.css';
@@ -49,8 +51,8 @@ function App() {
       .catch((e) => { if (new URLSearchParams(window.location.search).get('projeto')) setErro(`Não abriu o projeto (${e.message}).`); });
   }, [usar]);
 
-  if (window.estudio) return <Estudio Editor={Editor} usar={usarProjeto} />;
-  if (proj) return <Editor proj={proj} />;
+  if (window.estudio) return <Estudio Editor={EditorQualquer} usar={usarProjeto} />;
+  if (proj) return <EditorQualquer proj={proj} />;
   return (
     <div className="abrir">
       <div className="marca">euforia <b>editor</b></div>
@@ -69,6 +71,13 @@ function App() {
 }
 
 /* ------------------------------------------------------------------ editor */
+// short ou longo: o projeto diz (longos/studio.py grava "tipo": "longo")
+type PropsEditorTela = { proj: Projeto; aoVoltar?: () => void; aoRenderizar?: (p: Pacote) => void };
+function EditorQualquer(p: PropsEditorTela) {
+  const pl = p.proj as unknown as ProjetoLongo;
+  return pl.tipo === 'longo' ? <EditorLongo proj={pl} aoVoltar={p.aoVoltar} aoRenderizar={p.aoRenderizar} /> : <Editor {...p} />;
+}
+
 function Editor({ proj, aoVoltar, aoRenderizar }: { proj: Projeto; aoVoltar?: () => void; aoRenderizar?: (p: Pacote) => void }) {
   const original = useMemo(() => anotar(proj.props), [proj]);
   // estado + histórico juntos, para desfazer/refazer sem corrida
