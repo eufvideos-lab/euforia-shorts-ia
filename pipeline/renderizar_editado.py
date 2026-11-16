@@ -25,7 +25,8 @@ for a in exp.get('ajustes') or []:
 env = dict(os.environ)
 if not env.get('CHROME'):
     import glob
-    achados = glob.glob('/opt/pw-browsers/chromium_headless_shell-*/chrome-*/*headless*shell')
+    achados = glob.glob('/opt/pw-browsers/chromium_headless_shell-*/chrome-linux/headless_shell') + \
+        glob.glob('/opt/pw-browsers/chromium_headless_shell-*/chrome-headless-shell-linux64/chrome-headless-shell')  # igual ao produzir.py
     if achados:
         env['CHROME'] = achados[0]
 r = subprocess.run(['node', 'render.mjs', props_arq, saida, exp.get('composicao') or 'ShortViral'], cwd=REMOTION, env=env)

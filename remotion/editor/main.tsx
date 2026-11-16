@@ -35,13 +35,13 @@ function App() {
   }, []);
 
   useEffect(() => {
-    const u = new URLSearchParams(window.location.search).get('projeto');
-    if (!u) return;
+    // sem ?projeto=, tenta o projeto padrão ao lado do editor (demonstração)
+    const u = new URLSearchParams(window.location.search).get('projeto') ?? 'projetos/projeto-1.json';
     const abs = new URL(u, window.location.href).href;
     fetch(abs)
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
       .then((p) => usar(p, abs))
-      .catch((e) => setErro(`Não abriu o projeto (${e.message}).`));
+      .catch((e) => { if (new URLSearchParams(window.location.search).get('projeto')) setErro(`Não abriu o projeto (${e.message}).`); });
   }, [usar]);
 
   if (proj) return <Editor proj={proj} />;
