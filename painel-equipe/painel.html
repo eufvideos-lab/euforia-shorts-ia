@@ -410,6 +410,14 @@ td .sub{font-size:13px}
   .cv-voltar{display:inline-flex}
   .cv-m{max-width:90%}
 }
+.pub-box{border-top:1px solid var(--line,#ddd);padding-top:14px;display:flex;flex-direction:column;gap:8px}
+.pub{border:1px solid var(--line,#ddd);border-radius:12px;padding:10px 12px}
+.pub summary{cursor:pointer;line-height:1.35}
+.pub-in{display:flex;flex-direction:column;gap:6px;margin-top:10px}
+.pub-l{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.pub-l .btn{padding:4px 10px;font-size:13px;min-height:0}
+.pub-t{margin:0;font-weight:600}
+.pub-n{margin:0;color:var(--muted);font-size:13px;font-weight:400;background:none;padding:0}
 </style>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-14 -28 178 178'%3E%3Crect x='-14' y='-28' width='178' height='178' rx='36' fill='%23050505'/%3E%3Cpath fill='%23FF6518' d='M15,0L79.28,0A8,8 0 0 1 83.77,1.38L106.08,16.5A7.39,7.39 0 0 1 101.94,30L15,30A15,15 0 0 1 15,0Z M15,46L125.41,46A8,8 0 0 1 129.9,47.38L140.23,54.38A8,8 0 0 1 140.23,67.62L129.9,74.62A8,8 0 0 1 125.41,76L15,76A15,15 0 0 1 15,46Z M15,92L101.94,92A7.39,7.39 0 0 1 106.08,105.5L83.77,120.62A8,8 0 0 1 79.28,122L15,122A15,15 0 0 1 15,92Z'/%3E%3C/svg%3E"><style id="play-skin">h1,h2,h3{font-stretch:125%;letter-spacing:-.01em}.btn-main{text-shadow:none;box-shadow:none}</style></head>
 <body>
@@ -2119,7 +2127,9 @@ function marcarSlot(b){
     <form id="flink"><label for="lk-url"><b>Link da publicação</b></label>
       <input id="lk-url" type="url" inputmode="url" required placeholder="https://youtu.be/..." value="${esc((antes && antes.link) || '')}" style="width:100%">
       <p class="note">Cole o link do próprio vídeo ${nova === 'postado' ? 'publicado' : 'agendado'} (youtu.be/… ou youtube.com/watch…), não o do YouTube Studio. Sem o link não dá para marcar.</p>
-      <div class="actions"><button class="btn primary" type="submit">Marcar como ${qual}</button></div></form></div></aside>`;
+      <div class="actions"><button class="btn primary" type="submit">Marcar como ${qual}</button></div></form>
+    ${pubCaixa()}</div></aside>`;
+  pubCarregar(h.cliente, h.formato);
   setTimeout(() => { const i = $('#lk-url'); if (i) i.focus(); }, 50);
   $('#layer').onclick = ev => { if (ev.target.closest('[data-x]')) fechar(); };
   $('#layer').onsubmit = ev => {
@@ -2145,6 +2155,43 @@ async function gravarSlot(b, nova, link){
   }
   marcarSlot.n--; if (view === 'grade' && !$('#layer').innerHTML) render();
 }
+// Título e descrição que a máquina sugeriu (16/11/2026): aparecem na gaveta do horário e na de marcar Postado.
+// Vêm do fluxo "Painel | Título e descrição (V1)"; Shorts mostra os pacotes de short, o resto os de vídeo longo.
+const PUB = {};
+function pubCaixa(){ return `<div id="pub-box" class="pub-box"><p class="note">Buscando título e descrição sugeridos…</p></div>`; }
+async function pubCarregar(clienteId, formato){
+  const box = () => $('#pub-box');
+  if (!clienteId || !box()) return;
+  const tipo = formato === 'Shorts' || formato === 'Reels' ? 'short' : 'longo';
+  try {
+    if (!PUB[clienteId] || Date.now() - PUB[clienteId].em > 5 * 60e3) {
+      const r = await api('euforia-painel-publicacao', { cliente: clienteId });
+      if (!r || !r.ok) throw new Error('erro');
+      PUB[clienteId] = { em: Date.now(), lista: r.pacotes || [] };
+    }
+    const l = PUB[clienteId].lista.filter(p => p.tipo === tipo).slice(0, 4);
+    const b = box(); if (!b) return;
+    if (!l.length) { b.innerHTML = `<p class="note">Ainda não há título e descrição sugeridos para ${tipo === 'short' ? 'shorts' : 'vídeo longo'} deste cliente. Eles chegam junto com os vídeos que a máquina entrega.</p>`; return; }
+    b.innerHTML = `<p class="eyebrow" style="margin:0 0 8px">Título e descrição sugeridos</p>` + l.map((p, i) => `<details class="pub" ${i ? '' : 'open'}>
+      <summary><b>${esc(p.titulo)}</b><span class="pub-n"> · ${esc(p.nome || '')}${p.criado ? ' · ' + esc(fmt(p.criado)) : ''}</span></summary>
+      <div class="pub-in">
+        <div class="pub-l"><span>Título</span><button class="btn" type="button" data-pubc="${i}|titulo">Copiar</button></div>
+        <p class="pub-t">${esc(p.titulo)}</p>
+        ${(p.outros || []).length ? `<p class="pub-n">Outras opções:</p>${p.outros.map((o, j) => `<div class="pub-l"><span>${esc(o)}</span><button class="btn" type="button" data-pubc="${i}|outro${j}">Copiar</button></div>`).join('')}` : ''}
+        <div class="pub-l"><span>Descrição</span><button class="btn" type="button" data-pubc="${i}|descricao">Copiar</button></div>
+        <textarea readonly rows="6" style="width:100%">${esc(p.descricao)}</textarea>
+        ${p.tags ? `<div class="pub-l"><span>Tags</span><button class="btn" type="button" data-pubc="${i}|tags">Copiar</button></div><p class="pub-n">${esc(p.tags)}</p>` : ''}
+        ${p.comentario ? `<div class="pub-l"><span>Comentário para fixar</span><button class="btn" type="button" data-pubc="${i}|comentario">Copiar</button></div><p class="pub-n">${esc(p.comentario)}</p>` : ''}
+        ${p.link ? `<p class="pub-n"><a href="${esc(p.link)}" target="_blank" rel="noopener">Abrir o arquivo no Drive</a></p>` : ''}
+      </div></details>`).join('') + `<p class="note">Sugestão da máquina, feita a partir da fala do vídeo. Confira antes de publicar.</p>`;
+    b.onclick = e => {
+      const c = e.target.closest('[data-pubc]'); if (!c) return;
+      e.stopPropagation();
+      const [i, k] = c.dataset.pubc.split('|'), p = l[Number(i)];
+      copiar(k.startsWith('outro') ? p.outros[Number(k.slice(5))] : p[k] || '');
+    };
+  } catch (err) { const b = box(); if (b) b.innerHTML = '<p class="note">Não deu para buscar o título e a descrição agora.</p>'; }
+}
 function abrirSlot(id, novoCliente){
   const h = id ? G.horarios.find(x => x.id === id) : null;
   if (id && !h) return;
@@ -2166,8 +2213,10 @@ function abrirSlot(id, novoCliente){
     <div><p class="eyebrow">Grade de postagem</p><h2 id="d-t" style="font-size:26px">${h ? esc(c.nome) + ' · ' + esc(h.dia.slice(2)) : 'Adicionar dia de postagem'}</h2></div>
     ${h ? `<dl class="dl"><dt>Onde</dt><dd>${esc(h.plataforma)} · ${esc(h.formato)}${h.qtd > 1 ? ' ×' + h.qtd : ''}</dd><dt>Horário</dt><dd>${h.horario ? esc(h.horario) : 'sem horário fixo'}</dd><dt>Situação</dt><dd>${esc(h.status)}</dd>
       ${c.faixa || c.atencao ? `<dt>Cliente</dt><dd>${c.faixa ? 'Faixa ' + esc(c.faixa) : ''}${c.atencao ? ' · 🔴 atenção redobrada' : ''}</dd>` : ''}${h.nota ? `<dt>Nota</dt><dd>${esc(h.nota)}</dd>` : ''}</dl>` : ''}
+    ${h ? pubCaixa() : ''}
     ${form || '<p class="note">Quem ajusta a grade é o Ismael ou o Rômulo. Viu algo errado? Avise um deles.</p>'}
   </div></aside>`;
+  if (h) pubCarregar(h.cliente, h.formato);
   const mandar = async (acao, slot) => {
     if (ocupado) return; ocupado = true; document.querySelectorAll('#layer .btn').forEach(b => b.disabled = true);
     try {
@@ -3153,6 +3202,9 @@ function demoApi(path, b){
     return wait({ ok: true });
   }
   if (path === 'euforia-painel-respostas') { if (b && b.acao === 'dispensar') return wait({ ok: true }); return wait(DEMO_R); }
+  if (path === 'euforia-painel-publicacao') return wait({ ok: true, pacotes: [
+    { tipo: 'longo', nome: 'Vídeo 00', titulo: 'Dívida com tributos não é falta de dinheiro: é gestão', outros: ['Por que sua empresa parcela o imposto e volta a dever'], descricao: 'Sua empresa parcela os tributos e volta a dever?\n\nCapítulos:\n0:00 O problema não é o número\n0:28 Quem sou eu', tags: 'tributos empresa, dívida tributária, gestão tributária', comentario: 'A última dívida da sua empresa foi falta de dinheiro ou uma decisão adiada?', criado: '2026-11-16' },
+    { tipo: 'short', nome: 'SHORT 1', titulo: 'Sua empresa parcela, paga e volta a dever?', outros: [], descricao: 'O número é o sintoma: a causa está nas decisões. #shorts #tributos', tags: 'dívida tributária', criado: '2026-11-16' }] });
   if (path === 'euforia-painel-grade') {
     if (b.acao === 'listar') return wait(JSON.parse(JSON.stringify(DEMO_G)));
     if (b.acao === 'marcar') { const k = b.slot.id + '|' + b.data, m = { status: b.marca, por: DEMO_D.nome, quando: '26/10 ' + new Date().toTimeString().slice(0, 5), link: b.link || '' }; if (b.marca) DEMO_G.marcas[k] = m; else delete DEMO_G.marcas[k]; return wait({ ok: true, marca: Object.assign({ chave: k, slot: b.slot.id, dia: b.data }, m) }); }
