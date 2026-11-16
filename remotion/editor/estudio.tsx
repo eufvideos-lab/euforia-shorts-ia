@@ -7,7 +7,7 @@ import type { Projeto } from './projeto';
 export type ItemProjeto = {
   pasta: string; arquivo: string; id: string; tipo?: 'short' | 'longo'; cliente: string; titulo: string; composicao: string;
   duracao: number; confianca: number | null; url: string; capa: string | null; inicioCapa: number;
-  criadoEm: number; render: string | null; renderEm: number | null;
+  criadoEm: number; render: string | null; renderEm: number | null; revisao?: string | null;
 };
 export type InfoPC = { versao: string; nucleos: number; cpu: string; memoria: number; raiz: string; raizExiste: boolean; pc: string };
 export type Progresso = {
@@ -121,10 +121,10 @@ function Inicio({ info, itens, abrir, recarregar, trocarPasta, assistir, nova, b
   trocarPasta: () => void; assistir: (a: string) => void;
   nova: Atualizacao | null; baixando: number | null; atualizar: () => void;
 }) {
-  const [filtro, setFiltro] = useState<'todos' | 'revisar' | 'prontos'>('todos');
+  const [filtro, setFiltro] = useState<'todos' | 'obrigatorios' | 'revisar' | 'prontos'>('todos');
   const [busca, setBusca] = useState('');
   const lista = useMemo(() => (itens ?? [])
-    .filter((i) => (filtro === 'todos' ? true : filtro === 'revisar' ? !i.render : !!i.render))
+    .filter((i) => (filtro === 'todos' ? true : filtro === 'obrigatorios' ? !!i.revisao && !i.render : filtro === 'revisar' ? !i.render : !!i.render))
     .filter((i) => !busca || `${i.cliente} ${i.titulo}`.toLowerCase().includes(busca.toLowerCase())), [itens, filtro, busca]);
   const nRevisar = (itens ?? []).filter((i) => !i.render).length;
   const nProntos = (itens ?? []).length - nRevisar;
@@ -172,7 +172,7 @@ function Inicio({ info, itens, abrir, recarregar, trocarPasta, assistir, nova, b
         </header>
 
         <div className="st-filtros">
-          {([['todos', 'Todos'], ['revisar', 'Para revisar'], ['prontos', 'Renderizados']] as const).map(([k, n]) => (
+          {([['todos', 'Todos'], ['obrigatorios', '🔎 Revisão obrigatória'], ['revisar', 'Para revisar'], ['prontos', 'Renderizados']] as const).map(([k, n]) => (
             <button key={k} className={filtro === k ? 'on' : ''} onClick={() => setFiltro(k)}>{n}</button>
           ))}
           <span className="st-pasta" title={info?.raiz}>📁 {info?.raiz}</span>
@@ -208,11 +208,12 @@ function Cartao({ i, abrir, assistir }: { i: ItemProjeto; abrir: () => void; ass
         )}
         <span className="st-dur">{dur(i.duracao)}</span>
         <span className="st-tipo">{i.tipo === 'longo' ? 'LONGO' : 'SHORT'}</span>
-        <span className={`st-status ${i.render ? 'ok' : ''}`}>{i.render ? '✓ Renderizado' : '● Para revisar'}</span>
+        <span className={`st-status ${i.render ? 'ok' : ''}`}>{i.render ? '✓ Renderizado' : i.revisao ? '🔎 Revisão obrigatória' : '● Para revisar'}</span>
       </button>
       <div className="st-card-txt">
         <small>{i.cliente}</small>
         <h3>{i.titulo}</h3>
+        {i.revisao && !i.render && <div className="st-motivo" title="A Lorena revisa antes de postar">Lorena · {i.revisao}</div>}
         {conf != null && (
           <div className="st-conf" title="Confiança da máquina neste corte">
             <div><i style={{ width: `${Math.round(conf * 100)}%`, background: conf < 0.6 ? 'var(--brasa)' : 'var(--laranja)' }} /></div>

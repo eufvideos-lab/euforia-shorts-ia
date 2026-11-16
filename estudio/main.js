@@ -70,7 +70,7 @@ const servidor = http.createServer((req, res) => {
     // /render/<pasta do pedido>/public/... = mídia do pedido; o resto = site do Remotion
     const [, , pasta, ...resto] = p.split('/');
     const rel = resto.join('/');
-    if (rel.startsWith('public/')) arq = dentro(path.join(raiz(), pasta, 'midia'), rel.slice('public/'.length));
+    if (rel.startsWith('public/')) arq = dentro(path.join(raiz(), pasta, basePasta(pasta)), rel.slice('public/'.length));
     else arq = dentro(BUNDLE, rel || 'index.html');
   } else arq = dentro(EDITOR, p === '/' ? 'index.html' : p.slice(1));
   if (!arq) { res.writeHead(403); return res.end(); }
@@ -78,6 +78,15 @@ const servidor = http.createServer((req, res) => {
 });
 
 /* ---------------------------------------------------------------- projetos */
+// pasta da mídia do projeto: "midia" (como sai da máquina) ou "." (projeto plano, como sobe para o Drive)
+function basePasta(pasta) {
+  try {
+    const dir = path.join(raiz(), pasta);
+    const pj = fs.readdirSync(dir).find((f) => /^projeto-\d+\.json$/.test(f));
+    return JSON.parse(fs.readFileSync(path.join(dir, pj), 'utf8')).base || 'midia';
+  } catch { return 'midia'; }
+}
+
 function listar() {
   const r = raiz();
   const out = [];
@@ -104,6 +113,7 @@ function listar() {
           criadoEm: fs.statSync(full).mtimeMs,
           render: ultimo ? path.join(rendersDir, ultimo.f) : null,
           renderEm: ultimo?.t ?? null,
+          revisao: p.revisao?.obrigatoria ? (p.revisao.motivo || 'revisão obrigatória') : null,
         });
       } catch { /* projeto quebrado: ignora */ }
     }

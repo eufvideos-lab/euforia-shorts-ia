@@ -69,6 +69,15 @@ apt-get install -y -q libegl1 libgles2 >/dev/null 2>&1 || (apt-get update -q >/d
    IMPORTANTE: nunca encerre a sua vez esperando um comando em segundo plano. Rode em primeiro plano com timeout
    longo, ou fique conferindo com `sleep 120` em loop até terminar.
 9. Confira o final: 12 quadros espalhados (cartões, textos, B-rolls, tela final) e a duração.
+9b. Projeto do Euforia Studio (16/11/2026; a equipe abre, ajusta e renderiza no PC):
+   `python3 longos/montar.py pedidos/<id-curto> --sem-gfx --studio pedidos/<id-curto>/studio --cliente "<nome>" --titulo "<título>"`
+   (não renderiza de novo: só monta o projeto, ~2 min). Fora o modelo Nova Acrópole, que ainda não abre no Studio.
+   Crie com o Google Drive a pasta "<Cliente> - <id-curto>" dentro de EDITOR (1Je4ZPgF6m3ocRinFlMNewtyljHD7unLX) e rode
+   `python3 pipeline/studio_drive.py pedidos/<id-curto>/studio <id da pasta> [--revisar "<motivo>"]`.
+   **Revisão obrigatória da Lorena** (decisão do Henrique, 16/11/2026). Vale se QUALQUER um for verdade:
+   cliente com "🔴 Atenção redobrada" marcado na ficha; cliente com "📄 Contrato início" há menos de 30 dias.
+   O motivo é curto: "cliente 🔴", "cliente novo". O resto a equipe revisa por amostragem.
+   Se falhar, não trava a entrega: siga e conte no #ia-status.
 10. Pasta de entrega: a do pedido ou, sem ela, crie "VIDEO LONGO IA - <AAAA-MM-DD>" ao lado do bruto no Drive.
     Suba o final EM 1080p, sem comprimir, com
     `python3 -c "import sys; sys.path.insert(0,'pipeline'); import ponte; print(ponte.subir_grande('pedidos/<id>/final.mp4','<pasta>','<Cliente> - <título>.mp4'))"`
@@ -77,11 +86,14 @@ apt-get install -y -q libegl1 libgles2 >/dev/null 2>&1 || (apt-get update -q >/d
     Suba também o `plano.json` para a pasta da máquina (1rF9yJwVPCp4IvTHfb6Gm3YbdLhWdX3eI) com o nome
     `plano-longo-<id-curto>.json` (é o que permite um "Ajustar" depois).
 11. Atualize o pedido: "Vídeo pronto" (link), "Entregue em" (agora), Status "Pronto para revisão" e um resumo
-    curto no log (duração, quantos cortes, B-rolls, dúvidas). Cole no log também as seções "Comandos de corte" e
+    curto no log (duração, quantos cortes, B-rolls, dúvidas). Com revisão obrigatória, a 1ª linha do log é
+    "🔎 Revisão obrigatória (Lorena): <motivo>". Cole no log também as seções "Comandos de corte" e
     "Palavras corrigidas" do `relatorio.md` (o revisor confere em 10 s) e as frases do roteiro não achadas.
     Palavra errada que a equipe achar na revisão vira uma linha em `correcoes` na ficha do cliente.
 12. Avise no #longos-automáticos, marcando todos (@everyone), assinando como Érica:
     "@everyone 🎞️ Vídeo longo pronto: <Cliente> (<duração>). Para revisão: <link>. — Érica, time de suporte, Grupo Euforia"
+    Com revisão obrigatória, acrescente "🔎 Revisão obrigatória da @Lorena (<motivo>)" e
+    "Abrir no Euforia Studio: pasta EDITOR / <Cliente> - <id-curto>".
 
 ## Regras
 - Nunca mande nada para cliente. A entrega é interna (Drive + Notion + Discord).
