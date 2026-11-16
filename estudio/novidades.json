@@ -1,4 +1,9 @@
 {
+  "0.3.0": [
+    "Novo projeto com bruto: escolha um vídeo do PC e corte à mão, vendo a onda do áudio (S divide, Delete tira).",
+    "Tirar silêncios: corta as pausas longas do bruto de uma vez (Ctrl+Z desfaz).",
+    "O corte sai renderizado em 1080p, com voz tratada e no volume do YouTube. O bruto original não é copiado nem mexido."
+  ],
   "0.2.1": [
     "Selo 🔎 Revisão obrigatória: a máquina marca os vídeos que a Lorena precisa revisar (cliente 🔴, confiança baixa ou cliente novo) e mostra o motivo no cartão.",
     "Filtro novo \"Revisão obrigatória\" na tela de projetos.",

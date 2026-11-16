@@ -5,8 +5,8 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Player, type PlayerRef } from '@remotion/player';
 import { AbsoluteFill, Audio, Img, Sequence, Video, interpolate, staticFile, useCurrentFrame } from 'remotion';
 import {
-  NOME_CAMADA, anotarLongo, diferencasLongo, dividirTrecho, duracao, inicios, limparLongo, palavrasSaida, removerTrecho,
-  sobreposicoes, tc, textoDoTrecho, type Camada, type LongoEd, type ProjetoLongo,
+  NOME_CAMADA, anotarLongo, diferencasLongo, dividirTrecho, duracao, inicios, limparLongo, ondaNormal, palavrasSaida, removerTrecho,
+  sobreposicoes, tc, textoDoTrecho, tirarSilencios, type Camada, type LongoEd, type ProjetoLongo,
 } from './longo-projeto';
 import type { Pacote } from './estudio';
 
@@ -116,6 +116,14 @@ export function EditorLongo({ proj, aoVoltar, aoRenderizar }: { proj: ProjetoLon
     setSel({ tipo: 'tr', id });
     avisar('Trecho dividido na agulha');
   };
+  const bruto = proj.origem === 'bruto';
+  const silencios = () => {
+    const r = tirarSilencios(L, () => `tn${++contador.current}`);
+    if (!r.cortes) { avisar('Não achei pausa longa para tirar'); return; }
+    mudar(() => r.L);
+    setSel(null);
+    avisar(`Tirei ${r.cortes} pausa${r.cortes === 1 ? '' : 's'} (${r.segundos.toFixed(1)} s). Ctrl+Z desfaz.`);
+  };
 
   useEffect(() => {
     const k = (e: KeyboardEvent) => {
@@ -181,7 +189,7 @@ export function EditorLongo({ proj, aoVoltar, aoRenderizar }: { proj: ProjetoLon
         <button className="bt" onClick={refazer} disabled={!est.depois.length} title="Ctrl+Shift+Z">↷ Refazer</button>
         <div className="titulo">
           <strong>{proj.titulo}</strong>
-          <span>{proj.cliente} · {tc(total)} · Vídeo longo</span>
+          <span>{bruto ? `Bruto · ${tc(total)} de ${tc(original.trechos.reduce((n, x) => n + x.fim - x.ini, 0))}` : `${proj.cliente} · ${tc(total)} · Vídeo longo`}</span>
         </div>
         <select className="quem" value={quem} onChange={(e) => { setQuem(e.target.value); gravar('editor-quem', e.target.value); }}>
           <option value="">Quem está editando?</option>
@@ -215,7 +223,17 @@ export function EditorLongo({ proj, aoVoltar, aoRenderizar }: { proj: ProjetoLon
               </ul>
             </div>
           )}
-          <div className="sec">
+          {bruto && (
+            <div className="sec">
+              <h3>Cortar o bruto</h3>
+              <p className="dica" style={{ margin: 0 }}>Toque e pare a agulha onde quer cortar, aperte <b>S</b> para dividir e <b>Delete</b> para tirar o pedaço.
+                A onda mostra onde tem fala. <b>Tirar silêncios</b> corta as pausas longas de uma vez.</p>
+              <div className="linha" style={{ marginTop: 10 }}>
+                <button className="bt" onClick={silencios} disabled={!L.onda}>✂ Tirar silêncios</button>
+              </div>
+            </div>
+          )}
+          {bibl.length > 0 && <div className="sec">
             <h3>Biblioteca de B-roll</h3>
             <p className="dica" style={{ margin: '-4px 0 10px' }}>Clique para pôr no ponto onde o vídeo está.</p>
             <div className="bib">
@@ -228,7 +246,7 @@ export function EditorLongo({ proj, aoVoltar, aoRenderizar }: { proj: ProjetoLon
                 </button>
               ))}
             </div>
-          </div>
+          </div>}
         </aside>
 
         <main className="palco">
@@ -328,7 +346,7 @@ export function EditorLongo({ proj, aoVoltar, aoRenderizar }: { proj: ProjetoLon
       </div>
 
       <LinhaLonga L={L} t={t} total={total} comFim={comFim} tocando={tocando} sel={sel} setSel={setSel} irPara={irPara} mexidos={mexidos}
-        play={() => player.current?.toggle()} mudarSemHist={mudarSemHist} marcarHist={marcarHist} dividir={dividir} />
+        play={() => player.current?.toggle()} mudarSemHist={mudarSemHist} marcarHist={marcarHist} dividir={dividir} bruto={bruto} />
       {aviso && <div className="aviso">{aviso}</div>}
     </div>
   );
@@ -342,9 +360,9 @@ const TRILHAS: { camada: Camada; nome: string; cls: string }[] = [
   { camada: 'lw', nome: 'Lowers', cls: 'lw' },
 ];
 
-function LinhaLonga({ L, t, total, comFim, tocando, sel, setSel, irPara, mexidos, play, mudarSemHist, marcarHist, dividir }: {
+function LinhaLonga({ L, t, total, comFim, tocando, sel, setSel, irPara, mexidos, play, mudarSemHist, marcarHist, dividir, bruto }: {
   L: LongoEd; t: number; total: number; comFim: number; tocando: boolean; sel: Sel; setSel: (s: Sel) => void; irPara: (s: number) => void;
-  mexidos: Set<string>; play: () => void; mudarSemHist: (f: (p: LongoEd) => LongoEd) => void; marcarHist: () => void; dividir: () => void;
+  mexidos: Set<string>; play: () => void; mudarSemHist: (f: (p: LongoEd) => LongoEd) => void; marcarHist: () => void; dividir: () => void; bruto?: boolean;
 }) {
   const corpo = useRef<HTMLDivElement>(null);
   const [pps, setPps] = useState(14); // pixels por segundo
@@ -358,6 +376,7 @@ function LinhaLonga({ L, t, total, comFim, tocando, sel, setSel, irPara, mexidos
   const bloco = (ini: number, fim: number) => ({ left: x(ini), width: Math.max(3, x(fim) - x(ini) - 1) });
   const os_ = inicios(L);
   const palavras = useMemo(() => palavrasSaida(L), [L]);
+  const picos = useMemo(() => (L.onda ? ondaNormal(L.onda) : null), [L.onda]);
 
   const arrastar = (e: React.PointerEvent, id: string, modo: 'mover' | 'd') => {
     e.stopPropagation();
@@ -407,14 +426,15 @@ function LinhaLonga({ L, t, total, comFim, tocando, sel, setSel, irPara, mexidos
               <div key={s._id} className={'bloco co' + ativo('tr', s._id)} style={bloco(os_[i], os_[i] + s.fim - s.ini)}
                 onClick={(e) => { setSel({ tipo: 'tr', id: s._id }); irPara(os_[i] + (e.clientX - e.currentTarget.getBoundingClientRect().left) / pps); }}
                 title={textoDoTrecho(L, s.ini, s.fim, 60)}>
-                {pps >= 45 ? palavras.filter((p) => p.t >= os_[i] && p.t < os_[i] + s.fim - s.ini).map((p, k) => (
+                {picos && L.onda && <Onda picos={picos} passo={L.onda.passo} ini={s.ini} fim={s.fim} pps={pps} />}
+                {picos ? null : pps >= 45 ? palavras.filter((p) => p.t >= os_[i] && p.t < os_[i] + s.fim - s.ini).map((p, k) => (
                   <span key={k} className="pal" style={{ left: x(p.t - os_[i]) }}>{p.w}</span>
                 )) : textoDoTrecho(L, s.ini, s.fim, 6)}
               </div>
             ))}
             {L.fim && <div className="bloco fr" style={bloco(total, comFim)}>tela final</div>}
           </div>
-          {TRILHAS.map((tr) => (
+          {TRILHAS.filter((tr) => !bruto || L.elementos.some((e) => e.camada === tr.camada)).map((tr) => (
             <div key={tr.camada} className="trilha"><div className="trilha-nome">{tr.nome}</div>
               {L.elementos.filter((e) => e.camada === tr.camada).map((e) => (
                 <div key={e._id} className={`bloco ${tr.cls}` + ativo('el', e._id)} style={bloco(e.inicio, e.inicio + e.dur)}
@@ -429,5 +449,27 @@ function LinhaLonga({ L, t, total, comFim, tocando, sel, setSel, irPara, mexidos
         </div>
       </div>
     </section>
+  );
+}
+
+/** Onda do áudio do bruto dentro do trecho (uma barra a cada 2 px, do maior pico daquele pedaço). */
+function Onda({ picos, passo, ini, fim, pps }: { picos: number[]; passo: number; ini: number; fim: number; pps: number }) {
+  const w = Math.max(1, (fim - ini) * pps);
+  const d = useMemo(() => {
+    const cols = Math.max(1, Math.floor(w / 2));
+    let s = '';
+    for (let c = 0; c < cols; c++) {
+      const a = Math.floor((ini + ((fim - ini) * c) / cols) / passo), b = Math.max(a + 1, Math.floor((ini + ((fim - ini) * (c + 1)) / cols) / passo));
+      let m = 0;
+      for (let k = a; k < b; k++) m = Math.max(m, picos[k] ?? 0);
+      const h = Math.max(0.5, m * 13);
+      s += `M${c * 2 + 1} ${14 - h}V${14 + h}`;
+    }
+    return s;
+  }, [picos, passo, ini, fim, w]);
+  return (
+    <svg className="onda" width={w} height={28} viewBox={`0 0 ${w} 28`} preserveAspectRatio="none" aria-hidden>
+      <path d={d} />
+    </svg>
   );
 }

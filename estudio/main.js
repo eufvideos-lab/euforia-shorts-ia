@@ -25,6 +25,14 @@ function gravarConfig(c) {
   fs.mkdirSync(path.dirname(CONFIG()), { recursive: true });
   fs.writeFileSync(CONFIG(), JSON.stringify(c, null, 1));
 }
+// Brutos abertos no Studio ficam no PC (não no Drive): a prévia de um bruto de 1 h passa de 200 MB.
+const BRUTOS = () => process.env.ESTUDIO_BRUTOS || path.join(app.getPath('documents'), 'Euforia Studio', 'Brutos');
+const PREFIXO_BRUTO = '@brutos/';
+/** Pasta de um projeto pelo nome da lista ("<pasta>" na raiz ou "@brutos/<pasta>" no PC). */
+function pastaDir(pasta) {
+  return pasta.startsWith(PREFIXO_BRUTO) ? dentro(BRUTOS(), pasta.slice(PREFIXO_BRUTO.length)) : dentro(raiz(), pasta);
+}
+
 function raiz() {
   const c = lerConfig();
   if (process.env.ESTUDIO_PASTA) return process.env.ESTUDIO_PASTA;
@@ -65,12 +73,13 @@ const servidor = http.createServer((req, res) => {
   const url = new URL(req.url, 'http://x');
   const p = decodeURIComponent(url.pathname);
   let arq = null;
-  if (p.startsWith('/projetos/')) arq = dentro(raiz(), p.slice('/projetos/'.length));
+  if (p.startsWith('/projetos/' + PREFIXO_BRUTO)) arq = dentro(BRUTOS(), p.slice(('/projetos/' + PREFIXO_BRUTO).length));
+  else if (p.startsWith('/projetos/')) arq = dentro(raiz(), p.slice('/projetos/'.length));
   else if (p.startsWith('/render/')) {
     // /render/<pasta do pedido>/public/... = mídia do pedido; o resto = site do Remotion
     const [, , pasta, ...resto] = p.split('/');
     const rel = resto.join('/');
-    if (rel.startsWith('public/')) arq = dentro(path.join(raiz(), pasta, basePasta(pasta)), rel.slice('public/'.length));
+    if (rel.startsWith('public/')) arq = dentro(path.join(pastaDir(pasta) || raiz(), basePasta(pasta)), rel.slice('public/'.length));
     else arq = dentro(BUNDLE, rel || 'index.html');
   } else arq = dentro(EDITOR, p === '/' ? 'index.html' : p.slice(1));
   if (!arq) { res.writeHead(403); return res.end(); }
@@ -78,37 +87,39 @@ const servidor = http.createServer((req, res) => {
 });
 
 /* ---------------------------------------------------------------- projetos */
+const enc = (pasta) => pasta.split('/').map(encodeURIComponent).join('/');
 // pasta da mídia do projeto: "midia" (como sai da máquina) ou "." (projeto plano, como sobe para o Drive)
 function basePasta(pasta) {
   try {
-    const dir = path.join(raiz(), pasta);
+    const dir = pastaDir(pasta);
     const pj = fs.readdirSync(dir).find((f) => /^projeto-\d+\.json$/.test(f));
     return JSON.parse(fs.readFileSync(path.join(dir, pj), 'utf8')).base || 'midia';
   } catch { return 'midia'; }
 }
 
 function listar() {
-  const r = raiz();
   const out = [];
-  let pastas = [];
-  try { pastas = fs.readdirSync(r, { withFileTypes: true }).filter((d) => d.isDirectory()).map((d) => d.name); } catch { return out; }
+  const ler = (dir) => { try { return fs.readdirSync(dir, { withFileTypes: true }).filter((d) => d.isDirectory()).map((d) => d.name); } catch { return []; } };
+  const pastas = [...ler(raiz()), ...ler(BRUTOS()).map((n) => PREFIXO_BRUTO + n)];
   for (const pasta of pastas) {
+    const dir = pastaDir(pasta);
+    if (!dir) continue;
     let arqs = [];
-    try { arqs = fs.readdirSync(path.join(r, pasta)).filter((f) => /^projeto-\d+\.json$/.test(f)); } catch { continue; }
+    try { arqs = fs.readdirSync(dir).filter((f) => /^projeto-\d+\.json$/.test(f)); } catch { continue; }
     for (const arquivo of arqs) {
       try {
-        const full = path.join(r, pasta, arquivo);
+        const full = path.join(dir, arquivo);
         const p = JSON.parse(fs.readFileSync(full, 'utf8'));
         const longo = p.tipo === 'longo' ? p.longo : null;
-        const rendersDir = path.join(r, pasta, 'renders');
+        const rendersDir = path.join(dir, 'renders');
         const renders = fs.existsSync(rendersDir) ? fs.readdirSync(rendersDir).filter((f) => f.startsWith(p.id) && f.endsWith('.mp4')) : [];
         const ultimo = renders.map((f) => ({ f, t: fs.statSync(path.join(rendersDir, f)).mtimeMs })).sort((a, b) => b.t - a.t)[0];
         out.push({
-          pasta, arquivo, id: p.id, tipo: longo ? 'longo' : 'short', cliente: p.cliente, titulo: p.titulo, composicao: p.composicao,
+          pasta, arquivo, id: p.id, tipo: p.origem === 'bruto' ? 'bruto' : longo ? 'longo' : 'short', cliente: p.cliente, titulo: p.titulo, composicao: p.composicao,
           duracao: longo ? longo.trechos.reduce((n, t) => n + t.fim - t.ini, 0) : p.props?.duration ?? 0,
           confianca: p.maquina?.nota_confianca ?? null,
-          url: `/projetos/${encodeURIComponent(pasta)}/${arquivo}`,
-          capa: (longo?.previa || p.props?.video) ? `/projetos/${encodeURIComponent(pasta)}/${p.base || 'midia'}/${longo ? longo.previa : p.props.video}` : null,
+          url: `/projetos/${enc(pasta)}/${arquivo}`,
+          capa: (longo?.previa || p.props?.video) ? `/projetos/${enc(pasta)}/${p.base || 'midia'}/${longo ? longo.previa : p.props.video}` : null,
           inicioCapa: longo ? 4 : p.props?.segments?.[0]?.srcStart ?? 0,
           criadoEm: fs.statSync(full).mtimeMs,
           render: ultimo ? path.join(rendersDir, ultimo.f) : null,
@@ -126,7 +137,7 @@ let cancelar = null;
 async function renderizar(evento, { pasta, pacote }) {
   const envia = (x) => !evento.sender.isDestroyed() && evento.sender.send('estudio:progresso', x);
   const { ensureBrowser, selectComposition, renderMedia, makeCancelSignal } = require('@remotion/renderer');
-  const dir = dentro(raiz(), pasta);
+  const dir = pastaDir(pasta);
   if (!dir) throw new Error('pasta inválida');
   const rendersDir = path.join(dir, 'renders');
   fs.mkdirSync(rendersDir, { recursive: true });
@@ -164,7 +175,7 @@ async function renderizar(evento, { pasta, pacote }) {
 
   const nucleos = os.cpus().length;
   const concurrency = Math.max(1, Math.min(nucleos - 1, Math.round(nucleos * 0.75)));
-  const serveUrl = `http://127.0.0.1:${porta}/render/${encodeURIComponent(pasta)}/`;
+  const serveUrl = `http://127.0.0.1:${porta}/render/${encodeURIComponent(pasta)}/`; // shorts: só da raiz
   envia({ fase: 'preparando', progresso: 0, nucleos: concurrency });
   const composition = await selectComposition({ serveUrl, id: pacote.composicao, inputProps: props, browserExecutable });
   const saida = path.join(rendersDir, nome + '.mp4');
@@ -225,6 +236,25 @@ ipcMain.handle('estudio:escolherPasta', async () => {
   return r.filePaths[0];
 });
 ipcMain.handle('estudio:renderizar', renderizar);
+// Novo projeto com bruto: escolhe o vídeo, prepara prévia e onda, devolve o item para abrir direto
+ipcMain.handle('estudio:novoBruto', async (e, teste) => {
+  let arquivo = process.env.ESTUDIO_TESTE && teste ? teste : null; // teste automático sem a janela de escolher
+  if (!arquivo) {
+    const r = await dialog.showOpenDialog({ title: 'Escolha o vídeo bruto', properties: ['openFile'],
+      filters: [{ name: 'Vídeos', extensions: ['mp4', 'mov', 'mkv', 'm4v', 'avi', 'mts', 'webm', 'MP4', 'MOV'] }] });
+    if (r.canceled || !r.filePaths[0]) return null;
+    arquivo = r.filePaths[0];
+  }
+  const carimbo = new Date().toISOString().slice(0, 16).replace(/[:T]/g, '-');
+  const nome = `${path.basename(arquivo).replace(/\.[^.]+$/, '').replace(/[\\/:*?"<>|]/g, '').slice(0, 60)} ${carimbo}`;
+  const { prepararBruto } = require('./bruto');
+  const envia = (x) => !e.sender.isDestroyed() && e.sender.send('estudio:bruto', x);
+  envia({ nome: path.basename(arquivo), progresso: 0 });
+  const r = prepararBruto(arquivo, path.join(BRUTOS(), nome), (p) => envia({ nome: path.basename(arquivo), progresso: p }));
+  cancelar = r.cancelar;
+  try { await r.pronto; } finally { cancelar = null; }
+  return listar().find((i) => i.pasta === PREFIXO_BRUTO + nome) ?? null;
+});
 ipcMain.handle('estudio:cancelar', () => { if (cancelar) cancelar(); return true; });
 ipcMain.handle('estudio:mostrar', (_e, arq) => { shell.showItemInFolder(arq); return true; });
 ipcMain.handle('estudio:abrir', (_e, arq) => shell.openPath(arq));

@@ -21,17 +21,19 @@ function comando(L, midia, saida) {
   const trechos = [...L.trechos].sort((a, b) => a.ini - b.ini);
   const TOTAL = trechos.reduce((n, t) => n + (t.fim - t.ini), 0);
   const END = L.fim ? L.fim.dur : 0;
-  const arq = (r) => path.join(midia, r);
+  const arq = (r) => path.resolve(midia, r); // bruto: caminho completo do vídeo original
   const args = ['-v', 'error', '-y', '-nostats', '-progress', 'pipe:1', '-i', arq(L.video)];
   const fc = [];
 
   // fala: os trechos que ficaram (mesma ordem do base.mp4; tirar trecho não muda a ordem)
+  // bruto maior que 1080p (4K de câmera, celular): sai em 1080p, para o arquivo e o render não pesarem
+  const esc = L.largura > 1920 || L.altura > 1920 ? (L.largura >= L.altura ? 'scale=1920:-2,' : 'scale=-2:1920,') : '';
   const inteiro = trechos.length === L.trechos.length && trechos.every((t, i) => i === 0 || Math.abs(t.ini - trechos[i - 1].fim) < 0.002);
   if (inteiro && trechos[0].ini < 0.002) {
-    fc.push('[0:v]fps=30,setsar=1[bv]', '[0:a]anull[ba]');
+    fc.push(`[0:v]${esc}fps=30,setsar=1[bv]`, '[0:a]anull[ba]');
   } else {
     const expr = trechos.map((t) => `gte(t,${f3(t.ini)})*lt(t,${f3(t.fim)})`).join('+');
-    fc.push(`[0:v]fps=30,select='${expr}',setpts=N/(30*TB),setsar=1[bv]`);
+    fc.push(`[0:v]${esc}fps=30,select='${expr}',setpts=N/(30*TB),setsar=1[bv]`);
     fc.push(`[0:a]aselect='${expr}',asetpts=N/SR/TB[ba]`);
   }
 

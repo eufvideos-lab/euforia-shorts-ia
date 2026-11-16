@@ -12,11 +12,14 @@ export type DadosLongo = {
   fim: { arquivo: string; dur: number } | null;
   musica: { arquivo: string; volume_db: number } | null;
   palavras: { w: string; t: number }[];
+  /** Bruto aberto no Studio: picos do áudio (0..1) a cada `passo` segundos, para ver e cortar pela onda. */
+  onda?: { passo: number; picos: number[] };
 };
 export type ProjetoLongo = {
   versao: 1; tipo: 'longo'; id: string; cliente: string; titulo: string; composicao: 'Longo'; base: string;
   longo: DadosLongo; registro?: string[]; maquina?: { por_que?: string; nota_confianca?: number };
   biblioteca?: { src: string; descricao: string }[];
+  origem?: 'maquina' | 'bruto';
 };
 type ComId<T> = T & { _id: string };
 export type LongoEd = Omit<DadosLongo, 'trechos' | 'elementos'> & { trechos: ComId<Trecho>[]; elementos: ComId<Elemento>[] };
@@ -119,7 +122,8 @@ export function diferencasLongo(orig: LongoEd, atual: LongoEd, nomeArq: (s: stri
     for (const [a, b] of pedacos) {
       if (b - a < 0.05) continue;
       out.push({ tipo: 'trecho_removido', alvo: `base:${r3(a)}`, de: { ini: r3(a), fim: r3(b) },
-        texto: `Tirou ${(b - a).toFixed(1)} s da fala: "${textoDoTrecho(orig, a, b) || '(sem fala)'}"` });
+        texto: orig.palavras.length ? `Tirou ${(b - a).toFixed(1)} s da fala: "${textoDoTrecho(orig, a, b) || '(sem fala)'}"`
+          : `Tirou ${(b - a).toFixed(1)} s do bruto (${tc(a)}–${tc(b)})` });
     }
   }
   const porId = new Map(atual.elementos.map((e) => [e._id, e]));
@@ -145,4 +149,45 @@ export function diferencasLongo(orig: LongoEd, atual: LongoEd, nomeArq: (s: stri
     out.push({ tipo: 'musica_volume', alvo: 'musica', de: orig.musica.volume_db, para: atual.musica.volume_db, texto: `Trilha de ${orig.musica.volume_db} dB para ${atual.musica.volume_db} dB` });
   }
   return out;
+}
+
+/** Picos da onda normalizados (o 98º percentil vira 1), para desenhar e achar silêncio do mesmo jeito em qualquer bruto. */
+export function ondaNormal(onda: { picos: number[] }): number[] {
+  const ord = [...onda.picos].sort((a, b) => a - b);
+  const ref = ord[Math.floor(ord.length * 0.98)] || 1;
+  return onda.picos.map((p) => Math.min(1, p / ref));
+}
+
+/** Tira os silêncios de cada trecho (pausas maiores que `min` s, deixando `folga` s de respiro em cada ponta).
+ *  Só para bruto (sem elementos por cima). Devolve o novo estado e quantos segundos saíram. */
+export function tirarSilencios(L: LongoEd, novoId: () => string, min = 0.6, folga = 0.15): { L: LongoEd; cortes: number; segundos: number } {
+  if (!L.onda || L.elementos.length) return { L, cortes: 0, segundos: 0 };
+  const { passo } = L.onda;
+  const pk = ondaNormal(L.onda);
+  // silêncio = abaixo do dobro do chão de ruído do próprio bruto (sala, ar-condicionado), entre 0,06 e 0,2
+  const chao = [...pk].sort((x, y) => x - y)[Math.floor(pk.length * 0.1)] ?? 0;
+  const limiar = Math.min(0.2, Math.max(0.06, chao * 2));
+  const trechos: LongoEd['trechos'] = [];
+  let cortes = 0, segundos = 0;
+  for (const tr of L.trechos) {
+    let ini = tr.ini, run = -1, usou = false;
+    const id = () => (usou ? novoId() : ((usou = true), tr._id));
+    const i0 = Math.ceil(tr.ini / passo);
+    const fimIdx = Math.floor(tr.fim / passo);
+    const fecha = (a: number, b: number) => { // silêncio de a até b (segundos)
+      const ca = a + folga, cb = b - folga;
+      if (b - a < min || cb - ca < 0.2) return;
+      if (ca - ini >= 0.1) trechos.push({ _id: id(), ini: r3(ini), fim: r3(ca) });
+      segundos += cb - Math.max(ca, ini); cortes += 1;
+      ini = cb;
+    };
+    for (let k = i0; k <= fimIdx; k++) {
+      const quieto = (pk[k] ?? 0) < limiar;
+      if (quieto && run < 0) run = k;
+      if ((!quieto || k === fimIdx) && run >= 0) { fecha(Math.max(tr.ini, run * passo), Math.min(tr.fim, (quieto ? k + 1 : k) * passo)); run = -1; }
+    }
+    if (tr.fim - ini >= 0.1) trechos.push({ _id: id(), ini: r3(ini), fim: tr.fim });
+  }
+  if (!cortes || !trechos.length) return { L, cortes: 0, segundos: 0 };
+  return { L: { ...L, trechos }, cortes, segundos: r3(segundos) };
 }
