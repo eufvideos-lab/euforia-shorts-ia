@@ -60,7 +60,7 @@ label{display:block;font-size:11.5px;color:var(--mut);margin:12px 0 5px;text-tra
 @media (max-width:640px){body{padding:14px 16px 80px}.modal .row{grid-template-columns:1fr}.lin{flex-wrap:wrap}.lin .acts{width:100%;justify-content:flex-start}}
 </style></head><body><div class="in">
 <style>.tabs{display:flex;gap:6px;margin-bottom:16px}.tab{background:transparent;border:1px solid var(--line);border-radius:9px;padding:7px 14px;font-weight:700;font-size:13.5px}.tab.on{border-color:var(--or);color:var(--or2)}</style>
-<div class="tabs"><button class="tab" data-t="todo">To-do</button><button class="tab" data-t="esc">To-do escritório</button><button class="tab" data-t="isa">Isa</button><button class="tab" data-t="fin">Financeiro</button><button class="tab" data-t="evo">Evolução</button><button class="tab" data-t="mkt">Marketing</button><button class="tab" data-t="eqp">Equipe</button></div><section id="sTodo" hidden><div class="topo">
+<div class="tabs"><button class="tab" data-t="todo">To-do</button><button class="tab" data-t="esc">To-do escritório</button><button class="tab" data-t="isa">Isa</button><button class="tab" data-t="fin">Financeiro</button><button class="tab" data-t="api">Saldo APIs</button><button class="tab" data-t="evo">Evolução</button><button class="tab" data-t="mkt">Marketing</button><button class="tab" data-t="eqp">Equipe</button></div><section id="sTodo" hidden><div class="topo">
 <input id="novo" placeholder="Anote e aperte Enter (ex.: ligar para o contador)" style="flex:2;min-width:220px" autocomplete="off">
 <input id="nData" type="date" title="Data limite (opcional)" style="width:150px;flex:none">
 <select id="nPrio" title="Prioridade" style="width:130px;flex:none"><option value="">Prioridade</option><option>🔴 Urgente</option><option>🟠 Alta</option><option>🟡 Média</option><option>⚪ Baixa</option></select>
@@ -70,12 +70,12 @@ label{display:block;font-size:11.5px;color:var(--mut);margin:12px 0 5px;text-tra
 <span class="mut" style="font-size:13px">Hoje: <b id="cHoje">–</b> · Atrasadas: <b id="cAtr" style="color:var(--err)">–</b></span><span class="esp"></span>
 <input id="busca" placeholder="Buscar" style="width:200px"><button class="ghost" id="bLanc">+ Lançamento</button></div>
 <div id="lista"><p class="vazio">Carregando…</p></div><div id="rodape"></div></section><section id="sFin" hidden><div class="topo"><span class="mut" style="font-size:13px">Valores do 💸 Lançamentos e do saldo que você informa. Nada é inventado; o que falta aparece como "—".</span><span class="esp"></span>
-<button class="ghost" id="bSaldo">Informar saldo do banco</button><button class="btn" id="bLancF">+ Lançamento</button></div>
-<div id="conteudo" style="margin-top:14px"><p class="vazio">Carregando…</p></div><div id="rodapeF"></div></section><section id="sEvo" hidden><div class="topo"><span class="mut" style="font-size:13px">O que foi construído, resolvido e decidido em cada dia, em todos os projetos. A rotina das 21h41 lança o dia.</span><span class="esp"></span>
+<a class="ghost" id="bPlanilha" href="https://docs.google.com/spreadsheets/d/1dZGXveiN274M3L6cYfpyRwdXL81TsSO3RygOesnkFsE/edit" target="_blank" rel="noopener" style="text-decoration:none;display:inline-flex;align-items:center">📊 Planilha DRE</a><button class="ghost" type="button" onclick="abrirAba('api')">🔌 Saldo APIs</button><button class="ghost" id="bSaldo">Informar saldo do banco</button><button class="btn" id="bLancF">+ Lançamento</button></div>
+<div id="conteudo" style="margin-top:14px"><p class="vazio">Carregando…</p></div><div id="rodapeF"></div></section><section id="sApi" hidden><div class="topo"><span class="mut" style="font-size:13px">Saldo e crédito das APIs pagas que as máquinas usam. Nada é inventado: o que a API não informa aparece explicado. <span id="apiHora"></span></span><span class="esp"></span><button class="ghost" id="apiAtual">Atualizar agora</button></div><div id="apiLista" style="margin-top:14px"><p class="vazio">Carregando…</p></div></section><section id="sEvo" hidden><div class="topo"><span class="mut" style="font-size:13px">O que foi construído, resolvido e decidido em cada dia, em todos os projetos. A rotina das 21h41 lança o dia.</span><span class="esp"></span>
 <select id="evPer" style="width:170px;flex:none"><option value="1">Hoje</option><option value="7" selected>Últimos 7 dias</option><option value="30">Últimos 30 dias</option><option value="90">Últimos 90 dias</option><option value="">Tudo</option></select>
 <select id="evProj" style="width:190px;flex:none"><option value="">Todos os projetos</option></select>
 <select id="evTipo" style="width:160px;flex:none"><option value="">Todos os tipos</option><option value="construido">Construído</option><option value="resolvido">Resolvido</option><option value="decidido">Decidido</option><option value="dinheiro">Dinheiro</option><option value="vendido">Vendido</option><option value="pendente">Pendente</option></select></div>
-<div id="evLista" style="margin-top:14px"><p class="vazio">Carregando…</p></div></section><section id="sMkt" hidden><div class="topo"><span class="mut" style="font-size:13px">Instagram e anúncios da Meta, lidos na hora. <span id="mkHora"></span> <span id="mkCarga"></span></span><span class="esp"></span>
+<div id="evLista" style="margin-top:14px"><p class="vazio">Carregando…</p></div></section><section id="sMkt" hidden><div class="topo"><span class="mut" style="font-size:13px">Marketing por canal: escolha no botão. <span id="mkHora"></span> <span id="mkCarga"></span></span><span class="esp"></span>
 <select id="mkPer" style="width:170px;flex:none"><option value="7" selected>Últimos 7 dias</option><option value="28">Últimos 28-30 dias</option></select>
 <button class="ghost" id="mkAtual">Atualizar</button></div>
 <div id="mkLista" style="margin-top:14px"><p class="vazio">Carregando…</p></div></section><section id="sEqp" hidden><div class="topo"><span class="mut" style="font-size:13px">Pontos positivos e negativos de cada pessoa, para você decidir. Só você vê.</span><span class="esp"></span>
@@ -676,19 +676,22 @@ function varia(a, b) {
 function kpi(t, v, s, cls) { return '<div class="kpi' + (cls ? ' ' + cls : '') + '"><small>' + t + '</small><b>' + v + '</b><span>' + (s || '') + '</span></div>'; }
 function carregar() {
   var ss = sessao() || {};
+  if (!M) { try { var g0 = JSON.parse(localStorage.getItem('mkUltimo') || 'null'); if (g0 && g0.ok) { M = g0; desenhar(); } } catch (e) {} }
   $('mkCarga').textContent = 'Atualizando…';
   return fetch('https://n8n.grupoeuforia.tech/webhook/diretoria-central-marketing', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ usuario: ss.usuario, token: ss.token }) })
     .then(function (r) { return r.json(); }).catch(function () { return { ok: false, erro: 'Sem conexão. Tente de novo.' }; }).then(function (r) {
       $('mkCarga').textContent = '';
       if (r && r.erro === 'sessao') r.erro = 'Sua sessão acabou. Saia e entre de novo no Painel Central.';
+      if (!r.ok && M && String(r.erro || '').indexOf('sessão') < 0) { $('mkCarga').textContent = 'Não atualizou agora; mostrando a última leitura.'; return; }
       if (!r.ok) { $('mkLista').innerHTML = '<p class="erro">' + esc(r.erro || 'Não consegui ler os dados agora.') + '</p>'; return; }
-      M = r; desenhar();
+      M = r; desenhar(); try { localStorage.setItem('mkUltimo', JSON.stringify(r)); } catch (e) {}
     });
 }
 function desenhar() {
   var ig = M.ig, ad = M.ads, s = per === '7' ? ig.s7 : ig.s28, a = per === '7' ? ig.a7 : null;
   var nov = ig.novos || [], dias = per === '7' ? 7 : 28, recentes = nov.slice(-dias), ganhos = recentes.reduce(function (t, x) { return t + x.n; }, 0);
   var h = '';
+  h += '<div class="mkp" data-p="ig">';
   // Instagram
   h += '<h2 class="sec">Instagram @' + esc(ig.usuario) + ' <small>' + (per === '7' ? 'Últimos 7 dias, comparado com os 7 anteriores.' : 'Últimos 28 dias.') + '</small></h2>';
   if (ig.erro) h += '<p class="erro">Instagram não respondeu: ' + esc(ig.erro) + '</p>';
@@ -711,6 +714,7 @@ function desenhar() {
       return '<div class="lin"><div class="t"><a href="' + esc(p.link) + '" target="_blank" rel="noopener">' + esc(p.texto || '(sem legenda)') + '</a><span class="s">' + dm(p.quando) + ' · ' + esc(String(p.tipo || '').replace('CAROUSEL_ALBUM', 'Carrossel').replace('VIDEO', 'Reel').replace('IMAGE', 'Foto')) + '</span></div>' +
         '<div class="v">♥ ' + n0(p.curtidas) + ' · 💬 ' + n0(p.comentarios) + '</div></div>'; }).join('') + '</div>';
   }
+  h += '</div><div class="mkp" data-p="ads">';
   // Anúncios
   var d = per === '7' ? ad.d7 : ad.d30;
   h += '<h2 class="sec">Anúncios Meta <small>' + esc(ad.conta) + ' · ' + (per === '7' ? 'últimos 7 dias' : 'últimos 30 dias') + '</small></h2>';
@@ -731,6 +735,7 @@ function desenhar() {
       '<div class="v">' + rs(c.gasto) + '<span style="display:block;font-size:12px;color:var(--mut);font-weight:500">CPL ' + rs(c.cpl) + '</span></div></div>'; }).join('')
     : '<p class="vazio" style="margin:6px 0">' + (per === '7' ? 'Nenhuma campanha gastou nos últimos 7 dias. Troque para 28-30 dias para ver o mês.' : 'Nenhuma campanha gastou nos últimos 30 dias.') + '</p>';
   h += '</div>';
+  h += '</div><div class="mkp" data-p="blog">';
   // Blog (contador próprio)
   var bl = M.blog || {};
   h += '<h2 class="sec">Blog <small>Contador próprio' + (bl.desde ? ', ligado em ' + dm(bl.desde) : '') + '. Robôs não contam.</small></h2>';
@@ -751,6 +756,7 @@ function desenhar() {
           return '<div class="lin"><div class="t">' + esc(nome.charAt(0).toUpperCase() + nome.slice(1)) + '</div><div class="v">' + n0(x.n) + '</div></div>'; }).join('') + '</div></div>';
     } else h += '<p class="vazio" style="margin-top:8px">Nenhuma visita contada ainda. As primeiras aparecem aqui assim que alguém abrir o blog.</p>';
   }
+  h += '</div><div class="mkp" data-p="yt">';
   // YouTube
   var yt = M.youtube || {};
   h += '<h2 class="sec">YouTube' + (yt.canal ? ' · <a href="' + esc(yt.link) + '" target="_blank" rel="noopener">' + esc(yt.canal) + '</a>' : '') + ' <small>' + (per === '7' ? 'Últimos 7 dias, comparado com os 7 anteriores' : 'Últimos 28 dias') + (yt.ate ? '. O YouTube entrega os números com 2 a 3 dias de atraso (até ' + dm(yt.ate) + ').' : '.') + '</small></h2>';
@@ -777,6 +783,7 @@ function desenhar() {
     if ((yt.ultimos || []).length) h += '<h2 class="sec">Últimos vídeos</h2><div class="card">' + yt.ultimos.map(function (v) {
       return '<div class="lin"><div class="t"><a href="https://youtu.be/' + esc(v.id) + '" target="_blank" rel="noopener">' + esc(v.titulo || v.id) + '</a><span class="s">' + (v.quando ? dm(v.quando) + ' · ' : '') + esc(ST[v.status] || v.status || '') + '</span></div><div class="v">👁 ' + n0(v.views) + ' · ♥ ' + n0(v.curtidas) + ' · 💬 ' + n0(v.comentarios) + '</div></div>'; }).join('') + '</div>';
   }
+  h += '</div><div class="mkp" data-p="google">';
   // Google (Search Console)
   var g = M.google || {};
   h += '<h2 class="sec">Google · buscas <small>Site ' + esc(g.site || 'grupoeuforia.com.br') + ', inclusive o blog. O Google entrega os números com 2 a 3 dias de atraso.</small></h2>';
@@ -793,6 +800,7 @@ function desenhar() {
       '<div style="flex:1;min-width:260px"><div class="mut" style="font-size:12.5px;margin-bottom:6px">Páginas que mais apareceram (28 dias)</div>' +
       ((g.paginas || []).length ? g.paginas.map(function (x) { return '<div class="lin"><div class="t">' + esc(String(x.chave).replace(/^https?:\/\/(www\.)?/, '')) + '<span class="s">' + n0(x.impressoes) + ' impressões</span></div><div class="v">' + n0(x.cliques) + ' cliques</div></div>'; }).join('') : '<p class="vazio">Sem páginas ainda.</p>') + '</div></div>';
   }
+  h += '</div>';
   $('mkLista').innerHTML = h;
   $('mkHora').textContent = 'Dados de ' + dm(M.hoje) + ' às ' + M.hora;
 }
@@ -993,21 +1001,324 @@ document.addEventListener('click', function (e) {
 window.iniciarIsa = function () { carregar(); };
 })();
 
+(function () {
+// Aba "Saldo APIs" do Painel Central: saldo e crédito das APIs pagas, lido a cada 3 h pelo fluxo "Financeiro | Saldo das APIs".
+var URL_API = 'https://n8n.grupoeuforia.tech/webhook/diretoria-central-apis';
+var ST = { vazio: ['err', 'Sem saldo', 0], erro: ['err', 'Atenção', 1], baixo: ['or', 'Saldo baixo', 2], ok: ['pos', 'OK', 3], info: ['', 'Informativo', 4] };
+var A = null;
+function chamar(acao) {
+  var ss = sessao() || {};
+  return fetch(URL_API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ usuario: ss.usuario, token: ss.token, acao: acao }) })
+    .then(function (r) { return r.json(); }).catch(function () { return { ok: false, erro: 'Sem conexão. Tente de novo.' }; })
+    .then(function (r) { if (r && r.erro === 'sessao') r.erro = 'Sua sessão acabou. Saia e entre de novo no Painel Central.'; return r || { ok: false, erro: 'Sem resposta.' }; });
+}
+function quando(iso) {
+  if (!iso) return '';
+  var d = new Date(iso); if (isNaN(d)) return '';
+  return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) + ' às ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+}
+function desenhar() {
+  var L = (A.itens || []).slice().sort(function (a, b) { return (ST[a.status] || ST.info)[2] - (ST[b.status] || ST.info)[2] || (a.ordem || 99) - (b.ordem || 99); });
+  var ruins = L.filter(function (i) { return i.status === 'vazio' || i.status === 'erro'; }).length;
+  var baixos = L.filter(function (i) { return i.status === 'baixo'; }).length;
+  var oks = L.filter(function (i) { return i.status === 'ok'; }).length;
+  $('apiHora').textContent = A.verificado_em ? 'Última leitura: ' + quando(A.verificado_em) + '.' : '';
+  var h = '<div class="kpis"><div class="kpi' + (ruins ? ' neg' : '') + '"><small>Sem saldo ou com problema</small><b>' + ruins + '</b><span>precisam de ação</span></div>' +
+    '<div class="kpi' + (baixos ? ' or' : '') + '"><small>Saldo baixo</small><b>' + baixos + '</b><span>recarregar em breve</span></div>' +
+    '<div class="kpi pos"><small>Funcionando</small><b>' + oks + '</b><span>de ' + L.length + ' serviços</span></div></div>';
+  h += '<h2 class="sec">Serviços <small>atualiza sozinho a cada 3 horas; aviso no #alertas-diretoria quando algum piora</small></h2>';
+  if (!L.length) h += '<p class="vazio">Ainda sem leitura. Clique em "Atualizar agora".</p>';
+  L.forEach(function (i) {
+    var s = ST[i.status] || ST.info;
+    h += '<div class="kpi" style="margin-bottom:10px;display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap' + (i.status === 'vazio' || i.status === 'erro' ? ';border-color:var(--err)' : i.status === 'baixo' ? ';border-color:var(--or)' : '') + '">' +
+      '<div style="flex:1;min-width:220px"><small>' + esc(i.nome) + ' · ' + esc(i.uso || '') + '</small>' +
+      '<b class="' + s[0] + '" style="font:800 22px/1.2 Archivo,sans-serif;margin-top:4px;color:' + (s[0] === 'err' ? 'var(--err)' : s[0] === 'or' ? 'var(--or2)' : s[0] === 'pos' ? 'var(--ok)' : 'var(--txt)') + '">' + esc(i.saldo) + '</b>' +
+      (i.detalhe ? '<span style="white-space:normal">' + esc(i.detalhe) + '</span>' : '') + '</div>' +
+      '<div style="flex:none;display:flex;flex-direction:column;gap:6px;align-items:flex-end"><span class="chip"' + (s[0] === 'err' ? ' style="color:var(--err)"' : s[0] === 'or' ? ' style="color:var(--or2)"' : '') + '>' + esc(s[1]) + '</span>' +
+      (i.recarga ? '<a class="ghost" href="' + esc(i.recarga) + '" target="_blank" rel="noopener" style="text-decoration:none">Abrir conta / recarregar</a>' : '') + '</div></div>';
+  });
+  h += '<p class="hint" style="margin-top:14px">Anthropic e OpenAI não mostram o saldo pela API: o painel faz um teste mínimo e diz se ainda responde. Ficam de fora porque não têm crédito pré-pago: Evolution/WhatsApp (servidor próprio), Notion (assinatura) e Google (Drive, Agenda, Sheets).</p>';
+  $('apiLista').innerHTML = h;
+}
+function carregar(acao) {
+  if (acao === 'atualizar') { $('apiAtual').disabled = true; $('apiAtual').textContent = 'Lendo as contas…'; }
+  return chamar(acao || 'ler').then(function (r) {
+    $('apiAtual').disabled = false; $('apiAtual').textContent = 'Atualizar agora';
+    if (!r.ok) { if (A) aviso(r.erro || 'Não consegui atualizar agora.', true); else $('apiLista').innerHTML = '<p class="erro">' + esc(r.erro || 'Não consegui ler os saldos agora.') + '</p>'; return; }
+    A = r; desenhar(); if (acao === 'atualizar') aviso('Saldos lidos agora.');
+  });
+}
+window.iniciarApi = function () {
+  $('apiAtual').addEventListener('click', function () { carregar('atualizar'); });
+  carregar('ler');
+};
+})();
+
 var aba = '', iniciadas = {};
 function abrirAba(t) {
   aba = t;
   [].forEach.call(document.querySelectorAll('.tab'), function (b) { b.classList.toggle('on', b.getAttribute('data-t') === t); });
-  $('sTodo').hidden = t !== 'todo' && t !== 'esc'; if (t === 'todo' || t === 'esc') window.modoTodo(t); $('sFin').hidden = t !== 'fin'; $('sEvo').hidden = t !== 'evo'; $('sMkt').hidden = t !== 'mkt'; $('sEqp').hidden = t !== 'eqp'; $('sIsa').hidden = t !== 'isa';
+  $('sTodo').hidden = t !== 'todo' && t !== 'esc'; if (t === 'todo' || t === 'esc') window.modoTodo(t); $('sFin').hidden = t !== 'fin'; $('sEvo').hidden = t !== 'evo'; $('sMkt').hidden = t !== 'mkt'; $('sEqp').hidden = t !== 'eqp'; $('sIsa').hidden = t !== 'isa'; $('sApi').hidden = t !== 'api';
   try { localStorage.setItem('centralAba', t); } catch (e) {}
   var ini = t === 'esc' ? 'todo' : t;
-  if (!iniciadas[ini]) { iniciadas[ini] = 1; (ini === 'todo' ? window.iniciarTodo : t === 'evo' ? window.iniciarEvo : t === 'mkt' ? window.iniciarMkt : t === 'eqp' ? window.iniciarEqp : t === 'isa' ? window.iniciarIsa : window.iniciarFin)(); }
+  if (!iniciadas[ini]) { iniciadas[ini] = 1; (ini === 'todo' ? window.iniciarTodo : t === 'evo' ? window.iniciarEvo : t === 'mkt' ? window.iniciarMkt : t === 'eqp' ? window.iniciarEqp : t === 'isa' ? window.iniciarIsa : t === 'api' ? window.iniciarApi : window.iniciarFin)(); }
 }
 document.addEventListener('click', function (e) { var b = e.target.closest('.tab[data-t]'); if (b) abrirAba(b.getAttribute('data-t')); });
 document.addEventListener('DOMContentLoaded', function () {
   var q = new URLSearchParams(location.search).get('aba'), u = '';
   try { u = localStorage.getItem('centralAba') || ''; } catch (e) {}
   // Dentro da casca, ela clica na aba certa; fora dela, abre a última usada.
-  setTimeout(function () { if (aba) return; var x = q || u; abrirAba(x === 'fin' || x === 'evo' || x === 'mkt' || x === 'esc' || x === 'eqp' || x === 'isa' ? x : 'todo'); }, window.parent !== window ? 1500 : 0);
+  setTimeout(function () { if (aba) return; var x = q || u; abrirAba(x === 'fin' || x === 'evo' || x === 'mkt' || x === 'esc' || x === 'eqp' || x === 'isa' || x === 'api' ? x : 'todo'); }, window.parent !== window ? 1500 : 0);
 });
 
-</script></body></html>
+</script><script>
+(function () {
+// Aba Marketing · seção "Site e /edl" (rastreio próprio do site oficial). Lê /webhook/diretoria-central-site.
+var SD = null, carregado = 0;
+function el() { return document.getElementById('mkSite'); }
+function per() { var s = document.getElementById('mkPer'); return s && s.value === '28' ? '30' : '7'; }
+function n0(v) { return Number(v || 0).toLocaleString('pt-BR'); }
+function seg(s) { if (!s) return '—'; s = +s; return s < 60 ? s + ' s' : Math.floor(s / 60) + ' min ' + (s % 60 ? (s % 60) + ' s' : ''); }
+function ms(v) { return v ? (v / 1000).toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + ' s' : '—'; }
+function vari(a, b) { if (!b) return ''; var p = Math.round((a - b) / b * 100); return ' <em style="font-style:normal;color:' + (p >= 0 ? 'var(--ok)' : 'var(--err)') + '">' + (p >= 0 ? '▲ ' : '▼ ') + Math.abs(p) + '%</em>'; }
+function kpi(t, v, s, cls) { return '<div class="kpi' + (cls ? ' ' + cls : '') + '"><small>' + t + '</small><b>' + v + '</b><span>' + (s || '') + '</span></div>'; }
+var NOMES = { cta_topo: 'Botão do menu', cta_hero: 'Botão principal do topo', cta_hero_agenda: 'Ver agenda (topo)', cta_sticky: 'Botão fixo de agendar', cta_perguntas: 'Botão das perguntas',
+  agendar_confirmar: 'Confirmar horário', trailer_depoimentos: 'Trailer de depoimentos', fim_instagram: 'Instagram (rodapé)', fim_youtube: 'YouTube (rodapé)',
+  instagram: 'Instagram', youtube: 'YouTube', 'form_agPasso2': 'Enviou o agendamento', 'form_fc': 'Enviou o formulário' };
+var SEC = { pilar: 'Abertura / pilar', 'o-que-fazemos': 'O que fazemos', 'quem-somos': 'Quem somos', frentes: 'Frentes', 'para-quem': 'Para quem é', 'tambem-fazemos': 'Também fazemos',
+  missao: 'Missão', contato: 'Contato / rodapé', agenda: 'Agenda', top: 'Topo', resultados: 'Resultados', clientes: 'Clientes', topo: 'Topo' };
+function nome(k) {
+  k = String(k || '');
+  if (NOMES[k]) return NOMES[k];
+  var m = k.match(/^(agendar|whatsapp)_(.+)$/); if (m) return (m[1] === 'agendar' ? 'Botão Agendar' : 'WhatsApp') + ' · ' + (SEC[m[2]] || m[2]);
+  m = k.match(/^link\/(.+)$/); if (m) return 'Link para /' + m[1];
+  m = k.match(/^video_(.+)$/); if (m) return 'Vídeo do cliente · ' + m[1];
+  m = k.match(/^depoimento_(.+)$/); if (m) return 'Depoimento ' + m[1];
+  m = k.match(/^([\w-]+): (.*)$/); if (m) return (SEC[m[1]] || m[1]) + ' · ' + m[2];
+  return k.replace(/_/g, ' ');
+}
+function barra(rot, p, sub) {
+  return '<div style="display:grid;grid-template-columns:minmax(110px,40%) 1fr 44px;gap:8px;align-items:center;margin:5px 0;font-size:13px"><span>' + esc(rot) + (sub ? ' <span class="mut" style="font-size:11.5px">' + sub + '</span>' : '') + '</span>' +
+    '<div style="height:9px;background:rgba(127,127,127,.18);border-radius:5px;overflow:hidden"><div style="height:100%;width:' + Math.max(0, Math.min(100, p)) + '%;background:var(--or);border-radius:5px"></div></div><b style="text-align:right;font-size:12.5px">' + p + '%</b></div>';
+}
+function lista(arr, fmt) { return arr.map(function (x) { return '<div class="lin"><div class="t">' + esc(nome(x.k)) + '</div><div class="v">' + fmt(x) + '</div></div>'; }).join(''); }
+function pagina(p) {
+  var h = '<div class="card" style="margin-top:12px"><div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap"><b style="font-size:16px">' + esc(p.nome) + '</b><span class="mut" style="font-size:12.5px">' + n0(p.visitas) + ' visitas · ' + n0(p.pessoas) + ' pessoas · ' + p.celular + '% no celular</span></div>';
+  h += '<div class="kpis" style="margin-top:10px">' + kpi('Tempo típico', seg(p.tempo_med), 'metade fica mais que isso') + kpi('Clicaram em algo', p.clicaram + '%', 'das visitas') +
+    kpi('Agendar / WhatsApp / formulário', n0(p.converteram), p.visitas ? Math.round(p.converteram / p.visitas * 100) + '% das visitas' : '', 'or') +
+    kpi('Abre em', ms(p.carga_cel), 'no celular · computador ' + ms(p.carga_pc)) + '</div>';
+  h += '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;margin-top:12px">';
+  h += '<div><div class="mut" style="font-size:12.5px;margin-bottom:4px">Até onde leem</div>' + barra('Passou de 25%', p.leu[25]) + barra('Passou da metade', p.leu[50]) + barra('Passou de 75%', p.leu[75]) + barra('Chegou ao fim (90%)', p.leu[90]) +
+    (p.secoes.length ? '<div class="mut" style="font-size:12.5px;margin:10px 0 4px">Partes da página que apareceram na tela</div>' + p.secoes.map(function (s) { return barra(SEC[s.k] || s.k, s.p); }).join('') : '') + '</div>';
+  h += '<div><div class="mut" style="font-size:12.5px;margin-bottom:4px">O que clicam</div>' +
+    (p.conversoes.length ? lista(p.conversoes, function (x) { return '<b style="color:var(--or)">' + n0(x.n) + '</b>'; }) : '') +
+    (p.cliques.length ? lista(p.cliques, function (x) { return n0(x.s) + (x.s === 1 ? ' visita' : ' visitas'); }) : '') +
+    (!p.conversoes.length && !p.cliques.length ? '<p class="vazio">Nenhum clique ainda.</p>' : '') +
+    '<div class="mut" style="font-size:12.5px;margin:10px 0 4px">De onde vêm</div><div style="display:flex;flex-wrap:wrap;gap:6px">' + p.fontes.map(function (f) { return '<span class="pill" style="font-size:12px;padding:3px 9px;border-radius:99px;background:rgba(127,127,127,.15)">' + esc(f.k) + ' · ' + n0(f.n) + '</span>'; }).join('') + '</div></div>';
+  h += '</div>';
+  var alertas = [];
+  if (p.quebra) alertas.push('<b>' + n0(p.quebra) + '</b> visita(s) com a página mais larga que a tela (sobra para o lado no celular)');
+  if (p.com_toque_morto) alertas.push('<b>' + n0(p.com_toque_morto) + '</b> visita(s) tocaram em algo que parece botão e não é' + (p.toques_mortos.length ? ': ' + p.toques_mortos.map(function (t) { return esc(nome(t.k)) + ' (' + t.s + ')'; }).join(', ') : ''));
+  if (p.raiva) alertas.push('<b>' + n0(p.raiva) + '</b> visita(s) tocaram várias vezes seguidas no mesmo lugar (sinal de que algo não respondeu)' + (p.toques_raiva.length ? ': ' + p.toques_raiva.map(function (t) { return esc(nome(t.k)); }).join(', ') : ''));
+  if (p.erros) alertas.push('<b>' + n0(p.erros) + '</b> visita(s) com erro na página' + (p.erros_lista.length ? ': ' + p.erros_lista.map(function (t) { return esc(t.k); }).join(' · ') : ''));
+  if (p.carga_cel && p.carga_cel > 4000) alertas.push('No celular a página leva <b>' + ms(p.carga_cel) + '</b> para abrir (o ideal é até 3 s)');
+  h += '<div style="margin-top:12px;font-size:13px"><div class="mut" style="font-size:12.5px;margin-bottom:4px">Saúde da página</div>' + (alertas.length ? alertas.map(function (a) { return '<div style="margin:4px 0">⚠ ' + a + '</div>'; }).join('') : '<div style="color:var(--ok)">✓ Nenhum sinal de problema no período.</div>') + '</div>';
+  return h + '</div>';
+}
+function desenhar() {
+  var box = el(); if (!box || !SD) return;
+  var pr = per(), P = pr === '7' ? SD.p7 : SD.p30, t = P.total, a = pr === '7' ? SD.a7 : null;
+  var h = '<h2 class="sec">Site e /edl <small>Contador próprio' + (SD.desde ? ', desde ' + esc(SD.desde) : '') + '. Anônimo por aparelho; robôs não contam. ' + (pr === '7' ? 'Últimos 7 dias, comparado com os 7 anteriores.' : 'Últimos 30 dias.') + '</small></h2>';
+  if (!t.visitas) { box.innerHTML = h + '<p class="vazio">Nenhuma visita contada ainda. As primeiras aparecem aqui assim que alguém abrir o site ou a /edl.</p>'; return; }
+  h += '<div class="kpis">' + kpi('Visitas', n0(t.visitas) + (a ? vari(t.visitas, a.visitas) : ''), n0(t.pessoas) + ' pessoas diferentes', 'or') +
+    kpi('No celular', t.celular + '%', 'das visitas') + kpi('Tempo típico', seg(t.tempo_med), 'por visita') +
+    kpi('Passaram da metade', t.leu[50] + '%', 'das visitas') + kpi('Agendar / WhatsApp / formulário', n0(t.converteram) + (a ? vari(t.converteram, a.converteram) : ''), t.visitas ? Math.round(t.converteram / t.visitas * 100) + '% das visitas' : '') +
+    kpi('Abre em', ms(t.carga_cel), 'no celular, típico') + '</div>';
+  h += P.paginas.map(pagina).join('');
+  if (SD.leads && SD.leads.length) {
+    h += '<h2 class="sec">Quem abriu com código <small>Links com ?c= (lead identificado), últimos 30 dias.</small></h2><div class="card">' + SD.leads.slice(0, 12).map(function (l) {
+      return '<div class="lin"><div class="t"><b>' + esc(l.c) + '</b> · ' + esc(l.pagina) + '<span class="s">' + esc(l.quando) + ' · ' + esc(l.aparelho || '') + (l.conv ? ' · ' + esc(l.conv.split('|').map(nome).join(', ')) : '') + '</span></div><div class="v">leu ' + l.pct + '% · ' + seg(l.seg) + '</div></div>';
+    }).join('') + '</div>';
+  }
+  box.innerHTML = h;
+}
+function carregar() {
+  var box = el(); if (!box) return;
+  var ss = (typeof sessao === 'function' ? sessao() : null) || {};
+  if (!SD) box.innerHTML = '<h2 class="sec">Site e /edl</h2><p class="vazio">Carregando…</p>';
+  fetch('https://n8n.grupoeuforia.tech/webhook/diretoria-central-site', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ usuario: ss.usuario, token: ss.token }) })
+    .then(function (r) { return r.json(); }).catch(function () { return { ok: false, erro: 'Sem conexão. Tente de novo.' }; })
+    .then(function (r) {
+      if (!r || !r.ok) { if (!SD) box.innerHTML = '<h2 class="sec">Site e /edl</h2><p class="erro">' + esc(r && r.erro === 'sessao' ? 'Sua sessão acabou. Saia e entre de novo no Painel Central.' : (r && r.erro) || 'Não consegui ler os dados do site agora.') + '</p>'; return; }
+      SD = r; desenhar();
+    });
+}
+window.SITE_DADOS_TESTE = function (d) { SD = d; desenhar(); };
+function ligar() {
+  var lst = document.getElementById('mkLista'); if (!lst || document.getElementById('mkSite')) return;
+  var d = document.createElement('div'); d.id = 'mkSite'; d.style.marginTop = '18px'; lst.parentNode.insertBefore(d, lst.nextSibling);
+  var s = document.getElementById('mkPer'); if (s) s.addEventListener('change', desenhar);
+  var b = document.getElementById('mkAtual'); if (b) b.addEventListener('click', carregar);
+  setInterval(function () { var sec = document.getElementById('sMkt'); if (sec && !sec.hidden && !carregado && !window.SITE_PREVIA) { carregado = 1; carregar(); } }, 800);
+  setInterval(function () { var sec = document.getElementById('sMkt'); if (sec && !sec.hidden && !document.hidden && !window.SITE_PREVIA) carregar(); }, 900000);
+}
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', ligar); else ligar();
+})();
+
+</script><script id="ge-mk-botoes">
+(function () {
+// Aba Marketing · botões por canal + E-mails. Mostra um canal por vez; lembra o último escolhido.
+var CANAIS = [['ig', 'Instagram'], ['ads', 'Anúncios'], ['site', 'Site e /edl'], ['blog', 'Blog'], ['google', 'Google'], ['yt', 'YouTube'], ['email', 'E-mails'], ['leads', 'Leads']];
+var atual = 'ig'; try { var g = localStorage.getItem('mkCanal'); if (g && CANAIS.some(function (c) { return c[0] === g; })) atual = g; } catch (e) {}
+function $i(id) { return document.getElementById(id); }
+function aplicar() {
+  [].forEach.call(document.querySelectorAll('#mkBotoes .mkb'), function (b) { b.classList.toggle('on', b.getAttribute('data-p') === atual); });
+  [].forEach.call(document.querySelectorAll('#mkLista .mkp'), function (d) { d.hidden = d.getAttribute('data-p') !== atual; });
+  var lst = $i('mkLista'); if (lst) { var temPainel = !!lst.querySelector('.mkp'); lst.style.display = (atual === 'site' || atual === 'email' || atual === 'leads') && temPainel ? 'none' : ''; }
+  var s = $i('mkSite'); if (s) s.style.display = atual === 'site' ? '' : 'none';
+  var e = $i('mkEmail'); if (e) e.style.display = atual === 'email' ? '' : 'none';
+  var ld = $i('mkLeads'); if (ld) ld.style.display = atual === 'leads' ? '' : 'none';
+  var per = $i('mkPer'); if (per) per.style.visibility = atual === 'email' || atual === 'leads' ? 'hidden' : '';
+  if (atual === 'email' && window.mkEmailCarregar) window.mkEmailCarregar();
+  if (atual === 'leads' && window.mkLeadsCarregar) window.mkLeadsCarregar();
+}
+function montar() {
+  var lst = $i('mkLista'); if (!lst || $i('mkBotoes')) return;
+  var st = document.createElement('style');
+  st.textContent = '#mkBotoes{display:flex;gap:6px;flex-wrap:wrap;margin:14px 0 4px;position:sticky;top:0;z-index:5;background:var(--bg);padding:8px 0;border-bottom:1px solid var(--line)}' +
+    '.mkb{background:transparent;border:1px solid var(--line);border-radius:999px;padding:7px 14px;font:700 13px Inter,sans-serif;color:var(--txt);cursor:pointer}' +
+    '.mkb.on{background:var(--or);border-color:var(--or);color:#050505}.mkb:not(.on):hover{border-color:var(--or2);color:var(--or2)}' +
+    '#mkLista .mkp>h2.sec:first-child{margin-top:10px}@media(max-width:600px){#mkBotoes{flex-wrap:nowrap;overflow-x:auto}.mkb{flex:none}}';
+  document.head.appendChild(st);
+  var bar = document.createElement('div'); bar.id = 'mkBotoes';
+  bar.innerHTML = CANAIS.map(function (c) { return '<button type="button" class="mkb" data-p="' + c[0] + '">' + c[1] + '</button>'; }).join('');
+  lst.parentNode.insertBefore(bar, lst);
+  bar.addEventListener('click', function (ev) { var b = ev.target.closest('.mkb'); if (!b) return; atual = b.getAttribute('data-p'); try { localStorage.setItem('mkCanal', atual); } catch (e) {} aplicar(); });
+  new MutationObserver(aplicar).observe(lst, { childList: true });
+  var sec = $i('sMkt'); if (sec) new MutationObserver(function () { aplicar(); }).observe(sec, { childList: true });
+  aplicar();
+}
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', montar); else montar();
+setInterval(function () { if (!$i('mkBotoes')) montar(); }, 1000);
+})();
+
+(function () {
+// Aba Marketing · E-mails (envios do consultoria@). Lê /webhook/diretoria-central-emails. Só leitura.
+var E = null, carregando = 0, ultimo = 0;
+function $i(id) { return document.getElementById(id); }
+function n0(v) { return Number(v || 0).toLocaleString('pt-BR'); }
+function es(s) { return String(s === null || s === undefined ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+function pc(a, b) { return b ? Math.round(a / b * 100) + '%' : '—'; }
+function kpi(t, v, s, cls) { return '<div class="kpi' + (cls ? ' ' + cls : '') + '"><small>' + t + '</small><b>' + v + '</b><span>' + (s || '') + '</span></div>'; }
+function caixa() {
+  var d = $i('mkEmail'); if (d) return d;
+  var ref = $i('mkSite') || $i('mkLista'); if (!ref) return null;
+  d = document.createElement('div'); d.id = 'mkEmail'; d.style.display = 'none'; ref.parentNode.insertBefore(d, ref.nextSibling); return d;
+}
+function desenhar() {
+  var d = caixa(); if (!d || !E) return;
+  var t = E.total || {}, h = '', ev0 = E.envios || [];
+  h += '<h2 class="sec" style="margin-top:10px">E-mails <small>Enviados pelo ' + es(E.remetente) + '. Dados de ' + es(E.hora) + '.</small></h2>';
+  if (E.aviso) h += '<p class="mut" style="font-size:12.5px;margin:4px 0 8px;color:var(--or2)">' + es(E.aviso) + '</p>';
+  h += '<div class="kpis">' +
+    kpi('Enviados', n0(t.enviados), (t.fila ? n0(t.fila) + ' na fila' : 'nenhum na fila') + (t.erros ? ' · ' + n0(t.erros) + ' com erro' : ''), 'or') +
+    kpi('Entregues', n0(t.entregues), pc(t.entregues, t.enviados) + ' dos enviados') +
+    kpi('Aberturas', '—', 'ainda não medimos (veja abaixo)') +
+    kpi('Cliques no link', (ev0.some(function (g) { return g.temLink; }) ? n0(t.abriram) : '—'), ev0.some(function (g) { return g.temLink; }) ? 'abriram a página da Black pelo link' : 'os envios até agora não tinham link') +
+    kpi('Respostas', n0(t.respostas), pc(t.respostas, t.entregues) + ' responderam' + (t.quero ? ' · ' + n0(t.quero) + ' QUERO' : '')) +
+    kpi('Descadastros', n0(t.sair), 'pediram para sair') +
+    kpi('Devolvidos', n0(t.devolvidos), 'endereço não existe (bounce)') + '</div>';
+  var ev = E.envios || [];
+  h += '<h2 class="sec">Por envio <small>Cada assunto é um envio.</small></h2><div class="card">' + (ev.length ? ev.map(function (g) {
+    return '<div class="lin"><div class="t"><b>' + es(g.assunto) + '</b><span class="s">' + (g.de ? (g.de === g.ate || !g.ate ? g.de : g.de + ' a ' + g.ate) : 'ainda não saiu') +
+      ' · ' + n0(g.enviados) + ' enviados' + (g.fila ? ' · ' + n0(g.fila) + ' na fila' : '') + (g.erros ? ' · ' + n0(g.erros) + ' erro' : '') + ' · ' + n0(g.devolvidos) + ' devolvidos · ' + n0(g.sair) + ' saíram' + (g.temLink ? ' · ' + n0(g.abriram) + ' clicaram' : ' · sem link') + '</span></div>' +
+      '<div class="v">' + n0(g.respostas) + ' resp.<span style="display:block;font-size:12px;color:var(--mut);font-weight:500">' + pc(g.respostas, g.entregues) + '</span></div></div>'; }).join('') : '<p class="vazio" style="margin:6px 0">Nenhum envio ainda.</p>') + '</div>';
+  var rs = E.respostas || [];
+  h += '<h2 class="sec">Últimas respostas <span class="n">' + rs.length + '</span></h2><div class="card">' + (rs.length ? rs.map(function (x) {
+    var tag = x.sair ? '<span style="color:var(--err);font-weight:700">saiu</span>' : x.quero ? '<span style="color:var(--ok);font-weight:700">QUERO</span>' : '';
+    return '<div class="lin"><div class="t"><b>' + es(x.nome || 'Sem nome') + '</b> ' + tag + '<span class="s">' + es(x.quando) + ' · "' + es(x.trecho) + '"</span></div></div>'; }).join('') : '<p class="vazio" style="margin:6px 0">Ninguém respondeu ainda.</p>') + '</div>';
+  if ((E.devolvidos || []).length) h += '<p class="mut" style="font-size:12.5px;margin-top:8px">Devolvidos: ' + E.devolvidos.map(es).join(', ') + '. Saem dos próximos envios.</p>';
+  h += '<div class="card" style="margin-top:12px;font-size:13px;line-height:1.5"><b>Por que abertura aparece "—"</b><br><span class="mut">Os e-mails saem em texto puro, sem imagem, para cair na caixa principal. Sem imagem não há como saber quem abriu. Para medir, o e-mail precisa levar uma imagem invisível de 1 pixel. Mesmo assim o número é aproximado: o Gmail e o iPhone abrem a imagem sozinhos às vezes. Por isso aqui o que vale mais é clique, resposta e QUERO.</span></div>';
+  d.innerHTML = h;
+}
+function carregar(forcar) {
+  if (carregando) return; if (!forcar && E && Date.now() - ultimo < 120000) { desenhar(); return; }
+  var d = caixa(); if (!d) return;
+  if (!E) d.innerHTML = '<p class="vazio">Carregando e-mails…</p>';
+  if (window.EMAIL_PREVIA) { E = window.EMAIL_PREVIA; ultimo = Date.now(); desenhar(); return; }
+  var ss = {}; try { ss = JSON.parse(sessionStorage.getItem('painelCasca_central') || 'null') || {}; } catch (e) {}
+  carregando = 1;
+  fetch('https://n8n.grupoeuforia.tech/webhook/diretoria-central-emails', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ usuario: ss.usuario, token: ss.token }) })
+    .then(function (r) { return r.json(); }).catch(function () { return { ok: false, erro: 'Sem conexão. Tente de novo.' }; }).then(function (r) {
+      carregando = 0;
+      if (r && r.erro === 'sessao') r.erro = 'Sua sessão acabou. Saia e entre de novo no Painel Central.';
+      if (!r || !r.ok) { if (!E) d.innerHTML = '<p class="erro">' + es((r && r.erro) || 'Não consegui ler os e-mails agora.') + '</p>'; return; }
+      E = r; ultimo = Date.now(); desenhar();
+    });
+}
+window.mkEmailCarregar = function () { carregar(false); };
+document.addEventListener('click', function (ev) { if (ev.target && ev.target.id === 'mkAtual') { var d = $i('mkEmail'); if (d && d.style.display !== 'none') carregar(true); } });
+})();
+
+(function () {
+// Aba Marketing · Leads (quem agendou ou deixou contato pelas nossas páginas, com a origem). Lê /webhook/diretoria-central-leads. Só leitura.
+var D = null, carregando = 0, ultimo = 0, filtro = '';
+function $i(id) { return document.getElementById(id); }
+function n0(v) { return Number(v || 0).toLocaleString('pt-BR'); }
+function es(s) { return String(s === null || s === undefined ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+function pc(a, b) { return b ? Math.round(a / b * 100) + '%' : '—'; }
+function kpi(t, v, s, cls) { return '<div class="kpi' + (cls ? ' ' + cls : '') + '"><small>' + t + '</small><b>' + v + '</b><span>' + (s || '') + '</span></div>'; }
+var COR = { ok: 'var(--ok)', or: 'var(--or2)', warn: 'var(--warn)', err: 'var(--err)', mut: 'var(--mut)' };
+function caixa() {
+  var d = $i('mkLeads'); if (d) return d;
+  var ref = $i('mkEmail') || $i('mkSite') || $i('mkLista'); if (!ref) return null;
+  d = document.createElement('div'); d.id = 'mkLeads'; d.style.display = 'none'; ref.parentNode.insertBefore(d, ref.nextSibling);
+  d.addEventListener('click', function (ev) { var b = ev.target.closest('[data-lf]'); if (!b) return; filtro = filtro === b.getAttribute('data-lf') ? '' : b.getAttribute('data-lf'); desenhar(); });
+  return d;
+}
+function desenhar() {
+  var d = caixa(); if (!d || !D) return;
+  var t = D.total || {}, h = '';
+  h += '<h2 class="sec" style="margin-top:10px">Leads do marketing <small>Quem agendou ou deixou contato pelo site, /edl ou /agendar, ou respondeu e-mail, e de onde veio. Dados de ' + es(D.hora) + '.</small></h2>';
+  h += '<div class="kpis">' + kpi('Leads', n0(t.leads), 'pessoas diferentes', 'or') + kpi('Agendaram', n0(t.agendaram), 'marcaram call sozinhos') +
+    kpi('Só contato', n0(t.contatos), 'deixaram nome e WhatsApp') + kpi('Responderam e-mail', n0(t.emails), (t.quero ? n0(t.quero) + ' disseram QUERO' : 'respostas aos e-mails')) + kpi('Fecharam', n0(t.fecharam), pc(t.fecharam, t.leads) + ' dos leads') + '</div>';
+  var cs = D.canais || [];
+  h += '<h2 class="sec">Funil por canal <small>Últimos 30 dias. Toque num canal para filtrar a lista.</small></h2>';
+  h += '<div class="card" style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums;min-width:520px"><thead><tr style="color:var(--mut);text-align:right">' +
+    '<th style="text-align:left;padding:6px 4px;font-weight:600">Canal</th><th style="padding:6px 4px;font-weight:600">Visitas</th><th style="padding:6px 4px;font-weight:600">Leads</th><th style="padding:6px 4px;font-weight:600">Agendaram</th><th style="padding:6px 4px;font-weight:600">Calls</th><th style="padding:6px 4px;font-weight:600">Fecharam</th><th style="padding:6px 4px;font-weight:600">Visita → lead</th></tr></thead><tbody>' +
+    (cs.length ? cs.map(function (c) { var on = filtro === c.canal;
+      return '<tr data-lf="' + es(c.canal) + '" style="cursor:pointer;border-top:1px solid var(--line);text-align:right' + (on ? ';background:rgba(255,101,24,.12)' : '') + '"><td style="text-align:left;padding:8px 4px;font-weight:700">' + es(c.canal) + '</td><td style="padding:8px 4px">' + n0(c.visitas) + '</td><td style="padding:8px 4px;color:var(--or2);font-weight:700">' + n0(c.leads) + '</td><td style="padding:8px 4px">' + n0(c.agendaram) + '</td><td style="padding:8px 4px">' + n0(c.calls) + '</td><td style="padding:8px 4px;color:var(--ok);font-weight:700">' + n0(c.fecharam) + '</td><td style="padding:8px 4px;color:var(--mut)">' + pc(c.leads, c.visitas) + '</td></tr>'; }).join('')
+      : '<tr><td colspan="7" class="vazio" style="padding:10px 4px">Sem visitas ainda.</td></tr>') + '</tbody></table></div>';
+  var ls = (D.leads || []).filter(function (l) { return !filtro || l.origem === filtro; });
+  h += '<h2 class="sec">Leads <span class="n">' + ls.length + '</span>' + (filtro ? ' <small>Só ' + es(filtro) + '. <a href="#" data-lf="' + es(filtro) + '">Ver todos</a></small>' : '') + '</h2><div class="card">' +
+    (ls.length ? ls.map(function (l) {
+      var tags = (l.email ? (l.sair ? '<span style="color:var(--err);font-weight:700">pediu para sair</span>' : 'respondeu o e-mail' + (l.quero ? ' <span style="color:var(--ok);font-weight:700">QUERO</span>' : '')) + ': "' + es(l.trecho) + '"' : (l.agendou ? 'agendou' + (l.horario ? ' para ' + es(l.horario) : '') : 'deixou contato')) + ' · ' + es(l.quando);
+      var fone = l.wa ? String(l.wa).replace(/^55(\d{2})(\d{4,5})(\d{4})$/, '($1) $2-$3') : '';
+      var jor = l.email && !l.site ? (fone ? 'WhatsApp <a href="https://wa.me/' + es(l.wa) + '" target="_blank" rel="noopener">' + es(fone) + '</a>' : 'sem WhatsApp na lista') + (l.envio ? ' · e-mail "' + es(l.envio) + '"' : '') : (fone ? 'WhatsApp <a href="https://wa.me/' + es(l.wa) + '" target="_blank" rel="noopener">' + es(fone) + '</a> · ' : '') + n0(l.visitas) + (l.visitas == 1 ? ' visita' : ' visitas') + (l.minutos ? ' · ' + n0(l.minutos) + ' min no site' : '') + ' · viu ' + es(l.paginas) + (l.aparelho ? ' · ' + es(l.aparelho) : '') + (l.area ? ' · ' + es(l.area) : '');
+      return '<div class="lin"><div class="t"><b>' + (l.crm ? '<a href="' + es(l.crm) + '" target="_blank" rel="noopener">' + es(l.nome) + '</a>' : es(l.nome)) + '</b> <span style="font:600 11.5px Inter;border:1px solid var(--line);border-radius:20px;padding:1px 8px;margin-left:4px">' + es(l.origem) + '</span>' + (l.onde && l.onde !== l.origem ? ' <span class="mut" style="font-size:12px">disse: ' + es(l.onde) + '</span>' : '') +
+        '<span class="s">' + tags + '</span><span class="s">' + jor + '</span></div><div class="v" style="color:' + (COR[l.cor] || 'var(--mut)') + '">' + es(l.etapa) + '</div></div>'; }).join('')
+      : '<p class="vazio" style="margin:6px 0">' + (filtro ? 'Nenhum lead de ' + es(filtro) + ' ainda.' : 'Nenhum lead registrado ainda. Começa a contar a partir de agora: cada pessoa que agendar ou deixar contato pelo site aparece aqui com a origem.') + '</p>') + '</div>';
+  h += '<p class="mut" style="font-size:12.5px;margin-top:8px;line-height:1.5">Origem é o primeiro canal que trouxe a pessoa ao site, mesmo que ela volte depois por outro caminho. A etapa vem do CRM; ela só anda quando o card é atualizado lá.</p>';
+  d.innerHTML = h;
+}
+function carregar(forcar) {
+  if (carregando) return; if (!forcar && D && Date.now() - ultimo < 120000) { desenhar(); return; }
+  var d = caixa(); if (!d) return;
+  if (!D) d.innerHTML = '<p class="vazio">Carregando leads…</p>';
+  var ss = {}; try { ss = JSON.parse(sessionStorage.getItem('painelCasca_central') || 'null') || {}; } catch (e) {}
+  carregando = 1;
+  fetch('https://n8n.grupoeuforia.tech/webhook/diretoria-central-leads', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ usuario: ss.usuario, token: ss.token }) })
+    .then(function (r) { return r.json(); }).catch(function () { return { ok: false, erro: 'Sem conexão. Tente de novo.' }; }).then(function (r) {
+      carregando = 0;
+      if (r && r.erro === 'sessao') r.erro = 'Sua sessão acabou. Saia e entre de novo no Painel Central.';
+      if (!r || !r.ok) { if (!D) d.innerHTML = '<p class="erro">' + es((r && r.erro) || 'Não consegui ler os leads agora.') + '</p>'; return; }
+      D = r; ultimo = Date.now(); desenhar();
+    });
+}
+window.mkLeadsCarregar = function () { carregar(false); };
+document.addEventListener('click', function (ev) { if (ev.target && ev.target.id === 'mkAtual') { var d = $i('mkLeads'); if (d && d.style.display !== 'none') carregar(true); } });
+})();
+
+</script>
+</body></html>
+
