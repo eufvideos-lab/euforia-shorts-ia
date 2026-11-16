@@ -90,9 +90,9 @@ bash instalar.sh   # instala Remotion e OpenCV (~15 s)
    (se o pedido tiver) e a ficha do cliente (nicho, "Direção criativa", links e "📝 Rodapé da descrição (YouTube)").
 9b. Projeto do Euforia Studio (16/11/2026; é o que a equipe abre para ajustar e renderizar no PC):
    `python3 pipeline/projeto_editor.py pedidos/<id-curto> pedidos/<id-curto>/studio --cliente "<nome>"`, depois
-   `python3 pipeline/publicacao.py pedidos/<id-curto> --cliente "<nome>" --pasta-drive <pasta dos shorts> --studio pedidos/<id-curto>/studio`
-   (confere as regras do YouTube, sobe um "título e descrição.txt" por vídeo ao lado dos shorts e põe o pacote no
-   projeto; se parar com ERRO, corrija o publicacao.json e rode de novo; avisos não param). Crie com o
+   `python3 pipeline/publicacao.py pedidos/<id-curto> --cliente "<nome>" --pasta-drive <pasta dos shorts> --studio pedidos/<id-curto>/studio --cliente-id <id da ficha do cliente> --pedido <link do pedido>`
+   (confere as regras do YouTube, sobe um "título e descrição.txt" por vídeo ao lado dos shorts, põe o pacote no
+   projeto e no Painel da Equipe, na gaveta do horário da Grade, onde quem posta copia; se parar com ERRO, corrija o publicacao.json e rode de novo; avisos não param). Crie com o
    Google Drive a pasta "<Cliente> - <id-curto>" dentro de EDITOR (1Je4ZPgF6m3ocRinFlMNewtyljHD7unLX) e rode
    `python3 pipeline/studio_drive.py pedidos/<id-curto>/studio <id da pasta> [--revisar "<motivo>"]`.
    **Revisão obrigatória da Lorena** (decisão do Henrique, 16/11/2026). Vale se QUALQUER um for verdade:
