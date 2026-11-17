@@ -48,7 +48,7 @@ Anote em `pedidos/<id-curto>/modelo/leitura.md`, em tópicos curtos:
   quantidade de slides do modelo quando o pacote/roteiro permitir.
 - **Comparação:** faça `comparacao-modelo.jpg` com o modelo à esquerda e a peça nova à direita
   (`analisar.py folha`). Olhe: se alguém da equipe batesse o olho, diria que é "o mesmo estilo"? Se não, refaça
-  (até 2 vezes). Suba a comparação junto com a entrega, para o Ismael revisar comparando.
+  (até 2 vezes). Suba a comparação junto com a entrega, para a Lorena revisar comparando.
 - No Obs/log: "Segui o modelo <nome do arquivo>: <2–3 pontos copiados>. Texto do roteiro <qual>."
 
 ## 5. Modelo padrão do cliente
@@ -60,7 +60,7 @@ Assim que uma peça feita a partir de um modelo é entregue, o modelo vira o pad
   Drive>"` e `"css_extra":"..."` (o CSS que deu certo), sem apagar as outras chaves.
 - Pedido **sem** "Modelo para seguir": se houver arquivo `PADRÃO ...` nessas pastas, o mais recente é o modelo
   (siga os itens 1 a 4 com ele). Diga no log "segui o modelo padrão do cliente".
-- Se o Ismael devolver com "Ajustar"/"diferente do modelo", corrija a peça e, se a correção for de estilo,
+- Se a revisão (Lorena) devolver com "Ajustar"/"diferente do modelo", corrija a peça e, se a correção for de estilo,
   atualize o `css_extra` salvo.
 
 ## 6. Texto da peça (de onde vem)
