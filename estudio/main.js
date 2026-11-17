@@ -163,7 +163,8 @@ async function renderizar(evento, { pasta, pacote }) {
       const entrada = pastaEntrada();
       fs.mkdirSync(entrada, { recursive: true });
       saida = path.join(entrada, base + '.mp4');
-      pedido = { versao: 1, cliente: pacote.cliente, titulo: pacote.titulo, observacoes: pacote.observacoes || '', enviado_por: pacote.editado_por,
+      const posId = 'st-' + Date.now().toString(36);
+      pedido = { versao: 1, id: posId, cliente: pacote.cliente, titulo: pacote.titulo, observacoes: pacote.observacoes || '', enviado_por: pacote.editado_por,
         pc: os.hostname(), enviado_em: new Date().toISOString(), video: base + '.mp4', duracao: longo.trechos.reduce((n, x) => n + x.fim - x.ini, 0),
         cortes: longo.trechos.length - 1, origem: path.basename(longo.video || '') };
       longo.cru = true;
@@ -174,8 +175,12 @@ async function renderizar(evento, { pasta, pacote }) {
     try {
       const { segundos } = await r.pronto;
       // o .json por último: a máquina só pega o pedido quando ele aparece (o vídeo já terminou de gravar)
-      if (pedido) fs.writeFileSync(saida.replace(/\.mp4$/, '.json'), JSON.stringify(pedido, null, 1));
-      envia({ fase: 'pronto', progresso: 1, saida, segundos, nucleos, maquina });
+      if (pedido) {
+        fs.writeFileSync(saida.replace(/\.mp4$/, '.json'), JSON.stringify(pedido, null, 1));
+        const c = lerConfig(); // a tela de projetos acompanha a pós-produção deste corte
+        gravarConfig({ ...c, pos: [{ id: pedido.id, cliente: pedido.cliente, titulo: pedido.titulo, video: pedido.video, enviado_em: pedido.enviado_em }, ...(c.pos || [])].slice(0, 20) });
+      }
+      envia({ fase: 'pronto', progresso: 1, saida, segundos, nucleos, maquina, posId: pedido?.id });
       return { saida, segundos };
     } finally { cancelar = null; }
   }
@@ -301,6 +306,38 @@ ipcMain.handle('estudio:escolherPasta', async () => {
 });
 ipcMain.handle('estudio:renderizar', renderizar);
 // Novo projeto com bruto: escolhe o vídeo, prepara prévia e onda, devolve o item para abrir direto
+/* ---------------------------------------------------------------- pós-produção pela máquina (17/11/2026) */
+// A máquina sobe "<id>-<passo>.json" em ENTRADA DO STUDIO/_status (pipeline/studio_status.py); o Drive para computador
+// traz para cá. Passo 9 com "pasta" = o projeto pronto está em EDITOR/<pasta>.
+function statusPos(p) {
+  const entrada = pastaEntrada();
+  let melhor = null;
+  try {
+    for (const f of fs.readdirSync(path.join(entrada, '_status'))) {
+      const m = f.match(/^(.+)-(\d+)(?: \(\d+\))?\.json$/);
+      if (!m || m[1] !== p.id) continue;
+      try { const d = JSON.parse(fs.readFileSync(path.join(entrada, '_status', f), 'utf8')); if (!melhor || d.passo > melhor.passo) melhor = d; } catch { /* sincronizando */ }
+    }
+  } catch { /* ainda sem a pasta _status */ }
+  const r = { ...p, passo: 0, texto: 'Na fila da máquina', pronto: false };
+  if (!melhor && p.video && !fs.existsSync(path.join(entrada, p.video))) Object.assign(r, { passo: 1, texto: 'Recebido, começando' });
+  if (melhor) Object.assign(r, { passo: melhor.passo, texto: melhor.texto, erro: !!melhor.erro, pasta: melhor.pasta || null });
+  if (r.passo >= 9 && r.pasta) {
+    r.pronto = fs.existsSync(path.join(raiz(), r.pasta));
+    if (!r.pronto) r.texto = 'Pronto, chegando pelo Drive';
+  }
+  return r;
+}
+ipcMain.handle('estudio:posProducao', () => {
+  const semana = Date.now() - 7 * 86400000;
+  return (lerConfig().pos || []).filter((p) => !p.dispensado && Date.parse(p.enviado_em) > semana).map(statusPos);
+});
+ipcMain.handle('estudio:posDispensar', (e, id) => {
+  const c = lerConfig();
+  gravarConfig({ ...c, pos: (c.pos || []).map((p) => (p.id === id ? { ...p, dispensado: true } : p)) });
+  return true;
+});
+
 ipcMain.handle('estudio:novoBruto', async (e, teste) => {
   let arquivo = process.env.ESTUDIO_TESTE && teste ? teste : null; // teste automático sem a janela de escolher
   if (!arquivo) {

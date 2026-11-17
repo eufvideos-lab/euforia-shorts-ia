@@ -20,13 +20,25 @@ Status "Editar" ou "Ajustar" no quadro 🎞️ Pedidos de Vídeos Longos IA. Tud
 ## 1. Ver se há trabalho
 **0. Cortes que chegaram do Euforia Studio (16/11/2026).** Antes do quadro, liste com o Google Drive a pasta
 ENTRADA DO STUDIO (1twie2jOhRBxclY1sbXpLKqQIYJk5q5yu). Para cada `.json` ali (o `.mp4` de mesmo nome é o corte):
-leia o json (`cliente`, `titulo`, `observacoes`, `enviado_por`) e crie um pedido no quadro com Status "Editar", o
+leia o json (`id`, `cliente`, `titulo`, `observacoes`, `enviado_por`) e crie um pedido no quadro com Status "Editar", o
 cliente, o título, "Vídeo bruto" = link do `.mp4` e nas "Observações para a máquina":
 "CORTE DO STUDIO (feito à mão por <enviado_por>): NÃO tire nenhum trecho da fala, só os comandos ⛔ se houver.
-<observacoes>". Depois mova o `.json` e o `.mp4` para a subpasta `_recebidos` (crie se não houver; update_file com
+ID DO STUDIO: <id>
+<observacoes>" (sem `id` no json, sem a linha do ID). Com `id`, avise o Studio na hora:
+`python3 pipeline/studio_status.py <id> 1`. Depois mova o `.json` e o `.mp4` para a subpasta `_recebidos` (crie se não houver; update_file com
 parentId). Cliente que não bate com nenhuma ficha: não crie o pedido, avise no #ia-status e deixe os arquivos lá.
 No pedido com "CORTE DO STUDIO", o plano mantém toda a fala (um segmento do início ao fim; o `texto.py
 --limpar-plano` só tira os comandos) e segue o resto igual (textos, lowers, cartões, B-roll, trilha, tela final).
+**Pós-produção ao vivo no Studio (17/11/2026).** Quem mandou o corte acompanha o andamento no Studio. Se as
+Observações têm "ID DO STUDIO: <id>", atenda esse pedido ANTES de qualquer outro (a pessoa está esperando) e rode
+`python3 pipeline/studio_status.py <id> <passo>` em cada etapa: 2 antes de transcrever (passo 3), 3 antes do plano
+(passo 5), 4 antes do B-roll (passo 7), 5 antes do projeto do Studio (passo 9b) e, depois do `studio_drive.py`,
+`python3 pipeline/studio_status.py <id> 9 --pasta "<Cliente> - <id-curto>"` (o nome exato da pasta criada em EDITOR).
+Nesses pedidos a pessoa renderiza no PC dela: NÃO suba o final.mp4 no passo 10 (o resto do passo 10 vale) e, no
+passo 11, "Vídeo pronto" = link da pasta em EDITOR. No passo 12 o aviso é
+"🎞️ Pós-produção pronta no Euforia Studio: <Cliente> (<duração>). Abrir em EDITOR / <Cliente> - <id-curto>. — Érica, time de suporte, Grupo Euforia"
+(sem @everyone; quem mandou o corte já vê no Studio). Em erro, além do de sempre:
+`python3 pipeline/studio_status.py <id> 99 "Deu um erro. A diretoria já está vendo." --erro`.
 
 Consulte o quadro com notion-query-data-sources em modo view, SEM filtro (view://1f712af7-3e70-44b6-9dbc-d3a5f34134d3),
 e escolha você as linhas com Status "Editar" ou "Ajustar". Atenção: Status é um campo de seleção (select), não do tipo

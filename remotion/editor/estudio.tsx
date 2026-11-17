@@ -22,8 +22,10 @@ type API = {
   aoProgresso(cb: (p: Progresso) => void): () => void;
   atualizacao?(): Promise<Atualizacao | null>; atualizar?(instalador: string): Promise<boolean>;
   novidades?(): Promise<{ versao: string; itens: string[] } | null>; aoBaixar?(cb: (p: number) => void): () => void;
+  posProducao?(): Promise<PosItem[]>; posDispensar?(id: string): Promise<boolean>;
   novoBruto?(teste?: string): Promise<ItemProjeto | null>; aoBruto?(cb: (x: { nome: string; progresso: number }) => void): () => void;
 };
+export type PosItem = { id: string; cliente: string; titulo: string; passo: number; texto: string; pronto: boolean; erro?: boolean; pasta?: string | null };
 export type Atualizacao = { versao: string; novidades: string[]; instalador: string };
 declare global { interface Window { estudio?: API } }
 
@@ -73,6 +75,13 @@ export function Estudio({ Editor, usar }: {
     setItens(await api.listar());
   }, [api]);
   useEffect(() => { carregar(); }, [carregar]);
+
+  // pós-produção pela máquina: confere o andamento a cada 20 s (a máquina avisa pela pasta do Drive)
+  const [pos, setPos] = useState<PosItem[]>([]);
+  const lerPos = useCallback(async () => { if (api.posProducao) setPos(await api.posProducao()); }, [api]);
+  useEffect(() => { lerPos(); const id = setInterval(lerPos, 20000); return () => clearInterval(id); }, [lerPos]);
+  const nProntos = pos.filter((p) => p.pronto).length;
+  useEffect(() => { if (nProntos) carregar(); }, [nProntos, carregar]);
   useEffect(() => api.aoProgresso((p) => setRender((r) => (r ? { ...r, p } : r))), [api]);
 
   const abrir = async (item: ItemProjeto) => {
@@ -112,7 +121,9 @@ export function Estudio({ Editor, usar }: {
         : <Inicio info={info} itens={itens} abrir={abrir} recarregar={carregar}
             trocarPasta={async () => { if (await api.escolherPasta()) carregar(); }}
             assistir={(a) => api.abrir(a)} nova={nova} baixando={baixando} atualizar={atualizar}
-            novoBruto={api.novoBruto ? novoBruto : undefined} />}
+            novoBruto={api.novoBruto ? novoBruto : undefined}
+            pos={pos} abrirPos={(p) => { const i = (itens ?? []).find((x) => x.pasta === p.pasta); if (i) abrir(i); else carregar(); }}
+            dispensar={async (id) => { await api.posDispensar?.(id); lerPos(); }} />}
       {bruto && (
         <div className="modal">
           <div>
@@ -138,17 +149,18 @@ export function Estudio({ Editor, usar }: {
       {render && (
         <TelaRender r={render} info={info} api={api}
           fechar={() => setRender(null)}
-          voltar={() => { setRender(null); setAberto(null); carregar(); }} />
+          voltar={() => { setRender(null); setAberto(null); carregar(); lerPos(); }} />
       )}
     </>
   );
 }
 
 /* ------------------------------------------------------------------ início: projetos */
-function Inicio({ info, itens, abrir, recarregar, trocarPasta, assistir, nova, baixando, atualizar, novoBruto }: {
+function Inicio({ info, itens, abrir, recarregar, trocarPasta, assistir, nova, baixando, atualizar, novoBruto, pos, abrirPos, dispensar }: {
   info: InfoPC | null; itens: ItemProjeto[] | null; abrir: (i: ItemProjeto) => void; recarregar: () => void;
   trocarPasta: () => void; assistir: (a: string) => void;
   nova: Atualizacao | null; baixando: number | null; atualizar: () => void; novoBruto?: () => void;
+  pos: PosItem[]; abrirPos: (p: PosItem) => void; dispensar: (id: string) => void;
 }) {
   const [filtro, setFiltro] = useState<'todos' | 'obrigatorios' | 'revisar' | 'prontos'>('todos');
   const [busca, setBusca] = useState('');
@@ -200,6 +212,23 @@ function Inicio({ info, itens, abrir, recarregar, trocarPasta, assistir, nova, b
             {novoBruto && <button className="bt pri" onClick={novoBruto} title="Escolha um vídeo do PC para cortar à mão">＋ Novo projeto com bruto</button>}
           </div>
         </header>
+
+        {pos.length > 0 && (
+          <section className="st-pos">
+            <h3>Pós-produção</h3>
+            {pos.map((p) => (
+              <div key={p.id} className={'st-pos-item' + (p.pronto ? ' pronto' : '') + (p.erro ? ' erro' : '')}>
+                <div className="st-pos-nome"><b>{p.cliente}</b> · {p.titulo}</div>
+                <div className="st-barra"><i style={{ width: `${p.pronto ? 100 : Math.max(6, Math.min(5, p.passo) * 18)}%` }} /></div>
+                <span className="st-pos-txt">{p.erro ? '⚠️ ' : ''}{p.texto}</span>
+                {p.pronto
+                  ? <button className="bt mini pri" onClick={() => abrirPos(p)}>Abrir com a pós-produção</button>
+                  : p.erro ? <button className="bt mini" onClick={() => dispensar(p.id)}>Tirar da lista</button> : <span />}
+                {p.pronto ? <button className="bt mini" onClick={() => dispensar(p.id)} title="Tirar da lista">✕</button> : <span />}
+              </div>
+            ))}
+          </section>
+        )}
 
         <div className="st-filtros">
           {([['todos', 'Todos'], ['obrigatorios', '🔎 Revisão obrigatória'], ['revisar', 'Para revisar'], ['prontos', 'Renderizados']] as const).map(([k, n]) => (
@@ -274,7 +303,7 @@ function TelaRender({ r, info, api, fechar, voltar }: {
     motor: 'Só na primeira vez: baixando o navegador que desenha os quadros.',
     preparando: p.msg ?? 'Lendo o vídeo e os grafismos.',
     renderizando: `Usando ${p.nucleos ?? '?'} de ${info?.nucleos ?? '?'} núcleos deste PC${p.frames != null && p.total ? ` · quadro ${p.frames} de ${p.total}` : ''}`,
-    pronto: p.maquina ? 'Enviado para a máquina. Ela transcreve, põe textos, B-roll e trilha, e o projeto volta na pasta EDITOR para revisar.' : `Feito em ${p.segundos ?? 0} s com ${p.nucleos ?? '?'} núcleos deste PC. Salvo na pasta do projeto${r.pacote.modo === 'ajustado' ? ', junto com os ajustes' : ''}.`,
+    pronto: p.maquina ? 'A pós-produção começou. Acompanhe na tela de projetos: quando ficar pronta, é só abrir, conferir e renderizar no seu PC.' : `Feito em ${p.segundos ?? 0} s com ${p.nucleos ?? '?'} núcleos deste PC. Salvo na pasta do projeto${r.pacote.modo === 'ajustado' ? ', junto com os ajustes' : ''}.`,
     erro: p.msg ?? 'Erro desconhecido.',
   }[p.fase];
   const falta = p.fase === 'renderizando' && p.restante ? Math.max(1, Math.round(p.restante / 1000)) : null;
@@ -297,7 +326,7 @@ function TelaRender({ r, info, api, fechar, voltar }: {
           {p.fase === 'pronto' && p.saida && <>
             {!p.maquina && <button className="bt pri" onClick={() => api.abrir(p.saida!)}>▶ Assistir</button>}
             <button className="bt" onClick={() => api.mostrar(p.saida!)}>Mostrar na pasta</button>
-            <button className="bt" onClick={voltar}>Voltar aos projetos</button>
+            <button className={p.maquina ? 'bt pri' : 'bt'} onClick={voltar}>{p.maquina ? 'Acompanhar' : 'Voltar aos projetos'}</button>
           </>}
           {p.fase === 'erro' && <button className="bt" onClick={fechar}>Fechar</button>}
           {p.fase !== 'pronto' && p.fase !== 'erro' && <button className="bt" onClick={() => api.cancelar()}>Cancelar</button>}

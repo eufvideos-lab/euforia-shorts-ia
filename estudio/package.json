@@ -1,7 +1,7 @@
 {
   "name": "euforia-studio",
   "productName": "Euforia Studio",
-  "version": "0.3.3",
+  "version": "0.4.0",
   "description": "Editor da Euforia: ver, ajustar e renderizar no próprio PC os vídeos que a máquina monta",
   "main": "main.js",
   "author": "Grupo Euforia",

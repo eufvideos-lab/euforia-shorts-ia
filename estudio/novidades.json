@@ -1,4 +1,9 @@
 {
+  "0.4.0": [
+    "✨ Aplicar pós-produção: corte o bruto, clique e a máquina põe textos, lowers, cartões, B-roll, trilha e tela final nas cores do cliente.",
+    "Você acompanha o andamento na tela de projetos (Pós-produção) e, quando ficar pronto, clica em \"Abrir com a pós-produção\", confere e renderiza no seu PC.",
+    "Velocidade da prévia: 1x, 1,5x, 2x ou 4x."
+  ],
   "0.3.3": [
     "Velocidade da prévia: 1x, 1,5x, 2x ou 4x na barra da linha do tempo, para conferir mais rápido (o render sai normal).",
     "Prévia do bruto mais estável nos cortes, com menos engasgos."
