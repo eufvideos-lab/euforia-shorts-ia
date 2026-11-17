@@ -1,0 +1,343 @@
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Giuliano Alcantara · Aprendizagem e liderança nas empresas</title>
+<meta name="description" content="Giuliano Alcantara ajuda redes e empresas a padronizar o aprendizado e preparar líderes para desenvolver suas equipes, com diagnóstico da operação, formação de multiplicadores e rotina de aprendizagem.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400..900&display=swap">
+<style>
+:root{--carvao:#12161C;--ambar:#F2A93B;--azul:#0072BC;--nevoa:#F3F5F7;--papel:#FBFCFD;--tinta:#1E252E;--cinza:#5A6470;--linha:#D5DBE2;--texto:'Inter','Helvetica Neue',Arial,sans-serif;color-scheme:light}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{background:var(--nevoa);color:var(--tinta);font-family:var(--texto);font-size:18px;line-height:1.6;margin:0}
+h1,h2,h3{text-wrap:balance;margin:0;line-height:1.12;font-weight:800}
+p{margin:0}
+.faixa{padding-block:88px}
+.wrap{max-width:1080px;margin:0 auto;padding-inline:20px}
+.eyebrow{font-size:13px;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:var(--azul)}
+.escuro{background:var(--carvao);color:var(--nevoa)}
+.escuro .eyebrow{color:var(--ambar)}
+.btn{display:inline-flex;align-items:center;gap:10px;background:var(--ambar);color:#1A1205;font-weight:800;font-size:17px;padding:16px 28px;border-radius:999px;text-decoration:none;border:0;cursor:pointer;font-family:var(--texto)}
+.btn:hover{background:#F6BC62}
+.btn:focus-visible,.opc:focus-visible{outline:3px solid var(--ambar);outline-offset:3px}
+.link{color:var(--nevoa);font-weight:700;text-decoration:underline;text-underline-offset:4px}
+nav{position:sticky;top:0;z-index:5;background:rgba(18,22,28,.96);border-bottom:1px solid rgba(243,245,247,.1)}
+nav .wrap{display:flex;align-items:center;justify-content:space-between;gap:16px;height:60px}
+.marca{font-weight:900;letter-spacing:.16em;text-transform:uppercase;font-size:14px;color:var(--nevoa);text-decoration:none;white-space:nowrap}
+.menu{display:flex;gap:22px}
+.menu a{color:#C4CCD6;text-decoration:none;font-size:15px;font-weight:600}
+.menu a:hover{color:var(--ambar)}
+.hero{display:grid;grid-template-columns:1.15fr .85fr;gap:48px;align-items:end;padding-top:56px}
+.hero h1{font-size:clamp(34px,4.8vw,56px);margin:16px 0 22px;font-weight:900}
+.hero h1 em{color:var(--ambar);font-style:normal}
+.hero .sub{font-size:20px;color:#C4CCD6;max-width:32em}
+.hero .acoes{display:flex;flex-wrap:wrap;align-items:center;gap:22px;margin:32px 0 40px}
+.hero .foto{display:flex;justify-content:center}
+.hero .foto img{width:100%;max-width:420px;height:auto;display:block}
+.selos{display:flex;flex-wrap:wrap;gap:10px 22px;font-size:14px;color:#9AA4B0;padding-bottom:28px}
+.selos span::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--ambar);margin-right:8px;vertical-align:middle}
+.assinatura{font-size:15px;color:var(--ambar);font-weight:700;padding-bottom:40px}
+.titulo{font-size:clamp(28px,3.8vw,42px);margin:14px 0 18px}
+.lead{font-size:20px;color:var(--cinza);max-width:40em}
+.escuro .lead{color:#C4CCD6}
+.grade{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:40px}
+.grade4{grid-template-columns:repeat(4,1fr)}
+.card{background:var(--papel);border:1px solid var(--linha);border-radius:14px;padding:26px}
+.card h3{font-size:20px;margin-bottom:8px;color:var(--carvao)}
+.card p{color:var(--cinza);font-size:16px}
+.fecho{margin-top:28px;font-weight:700;font-size:19px}
+.case{display:grid;grid-template-columns:repeat(3,1fr);margin-top:36px;border:1px solid rgba(243,245,247,.18);border-radius:14px;overflow:hidden}
+.case div{padding:28px}
+.case div+div{border-left:1px solid rgba(243,245,247,.18)}
+.case h3{font-size:14px;letter-spacing:.18em;text-transform:uppercase;color:var(--ambar);margin-bottom:10px}
+.case p{color:#C4CCD6;font-size:16px}
+.nota{margin-top:22px;color:#9AA4B0;font-size:15px}
+.passos{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;margin-top:40px}
+.passo{border-top:3px solid var(--ambar);padding-top:20px}
+.passo .n{font-size:44px;font-weight:900;color:var(--azul);line-height:1}
+.passo h3{font-size:20px;margin:10px 0 8px;color:var(--carvao)}
+.passo p{color:var(--cinza);font-size:16px}
+.duas{display:grid;grid-template-columns:1.2fr .8fr;gap:18px;margin-top:36px}
+.lista{list-style:none;padding:0;margin:14px 0 0}
+.lista li{padding:10px 0 10px 30px;border-top:1px solid var(--linha);position:relative;font-size:17px}
+.lista li::before{content:"✓";position:absolute;left:4px;color:var(--azul);font-weight:800}
+.sobre{display:grid;grid-template-columns:.8fr 1.2fr;gap:56px;align-items:center}
+.sobre img{width:100%;max-width:360px;border-radius:50%;border:6px solid var(--ambar);display:block;margin:0 auto;aspect-ratio:1/1;object-fit:cover;object-position:45% 20%}
+.sobre .lead{font-size:18px}
+.sobre .lead+.lead{margin-top:14px}
+.frase{margin-top:22px;font-weight:800;font-size:20px;color:var(--carvao)}
+.quiz{background:var(--papel);color:var(--tinta);border-radius:18px;padding:36px;margin-top:36px;max-width:780px}
+.barra{height:6px;background:#E3E7EC;border-radius:99px;overflow:hidden;margin-bottom:24px}
+.barra i{display:block;height:100%;width:0;background:var(--ambar);transition:width .3s}
+.quiz .q{font-size:23px;font-weight:800;margin-bottom:6px;color:var(--carvao)}
+.quiz .dica{font-size:15px;color:var(--cinza);margin-bottom:16px}
+.quiz .cont{font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--cinza);margin-bottom:8px}
+.opcoes{display:grid;gap:10px;margin-top:14px}
+.opc{text-align:left;font:inherit;font-size:16.5px;background:#fff;border:1.5px solid var(--linha);border-radius:12px;padding:13px 18px;cursor:pointer;color:var(--tinta)}
+.opc:hover,.opc.on{border-color:var(--ambar)}
+.opc.on{background:#FFF6E8}
+.seguir{margin-top:16px}
+.seguir[disabled]{opacity:.45;cursor:not-allowed}
+.res h3{font-size:27px;color:var(--carvao);margin:8px 0 12px}
+.res ul{margin:14px 0;padding-left:22px}
+.res li{margin:6px 0}
+.res .pergunta{font-weight:700;margin-top:10px}
+.res .prio{background:var(--nevoa);border-radius:12px;padding:16px 18px;margin-top:16px;font-size:16px}
+.res .acoes{display:flex;flex-wrap:wrap;gap:12px;margin-top:22px}
+.voltar{background:none;border:0;color:var(--cinza);font:inherit;font-size:14px;margin-top:16px;cursor:pointer;text-decoration:underline}
+.priv{font-size:14px;color:#9AA4B0;margin-top:16px;max-width:760px}
+details{border-top:1px solid var(--linha);padding:18px 0}
+details:last-of-type{border-bottom:1px solid var(--linha)}
+summary{cursor:pointer;font-weight:700;font-size:18px;color:var(--carvao);list-style:none;display:flex;justify-content:space-between;gap:16px}
+summary::after{content:"+";color:var(--azul);font-size:22px;line-height:1}
+details[open] summary::after{content:"–"}
+details p{margin-top:10px;color:var(--cinza)}
+.cta-final{text-align:center}
+.cta-final .titulo{max-width:20em;margin-inline:auto}
+.cta-final .lead{margin:0 auto 28px}
+footer{background:#0B0E12;color:#8792A0;font-size:14px;padding:32px 0}
+footer .wrap{display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px}
+@media (max-width:860px){
+  .faixa{padding-block:64px}
+  .menu{display:none}
+  .hero,.sobre,.duas{grid-template-columns:1fr}
+  .hero .foto{order:-1}
+  .hero .foto img{max-width:300px}
+  .grade,.grade4,.case{grid-template-columns:1fr}
+  .passos{grid-template-columns:1fr 1fr}
+  .case div+div{border-left:0;border-top:1px solid rgba(243,245,247,.18)}
+  .quiz{padding:22px}
+}
+@media (max-width:480px){.passos{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<nav><div class="wrap">
+  <a class="marca" href="#topo">Giuliano Alcantara</a>
+  <div class="menu"><a href="#metodo">Como trabalho</a><a href="#caso">Caso WD Group</a><a href="#sobre">Sobre</a><a href="#diagnostico">Contato</a></div>
+</div></nav>
+
+<header class="escuro" id="topo">
+  <div class="wrap hero">
+    <div>
+      <p class="eyebrow">Aprendizagem e liderança na operação</p>
+      <h1>Sua empresa não pode depender de você para <em>ensinar tudo, a todos.</em></h1>
+      <p class="sub">Ajudo redes e empresas a padronizar o aprendizado e preparar líderes para desenvolver suas equipes, com diagnóstico da operação, formação de multiplicadores e uma rotina de aprendizagem dentro da empresa.</p>
+      <div class="acoes">
+        <a class="btn" href="#diagnostico">Fazer avaliação inicial</a>
+        <a class="link" href="#metodo">Conhecer o trabalho</a>
+      </div>
+      <div class="selos"><span>Mais de 25 anos desenvolvendo pessoas</span><span>Empresas no Brasil e na China</span><span>Diagnóstico antes de treinamento</span></div>
+      <p class="assinatura">Nenhuma empresa cresce se as pessoas não crescem.</p>
+    </div>
+    <div class="foto"><img class="fg" src="data:image/jpeg;base64,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" alt="Giuliano Alcantara falando num palco"></div>
+  </div>
+</header>
+
+<section class="faixa">
+  <div class="wrap">
+    <p class="eyebrow">Na operação</p>
+    <h2 class="titulo">Quando o conhecimento fica em poucas pessoas, a operação fica vulnerável.</h2>
+    <div class="grade">
+      <div class="card"><h3>Cada contratação começa do zero</h3><p>O novo colaborador aprende com quem está disponível, sem uma orientação consistente.</p></div>
+      <div class="card"><h3>O gerente vira o ponto de apoio para tudo</h3><p>Quem conhece o trabalho precisa resolver a operação e ainda ensinar a equipe, sem método ou tempo reservado.</p></div>
+      <div class="card"><h3>Cada unidade trabalha de um jeito</h3><p>Orientações diferentes dificultam manter o padrão e acompanhar a execução.</p></div>
+    </div>
+    <p class="fecho">O ponto de partida é identificar o que precisa virar padrão e quem vai ensinar esse padrão à equipe.</p>
+  </div>
+</section>
+
+<section class="faixa escuro" id="caso">
+  <div class="wrap">
+    <p class="eyebrow">Caso · WD Group, China</p>
+    <h2 class="titulo">Aprendizado padronizado em uma rede em expansão.</h2>
+    <div class="case">
+      <div><h3>Contexto</h3><p>Uma rede em expansão que precisava sustentar os mesmos padrões de trabalho em todas as unidades.</p></div>
+      <div><h3>Contribuição</h3><p>Giuliano contribuiu para a padronização do aprendizado dos colaboradores por meio da Universidade WD Group, organizando a aprendizagem dentro da empresa.</p></div>
+      <div><h3>Evidência</h3><p>A formação das equipes passou a apoiar a sustentação dos padrões na operação, conduzida dentro da própria empresa.</p></div>
+    </div>
+    <p class="nota">A expansão da rede teve múltiplos fatores. O caso apresenta a contribuição da aprendizagem estruturada nesse contexto, sem atribuir a ela exclusivamente o crescimento.</p>
+  </div>
+</section>
+
+<section class="faixa">
+  <div class="wrap">
+    <p class="eyebrow">Entregas</p>
+    <h2 class="titulo">O que construímos com sua equipe.</h2>
+    <div class="grade grade4">
+      <div class="card"><h3>Prioridades claras</h3><p>Definição dos processos e conhecimentos que precisam ser ensinados primeiro.</p></div>
+      <div class="card"><h3>Padrões ensináveis</h3><p>Orientações e materiais de apoio para transmitir o trabalho com consistência.</p></div>
+      <div class="card"><h3>Líderes multiplicadores</h3><p>Preparação de líderes e veteranos para orientar e desenvolver colaboradores.</p></div>
+      <div class="card"><h3>Aprendizagem na rotina</h3><p>Organização da integração, da capacitação e do acompanhamento da aplicação no trabalho.</p></div>
+    </div>
+    <p class="nota" style="color:var(--cinza)">O escopo é definido a partir das necessidades identificadas e da proposta aprovada. Não é necessário partir da compra de uma nova plataforma.</p>
+  </div>
+</section>
+
+<section class="faixa escuro">
+  <div class="wrap">
+    <p class="eyebrow">A abordagem</p>
+    <h2 class="titulo">Treinamento precisa responder ao problema da operação, não apenas preencher o calendário.</h2>
+    <p class="lead">Um curso pode desenvolver uma habilidade específica. Mas, quando o problema é a falta de padrão, de orientação ou de continuidade, é preciso organizar também como a empresa ensina e acompanha o trabalho.</p>
+    <p class="lead" style="margin-top:16px">Por isso, começo entendendo o contexto e as prioridades. Depois, definimos a intervenção adequada: capacitação, formação de multiplicadores ou estruturação de uma rotina de aprendizagem.</p>
+  </div>
+</section>
+
+<section class="faixa" id="metodo">
+  <div class="wrap">
+    <p class="eyebrow">Como trabalho</p>
+    <h2 class="titulo">Primeiro entender. Depois desenvolver.</h2>
+    <div class="passos">
+      <div class="passo"><p class="n">01</p><h3>Entender o contexto</h3><p>Conversamos sobre o momento da empresa, suas dificuldades e o que precisa mudar.</p></div>
+      <div class="passo"><p class="n">02</p><h3>Definir prioridades e escopo</h3><p>Investigamos onde a falta de clareza, padrão e preparo da equipe afeta a operação e definimos as prioridades do trabalho.</p></div>
+      <div class="passo"><p class="n">03</p><h3>Preparar quem ensina</h3><p>Desenvolvemos líderes e veteranos para transmitir conhecimentos e orientar a equipe no trabalho.</p></div>
+      <div class="passo"><p class="n">04</p><h3>Organizar a continuidade</h3><p>Estruturamos uma rotina de aprendizagem conduzida pela equipe, com responsabilidades e acompanhamento definidos no escopo.</p></div>
+    </div>
+    <p style="margin-top:28px;color:var(--cinza)">Formato, duração e entregas são estabelecidos na proposta, conforme a necessidade da empresa.</p>
+  </div>
+</section>
+
+<section class="faixa" style="background:#E8ECF0">
+  <div class="wrap">
+    <p class="eyebrow">Para quem é</p>
+    <h2 class="titulo">Para empresas que precisam ensinar melhor para operar com mais consistência.</h2>
+    <div class="duas">
+      <div class="card">
+        <h3>Este trabalho faz sentido quando</h3>
+        <ul class="lista">
+          <li>O conhecimento está concentrado no dono ou em poucos profissionais.</li>
+          <li>A entrada de colaboradores exige orientação frequente.</li>
+          <li>Equipes, turnos ou unidades precisam seguir padrões comuns.</li>
+          <li>Há líderes disponíveis para assumir a formação do time.</li>
+          <li>A direção está disposta a participar da definição das prioridades.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Pode não ser o melhor ponto de partida quando</h3>
+        <p style="margin-top:12px">A necessidade é apenas uma palestra ou uma habilidade pontual. Nesse caso, uma capacitação específica pode ser avaliada.</p>
+        <p style="margin-top:12px">Não há disponibilidade para aplicar e acompanhar mudanças na rotina.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="faixa" id="sobre">
+  <div class="wrap sobre">
+    <img class="fg" alt="Giuliano Alcantara">
+    <div>
+      <p class="eyebrow">Quem conduz</p>
+      <h2 class="titulo">Giuliano Alcantara</h2>
+      <p class="lead">Administrador de empresas, treinador comportamental e organizacional e mentor empresarial, com mais de 25 anos de experiência no ambiente corporativo.</p>
+      <p class="lead">Sua trajetória reúne atuação como executivo, empreendedor e fundador da Prospere Desenvolvendo Habilidades, com experiência no desenvolvimento de profissionais no Brasil e na China.</p>
+      <p class="lead">Criador do Método LIDER e desenvolvedor de Os 5 Pilares do RH, conecta desenvolvimento comportamental e gestão prática para preparar líderes, organizar o aprendizado e fortalecer a execução das equipes.</p>
+      <p class="frase">Nenhuma empresa cresce se as pessoas não crescem.</p>
+    </div>
+  </div>
+</section>
+
+<section class="faixa escuro">
+  <div class="wrap">
+    <p class="eyebrow">Uma dúvida comum</p>
+    <h2 class="titulo">“Como evitar que isso fique só no treinamento?”</h2>
+    <p class="lead">O trabalho precisa estar conectado a uma prioridade real da operação, com responsáveis definidos e aplicação no dia a dia.</p>
+    <p class="lead" style="margin-top:16px">Por isso, a proposta deve deixar claro o que será desenvolvido, quem participará e como a aplicação será acompanhada. A formação da equipe depende também do envolvimento da direção e dos líderes.</p>
+  </div>
+</section>
+
+<section class="faixa" id="diagnostico" style="background:#E8ECF0">
+  <div class="wrap">
+    <p class="eyebrow">Avaliação inicial</p>
+    <h2 class="titulo">Como sua empresa organiza o trabalho e desenvolve suas equipes?</h2>
+    <p class="lead">Responda às perguntas e receba uma orientação inicial sobre a organização da sua empresa, seus processos e a forma como sua equipe aprende e é acompanhada.</p>
+    <div class="quiz" id="quiz" aria-live="polite"></div>
+    <p class="priv" style="color:var(--cinza)">A avaliação é orientativa, baseada nas suas respostas, e não substitui um diagnóstico empresarial completo. As respostas ficam apenas no seu navegador e só são enviadas se você escolher falar com a equipe pelo WhatsApp.</p>
+  </div>
+</section>
+
+<section class="faixa">
+  <div class="wrap">
+    <p class="eyebrow">Perguntas frequentes</p>
+    <h2 class="titulo">Antes de conversar.</h2>
+    <details><summary>Universidade corporativa é uma plataforma?</summary><p>Não necessariamente. É uma forma de organizar o aprendizado dentro da empresa: o que ensinar, quem ensina, quais materiais usar e como acompanhar a aplicação. A tecnologia deve servir à rotina, não substituí-la.</p></details>
+    <details><summary>Preciso ter várias unidades?</summary><p>Não é o único critério. A aderência depende da necessidade de padronizar o trabalho e desenvolver pessoas. Avaliamos o contexto na conversa inicial.</p></details>
+    <details><summary>O atendimento é online ou presencial?</summary><p>O formato é definido conforme a necessidade e o escopo, e fica estabelecido na proposta.</p></details>
+    <details><summary>Quanto tempo dura?</summary><p>Depende dos processos prioritários, das equipes envolvidas e da disponibilidade para aplicação. O cronograma é apresentado na proposta.</p></details>
+    <details><summary>Qual é o investimento?</summary><p>O investimento é definido conforme o escopo, as entregas e o formato do trabalho, após entendimento da necessidade.</p></details>
+    <details><summary>Preciso começar com um projeto completo?</summary><p>A conversa inicial ajuda a avaliar o ponto de partida adequado. Não é necessário pressupor a implantação de uma universidade corporativa para toda necessidade de capacitação.</p></details>
+  </div>
+</section>
+
+<section class="faixa escuro cta-final">
+  <div class="wrap">
+    <h2 class="titulo">O conhecimento da sua empresa precisa chegar a quem executa.</h2>
+    <p class="lead">Descubra por onde começar a organizar o trabalho e desenvolver sua equipe para sustentar padrões na operação.</p>
+    <a class="btn" href="#diagnostico">Fazer avaliação inicial</a>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <p><b style="color:#C4CCD6">Giuliano Alcantara</b> · Prospere Desenvolvendo Habilidades · Curitiba/PR · CNPJ 26.108.189/0001-24</p>
+    <p>As respostas da avaliação não são armazenadas por esta página.</p>
+  </div>
+</footer>
+
+<script>
+(function(){
+  var f=document.querySelector('.fg').src;document.querySelectorAll('img.fg').forEach(function(i){i.src=f});
+  var WHATSAPP="5541988028506";
+  var N="Não sei informar";
+  var P=[
+   {q:"Qual é o seu papel na empresa?",k:"Papel",o:["Dono ou sócio","Diretor ou gerente geral","Gerente de unidades","RH ou desenvolvimento de pessoas","Outro"]},
+   {q:"Quantas pessoas trabalham na empresa?",k:"Pessoas",o:["Até 20","De 21 a 50","De 51 a 200","Mais de 200"]},
+   {q:"Quantas unidades a empresa possui?",k:"Unidades",o:["Uma","De duas a cinco","De seis a 15","Mais de 15"]},
+   {q:"O que mais trava o crescimento da empresa hoje?",k:"Desafio",d:"Escolha até duas opções.",m:2,o:["Rotatividade alta","Cada unidade faz de um jeito","Líderes que não sabem formar o time","Tudo ainda depende do dono","Outro"]},
+   {q:"O que vocês já tentaram para resolver esses desafios?",k:"Já tentaram",d:"Pode escolher mais de uma.",m:5,x:"Ainda não tentamos",o:["Consultoria com dificuldade de implementação","Treinamentos ou cursos avulsos","Treinamentos internos sem método definido","Ainda não tentamos","Outro"]},
+   {q:"Quando você quer resolver isso?",k:"Quando",o:["Agora","Este mês","Nos próximos três meses","Estou pesquisando"]},
+   {q:"Como a estrutura da empresa está organizada?",k:"Estrutura",s:"e",o:["Ainda não temos uma estrutura definida.","Temos departamentos ou áreas definidos, mas sem um organograma claro.","Temos organograma e áreas definidos, mas nem sempre estão atualizados ou são conhecidos pela equipe.","Temos organograma atualizado, áreas definidas e essa estrutura é conhecida pela equipe.",N]},
+   {q:"Os colaboradores conhecem suas responsabilidades?",k:"Responsabilidades",s:"e",o:["As responsabilidades são definidas conforme as necessidades do dia a dia.","Algumas funções têm responsabilidades definidas, mas há dúvidas ou sobreposição.","A maioria das funções tem responsabilidades definidas e comunicadas.","As funções têm responsabilidades documentadas, comunicadas e revisadas quando necessário.",N]},
+   {q:"Como estão definidos os processos da operação?",k:"Processos",s:"p",o:["Os processos dependem principalmente da experiência de cada pessoa.","Alguns processos estão definidos, mas não estão escritos ou são pouco utilizados.","Os principais processos estão escritos e são utilizados em parte da operação.","Os principais processos estão escritos, são ensinados, acompanhados e atualizados.",N]},
+   {q:"Como a empresa desenvolve e ensina suas equipes?",k:"Aprendizagem",s:"a",o:["Não temos uma rotina de treinamento definida.","Fazemos treinamentos pontuais, conforme surgem necessidades.","Temos uma rotina de integração e treinamento para algumas funções.","Temos um método de aprendizagem por função, com responsáveis e acompanhamento da aplicação.",N]},
+   {q:"Como a empresa acompanha o desempenho e oferece feedback?",k:"Feedback",s:"f",o:["Ainda não temos uma rotina de avaliação ou feedback.","O acompanhamento acontece informalmente, sem critérios ou frequência definidos.","Fazemos avaliações ou feedbacks em algumas áreas, mas sem uma rotina consistente.","Temos critérios claros, avaliações periódicas e feedbacks com encaminhamentos de melhoria.",N]}
+  ];
+  var DIM={e:"Estrutura e responsabilidades: identificar funções essenciais, responsáveis e lacunas ou sobreposições.",p:"Processos operacionais: escolher uma atividade crítica e descrever o padrão esperado.",a:"Aprendizagem e desenvolvimento: definir o que aprender por função, quem ensina e como acompanhar a aplicação.",f:"Avaliação e feedback: definir o que se espera das funções prioritárias e criar uma rotina de conversa entre líder e colaborador."};
+  var RES=[
+   {t:"Base a estruturar",p:"Sua empresa tem uma oportunidade importante de organizar a base para crescer. Pelas respostas, parte das funções, dos processos ou do desenvolvimento da equipe ainda pode depender do conhecimento e da iniciativa de pessoas específicas. Isso pode dificultar a continuidade do trabalho e a formação de novos colaboradores.",l:["Identifique as funções essenciais e registre as responsabilidades de cada uma.","Escolha os processos que mais impactam a operação e descreva como devem ser executados.","Defina quem será responsável por ensinar e acompanhar cada atividade prioritária."],q:"Se uma pessoa-chave se ausentar hoje, quem saberá executar suas principais atividades?"},
+   {t:"Estrutura em desenvolvimento",p:"Sua empresa já construiu parte da base, mas precisa transformar práticas isoladas em rotina. Pelas respostas, existem iniciativas de organização, treinamento ou acompanhamento. O próximo desafio é garantir que elas sejam claras, aplicadas com consistência e conhecidas pelas pessoas responsáveis.",l:["Revise se as responsabilidades estão claras e se há sobreposição ou lacunas entre funções.","Compare os processos escritos com o que realmente acontece na operação.","Organize uma rotina de aprendizagem e feedback para as funções prioritárias."],q:"O que já está definido na empresa, mas ainda não acontece de forma consistente?"},
+   {t:"Estrutura organizada, pronta para consolidar",p:"Sua empresa relata uma base estruturada. O próximo passo é verificar sua consistência e evolução. Pelas respostas, há práticas organizadas de gestão, processos ou desenvolvimento. A oportunidade agora é verificar se elas produzem os resultados esperados e são mantidas pelas lideranças no dia a dia.",l:["Verifique se funções, processos e rotinas continuam atualizados e são aplicados pelas equipes.","Acompanhe a aplicação do aprendizado e os resultados das avaliações e feedbacks.","Prepare líderes e profissionais experientes para ensinar, acompanhar e melhorar os padrões existentes."],q:"Como vocês sabem que o que está definido realmente funciona na prática?"}
+  ];
+  var el=document.getElementById("quiz"),r=[],i=0;
+  function esc(s){return s.replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
+  function tela(){
+    if(i>=P.length)return resultado();
+    var p=P[i],sel=(r[i]||[]).slice();
+    el.innerHTML='<div class="barra"><i style="width:'+(i/P.length*100)+'%"></i></div><p class="cont">Pergunta '+(i+1)+' de '+P.length+'</p><p class="q">'+esc(p.q)+'</p>'+(p.d?'<p class="dica">'+p.d+'</p>':'')+'<div class="opcoes">'+p.o.map(function(o,j){return'<button class="opc'+(sel.indexOf(o)>-1?' on':'')+'" data-j="'+j+'">'+esc(o)+'</button>'}).join("")+'</div>'+(p.m?'<button class="btn seguir">Continuar</button>':'')+(i>0?'<br><button class="voltar">Voltar</button>':'');
+    var seg=el.querySelector(".seguir");
+    function upd(){if(seg)seg.disabled=!sel.length}
+    el.querySelectorAll(".opc").forEach(function(b){b.onclick=function(){var o=p.o[+b.dataset.j];
+      if(!p.m){r[i]=[o];i++;return tela();}
+      var k=sel.indexOf(o);
+      if(k>-1)sel.splice(k,1);else{if(o===p.x)sel=[];else{var xi=sel.indexOf(p.x);if(xi>-1)sel.splice(xi,1);}if(sel.length>=p.m)sel.shift();sel.push(o);}
+      el.querySelectorAll(".opc").forEach(function(c){c.classList.toggle("on",sel.indexOf(p.o[+c.dataset.j])>-1)});upd();}});
+    if(seg){upd();seg.onclick=function(){r[i]=sel;i++;tela();}}
+    var v=el.querySelector(".voltar");if(v)v.onclick=function(){i--;tela();};
+  }
+  function resultado(){
+    var pts={},soma=0,desc=0;
+    for(var j=6;j<11;j++){var o=r[j][0],n=P[j].o.indexOf(o);if(o===N){desc++;continue;}soma+=n;var s=P[j].s;pts[s]=(pts[s]===undefined?n:Math.min(pts[s],n));}
+    var h='<div class="barra"><i style="width:100%"></i></div><div class="res"><p class="eyebrow">Sua orientação inicial</p>';
+    if(desc===0){var R=RES[soma<=5?0:soma<=10?1:2];h+='<h3>'+R.t+'</h3><p>'+R.p+'</p><ul>'+R.l.map(function(x){return'<li>'+x+'</li>'}).join("")+'</ul><p class="pergunta">Pergunta para sua equipe: '+R.q+'</p>';}
+    else if(desc<5){h+='<h3>Orientação com base no que foi respondido</h3><p>Algumas perguntas ficaram sem resposta, então não geramos um resultado geral. Abaixo estão as prioridades indicadas pelas respostas que você deu.</p><p style="margin-top:10px;color:var(--cinza)">Sem avaliação: '+P.slice(6).filter(function(p,k){return r[k+6][0]===N}).map(function(p){return p.k}).join(", ")+'.</p>';}
+    else{h+='<h3>Vamos entender melhor na conversa</h3><p>Como as perguntas sobre estrutura ficaram sem resposta, não é possível indicar prioridades. Uma conversa inicial ajuda a mapear o ponto de partida.</p>';}
+    var ord=Object.keys(pts).sort(function(a,b){return pts[a]-pts[b]}).filter(function(k){return pts[k]<=1}).slice(0,2);
+    if(desc<5&&ord.length)h+='<div class="prio"><b>Prioridade de atenção</b><ul>'+ord.map(function(k){return'<li>'+DIM[k]+'</li>'}).join("")+'</ul></div>';
+    var resumo=P.map(function(p,j){return p.k+": "+r[j].join(" / ")}).join("\n");
+    var link="https://wa.me/"+WHATSAPP+"?text="+encodeURIComponent("Olá! Fiz a avaliação inicial no site do Giuliano Alcantara.\n"+resumo);
+    h+='<div class="acoes"><a class="btn" target="_blank" rel="noopener" href="'+link+'">Conversar com a equipe no WhatsApp</a></div><button class="voltar">Refazer avaliação</button></div>';
+    el.innerHTML=h;el.querySelector(".voltar").onclick=function(){r=[];i=0;tela();};
+  }
+  tela();
+})();
+</script>
+</body>
+</html>
