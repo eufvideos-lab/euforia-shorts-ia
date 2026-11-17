@@ -108,9 +108,10 @@ apt-get install -y -q libegl1 libgles2 >/dev/null 2>&1 || (apt-get update -q >/d
     "🔎 Revisão obrigatória (Lorena): <motivo>". Cole no log também as seções "Comandos de corte" e
     "Palavras corrigidas" do `relatorio.md` (o revisor confere em 10 s) e as frases do roteiro não achadas.
     Palavra errada que a equipe achar na revisão vira uma linha em `correcoes` na ficha do cliente.
+    **Card do Entregas** (17/11/2026, quem revisa é a Lorena): se as Observações do pedido têm o link do card ("Card no Entregas: <link>" ou "Card: <link>"), atualize esse card: Status "Em revisão", "Link do arquivo" = o link do vídeo pronto, "Revisor" = Lorena (ficha 3ea98c0cdde08163bd16f0213b098cb5), "🏢 Escritório IA" = "Feito pela IA" e uma linha no topo do Obs `[Máquina dd/MM HH:mm] Pronto para revisão da Lorena: <link do pedido>`. É assim que a peça entra na fila de revisão dela no Painel da Equipe. Sem link de card, siga sem isso.
 12. Avise no #longos-automáticos, marcando todos (@everyone), assinando como Érica:
-    "@everyone 🎞️ Vídeo longo pronto: <Cliente> (<duração>). Para revisão: <link>. Título, descrição e capítulos na mesma pasta. — Érica, time de suporte, Grupo Euforia"
-    Com revisão obrigatória, acrescente "🔎 Revisão obrigatória da @Lorena (<motivo>)" e
+    "@everyone 🎞️ Vídeo longo pronto: <Cliente> (<duração>). Para revisão da Lorena <@827882215185973279>: <link>. Título, descrição e capítulos na mesma pasta. — Érica, time de suporte, Grupo Euforia"
+    Com revisão obrigatória, acrescente "🔎 Revisão obrigatória (<motivo>)" e
     "Abrir no Euforia Studio: pasta EDITOR / <Cliente> - <id-curto>".
 
 ## Regras

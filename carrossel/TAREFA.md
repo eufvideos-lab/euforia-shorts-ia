@@ -100,8 +100,9 @@ O Chrome já vem no ambiente (/opt/pw-browsers). Se não achar, use `CHROME=<cam
 8. Atualize o pedido: "Carrosséis prontos" (link da pasta), "Entregue em" (agora), Status "Pronto para revisão" e
    um resumo curto no log (quantos carrosséis, de quais roteiros, se a identidade foi criada agora, qual modelo
    foi seguido, dúvidas).
-9. Avise no #carrosel-automático, assinando como Érica:
-   "🖼️ Carrosséis prontos: <Cliente> (<n> carrosséis). Para revisão do Ismael: <link>. — Érica, time de suporte, Grupo Euforia"
+   **Card do Entregas** (17/11/2026, quem revisa é a Lorena): se as Observações do pedido têm o link do card ("Card no Entregas: <link>" ou "Card: <link>"), atualize esse card: Status "Em revisão", "Link do arquivo" = a pasta de entrega, "Revisor" = Lorena (ficha 3ea98c0cdde08163bd16f0213b098cb5), "🏢 Escritório IA" = "Feito pela IA" e uma linha no topo do Obs `[Máquina dd/MM HH:mm] Pronto para revisão da Lorena: <link do pedido>`. É assim que a peça entra na fila de revisão dela no Painel da Equipe. Sem link de card, siga sem isso.
+9. Avise no #carrosel-automático, assinando como Érica (quem revisa é a Lorena, desde a divisão da equipe de 09/11/2026):
+   "🖼️ Carrosséis prontos: <Cliente> (<n> carrosséis). Para revisão da Lorena <@827882215185973279>: <link>. — Érica, time de suporte, Grupo Euforia"
 
 ## identidade.json (pasta do pedido)
 ```json

@@ -102,11 +102,12 @@ bash instalar.sh   # instala Remotion e OpenCV (~15 s)
 10. Atualize o pedido: "Shorts prontos" (um link por linha com o título recomendado do publicacao), "Pasta dos shorts", "Entregue em" (agora),
     Status "Pronto para revisão" e um resumo curto no log (tempo, B-rolls usados, dúvidas). Com revisão obrigatória,
     a 1ª linha do log é "🔎 Revisão obrigatória (Lorena): <motivo>".
+    **Card do Entregas** (17/11/2026, quem revisa é a Lorena): se as Observações do pedido têm o link do card ("Card no Entregas: <link>" ou "Card: <link>"), atualize esse card: Status "Em revisão", "Link do arquivo" = a pasta dos shorts, "Revisor" = Lorena (ficha 3ea98c0cdde08163bd16f0213b098cb5), "🏢 Escritório IA" = "Feito pela IA" e uma linha no topo do Obs `[Máquina dd/MM HH:mm] Pronto para revisão da Lorena: <link do pedido>`. É assim que a peça entra na fila de revisão dela no Painel da Equipe. Sem link de card, siga sem isso.
 11. Registre cada short na tabela de medição (Caminho "B - Próprio (Claude + Remotion)", Status "Gerado",
     Tempo de máquina, Corte no meio de frase = não, Link do short).
 12. Avise no Discord, assinando como Érica, curto:
-    "🎬 Shorts prontos: <Cliente> (<n> shorts, <estilo>). Para revisão do Ismael: <link da pasta>. Título e descrição de cada vídeo (e do longo) já estão na pasta. — Érica, time de suporte, Grupo Euforia"
-    Com revisão obrigatória, troque "Para revisão do Ismael" por "🔎 Revisão obrigatória da @Lorena (<motivo>)" e
+    "🎬 Shorts prontos: <Cliente> (<n> shorts, <estilo>). Para revisão da Lorena <@827882215185973279>: <link da pasta>. Título e descrição de cada vídeo (e do longo) já estão na pasta. — Érica, time de suporte, Grupo Euforia"
+    Com revisão obrigatória, troque "Para revisão da Lorena" por "🔎 Revisão obrigatória da Lorena <@827882215185973279> (<motivo>)" e
     acrescente "Abrir no Euforia Studio: pasta EDITOR / <Cliente> - <id-curto>".
 
 ## Regras
