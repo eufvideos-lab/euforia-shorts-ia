@@ -2,6 +2,7 @@
 // B-roll, telas cheias (título, cartões, mapa), textos-chave, lowers, tela final e trilha. A pessoa tira pedaços da
 // fala, move/tira/troca elementos e manda renderizar no próprio PC (o render usa os arquivos 1080p da máquina).
 import { Velocidade, useVelocidade } from './velocidade';
+import { lerRascunho, maiorId, useRascunho } from './rascunho';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Player, type PlayerRef } from '@remotion/player';
 import { AbsoluteFill, Audio, Img, Sequence, Video, interpolate, staticFile, useCurrentFrame } from 'remotion';
@@ -77,7 +78,7 @@ export const PreviaLongo: React.FC<{ L: LongoEd }> = ({ L }) => {
 /* ------------------------------------------------------------------ editor */
 export function EditorLongo({ proj, aoVoltar, aoRenderizar }: { proj: ProjetoLongo; aoVoltar?: () => void; aoRenderizar?: (p: Pacote) => void }) {
   const original = useMemo(() => anotarLongo(proj.longo), [proj]);
-  const [est, setEst] = useState<{ p: LongoEd; antes: LongoEd[]; depois: LongoEd[] }>({ p: original, antes: [], depois: [] });
+  const [est, setEst] = useState<{ p: LongoEd; antes: LongoEd[]; depois: LongoEd[] }>(() => ({ p: lerRascunho<LongoEd>(proj.id) ?? original, antes: [], depois: [] }));
   const L = est.p;
   const [sel, setSel] = useState<Sel>(null);
   const [frame, setFrame] = useState(0);
@@ -86,7 +87,10 @@ export function EditorLongo({ proj, aoVoltar, aoRenderizar }: { proj: ProjetoLon
   const [quem, setQuem] = useState(ler('editor-quem'));
   const player = useRef<PlayerRef>(null);
   const [vel] = useVelocidade();
-  const contador = useRef(0);
+  const [idIni] = useState(() => maiorId(est.p));
+  const contador = useRef(idIni);
+  const retomado = useRef(est.p !== original);
+  useRascunho(proj.id, est.p, original);
   const fps = L.fps;
   const t = frame / fps;
   const total = duracao(L);
@@ -122,6 +126,7 @@ export function EditorLongo({ proj, aoVoltar, aoRenderizar }: { proj: ProjetoLon
 
   const irPara = (s: number) => player.current?.seekTo(Math.max(0, Math.round(s * fps)));
   const avisar = (m: string) => { setAviso(m); setTimeout(() => setAviso(''), 2600); };
+  useEffect(() => { if (retomado.current) { setAviso('Abri do jeito que você deixou da última vez.'); setTimeout(() => setAviso(''), 4000); } }, []);
 
   const trAtual = () => { const os_ = inicios(L); const i = L.trechos.findIndex((x, k) => t >= os_[k] && t < os_[k] + x.fim - x.ini); return i < 0 ? null : L.trechos[i]; };
   const dividir = () => {
@@ -233,6 +238,7 @@ export function EditorLongo({ proj, aoVoltar, aoRenderizar }: { proj: ProjetoLon
     <div className="app longo">
       <header className="topo">
         {aoVoltar && <button className="bt" onClick={aoVoltar}>← Projetos</button>}
+        {est.p !== original && <button className="bt" title="Desfaz tudo o que foi mexido neste projeto (Ctrl+Z traz de volta)" onClick={() => { mudar(() => original); avisar('Voltei ao original. Ctrl+Z traz seus ajustes de volta.'); }}>↺ Original</button>}
         <div className="marca">euforia <b>{aoRenderizar ? 'studio' : 'editor'}</b></div>
         <button className="bt" onClick={desfazer} disabled={!est.antes.length} title="Ctrl+Z">↶ Desfazer</button>
         <button className="bt" onClick={refazer} disabled={!est.depois.length} title="Ctrl+Shift+Z">↷ Refazer</button>
