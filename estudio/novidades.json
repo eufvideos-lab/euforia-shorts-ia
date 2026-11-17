@@ -1,4 +1,7 @@
 {
+  "0.3.1": [
+    "Prévia mais leve: o bruto e o longo agora tocam na velocidade certa, sem travar nem pular, mesmo com muitos cortes."
+  ],
   "0.3.0": [
     "Novo projeto com bruto: escolha um vídeo do PC e corte à mão, vendo a onda do áudio (S divide, Delete tira).",
     "Tirar silêncios: corta as pausas longas do bruto de uma vez (Ctrl+Z desfaz).",
