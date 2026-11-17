@@ -1,5 +1,6 @@
 // Editor Euforia: abre o projeto que a máquina de shorts montou, mostra a prévia ao vivo (sem renderizar),
 // deixa a equipe ajustar legenda, destaque, B-roll, cartão e cortes, e exporta o projeto ajustado + a lista de ajustes.
+import { Velocidade, useVelocidade } from './velocidade';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { Player, type PlayerRef } from '@remotion/player';
@@ -92,6 +93,7 @@ function Editor({ proj, aoVoltar, aoRenderizar }: { proj: Projeto; aoVoltar?: ()
   const [fim, setFim] = useState<null | { ajustes: number; modo: string }>(null);
   const [quem, setQuem] = useState(ler('editor-quem'));
   const player = useRef<PlayerRef>(null);
+  const [vel] = useVelocidade();
   const contador = useRef(0);
 
   const fps = props.fps;
@@ -250,6 +252,7 @@ function Editor({ proj, aoVoltar, aoRenderizar }: { proj: Projeto; aoVoltar?: ()
           <div className="video">
             <Player
               ref={player}
+              playbackRate={vel}
               component={Comp}
               inputProps={props as unknown as Record<string, unknown>}
               durationInFrames={Math.max(1, Math.ceil(props.duration * fps))}
@@ -472,6 +475,7 @@ function LinhaDoTempo({ props, t, tocando, sel, setSel, irPara, mexidos, play, m
         <button className="bt mini" onClick={play}>{tocando ? '❚❚ Pausar' : '▶ Tocar'}</button>
         <span className="tc">{tc(t)}</span>
         <span className="tempo">/ {tc(props.duration)}</span>
+        <Velocidade />
         <span style={{ flex: 1 }} />
         <span className="tempo">espaço toca · ← → anda · Ctrl+Z desfaz</span>
         <button className="bt mini" onClick={() => setZoom(Math.max(1, z / 1.5))}>−</button>

@@ -1,6 +1,7 @@
 // Editor do vídeo LONGO (Euforia Studio): prévia ao vivo do que a máquina de longos montou, com a fala cortada,
 // B-roll, telas cheias (título, cartões, mapa), textos-chave, lowers, tela final e trilha. A pessoa tira pedaços da
 // fala, move/tira/troca elementos e manda renderizar no próprio PC (o render usa os arquivos 1080p da máquina).
+import { Velocidade, useVelocidade } from './velocidade';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Player, type PlayerRef } from '@remotion/player';
 import { AbsoluteFill, Audio, Img, Sequence, Video, interpolate, staticFile, useCurrentFrame } from 'remotion';
@@ -43,7 +44,7 @@ export const PreviaLongo: React.FC<{ L: LongoEd }> = ({ L }) => {
     <AbsoluteFill style={{ background: '#000', overflow: 'hidden' }}>
       {L.trechos.map((t, i) => (
         <Sequence key={t._id} from={fr(os_[i])} durationInFrames={Math.max(1, fr(os_[i] + t.fim - t.ini) - fr(os_[i]))} premountFor={fps}>
-          <Video src={staticFile(L.previa)} trimBefore={fr(t.ini)} style={{ width: '100%', height: '100%' }} />
+          <Video src={staticFile(L.previa)} trimBefore={fr(t.ini)} acceptableTimeShiftInSeconds={0.8} style={{ width: '100%', height: '100%' }} />
         </Sequence>
       ))}
       <AbsoluteFill style={{ width: q.w, height: q.h, transform: `scale(${L.largura / q.w})`, transformOrigin: '0 0' }}>
@@ -84,6 +85,7 @@ export function EditorLongo({ proj, aoVoltar, aoRenderizar }: { proj: ProjetoLon
   const [aviso, setAviso] = useState('');
   const [quem, setQuem] = useState(ler('editor-quem'));
   const player = useRef<PlayerRef>(null);
+  const [vel] = useVelocidade();
   const contador = useRef(0);
   const fps = L.fps;
   const t = frame / fps;
@@ -353,6 +355,7 @@ export function EditorLongo({ proj, aoVoltar, aoRenderizar }: { proj: ProjetoLon
           <div className="video">
             <Player
               ref={player}
+              playbackRate={vel}
               component={PreviaLongo as unknown as React.FC<Record<string, unknown>>}
               inputProps={entrada}
               durationInFrames={Math.max(1, Math.ceil(comFim * fps))}
@@ -573,6 +576,7 @@ function LinhaLonga({ L, t, total, comFim, tocando, sel, setSel, irPara, mexidos
         <button className="bt mini" onClick={play}>{tocando ? '❚❚ Pausar' : '▶ Tocar'}</button>
         <span className="tc">{tc(t)}</span>
         <span className="tempo">/ {tc(total)}</span>
+        <Velocidade />
         <button className="bt mini" onClick={dividir} title="S">✂ Dividir na agulha</button>
         <span style={{ flex: 1 }} />
         <span className="tempo">espaço toca · S divide · Delete tira · Ctrl+Z desfaz</span>
