@@ -5,14 +5,14 @@ import logo from './logo-claro.svg';
 import type { Projeto } from './projeto';
 
 export type ItemProjeto = {
-  pasta: string; arquivo: string; id: string; tipo?: 'short' | 'longo'; cliente: string; titulo: string; composicao: string;
+  pasta: string; arquivo: string; id: string; tipo?: 'short' | 'longo' | 'bruto'; cliente: string; titulo: string; composicao: string;
   duracao: number; confianca: number | null; url: string; capa: string | null; inicioCapa: number;
   criadoEm: number; render: string | null; renderEm: number | null; revisao?: string | null;
 };
 export type InfoPC = { versao: string; nucleos: number; cpu: string; memoria: number; raiz: string; raizExiste: boolean; pc: string };
 export type Progresso = {
   fase: 'motor' | 'preparando' | 'renderizando' | 'pronto' | 'erro'; progresso: number; frames?: number; total?: number;
-  restante?: number; nucleos?: number; saida?: string; segundos?: number; msg?: string;
+  restante?: number; nucleos?: number; saida?: string; segundos?: number; msg?: string; maquina?: boolean;
 };
 export type Pacote = { projeto: string; modo: string; composicao: string; [k: string]: unknown };
 type API = {
@@ -22,6 +22,7 @@ type API = {
   aoProgresso(cb: (p: Progresso) => void): () => void;
   atualizacao?(): Promise<Atualizacao | null>; atualizar?(instalador: string): Promise<boolean>;
   novidades?(): Promise<{ versao: string; itens: string[] } | null>; aoBaixar?(cb: (p: number) => void): () => void;
+  novoBruto?(teste?: string): Promise<ItemProjeto | null>; aoBruto?(cb: (x: { nome: string; progresso: number }) => void): () => void;
 };
 export type Atualizacao = { versao: string; novidades: string[]; instalador: string };
 declare global { interface Window { estudio?: API } }
@@ -48,6 +49,8 @@ export function Estudio({ Editor, usar }: {
   const [nova, setNova] = useState<Atualizacao | null>(null);
   const [baixando, setBaixando] = useState<number | null>(null);
   const [novidades, setNovidades] = useState<{ versao: string; itens: string[] } | null>(null);
+  const [bruto, setBruto] = useState<{ nome: string; progresso: number; erro?: string } | null>(null);
+  useEffect(() => api.aoBruto?.((x) => setBruto((b) => (b?.erro ? b : x))), [api]);
 
   // versão nova no Drive: confere ao abrir e a cada 30 min
   useEffect(() => {
@@ -79,6 +82,18 @@ export function Estudio({ Editor, usar }: {
     setAberto({ item, proj });
   };
 
+  const novoBruto = async () => {
+    if (!api.novoBruto) return;
+    try {
+      const item = await api.novoBruto((window as unknown as { __brutoTeste?: string }).__brutoTeste);
+      setBruto(null);
+      if (item) { await carregar(); await abrir(item); }
+    } catch (e) {
+      const msg = String((e as Error).message || e).replace(/^Error invoking remote method '[^']+': (Error: )?/, '');
+      setBruto((b) => ({ nome: b?.nome ?? '', progresso: 0, erro: msg }));
+    }
+  };
+
   const renderizar = async (item: ItemProjeto, pacote: Pacote) => {
     setRender({ item, pacote, p: { fase: 'preparando', progresso: 0 } });
     try {
@@ -96,7 +111,21 @@ export function Estudio({ Editor, usar }: {
         ? <Editor key={aberto.item.url} proj={aberto.proj} aoVoltar={() => { setAberto(null); carregar(); }} aoRenderizar={(p) => renderizar(aberto.item, p)} />
         : <Inicio info={info} itens={itens} abrir={abrir} recarregar={carregar}
             trocarPasta={async () => { if (await api.escolherPasta()) carregar(); }}
-            assistir={(a) => api.abrir(a)} nova={nova} baixando={baixando} atualizar={atualizar} />}
+            assistir={(a) => api.abrir(a)} nova={nova} baixando={baixando} atualizar={atualizar}
+            novoBruto={api.novoBruto ? novoBruto : undefined} />}
+      {bruto && (
+        <div className="modal">
+          <div>
+            <h2>{bruto.erro ? 'Não deu para abrir esse bruto' : 'Preparando o bruto'}</h2>
+            <p style={{ color: 'var(--fraco)', margin: '0 0 14px', wordBreak: 'break-all' }}>{bruto.erro ?? bruto.nome}</p>
+            {!bruto.erro && <>
+              <div className="st-barra"><i style={{ width: `${Math.round(bruto.progresso * 100)}%` }} /></div>
+              <p className="dica">Fazendo a prévia leve e lendo o áudio para desenhar a onda. Um bruto de 1 h leva uns minutos; o original não é copiado.</p>
+            </>}
+            <button className="bt" onClick={() => { if (!bruto.erro) api.cancelar(); setBruto(null); }}>{bruto.erro ? 'Fechar' : 'Cancelar'}</button>
+          </div>
+        </div>
+      )}
       {novidades && (
         <div className="modal" onClick={() => setNovidades(null)}>
           <div onClick={(e) => e.stopPropagation()}>
@@ -116,10 +145,10 @@ export function Estudio({ Editor, usar }: {
 }
 
 /* ------------------------------------------------------------------ início: projetos */
-function Inicio({ info, itens, abrir, recarregar, trocarPasta, assistir, nova, baixando, atualizar }: {
+function Inicio({ info, itens, abrir, recarregar, trocarPasta, assistir, nova, baixando, atualizar, novoBruto }: {
   info: InfoPC | null; itens: ItemProjeto[] | null; abrir: (i: ItemProjeto) => void; recarregar: () => void;
   trocarPasta: () => void; assistir: (a: string) => void;
-  nova: Atualizacao | null; baixando: number | null; atualizar: () => void;
+  nova: Atualizacao | null; baixando: number | null; atualizar: () => void; novoBruto?: () => void;
 }) {
   const [filtro, setFiltro] = useState<'todos' | 'obrigatorios' | 'revisar' | 'prontos'>('todos');
   const [busca, setBusca] = useState('');
@@ -168,6 +197,7 @@ function Inicio({ info, itens, abrir, recarregar, trocarPasta, assistir, nova, b
           <div className="st-acoes">
             <input className="st-busca" placeholder="Buscar cliente ou título" value={busca} onChange={(e) => setBusca(e.target.value)} />
             <button className="bt" onClick={recarregar}>↻ Atualizar</button>
+            {novoBruto && <button className="bt pri" onClick={novoBruto} title="Escolha um vídeo do PC para cortar à mão">＋ Novo projeto com bruto</button>}
           </div>
         </header>
 
@@ -199,7 +229,7 @@ function Inicio({ info, itens, abrir, recarregar, trocarPasta, assistir, nova, b
 function Cartao({ i, abrir, assistir }: { i: ItemProjeto; abrir: () => void; assistir: () => void }) {
   const conf = i.confianca;
   return (
-    <article className={`st-card ${i.tipo === 'longo' ? 'longo' : ''}`}>
+    <article className={`st-card ${i.tipo === 'longo' || i.tipo === 'bruto' ? 'longo' : ''}`}>
       <button className="st-capa" onClick={abrir} aria-label={`Abrir ${i.titulo}`}>
         {i.capa && (
           <video src={`${i.capa}#t=${i.inicioCapa + 1}`} muted preload="metadata"
@@ -207,7 +237,7 @@ function Cartao({ i, abrir, assistir }: { i: ItemProjeto; abrir: () => void; ass
             onMouseLeave={(e) => e.currentTarget.pause()} />
         )}
         <span className="st-dur">{dur(i.duracao)}</span>
-        <span className="st-tipo">{i.tipo === 'longo' ? 'LONGO' : 'SHORT'}</span>
+        <span className="st-tipo">{i.tipo === 'bruto' ? 'BRUTO' : i.tipo === 'longo' ? 'LONGO' : 'SHORT'}</span>
         <span className={`st-status ${i.render ? 'ok' : ''}`}>{i.render ? '✓ Renderizado' : i.revisao ? '🔎 Revisão obrigatória' : '● Para revisar'}</span>
       </button>
       <div className="st-card-txt">
@@ -239,12 +269,12 @@ function TelaRender({ r, info, api, fechar, voltar }: {
   const { p } = r;
   const pct = Math.round((p.progresso || 0) * 100);
   const R = 120, C = 2 * Math.PI * R;
-  const titulo = { motor: 'Preparando o motor de render', preparando: 'Abrindo o projeto', renderizando: 'Renderizando', pronto: 'Pronto', erro: 'Não deu certo' }[p.fase];
+  const titulo = { motor: 'Preparando o motor de render', preparando: p.msg ? 'Desenhando os textos' : r.pacote.destino === 'maquina' ? 'Gravando o corte' : 'Abrindo o projeto', renderizando: 'Renderizando', pronto: 'Pronto', erro: 'Não deu certo' }[p.fase];
   const sub = {
     motor: 'Só na primeira vez: baixando o navegador que desenha os quadros.',
-    preparando: 'Lendo o vídeo e os grafismos.',
+    preparando: p.msg ?? 'Lendo o vídeo e os grafismos.',
     renderizando: `Usando ${p.nucleos ?? '?'} de ${info?.nucleos ?? '?'} núcleos deste PC${p.frames != null && p.total ? ` · quadro ${p.frames} de ${p.total}` : ''}`,
-    pronto: `Feito em ${p.segundos ?? 0} s com ${p.nucleos ?? '?'} núcleos deste PC. Salvo na pasta do projeto${r.pacote.modo === 'ajustado' ? ', junto com os ajustes' : ''}.`,
+    pronto: p.maquina ? 'Enviado para a máquina. Ela transcreve, põe textos, B-roll e trilha, e o projeto volta na pasta EDITOR para revisar.' : `Feito em ${p.segundos ?? 0} s com ${p.nucleos ?? '?'} núcleos deste PC. Salvo na pasta do projeto${r.pacote.modo === 'ajustado' ? ', junto com os ajustes' : ''}.`,
     erro: p.msg ?? 'Erro desconhecido.',
   }[p.fase];
   const falta = p.fase === 'renderizando' && p.restante ? Math.max(1, Math.round(p.restante / 1000)) : null;
@@ -265,7 +295,7 @@ function TelaRender({ r, info, api, fechar, voltar }: {
         <p>{sub}</p>
         <div className="linha" style={{ justifyContent: 'center' }}>
           {p.fase === 'pronto' && p.saida && <>
-            <button className="bt pri" onClick={() => api.abrir(p.saida!)}>▶ Assistir</button>
+            {!p.maquina && <button className="bt pri" onClick={() => api.abrir(p.saida!)}>▶ Assistir</button>}
             <button className="bt" onClick={() => api.mostrar(p.saida!)}>Mostrar na pasta</button>
             <button className="bt" onClick={voltar}>Voltar aos projetos</button>
           </>}

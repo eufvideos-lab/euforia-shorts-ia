@@ -185,3 +185,12 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .st-nova + .st-pc { margin-top: 0; }
 .st-novas { margin: 8px 0 16px; padding-left: 18px; display: grid; gap: 8px; }
 .st-motivo { font-size: 11px; color: #ffb48a; background: #2a1408; border: 1px solid #5a2a10; border-radius: 6px; padding: 3px 7px; width: fit-content; }
+.trilha.fala .bloco .onda { position: absolute; left: 0; top: 50%; transform: translateY(-50%); pointer-events: none; }
+.trilha.fala .bloco .onda path { stroke: currentColor; stroke-width: 1.4; opacity: 0.75; }
+.st-barra { height: 8px; border-radius: 99px; background: #222; overflow: hidden; margin-bottom: 12px; }
+.st-barra i { display: block; height: 100%; background: var(--laranja); transition: width .3s; }
+.cores { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 10px; font-size: 13px; }
+.cores label { display: flex; align-items: center; gap: 6px; cursor: pointer; }
+.cores input[type=color] { width: 30px; height: 24px; border: 1px solid var(--linha); background: none; padding: 0; border-radius: 6px; cursor: pointer; }
+.mini-in { flex: 1; min-width: 0; background: var(--painel2); border: 1px solid var(--linha); border-radius: 8px; padding: 5px 8px; }
+.sec select { background: var(--painel2); border: 1px solid var(--linha); border-radius: 8px; padding: 5px 8px; }

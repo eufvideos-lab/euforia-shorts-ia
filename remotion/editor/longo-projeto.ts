@@ -2,10 +2,12 @@
 // Trechos = pedaços do base.mp4 (a fala já cortada pela máquina) que ficam, na ordem; elementos = B-roll, telas cheias
 // (título, cartões, mapa), textos-chave e lowers, com tempo no vídeo final. Funções puras, sem React.
 import type { Ajuste } from './projeto';
+import { ALTURA, PALETA_EUFORIA, type Paleta } from '../src/longo/Grafismos';
 import type { Publicacao } from './publicacao';
 
 export type Camada = 'broll' | 'full' | 'kw' | 'lw';
-export type Elemento = { camada: Camada; arquivo: string; inicio: number; dur: number; rotulo: string; w: number; h: number; y: number };
+/** Elemento por cima da fala. Com `texto`, é um grafismo feito no Studio (desenhado na hora, nas cores do cliente). */
+export type Elemento = { camada: Camada; arquivo: string; inicio: number; dur: number; rotulo: string; w: number; h: number; y: number; texto?: string; sub?: string };
 export type Trecho = { ini: number; fim: number };
 export type DadosLongo = {
   fps: number; largura: number; altura: number; video: string; previa: string;
@@ -13,11 +15,16 @@ export type DadosLongo = {
   fim: { arquivo: string; dur: number } | null;
   musica: { arquivo: string; volume_db: number } | null;
   palavras: { w: string; t: number }[];
+  /** Bruto aberto no Studio: picos do áudio (0..1) a cada `passo` segundos, para ver e cortar pela onda. */
+  onda?: { passo: number; picos: number[] };
+  /** Cores do cliente (a máquina grava as do plano; o Studio deixa mudar). */
+  paleta?: Partial<Paleta>;
 };
 export type ProjetoLongo = {
   versao: 1; tipo: 'longo'; id: string; cliente: string; titulo: string; composicao: 'Longo'; base: string;
   longo: DadosLongo; registro?: string[]; maquina?: { por_que?: string; nota_confianca?: number };
   biblioteca?: { src: string; descricao: string }[];
+  origem?: 'maquina' | 'bruto';
   publicacao?: Publicacao; // título, descrição e tags sugeridos (pipeline/publicacao.py)
 };
 type ComId<T> = T & { _id: string };
@@ -121,7 +128,8 @@ export function diferencasLongo(orig: LongoEd, atual: LongoEd, nomeArq: (s: stri
     for (const [a, b] of pedacos) {
       if (b - a < 0.05) continue;
       out.push({ tipo: 'trecho_removido', alvo: `base:${r3(a)}`, de: { ini: r3(a), fim: r3(b) },
-        texto: `Tirou ${(b - a).toFixed(1)} s da fala: "${textoDoTrecho(orig, a, b) || '(sem fala)'}"` });
+        texto: orig.palavras.length ? `Tirou ${(b - a).toFixed(1)} s da fala: "${textoDoTrecho(orig, a, b) || '(sem fala)'}"`
+          : `Tirou ${(b - a).toFixed(1)} s do bruto (${tc(a)}–${tc(b)})` });
     }
   }
   const porId = new Map(atual.elementos.map((e) => [e._id, e]));
@@ -141,10 +149,70 @@ export function diferencasLongo(orig: LongoEd, atual: LongoEd, nomeArq: (s: stri
   }
   const ids = new Set(orig.elementos.map((e) => e._id));
   for (const n of atual.elementos) {
-    if (!ids.has(n._id)) out.push({ tipo: 'broll_novo', alvo: n._id, para: nomeArq(n.arquivo), texto: `Pôs o B-roll "${nomeArq(n.arquivo)}" em ${tc(n.inicio)}` });
+    if (!ids.has(n._id) && n.texto != null) out.push({ tipo: 'texto_novo', alvo: n._id, para: n.texto, texto: `Pôs ${NOME_CAMADA[n.camada].toLowerCase()} "${n.rotulo}" em ${tc(n.inicio)}` });
+    else if (!ids.has(n._id)) out.push({ tipo: 'broll_novo', alvo: n._id, para: nomeArq(n.arquivo), texto: `Pôs o B-roll "${nomeArq(n.arquivo)}" em ${tc(n.inicio)}` });
   }
+  const po = JSON.stringify(paletaDe(orig)), pa = JSON.stringify(paletaDe(atual));
+  if (po !== pa && atual.elementos.some((e) => e.texto != null)) out.push({ tipo: 'paleta', alvo: 'paleta', de: paletaDe(orig), para: paletaDe(atual), texto: 'Mudou as cores dos textos' });
   if (orig.musica && atual.musica && orig.musica.volume_db !== atual.musica.volume_db) {
     out.push({ tipo: 'musica_volume', alvo: 'musica', de: orig.musica.volume_db, para: atual.musica.volume_db, texto: `Trilha de ${orig.musica.volume_db} dB para ${atual.musica.volume_db} dB` });
   }
   return out;
+}
+
+/** Picos da onda normalizados (o 98º percentil vira 1), para desenhar e achar silêncio do mesmo jeito em qualquer bruto. */
+export function ondaNormal(onda: { picos: number[] }): number[] {
+  const ord = [...onda.picos].sort((a, b) => a - b);
+  const ref = ord[Math.floor(ord.length * 0.98)] || 1;
+  return onda.picos.map((p) => Math.min(1, p / ref));
+}
+
+/** Tira os silêncios de cada trecho (pausas maiores que `min` s, deixando `folga` s de respiro em cada ponta).
+ *  Só para bruto (sem elementos por cima). Devolve o novo estado e quantos segundos saíram. */
+export function tirarSilencios(L: LongoEd, novoId: () => string, min = 0.6, folga = 0.15): { L: LongoEd; cortes: number; segundos: number } {
+  if (!L.onda || L.elementos.length) return { L, cortes: 0, segundos: 0 };
+  const { passo } = L.onda;
+  const pk = ondaNormal(L.onda);
+  // silêncio = abaixo do dobro do chão de ruído do próprio bruto (sala, ar-condicionado), entre 0,06 e 0,2
+  const chao = [...pk].sort((x, y) => x - y)[Math.floor(pk.length * 0.1)] ?? 0;
+  const limiar = Math.min(0.2, Math.max(0.06, chao * 2));
+  const trechos: LongoEd['trechos'] = [];
+  let cortes = 0, segundos = 0;
+  for (const tr of L.trechos) {
+    let ini = tr.ini, run = -1, usou = false;
+    const id = () => (usou ? novoId() : ((usou = true), tr._id));
+    const i0 = Math.ceil(tr.ini / passo);
+    const fimIdx = Math.floor(tr.fim / passo);
+    const fecha = (a: number, b: number) => { // silêncio de a até b (segundos)
+      const ca = a + folga, cb = b - folga;
+      if (b - a < min || cb - ca < 0.2) return;
+      if (ca - ini >= 0.1) trechos.push({ _id: id(), ini: r3(ini), fim: r3(ca) });
+      segundos += cb - Math.max(ca, ini); cortes += 1;
+      ini = cb;
+    };
+    for (let k = i0; k <= fimIdx; k++) {
+      const quieto = (pk[k] ?? 0) < limiar;
+      if (quieto && run < 0) run = k;
+      if ((!quieto || k === fimIdx) && run >= 0) { fecha(Math.max(tr.ini, run * passo), Math.min(tr.fim, (quieto ? k + 1 : k) * passo)); run = -1; }
+    }
+    if (tr.fim - ini >= 0.1) trechos.push({ _id: id(), ini: r3(ini), fim: tr.fim });
+  }
+  if (!cortes || !trechos.length) return { L, cortes: 0, segundos: 0 };
+  return { L: { ...L, trechos }, cortes, segundos: r3(segundos) };
+}
+
+/** Quadro do vídeo final: o do bruto, reduzido para 1080p quando a fonte é maior (igual ao render). */
+export function quadro(L: { largura: number; altura: number }): { w: number; h: number } {
+  const { largura: w, altura: h } = L;
+  if (w <= 1920 && h <= 1920) return { w, h };
+  const par = (x: number) => Math.round(x / 2) * 2;
+  return w >= h ? { w: 1920, h: par((h * 1920) / w) } : { w: par((w * 1920) / h), h: 1920 };
+}
+export const paletaDe = (L: { paleta?: Partial<Paleta> }): Paleta => ({ ...PALETA_EUFORIA, ...(L.paleta ?? {}) });
+/** Novo texto do Studio (texto-chave, lower ou cartão) no ponto `inicio`. */
+export function novoTexto(L: LongoEd, id: string, camada: 'kw' | 'lw' | 'full', texto: string, inicio: number, dur: number, sub?: string): LongoEd {
+  const q = quadro(L);
+  const h = ALTURA(camada, q.h);
+  const el = { _id: id, camada, arquivo: '', texto, sub: sub || undefined, inicio: r3(inicio), dur, rotulo: texto.replace(/[*|]/g, ' ').replace(/\s+/g, ' ').trim(), w: q.w, h, y: q.h - h };
+  return { ...L, elementos: [...L.elementos, el] };
 }

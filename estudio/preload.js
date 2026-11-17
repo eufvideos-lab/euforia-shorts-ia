@@ -17,6 +17,12 @@ contextBridge.exposeInMainWorld('estudio', {
     ipcRenderer.on('estudio:baixando', f);
     return () => ipcRenderer.removeListener('estudio:baixando', f);
   },
+  novoBruto: (teste) => ipcRenderer.invoke('estudio:novoBruto', teste),
+  aoBruto: (cb) => {
+    const f = (_e, x) => cb(x);
+    ipcRenderer.on('estudio:bruto', f);
+    return () => ipcRenderer.removeListener('estudio:bruto', f);
+  },
   aoProgresso: (cb) => {
     const f = (_e, x) => cb(x);
     ipcRenderer.on('estudio:progresso', f);
