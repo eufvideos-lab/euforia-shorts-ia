@@ -40,11 +40,11 @@ const postarRes = node({"type":"n8n-nodes-base.httpRequest","version":4.4,"confi
 const nota = sticky("## Gerente IA · cobrança da equipe (V2.1, 17/11) · **A cada 5 min, no expediente:** lê todos os grupos de clientes (não depende mais do Monitor; resposta automática de recebido/fora do expediente não conta como resposta). Cliente com pedido sem resposta humana: **na hora (3 min)** → card RESPONDER GRUPO no painel do Rômulo (prazo hoje, rascunho na Obs) + aviso no 1x1 com o rascunho; **10 min** → \"recebemos\" automático no grupo (Érica, uma vez); **1h** → o Escritório responde no grupo com o rascunho (vai como rascunho com auto_em para o fluxo de Aprovações, assinado Érica; não sai se a equipe respondeu), exceto 🔴, rascunho que pede diretoria/conferência ou com [campo] → diretoria; **2h** → diretoria. Valores/contrato/jurídico: direto à diretoria. Card fecha (Feito) quando alguém responde no grupo. Prompt = sugerir_system da tabela textos. · **17:55 úteis:** resumo do dia. · Tabela gerente_cobranca.", [], {"position":[0,1040],"width":900,"height":260,"color":4});
 
 export default workflow('gerente-cobranca', 'Gerente IA | Cobrança da equipe (V2)', { executionOrder: 'v1', availableInMCP: true, timezone: 'America/Recife' })
-  .add(cada5).to(esperando).to(respondidos).to(threads).to(clientes).to(textos).to(decidir).to(gravar)
-  .to([lista.to(cobrar),
-       novos.to(pedirCard).to(claudeCard).to(lerCard).to(montarCard).to(criarCard).to(avisar).to([postarAviso, guardarCard]),
-       autos.to(pedirAuto).to(claudeAuto).to(lerAuto).to(decAuto).to(postarAuto).to(linhasAuto).to(gravarAuto),
-       fechar.to(fecharCard),
-       listaRec.to(mandarRec)])
+  .add(cada5).to(esperando).to(respondidos).to(threads).to(clientes).to(textos).to(decidir).to(gravar).to(lista).to(cobrar)
+  .add(gravar).to(novos).to(pedirCard).to(claudeCard).to(lerCard).to(montarCard).to(criarCard).to(avisar).to(postarAviso)
+  .add(avisar).to(guardarCard)
+  .add(gravar).to(autos).to(pedirAuto).to(claudeAuto).to(lerAuto).to(decAuto).to(postarAuto).to(linhasAuto).to(gravarAuto)
+  .add(gravar).to(fechar).to(fecharCard)
+  .add(gravar).to(listaRec).to(mandarRec)
   .add(fimDoDia).to(doDia).to(vencidos).to(thrRes).to(resumo).to(postarRes)
   .add(nota);
