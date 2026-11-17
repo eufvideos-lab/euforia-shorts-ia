@@ -13,8 +13,7 @@ const CONFIG = () => path.join(app.getPath('userData'), 'config.json');
 
 // Pastas onde a máquina costuma deixar os projetos (Drive para computador). A primeira que existir vira a padrão.
 const PADROES = [
-  'G:\\Drives compartilhados\\EUFORIA MEDIA\\00 - SHORTS IA (MÁQUINA)\\EDITOR',
-  'G:\\Shared drives\\EUFORIA MEDIA\\00 - SHORTS IA (MÁQUINA)\\EDITOR',
+  ...(process.platform === 'win32' ? require('./atualizar').noDrive('EDITOR') : []),
   path.join(os.homedir(), 'Documents', 'Euforia Studio'),
 ];
 

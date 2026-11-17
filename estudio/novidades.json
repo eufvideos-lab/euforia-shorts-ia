@@ -1,4 +1,8 @@
 {
+  "0.3.2": [
+    "O Studio acha a pasta do Drive em qualquer letra de disco (não só G:), para os projetos e a atualização automática.",
+    "Prévia mais leve: o bruto e o longo tocam na velocidade certa, sem travar."
+  ],
   "0.3.1": [
     "Prévia mais leve: o bruto e o longo agora tocam na velocidade certa, sem travar nem pular, mesmo com muitos cortes."
   ],
