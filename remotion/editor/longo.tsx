@@ -10,6 +10,7 @@ import {
 } from './longo-projeto';
 import type { Pacote } from './estudio';
 import { Grafismo, PALETA_EUFORIA, type Paleta } from '../src/longo/Grafismos';
+import { PainelPublicacao } from './publicacao';
 
 type Sel = { tipo: 'tr' | 'el'; id: string } | null;
 const r2 = (x: number) => Math.round(x * 100) / 100;
@@ -249,6 +250,7 @@ export function EditorLongo({ proj, aoVoltar, aoRenderizar }: { proj: ProjetoLon
 
       <div className="meio">
         <aside className="col">
+          <PainelPublicacao id={proj.id} pub={proj.publicacao} />
           <div className="sec">
             <h3>Registro da máquina</h3>
             {proj.maquina?.por_que && <p style={{ margin: '0 0 8px', fontSize: 13 }}>{proj.maquina.por_que}</p>}

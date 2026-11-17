@@ -3,6 +3,7 @@
 // (título, cartões, mapa), textos-chave e lowers, com tempo no vídeo final. Funções puras, sem React.
 import type { Ajuste } from './projeto';
 import { ALTURA, PALETA_EUFORIA, type Paleta } from '../src/longo/Grafismos';
+import type { Publicacao } from './publicacao';
 
 export type Camada = 'broll' | 'full' | 'kw' | 'lw';
 /** Elemento por cima da fala. Com `texto`, é um grafismo feito no Studio (desenhado na hora, nas cores do cliente). */
@@ -24,6 +25,7 @@ export type ProjetoLongo = {
   longo: DadosLongo; registro?: string[]; maquina?: { por_que?: string; nota_confianca?: number };
   biblioteca?: { src: string; descricao: string }[];
   origem?: 'maquina' | 'bruto';
+  publicacao?: Publicacao; // título, descrição e tags sugeridos (pipeline/publicacao.py)
 };
 type ComId<T> = T & { _id: string };
 export type LongoEd = Omit<DadosLongo, 'trechos' | 'elementos'> & { trechos: ComId<Trecho>[]; elementos: ComId<Elemento>[] };

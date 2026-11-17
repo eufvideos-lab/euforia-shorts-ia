@@ -84,21 +84,28 @@ bash instalar.sh   # instala Remotion e OpenCV (~15 s)
    fique conferindo com `sleep 120` em loop até o processo terminar. Só termine depois do aviso no Discord.
 9. Confira cada short: tire 6 quadros (ffmpeg) de cada arquivo em `saida/` e olhe. Corte no meio de frase, legenda
    errada, B-roll sem relação ou tela preta = refaça aquele short antes de entregar.
+9a. **Título, descrição e SEO** (16/11/2026; substitui o Gemini que a equipe usava): leia `prompts/publicacao.md` e
+   escreva `pedidos/<id-curto>/publicacao.json` com o pacote de cada short (mesma ordem do plano) e o do vídeo longo
+   (`longo`, com `topicos`, sem capítulos: o longo é editado à mão a partir deste bruto). Use a transcrição, o roteiro
+   (se o pedido tiver) e a ficha do cliente (nicho, "Direção criativa", links e "📝 Rodapé da descrição (YouTube)").
 9b. Projeto do Euforia Studio (16/11/2026; é o que a equipe abre para ajustar e renderizar no PC):
-   `python3 pipeline/projeto_editor.py pedidos/<id-curto> pedidos/<id-curto>/studio --cliente "<nome>"`. Crie com o
+   `python3 pipeline/projeto_editor.py pedidos/<id-curto> pedidos/<id-curto>/studio --cliente "<nome>"`, depois
+   `python3 pipeline/publicacao.py pedidos/<id-curto> --cliente "<nome>" --pasta-drive <pasta dos shorts> --studio pedidos/<id-curto>/studio --cliente-id <id da ficha do cliente> --pedido <link do pedido>`
+   (confere as regras do YouTube, sobe um "título e descrição.txt" por vídeo ao lado dos shorts, põe o pacote no
+   projeto e no Painel da Equipe, na gaveta do horário da Grade, onde quem posta copia; se parar com ERRO, corrija o publicacao.json e rode de novo; avisos não param). Crie com o
    Google Drive a pasta "<Cliente> - <id-curto>" dentro de EDITOR (1Je4ZPgF6m3ocRinFlMNewtyljHD7unLX) e rode
    `python3 pipeline/studio_drive.py pedidos/<id-curto>/studio <id da pasta> [--revisar "<motivo>"]`.
    **Revisão obrigatória da Lorena** (decisão do Henrique, 16/11/2026). Vale se QUALQUER um for verdade:
    cliente com "🔴 Atenção redobrada" marcado na ficha; algum short com `nota_confianca` abaixo de 0,6; cliente com "📄 Contrato início" há menos de 30 dias.
    O motivo é curto: "cliente 🔴", "confiança baixa (55%)", "cliente novo". O resto a equipe revisa por amostragem.
    Se falhar, não trava a entrega: siga e conte no #ia-status.
-10. Atualize o pedido: "Shorts prontos" (um link por linha com o título), "Pasta dos shorts", "Entregue em" (agora),
+10. Atualize o pedido: "Shorts prontos" (um link por linha com o título recomendado do publicacao), "Pasta dos shorts", "Entregue em" (agora),
     Status "Pronto para revisão" e um resumo curto no log (tempo, B-rolls usados, dúvidas). Com revisão obrigatória,
     a 1ª linha do log é "🔎 Revisão obrigatória (Lorena): <motivo>".
 11. Registre cada short na tabela de medição (Caminho "B - Próprio (Claude + Remotion)", Status "Gerado",
     Tempo de máquina, Corte no meio de frase = não, Link do short).
 12. Avise no Discord, assinando como Érica, curto:
-    "🎬 Shorts prontos: <Cliente> (<n> shorts, <estilo>). Para revisão do Ismael: <link da pasta>. — Érica, time de suporte, Grupo Euforia"
+    "🎬 Shorts prontos: <Cliente> (<n> shorts, <estilo>). Para revisão do Ismael: <link da pasta>. Título e descrição de cada vídeo (e do longo) já estão na pasta. — Érica, time de suporte, Grupo Euforia"
     Com revisão obrigatória, troque "Para revisão do Ismael" por "🔎 Revisão obrigatória da @Lorena (<motivo>)" e
     acrescente "Abrir no Euforia Studio: pasta EDITOR / <Cliente> - <id-curto>".
 

@@ -79,9 +79,14 @@ apt-get install -y -q libegl1 libgles2 >/dev/null 2>&1 || (apt-get update -q >/d
    IMPORTANTE: nunca encerre a sua vez esperando um comando em segundo plano. Rode em primeiro plano com timeout
    longo, ou fique conferindo com `sleep 120` em loop até terminar.
 9. Confira o final: 12 quadros espalhados (cartões, textos, B-rolls, tela final) e a duração.
+9a. **Título, descrição e SEO** (16/11/2026; substitui o Gemini que a equipe usava): leia `prompts/publicacao.md` e
+   escreva `pedidos/<id-curto>/publicacao.json` só com `longo`, COM `capitulos` (índices de palavra do `palavras.txt`
+   em trechos mantidos; o script põe os minutos do vídeo final). Use a transcrição, o roteiro e a ficha do cliente.
 9b. Projeto do Euforia Studio (16/11/2026; a equipe abre, ajusta e renderiza no PC):
    `python3 longos/montar.py pedidos/<id-curto> --sem-gfx --studio pedidos/<id-curto>/studio --cliente "<nome>" --titulo "<título>"`
-   (não renderiza de novo: só monta o projeto, ~2 min). Fora o modelo Nova Acrópole, que ainda não abre no Studio.
+   (não renderiza de novo: só monta o projeto, ~2 min). Use o título recomendado do publicacao.json. Depois
+   `python3 pipeline/publicacao.py pedidos/<id-curto> --cliente "<nome>" --studio pedidos/<id-curto>/studio`
+   (o .txt sobe no passo 10). Se parar com ERRO, corrija o publicacao.json e rode de novo. Fora o modelo Nova Acrópole, que ainda não abre no Studio.
    Crie com o Google Drive a pasta "<Cliente> - <id-curto>" dentro de EDITOR (1Je4ZPgF6m3ocRinFlMNewtyljHD7unLX) e rode
    `python3 pipeline/studio_drive.py pedidos/<id-curto>/studio <id da pasta> [--revisar "<motivo>"]`.
    **Revisão obrigatória da Lorena** (decisão do Henrique, 16/11/2026). Vale se QUALQUER um for verdade:
@@ -93,6 +98,9 @@ apt-get install -y -q libegl1 libgles2 >/dev/null 2>&1 || (apt-get update -q >/d
     `python3 -c "import sys; sys.path.insert(0,'pipeline'); import ponte; print(ponte.subir_grande('pedidos/<id>/final.mp4','<pasta>','<Cliente> - <título>.mp4'))"`
     (upload retomável direto no Drive; aguenta 300+ MB). Nunca reduza a resolução para caber: se o upload falhar,
     é erro (#ia-status), não entrega comprimida. Confira com ffprobe que o final tem 1920x1080 antes de subir.
+    Suba o "título e descrição" ao lado do vídeo:
+    `python3 pipeline/publicacao.py pedidos/<id-curto> --cliente "<nome>" --pasta-drive <pasta> --studio pedidos/<id-curto>/studio --cliente-id <id da ficha do cliente> --pedido <link do pedido>`
+    (vai também para o Painel da Equipe, na gaveta do horário da Grade; se o modelo não abre no Studio, rode sem `--studio`).
     Suba também o `plano.json` para a pasta da máquina (1rF9yJwVPCp4IvTHfb6Gm3YbdLhWdX3eI) com o nome
     `plano-longo-<id-curto>.json` (é o que permite um "Ajustar" depois).
 11. Atualize o pedido: "Vídeo pronto" (link), "Entregue em" (agora), Status "Pronto para revisão" e um resumo
@@ -101,7 +109,7 @@ apt-get install -y -q libegl1 libgles2 >/dev/null 2>&1 || (apt-get update -q >/d
     "Palavras corrigidas" do `relatorio.md` (o revisor confere em 10 s) e as frases do roteiro não achadas.
     Palavra errada que a equipe achar na revisão vira uma linha em `correcoes` na ficha do cliente.
 12. Avise no #longos-automáticos, marcando todos (@everyone), assinando como Érica:
-    "@everyone 🎞️ Vídeo longo pronto: <Cliente> (<duração>). Para revisão: <link>. — Érica, time de suporte, Grupo Euforia"
+    "@everyone 🎞️ Vídeo longo pronto: <Cliente> (<duração>). Para revisão: <link>. Título, descrição e capítulos na mesma pasta. — Érica, time de suporte, Grupo Euforia"
     Com revisão obrigatória, acrescente "🔎 Revisão obrigatória da @Lorena (<motivo>)" e
     "Abrir no Euforia Studio: pasta EDITOR / <Cliente> - <id-curto>".
 

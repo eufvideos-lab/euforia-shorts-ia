@@ -1,6 +1,7 @@
 // Projeto do editor: o que a máquina de shorts montou (props do Remotion) + o que a pessoa ajustou.
 // Funções puras, sem React, para dar para testar e reaproveitar no servidor.
 import type { Broll, Caption, Cartao, Segment, ShortProps } from '../src/types';
+import type { Publicacao } from './publicacao';
 
 export type ComId<T> = T & { _id: string };
 export type PropsEditor = Omit<ShortProps, 'captions' | 'brolls' | 'cartoes' | 'segments'> & {
@@ -21,6 +22,7 @@ export type Projeto = {
   registro?: string[]; // o que a máquina fez, linha a linha
   maquina?: { por_que?: string; nota_confianca?: number; gancho?: string };
   biblioteca?: { src: string; descricao: string }[]; // B-rolls que a pessoa pode pôr no short
+  publicacao?: Publicacao; // título, descrição e tags sugeridos (pipeline/publicacao.py)
   salvar?: string; // endpoint que recebe o resultado (n8n); sem ele, baixa o arquivo
 };
 
