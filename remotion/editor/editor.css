@@ -197,3 +197,12 @@ button, input, select, textarea { font: inherit; color: inherit; }
 
 .vel { display: inline-flex; gap: 4px; margin-left: 8px; }
 .vel .bt.mini { padding: 3px 8px; }
+
+.st-pos { margin: 0 0 18px; display: grid; gap: 8px; }
+.st-pos h3 { margin: 0 0 4px; font-size: 13px; letter-spacing: .08em; text-transform: uppercase; color: var(--fraco); }
+.st-pos-item { display: grid; grid-template-columns: minmax(180px, 1.2fr) minmax(120px, 1fr) auto auto auto; align-items: center; gap: 12px;
+  padding: 10px 14px; border: 1px solid #2a2a2a; border-radius: 12px; background: #111; }
+.st-pos-item.pronto { border-color: #FF6518; }
+.st-pos-item.erro { border-color: #C2410C; }
+.st-pos-nome { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.st-pos-txt { font-size: 13px; color: var(--fraco); white-space: nowrap; }

@@ -246,7 +246,7 @@ export function EditorLongo({ proj, aoVoltar, aoRenderizar }: { proj: ProjetoLon
         </select>
         {bruto && aoRenderizar && (
           <button className="bt" onClick={() => setEnvio({ cliente: ler('ultimo-cliente'), titulo: proj.titulo, observacoes: '' })}
-            title="A máquina transcreve e põe textos, B-roll e trilha no seu corte">🤖 Mandar para a máquina</button>
+            title="A máquina põe textos, B-roll, trilha e tela final no seu corte; você confere e renderiza aqui">✨ Aplicar pós-produção</button>
         )}
         {!bruto && <button className="bt" onClick={() => exportar('automatico')} title="Renderiza exatamente o que a máquina montou">{aoRenderizar ? 'Renderizar como está' : 'Aprovar como está'}</button>}
         <button className="bt pri" onClick={() => exportar('ajustado')} disabled={!ajustes.length}>{aoRenderizar ? 'Renderizar' : 'Exportar'} com {ajustes.length} ajuste{ajustes.length === 1 ? '' : 's'}</button>
@@ -469,8 +469,8 @@ export function EditorLongo({ proj, aoVoltar, aoRenderizar }: { proj: ProjetoLon
       {envio && (
         <div className="modal" onClick={() => setEnvio(null)}>
           <div onClick={(e) => e.stopPropagation()}>
-            <h2>Mandar para a máquina</h2>
-            <p className="dica" style={{ marginTop: 0 }}>O corte ({tc(total)}) vai para a máquina de longos. Ela transcreve, põe textos-chave, lowers, cartões, B-roll, trilha e tela final nas cores do cliente, e o projeto volta na pasta EDITOR para revisar.</p>
+            <h2>Aplicar pós-produção</h2>
+            <p className="dica" style={{ marginTop: 0 }}>O corte ({tc(total)}) vai para a máquina de longos. Ela põe textos-chave, lowers, cartões, B-roll, trilha e tela final nas cores do cliente. Você acompanha na tela de projetos e, quando ficar pronto, abre, confere e renderiza no seu PC.</p>
             <div className="campo"><label>Cliente</label>
               <input type="text" value={envio.cliente} placeholder="Nome como está no Notion" onChange={(e) => setEnvio({ ...envio, cliente: e.target.value })} /></div>
             <div className="campo"><label>Título do vídeo</label>
@@ -478,7 +478,7 @@ export function EditorLongo({ proj, aoVoltar, aoRenderizar }: { proj: ProjetoLon
             <div className="campo"><label>Observações para a máquina (opcional)</label>
               <textarea rows={3} value={envio.observacoes} placeholder="Ex.: sem trilha; destacar o nome do produto" onChange={(e) => setEnvio({ ...envio, observacoes: e.target.value })} /></div>
             <div className="linha">
-              <button className="bt pri" onClick={() => { gravar('ultimo-cliente', envio.cliente.trim()); mandarMaquina(); }}>Mandar</button>
+              <button className="bt pri" onClick={() => { gravar('ultimo-cliente', envio.cliente.trim()); mandarMaquina(); }}>Aplicar</button>
               <button className="bt" onClick={() => setEnvio(null)}>Cancelar</button>
             </div>
           </div>
