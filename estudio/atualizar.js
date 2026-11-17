@@ -9,10 +9,14 @@ const os = require('node:os');
 const path = require('node:path');
 const { spawn } = require('node:child_process');
 
-const PASTAS = [
-  'G:\\Drives compartilhados\\EUFORIA MEDIA\\00 - SHORTS IA (MÁQUINA)\\STUDIO',
-  'G:\\Shared drives\\EUFORIA MEDIA\\00 - SHORTS IA (MÁQUINA)\\STUDIO',
-];
+/** A pasta no Drive compartilhado em qualquer letra (o Drive para computador costuma ser G:, mas nem sempre). */
+function noDrive(sub) {
+  const letras = ['G', ...'DEFHIJKLMNOPQRSTUVWXYZ'.split('')];
+  const out = [];
+  for (const l of letras) for (const d of ['Drives compartilhados', 'Shared drives']) out.push(`${l}:\\${d}\\EUFORIA MEDIA\\00 - SHORTS IA (MÁQUINA)\\${sub}`);
+  return out;
+}
+const PASTAS = process.platform === 'win32' ? noDrive('STUDIO') : [];
 
 function maior(a, b) { // a > b em versão x.y.z
   const pa = String(a).split('.').map(Number), pb = String(b).split('.').map(Number);
@@ -59,4 +63,4 @@ async function instalar(instalador, aoProgresso) {
   return destino;
 }
 
-module.exports = { procurar, instalar, maior };
+module.exports = { noDrive, procurar, instalar, maior };
