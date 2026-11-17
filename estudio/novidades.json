@@ -1,4 +1,8 @@
 {
+  "0.3.3": [
+    "Velocidade da prévia: 1x, 1,5x, 2x ou 4x na barra da linha do tempo, para conferir mais rápido (o render sai normal).",
+    "Prévia do bruto mais estável nos cortes, com menos engasgos."
+  ],
   "0.3.2": [
     "O Studio acha a pasta do Drive em qualquer letra de disco (não só G:), para os projetos e a atualização automática.",
     "Prévia mais leve: o bruto e o longo tocam na velocidade certa, sem travar."

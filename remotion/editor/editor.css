@@ -194,3 +194,6 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .cores input[type=color] { width: 30px; height: 24px; border: 1px solid var(--linha); background: none; padding: 0; border-radius: 6px; cursor: pointer; }
 .mini-in { flex: 1; min-width: 0; background: var(--painel2); border: 1px solid var(--linha); border-radius: 8px; padding: 5px 8px; }
 .sec select { background: var(--painel2); border: 1px solid var(--linha); border-radius: 8px; padding: 5px 8px; }
+
+.vel { display: inline-flex; gap: 4px; margin-left: 8px; }
+.vel .bt.mini { padding: 3px 8px; }
