@@ -1,7 +1,7 @@
 {
   "name": "euforia-studio",
   "productName": "Euforia Studio",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "Editor da Euforia: ver, ajustar e renderizar no próprio PC os vídeos que a máquina monta",
   "main": "main.js",
   "author": "Grupo Euforia",
@@ -13,7 +13,9 @@
     "windows": "node preparar.mjs && node ffmpeg-windows.mjs && electron-builder --win --x64 --publish never"
   },
   "dependencies": {
-    "@remotion/renderer": "4.0.534"
+    "@remotion/renderer": "4.0.534",
+    "react": "19.3.1",
+    "react-dom": "19.3.1"
   },
   "devDependencies": {
     "electron": "33.2.1",

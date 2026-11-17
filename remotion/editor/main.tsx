@@ -1,6 +1,7 @@
 // Editor Euforia: abre o projeto que a máquina de shorts montou, mostra a prévia ao vivo (sem renderizar),
 // deixa a equipe ajustar legenda, destaque, B-roll, cartão e cortes, e exporta o projeto ajustado + a lista de ajustes.
 import { Velocidade, useVelocidade } from './velocidade';
+import { lerRascunho, maiorId, useRascunho } from './rascunho';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { Player, type PlayerRef } from '@remotion/player';
@@ -83,7 +84,7 @@ function EditorQualquer(p: PropsEditorTela) {
 function Editor({ proj, aoVoltar, aoRenderizar }: { proj: Projeto; aoVoltar?: () => void; aoRenderizar?: (p: Pacote) => void }) {
   const original = useMemo(() => anotar(proj.props), [proj]);
   // estado + histórico juntos, para desfazer/refazer sem corrida
-  const [est, setEst] = useState<{ p: PropsEditor; antes: PropsEditor[]; depois: PropsEditor[] }>({ p: original, antes: [], depois: [] });
+  const [est, setEst] = useState<{ p: PropsEditor; antes: PropsEditor[]; depois: PropsEditor[] }>(() => ({ p: lerRascunho<PropsEditor>(proj.id) ?? original, antes: [], depois: [] }));
   const props = est.p;
   const hist = est;
   const [sel, setSel] = useState<Sel>(null);
@@ -94,7 +95,10 @@ function Editor({ proj, aoVoltar, aoRenderizar }: { proj: Projeto; aoVoltar?: ()
   const [quem, setQuem] = useState(ler('editor-quem'));
   const player = useRef<PlayerRef>(null);
   const [vel] = useVelocidade();
-  const contador = useRef(0);
+  const [idIni] = useState(() => maiorId(est.p));
+  const contador = useRef(idIni);
+  const retomado = useRef(est.p !== original);
+  useRascunho(proj.id, est.p, original);
 
   const fps = props.fps;
   const t = frame / fps;
@@ -142,6 +146,7 @@ function Editor({ proj, aoVoltar, aoRenderizar }: { proj: Projeto; aoVoltar?: ()
 
   const irPara = (seg: number) => player.current?.seekTo(Math.max(0, Math.round(seg * fps)));
   const avisar = (m: string) => { setAviso(m); setTimeout(() => setAviso(''), 2600); };
+  useEffect(() => { if (retomado.current) { setAviso('Abri do jeito que você deixou da última vez.'); setTimeout(() => setAviso(''), 4000); } }, []);
 
   const exportar = async (modo: 'automatico' | 'ajustado') => {
     const pacote = {
@@ -201,6 +206,7 @@ function Editor({ proj, aoVoltar, aoRenderizar }: { proj: Projeto; aoVoltar?: ()
     <div className="app">
       <header className="topo">
         {aoVoltar && <button className="bt" onClick={aoVoltar}>← Projetos</button>}
+        {est.p !== original && <button className="bt" title="Desfaz tudo o que foi mexido neste projeto (Ctrl+Z traz de volta)" onClick={() => { mudar(() => original); avisar('Voltei ao original. Ctrl+Z traz seus ajustes de volta.'); }}>↺ Original</button>}
         <div className="marca">euforia <b>{aoRenderizar ? 'studio' : 'editor'}</b></div>
         <button className="bt" onClick={desfazer} disabled={!hist.antes.length} title="Ctrl+Z">↶ Desfazer</button>
         <button className="bt" onClick={refazer} disabled={!hist.depois.length} title="Ctrl+Shift+Z">↷ Refazer</button>

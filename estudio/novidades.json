@@ -1,4 +1,9 @@
 {
+  "0.4.1": [
+    "Renderizar voltou a funcionar no Windows (faltava uma peça no instalador).",
+    "O que você mexe fica salvo: dá para voltar aos projetos ou fechar o Studio e continuar de onde parou.",
+    "Botão \"↺ Original\" no topo do editor desfaz tudo de uma vez (Ctrl+Z traz de volta)."
+  ],
   "0.4.0": [
     "✨ Aplicar pós-produção: corte o bruto, clique e a máquina põe textos, lowers, cartões, B-roll, trilha e tela final nas cores do cliente.",
     "Você acompanha o andamento na tela de projetos (Pós-produção) e, quando ficar pronto, clica em \"Abrir com a pós-produção\", confere e renderiza no seu PC.",
