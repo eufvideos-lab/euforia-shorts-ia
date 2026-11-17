@@ -38,8 +38,11 @@ bash instalar.sh   # instala Remotion e OpenCV (~15 s)
 1. Abra a página do pedido e confira que o Status ainda é "Editar" ou "Ajustar" (outra rodada pode ter pegado).
    Se não for, pule este pedido sem mexer nele. Se for, mude o Status para "Em edição" na hora e escreva no
    "Log da máquina": "iniciado <data hora>".
-2. Pegue o ID do arquivo no link "Vídeo editado (link do Drive)" (o trecho depois de /d/ ou id=).
-   Se o link for de pasta, liste a pasta com o Google Drive e use o vídeo editado mais recente (.mp4/.mov).
+2. Pegue o ID do arquivo no link "Vídeo bruto (link do Drive)" (o trecho depois de /d/ ou id=). Desde 09/11/2026 os
+   shorts saem do BRUTO: o editado traz tarjas (nome, "Inscreva-se") e B-rolls do editor, que no vertical aparecem
+   cortados ao meio ou duplicados (retorno da Lorena). Se o bruto estiver vazio, use "Vídeo editado (link do Drive)"
+   e escreva no "Log da máquina": "feito do editado (sem link do bruto)".
+   Se o link for de pasta, liste a pasta com o Google Drive e use o vídeo mais recente (.mp4/.mov).
    Se não achar vídeo: Status "Erro" e siga para o próximo (veja "Como tratar erro").
 3. Rode `python3 pipeline/preparar.py pedidos/<id-curto> <file_id>`.
 4. Legenda queimada: tire 3 quadros do fonte.mp4 (início, meio, fim) e olhe a faixa de baixo. Se o vídeo já tiver
@@ -68,7 +71,7 @@ bash instalar.sh   # instala Remotion e OpenCV (~15 s)
    grave no campo, no formato `fundo=#...; texto=#...; destaque=#...; fonte=...; logo=...`.
    Sem nada para tirar: fundo #FDFBF7, texto #1F2937, destaque #D45C78.
 7. Pasta de entrega: se "Pasta de entrega (opcional)" estiver preenchida, use ela. Senão, crie com o Google Drive
-   uma pasta "SHORTS IA - <AAAA-MM-DD>" dentro da pasta onde está o vídeo editado.
+   uma pasta "SHORTS IA - <AAAA-MM-DD>" dentro da pasta onde está o vídeo editado (ou o bruto, se não houver editado).
 8. Antes do render, confira os B-rolls do banco: rode o comando abaixo com `--so-brolls` no fim e olhe a imagem
    `pedidos/<id-curto>/brolls_banco.png` (um quadro de cada B-roll do banco, com a busca escrita). O que não mostrar
    literalmente o que a pessoa fala naquele trecho sai do plano (troque por #k, cartão ou nada). Só então rode sem
@@ -81,12 +84,31 @@ bash instalar.sh   # instala Remotion e OpenCV (~15 s)
    fique conferindo com `sleep 120` em loop até o processo terminar. Só termine depois do aviso no Discord.
 9. Confira cada short: tire 6 quadros (ffmpeg) de cada arquivo em `saida/` e olhe. Corte no meio de frase, legenda
    errada, B-roll sem relação ou tela preta = refaça aquele short antes de entregar.
-10. Atualize o pedido: "Shorts prontos" (um link por linha com o título), "Pasta dos shorts", "Entregue em" (agora),
-    Status "Pronto para revisão" e um resumo curto no log (tempo, B-rolls usados, dúvidas).
+9a. **Título, descrição e SEO** (16/11/2026; substitui o Gemini que a equipe usava): leia `prompts/publicacao.md` e
+   escreva `pedidos/<id-curto>/publicacao.json` com o pacote de cada short (mesma ordem do plano) e o do vídeo longo
+   (`longo`, com `topicos`, sem capítulos: o longo é editado à mão a partir deste bruto). Use a transcrição, o roteiro
+   (se o pedido tiver) e a ficha do cliente (nicho, "Direção criativa", links e "📝 Rodapé da descrição (YouTube)").
+9b. Projeto do Euforia Studio (16/11/2026; é o que a equipe abre para ajustar e renderizar no PC):
+   `python3 pipeline/projeto_editor.py pedidos/<id-curto> pedidos/<id-curto>/studio --cliente "<nome>"`, depois
+   `python3 pipeline/publicacao.py pedidos/<id-curto> --cliente "<nome>" --pasta-drive <pasta dos shorts> --studio pedidos/<id-curto>/studio --cliente-id <id da ficha do cliente> --pedido <link do pedido>`
+   (confere as regras do YouTube, sobe um "título e descrição.txt" por vídeo ao lado dos shorts, põe o pacote no
+   projeto e no Painel da Equipe, na gaveta do horário da Grade, onde quem posta copia; se parar com ERRO, corrija o publicacao.json e rode de novo; avisos não param). Crie com o
+   Google Drive a pasta "<Cliente> - <id-curto>" dentro de EDITOR (1Je4ZPgF6m3ocRinFlMNewtyljHD7unLX) e rode
+   `python3 pipeline/studio_drive.py pedidos/<id-curto>/studio <id da pasta> [--revisar "<motivo>"]`.
+   **Revisão obrigatória da Lorena** (decisão do Henrique, 16/11/2026). Vale se QUALQUER um for verdade:
+   cliente com "🔴 Atenção redobrada" marcado na ficha; algum short com `nota_confianca` abaixo de 0,6; cliente com "📄 Contrato início" há menos de 30 dias.
+   O motivo é curto: "cliente 🔴", "confiança baixa (55%)", "cliente novo". O resto a equipe revisa por amostragem.
+   Se falhar, não trava a entrega: siga e conte no #ia-status.
+10. Atualize o pedido: "Shorts prontos" (um link por linha com o título recomendado do publicacao), "Pasta dos shorts", "Entregue em" (agora),
+    Status "Pronto para revisão" e um resumo curto no log (tempo, B-rolls usados, dúvidas). Com revisão obrigatória,
+    a 1ª linha do log é "🔎 Revisão obrigatória (Lorena): <motivo>".
+    **Card do Entregas** (17/11/2026, quem revisa é a Lorena): se as Observações do pedido têm o link do card ("Card no Entregas: <link>" ou "Card: <link>"), atualize esse card: Status "Em revisão", "Link do arquivo" = a pasta dos shorts, "Revisor" = Lorena (ficha 3ea98c0cdde08163bd16f0213b098cb5), "🏢 Escritório IA" = "Feito pela IA" e uma linha no topo do Obs `[Máquina dd/MM HH:mm] Pronto para revisão da Lorena: <link do pedido>`. É assim que a peça entra na fila de revisão dela no Painel da Equipe. Sem link de card, siga sem isso.
 11. Registre cada short na tabela de medição (Caminho "B - Próprio (Claude + Remotion)", Status "Gerado",
     Tempo de máquina, Corte no meio de frase = não, Link do short).
 12. Avise no Discord, assinando como Érica, curto:
-    "🎬 Shorts prontos: <Cliente> (<n> shorts, <estilo>). Para revisão do Ismael: <link da pasta>. — Érica, time de suporte, Grupo Euforia"
+    "🎬 Shorts prontos: <Cliente> (<n> shorts, <estilo>). Para revisão da Lorena <@827882215185973279>: <link da pasta>. Título e descrição de cada vídeo (e do longo) já estão na pasta. — Érica, time de suporte, Grupo Euforia"
+    Com revisão obrigatória, troque "Para revisão da Lorena" por "🔎 Revisão obrigatória da Lorena <@827882215185973279> (<motivo>)" e
+    acrescente "Abrir no Euforia Studio: pasta EDITOR / <Cliente> - <id-curto>".
 
 ## Regras
 - Nunca mande nada para cliente. A entrega é interna (Drive + Notion + Discord).

@@ -27,7 +27,7 @@ CONFIG = {
         'gancho_s': 2.2,
         'troca_enquadramento_s': 3.0,
         'escalas': [1.0, 1.22],
-        'dur_min': 20, 'dur_max': 55,
+        'dur_min': 30, 'dur_max': 55,   # Lorena (09/11/2026): mínimo 30 s
     },
     'institucional': {
         'pausa_max': 0.8,
@@ -39,7 +39,7 @@ CONFIG = {
         'gancho_s': 0,
         'troca_enquadramento_s': 0,
         'escalas': [1.0],
-        'dur_min': 25, 'dur_max': 65,
+        'dur_min': 30, 'dur_max': 65,
     },
 }
 # Nova Acrópole: o Institucional com legenda amarela, B-roll só real (fotos de obras, estátuas, livros) e citações com autor
@@ -120,6 +120,42 @@ def validar(pal, ini, fim):
         erros.append(f'termina no meio da frase ("{pal[fim]["t"]}")')
     if pal[ini]['t'].lower().strip(',') in ('e', 'então', 'mas', 'aí'):
         erros.append(f'começa com "{pal[ini]["t"]}"')
+    erros += final_incompleto(pal, ini, fim)
+    return erros
+
+
+# Lorena (09/11/2026): short que acaba anunciando o próximo item ("E por último, um passo que muda tudo.")
+# sem mostrar o item. O fim tem que fechar a ideia: nada de frase que só promete o que vem depois.
+ANUNCIO = re.compile(r'\b(vou te (contar|mostrar|falar|dizer)|vou (contar|mostrar|falar|dizer)|olha so|presta atencao|sabe qual|'
+                     r'(por ultimo|por fim|o ultimo|a ultima|o proximo|a proxima|o segredo|a dica)\b.*\b(um|uma|o|a) (passo|dica|coisa|segredo|erro|ponto|habito|detalhe)s? que)\b')
+LISTA = re.compile(r'\b(dois|duas|tres|quatro|cinco|seis|sete|2|3|4|5|6|7)\s+(passos|dicas|coisas|formas|maneiras|erros|sinais|'
+                   r'motivos|razoes|pontos|perguntas|segredos|habitos|etapas|regras|licoes|direcoes|caminhos)\b')
+ORDINAIS = ['primeir', 'segund', 'terceir', 'quart', 'quint', 'sext', 'setim']
+NUM = {'dois': 2, 'duas': 2, 'tres': 3, 'quatro': 4, 'cinco': 5, 'seis': 6, 'sete': 7}
+
+
+def _sem_acento(s):
+    s = unicodedata.normalize('NFD', s.lower())
+    return ''.join(c for c in s if unicodedata.category(c) != 'Mn')
+
+
+def final_incompleto(pal, ini, fim):
+    erros = []
+    k = fim
+    while k > ini and not pal[k - 1]['t'].endswith(PONTO_FINAL):
+        k -= 1
+    ultima = _sem_acento(' '.join(p['t'] for p in pal[k:fim + 1]))
+    if ANUNCIO.search(ultima) or ultima.rstrip().endswith(':'):
+        erros.append(f'termina anunciando algo que não aparece ("{ultima.strip()}"): estique até o fim da ideia ou corte antes')
+    texto = _sem_acento(' '.join(p['t'] for p in pal[ini:fim + 1]))
+    m = LISTA.search(texto)
+    if m:
+        n = NUM.get(m.group(1), int(m.group(1)) if m.group(1).isdigit() else 0)
+        resto = texto[m.end():]
+        vistos = (sum(1 for o in ORDINAIS[:n] if re.search(r'\b' + o, resto))
+                  + len(re.findall(r'\b(depois|em seguida|por ultimo|por fim)\b', resto)))
+        if 0 < vistos < n:
+            erros.append(f'promete {n} {m.group(2)} e mostra {vistos}: o short precisa ter todos ou não anunciar a lista')
     return erros
 
 
@@ -193,6 +229,9 @@ def main():
     fala_fim = round(t_out, 3)
     final = a.final if a.final is not None else (0.4 if a.modelo == 'viral' else 0.8)
     duracao = round(fala_fim + final, 3)
+    if duracao < cfg['dur_min'] and not a.forcar:
+        print(f'ERRO: short com {duracao}s; o mínimo é {cfg["dur_min"]}s. Escolha um trecho maior (a fala, sem as pausas).')
+        sys.exit(2)
     if not cfg['dur_min'] <= duracao <= cfg['dur_max']:
         print(f'AVISO: duração {duracao}s fora da faixa {cfg["dur_min"]}-{cfg["dur_max"]}s', file=sys.stderr)
 
@@ -258,6 +297,14 @@ def main():
         st = mapa[br['i']]
         brolls.append({'start': round(st, 3), 'end': round(min(duracao, st + br['duracao']), 3),
                        'src': arquivos[br['busca']], 'mode': br['modo'], 'legenda': br.get('legenda')})
+    # nunca dois B-rolls ao mesmo tempo (Lorena, 09/11/2026: um terminava e o outro "voltava")
+    brolls.sort(key=lambda b: b['start'])
+    sem = []
+    for b in brolls:
+        if sem and b['start'] < sem[-1]['end'] + 0.5:
+            continue
+        sem.append(b)
+    brolls = sem
 
     # 5) Cartões de texto (institucional): o texto aparece acompanhando a fala
     cartoes = []

@@ -11,6 +11,10 @@ Você recebe `palavras.txt` (cada palavra como `índice:palavra[tempo]`, uma fra
   nunca vários pedaços colados. A máquina deixa a pessoa respirar no gancho (`"gancho": 1` = quantos trechos do
   início contam como gancho). Depois do gancho, os cortes seguem normais.
 - **Zoom alternado** entre os segmentos: a máquina faz sozinha (`zoom` 1.22, `centro_zoom` [x, y] do rosto, 0 a 1).
+- **Enquadramento automático (Flau, 07/11/2026: "sempre enquadrar o cliente"; o erro era ficar distante ou fora do
+  centro):** `cortar.py` usa o `enquadramento.json` do preparar (rosto no meio, ~24% da altura da tela no plano
+  aberto). Pausa longa no meio de um trecho (ela mexendo na câmera ou no teleprompter) sai sozinha (`pausa_max`, 1 s).
+  O que vem abaixo vale só com `"enquadramento": "manual"`.
 - **Pessoa fora do centro** (gravou mais para o canto, ou as observações pedem para centralizar): ponha `"centralizar": true`.
   O plano aberto também corta em volta do rosto e a pessoa fica no meio. Confira num quadro do segmento 000 que ela
   ficou centralizada e sem cortar a cabeça; se precisar, ajuste com `"zoom_aberto"` (1.0 a 1.6). Em bruto 1080p,
@@ -20,11 +24,24 @@ Você recebe `palavras.txt` (cada palavra como `índice:palavra[tempo]`, uma fra
 - **Cartões de tópico** (`cartoes`): frases de impacto em tela cheia na cor do cliente, ~5 s, 4 a 6 por vídeo.
   Até 3 linhas curtas (máx. ~22 letras cada). Um cartão de título (`titulo`) logo depois do gancho.
 - **Mapa** (`mapa`, opcional): quando a pessoa cita 3 ou mais cidades seguidas. Uma imagem única, sem piscar.
-- **B-roll é obrigatório**, 10 a 16 num vídeo de 8 min, 2,5 a 3,5 s cada:
+- **B-roll é obrigatório**, 10 a 16 num vídeo de 8 min, 2,5 a 3,5 s cada (os que cobrem olhar fora da câmera duram o trecho todo):
   - `"fonte": "pixabay"` para o genérico (`busca` em inglês, 2 a 4 palavras, cena real, nada de desenho);
   - `"fonte": "foto"` para o específico (pessoa citada, faculdade, empresa, lugar): busque no Google pelo fluxo de
     fotos do n8n (ver TAREFA) e ponha os `file_ids` das partes salvas no Drive;
   - nunca trecho de vídeo do YouTube.
+- **Olhar para a câmera (Flau, 05/11/2026, vale para TODO cliente):** o rosto só aparece quando a pessoa olha para a
+  câmera. Depois do `cortar.py`, rode `olhar.py`: ele lista cada trecho em que ela lê o teleprompter, olha para baixo ou
+  para o lado (tempo, palavra e quanto dura). Cada trecho desses tem que ficar coberto do começo ao fim por B-roll,
+  foto ou cartão de tópico: ponha o B-roll na `palavra` do trecho com `dur` = duração do trecho + 0,3 s (pode passar
+  de 3,5 s; até ~7 s num B-roll só, acima disso dois em sequência). Se o banco não achar B-roll bom, troque a busca,
+  use foto (`"fonte": "foto"`: as fotos profissionais da pessoa na pasta 01 - ELEMENTOS ESSENCIAIS › FOTOS do cliente,
+  ou foto do Google do assunto) ou um cartão de tópico. Nunca deixe descoberto: `montar.py` para e lista o que faltou.
+  Trecho de rosto olhando para a câmera e fechando a ideia não se cobre. Para cobrir certinho, o B-roll aceita `"ini"` (segundo exato no vídeo final, o
+  `ini` do olhar.json) no lugar da palavra.
+- **Fonte do cliente:** se a ficha ou as observações dão uma fonte (ex.: Winthorpe), ponha
+  `"fontes": {"cliente": "Winthorpe", "titulo": {"file_id": "..."}}` com o arquivo .ttf/.otf da pasta do cliente no
+  Drive. Sem o arquivo, use a mais parecida do Google Fonts (`"titulo": {"google": "Playfair Display:800"}`) e avise no
+  log. `"texto"` (lowers) é opcional. `montar.py` para se a fonte não carregar; nunca troca sozinho pela padrão.
 - **Lowers** (`lowers`): "inscreva" 2 vezes e "like" 1 vez (de preferência quando a pessoa pede para se inscrever
   ou comentar). Lower de nome (`"tipo": "nome"` + campo `nome`) só se o cliente mandar o nome/cargo.
 - **Trilha** royalty free bem baixa (-31 dB com ducking); a máquina cuida.
@@ -37,6 +54,19 @@ Você recebe `palavras.txt` (cada palavra como `índice:palavra[tempo]`, uma fra
   grave no cliente. Paleta padrão = Grupo Euforia.
 - Nada pode se sobrepor: dois elementos de tela cheia (B-roll, cartão, título, mapa) não podem se cruzar,
   nem dois textos de baixo (texto-chave e lower). `montar.py` avisa e para; ajuste a palavra.
+
+## Texto certo e "corta" (07/11/2026)
+- `palavras.txt` já vem com a grafia do roteiro e do glossário do cliente ("autoliderança", não "liderança"). Use
+  essa grafia nos textos-chave, cartões e título.
+- **⛔ = comando de gravação** ("corta", "de novo", "errei", "vou repetir"). Ele e a tomada errada que vem antes
+  dele nunca entram num trecho. `cortar.py` para se algum trecho mantiver um ⛔. Se for fala de verdade (ex.: "corte
+  de gastos"), ponha o índice em `"ignorar_comandos": [123]`. ⚠ = talvez seja comando: confira o contexto.
+- **Com roteiro:** a linha "TRECHOS SUGERIDOS PELO ROTEIRO" traz a última tomada boa de cada frase, escolhida de trás
+  para frente (a regravação depois de um "corta" sempre ganha, mesmo quando a pessoa volta várias frases). Use como
+  base dos `trechos` e mude só o necessário (gancho na frente, fala boa que não está no roteiro, respiros). Frase
+  não achada fica no `relatorio.md`.
+- **Sem roteiro:** "REGRAVAÇÕES PROVÁVEIS" lista falas repetidas logo depois (a pessoa regravou mesmo sem o "corta"
+  aparecer escrito). A 1ª passada sai.
 
 ## Formato
 ```json

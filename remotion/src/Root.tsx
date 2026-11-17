@@ -5,6 +5,7 @@ import { ShortInstitucional } from './ShortInstitucional';
 import type { ShortProps } from './types';
 import { MotionCena } from './motion/MotionCena';
 import type { MotionProps } from './motion/tipos';
+import { GrafismoRender, metaGrafismo, PALETA_EUFORIA } from './longo/Grafismos';
 import '@fontsource/montserrat/700.css';
 import '@fontsource/montserrat/800.css';
 import '@fontsource/montserrat/900.css';
@@ -65,6 +66,36 @@ export const Root: React.FC = () => (
         const p = props as unknown as MotionProps;
         return { fps: p.fps, width: p.largura, height: p.altura, durationInFrames: Math.ceil(p.duracao * p.fps) };
       }}
+    />
+      <Composition
+      id="TextoChave"
+      component={GrafismoRender}
+      width={1920}
+      height={420}
+      fps={30}
+      durationInFrames={90}
+      defaultProps={{ tipo: 'kw', texto: 'Somos *líderes*', dur: 3, paleta: PALETA_EUFORIA, largura: 1920, altura: 1080 }}
+      calculateMetadata={metaGrafismo}
+    />
+    <Composition
+      id="Lower"
+      component={GrafismoRender}
+      width={1920}
+      height={240}
+      fps={30}
+      durationInFrames={90}
+      defaultProps={{ tipo: 'lw', texto: 'Inscreva-se no canal', dur: 3, paleta: PALETA_EUFORIA, largura: 1920, altura: 1080 }}
+      calculateMetadata={metaGrafismo}
+    />
+    <Composition
+      id="Cartao"
+      component={GrafismoRender}
+      width={1920}
+      height={1080}
+      fps={30}
+      durationInFrames={90}
+      defaultProps={{ tipo: 'full', texto: 'O que *muda*|na prática', dur: 3, paleta: PALETA_EUFORIA, largura: 1920, altura: 1080 }}
+      calculateMetadata={metaGrafismo}
     />
   </>
 );

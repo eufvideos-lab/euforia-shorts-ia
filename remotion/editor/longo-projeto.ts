@@ -1,0 +1,218 @@
+// Projeto do vídeo LONGO no Studio: o que a máquina de longos montou (longos/studio.py) + o que a pessoa ajustou.
+// Trechos = pedaços do base.mp4 (a fala já cortada pela máquina) que ficam, na ordem; elementos = B-roll, telas cheias
+// (título, cartões, mapa), textos-chave e lowers, com tempo no vídeo final. Funções puras, sem React.
+import type { Ajuste } from './projeto';
+import { ALTURA, PALETA_EUFORIA, type Paleta } from '../src/longo/Grafismos';
+import type { Publicacao } from './publicacao';
+
+export type Camada = 'broll' | 'full' | 'kw' | 'lw';
+/** Elemento por cima da fala. Com `texto`, é um grafismo feito no Studio (desenhado na hora, nas cores do cliente). */
+export type Elemento = { camada: Camada; arquivo: string; inicio: number; dur: number; rotulo: string; w: number; h: number; y: number; texto?: string; sub?: string };
+export type Trecho = { ini: number; fim: number };
+export type DadosLongo = {
+  fps: number; largura: number; altura: number; video: string; previa: string;
+  trechos: Trecho[]; elementos: Elemento[];
+  fim: { arquivo: string; dur: number } | null;
+  musica: { arquivo: string; volume_db: number } | null;
+  palavras: { w: string; t: number }[];
+  /** Bruto aberto no Studio: picos do áudio (0..1) a cada `passo` segundos, para ver e cortar pela onda. */
+  onda?: { passo: number; picos: number[] };
+  /** Cores do cliente (a máquina grava as do plano; o Studio deixa mudar). */
+  paleta?: Partial<Paleta>;
+};
+export type ProjetoLongo = {
+  versao: 1; tipo: 'longo'; id: string; cliente: string; titulo: string; composicao: 'Longo'; base: string;
+  longo: DadosLongo; registro?: string[]; maquina?: { por_que?: string; nota_confianca?: number };
+  biblioteca?: { src: string; descricao: string }[];
+  origem?: 'maquina' | 'bruto';
+  publicacao?: Publicacao; // título, descrição e tags sugeridos (pipeline/publicacao.py)
+};
+type ComId<T> = T & { _id: string };
+export type LongoEd = Omit<DadosLongo, 'trechos' | 'elementos'> & { trechos: ComId<Trecho>[]; elementos: ComId<Elemento>[] };
+
+export const NOME_CAMADA: Record<Camada, string> = { broll: 'B-roll', full: 'Tela cheia', kw: 'Texto-chave', lw: 'Lower' };
+const r3 = (x: number) => Math.round(x * 1000) / 1000;
+export const tc = (t: number) => `${Math.floor(t / 60)}:${(t % 60).toFixed(1).padStart(4, '0')}`;
+
+export function anotarLongo(d: DadosLongo): LongoEd {
+  return { ...d, trechos: d.trechos.map((t, i) => ({ ...t, _id: `t${i}` })), elementos: d.elementos.map((e, i) => ({ ...e, _id: `e${i}` })) };
+}
+export function limparLongo(L: LongoEd): DadosLongo {
+  return {
+    ...L,
+    trechos: L.trechos.map(({ _id, ...t }) => t), // eslint-disable-line @typescript-eslint/no-unused-vars
+    elementos: [...L.elementos].sort((a, b) => a.inicio - b.inicio).map(({ _id, ...e }) => e), // eslint-disable-line @typescript-eslint/no-unused-vars
+  };
+}
+
+/** Duração da fala (sem a tela final). */
+export const duracao = (L: { trechos: Trecho[] }) => L.trechos.reduce((n, t) => n + (t.fim - t.ini), 0);
+/** Onde cada trecho começa no vídeo final. */
+export function inicios(L: { trechos: Trecho[] }): number[] {
+  let o = 0;
+  return L.trechos.map((t) => { const x = o; o += t.fim - t.ini; return x; });
+}
+/** Tempo do vídeo final → tempo no base.mp4 (o "conteúdo": o que está sendo falado ali). */
+export function paraBase(L: { trechos: Trecho[] }, tOut: number): number {
+  const os_ = inicios(L);
+  for (let i = 0; i < L.trechos.length; i++) {
+    const d = L.trechos[i].fim - L.trechos[i].ini;
+    if (tOut < os_[i] + d || i === L.trechos.length - 1) return L.trechos[i].ini + Math.max(0, tOut - os_[i]);
+  }
+  return tOut;
+}
+/** Palavras com o tempo no vídeo final (só as dos trechos que ficaram). */
+export function palavrasSaida(L: LongoEd): { w: string; t: number }[] {
+  const os_ = inicios(L);
+  const out: { w: string; t: number }[] = [];
+  L.trechos.forEach((tr, i) => {
+    for (const p of L.palavras) if (p.t >= tr.ini - 0.01 && p.t < tr.fim) out.push({ w: p.w, t: os_[i] + (p.t - tr.ini) });
+  });
+  return out;
+}
+export function textoDoTrecho(L: { palavras: { w: string; t: number }[] }, ini: number, fim: number, max = 12): string {
+  const ws = L.palavras.filter((p) => p.t >= ini - 0.01 && p.t < fim).map((p) => p.w);
+  return ws.length > max ? `${ws.slice(0, max).join(' ')}…` : ws.join(' ');
+}
+
+/** Tira um trecho: o que começa dentro dele sai junto; o que vem depois é puxado para trás. */
+export function removerTrecho(L: LongoEd, id: string): LongoEd {
+  const i = L.trechos.findIndex((t) => t._id === id);
+  if (i < 0 || L.trechos.length < 2) return L;
+  const o = inicios(L)[i];
+  const d = L.trechos[i].fim - L.trechos[i].ini;
+  return {
+    ...L,
+    trechos: L.trechos.filter((t) => t._id !== id),
+    elementos: L.elementos
+      .filter((e) => e.inicio < o - 0.01 || e.inicio >= o + d - 0.01)
+      .map((e) => (e.inicio >= o + d - 0.01 ? { ...e, inicio: r3(e.inicio - d) } : e)),
+  };
+}
+/** Divide o trecho no ponto tOut do vídeo final (para depois tirar só um pedaço). */
+export function dividirTrecho(L: LongoEd, id: string, tOut: number, novoId: string): LongoEd {
+  const i = L.trechos.findIndex((t) => t._id === id);
+  if (i < 0) return L;
+  const tr = L.trechos[i];
+  const corte = r3(tr.ini + (tOut - inicios(L)[i]));
+  if (corte - tr.ini < 0.2 || tr.fim - corte < 0.2) return L;
+  const trechos = [...L.trechos];
+  trechos.splice(i, 1, { ...tr, fim: corte }, { _id: novoId, ini: corte, fim: tr.fim });
+  return { ...L, trechos };
+}
+
+/** Elementos que se cruzam (a máquina também para nisso): tela cheia com tela cheia, texto de baixo com texto de baixo. */
+export function sobreposicoes(L: LongoEd): { a: ComId<Elemento>; b: ComId<Elemento> }[] {
+  const out: { a: ComId<Elemento>; b: ComId<Elemento> }[] = [];
+  for (const grupo of [['broll', 'full'], ['kw', 'lw']]) {
+    const xs = L.elementos.filter((e) => grupo.includes(e.camada)).sort((a, b) => a.inicio - b.inicio);
+    for (let k = 1; k < xs.length; k++) if (xs[k - 1].inicio + xs[k - 1].dur > xs[k].inicio + 0.05) out.push({ a: xs[k - 1], b: xs[k] });
+  }
+  return out;
+}
+
+/** O que a pessoa mudou em relação à máquina (vai para ajustes.jsonl; a máquina aprende com isso). */
+export function diferencasLongo(orig: LongoEd, atual: LongoEd, nomeArq: (s: string) => string): Ajuste[] {
+  const out: Ajuste[] = [];
+  // trechos tirados: partes do base que a máquina mantinha e não estão mais
+  const fica = atual.trechos.map((t) => [t.ini, t.fim]).sort((a, b) => a[0] - b[0]);
+  for (const t of orig.trechos) {
+    let cur = t.ini;
+    const pedacos: [number, number][] = [];
+    for (const [a, b] of fica) {
+      if (b <= cur || a >= t.fim) continue;
+      if (a > cur) pedacos.push([cur, a]);
+      cur = Math.max(cur, b);
+    }
+    if (cur < t.fim) pedacos.push([cur, t.fim]);
+    for (const [a, b] of pedacos) {
+      if (b - a < 0.05) continue;
+      out.push({ tipo: 'trecho_removido', alvo: `base:${r3(a)}`, de: { ini: r3(a), fim: r3(b) },
+        texto: orig.palavras.length ? `Tirou ${(b - a).toFixed(1)} s da fala: "${textoDoTrecho(orig, a, b) || '(sem fala)'}"`
+          : `Tirou ${(b - a).toFixed(1)} s do bruto (${tc(a)}–${tc(b)})` });
+    }
+  }
+  const porId = new Map(atual.elementos.map((e) => [e._id, e]));
+  for (const e of orig.elementos) {
+    const n = porId.get(e._id);
+    const nome = `${NOME_CAMADA[e.camada]} "${e.camada === 'broll' ? nomeArq(e.arquivo) : e.rotulo}"`;
+    if (!n) {
+      // saiu junto com um trecho tirado? isso já está no ajuste do trecho
+      const base = paraBase(orig, e.inicio);
+      if (atual.trechos.some((t) => base >= t.ini - 0.01 && base < t.fim)) out.push({ tipo: 'elemento_removido', alvo: e._id, de: e.camada, texto: `Tirou ${nome}` });
+      continue;
+    }
+    if (n.arquivo !== e.arquivo) out.push({ tipo: 'broll_trocado', alvo: e._id, de: nomeArq(e.arquivo), para: nomeArq(n.arquivo), texto: `Trocou o B-roll "${nomeArq(e.arquivo)}" por "${nomeArq(n.arquivo)}"` });
+    const b0 = paraBase(orig, e.inicio), b1 = paraBase(atual, n.inicio);
+    if (Math.abs(b0 - b1) > 0.05) out.push({ tipo: 'elemento_tempo', alvo: e._id, de: r3(e.inicio), para: r3(n.inicio), texto: `Moveu ${nome} ${b1 > b0 ? 'para depois' : 'para antes'} (${Math.abs(b1 - b0).toFixed(1)} s)` });
+    if (Math.abs(n.dur - e.dur) > 0.05) out.push({ tipo: 'elemento_duracao', alvo: e._id, de: r3(e.dur), para: r3(n.dur), texto: `${nome}: ${e.dur.toFixed(1)} s → ${n.dur.toFixed(1)} s` });
+  }
+  const ids = new Set(orig.elementos.map((e) => e._id));
+  for (const n of atual.elementos) {
+    if (!ids.has(n._id) && n.texto != null) out.push({ tipo: 'texto_novo', alvo: n._id, para: n.texto, texto: `Pôs ${NOME_CAMADA[n.camada].toLowerCase()} "${n.rotulo}" em ${tc(n.inicio)}` });
+    else if (!ids.has(n._id)) out.push({ tipo: 'broll_novo', alvo: n._id, para: nomeArq(n.arquivo), texto: `Pôs o B-roll "${nomeArq(n.arquivo)}" em ${tc(n.inicio)}` });
+  }
+  const po = JSON.stringify(paletaDe(orig)), pa = JSON.stringify(paletaDe(atual));
+  if (po !== pa && atual.elementos.some((e) => e.texto != null)) out.push({ tipo: 'paleta', alvo: 'paleta', de: paletaDe(orig), para: paletaDe(atual), texto: 'Mudou as cores dos textos' });
+  if (orig.musica && atual.musica && orig.musica.volume_db !== atual.musica.volume_db) {
+    out.push({ tipo: 'musica_volume', alvo: 'musica', de: orig.musica.volume_db, para: atual.musica.volume_db, texto: `Trilha de ${orig.musica.volume_db} dB para ${atual.musica.volume_db} dB` });
+  }
+  return out;
+}
+
+/** Picos da onda normalizados (o 98º percentil vira 1), para desenhar e achar silêncio do mesmo jeito em qualquer bruto. */
+export function ondaNormal(onda: { picos: number[] }): number[] {
+  const ord = [...onda.picos].sort((a, b) => a - b);
+  const ref = ord[Math.floor(ord.length * 0.98)] || 1;
+  return onda.picos.map((p) => Math.min(1, p / ref));
+}
+
+/** Tira os silêncios de cada trecho (pausas maiores que `min` s, deixando `folga` s de respiro em cada ponta).
+ *  Só para bruto (sem elementos por cima). Devolve o novo estado e quantos segundos saíram. */
+export function tirarSilencios(L: LongoEd, novoId: () => string, min = 0.6, folga = 0.15): { L: LongoEd; cortes: number; segundos: number } {
+  if (!L.onda || L.elementos.length) return { L, cortes: 0, segundos: 0 };
+  const { passo } = L.onda;
+  const pk = ondaNormal(L.onda);
+  // silêncio = abaixo do dobro do chão de ruído do próprio bruto (sala, ar-condicionado), entre 0,06 e 0,2
+  const chao = [...pk].sort((x, y) => x - y)[Math.floor(pk.length * 0.1)] ?? 0;
+  const limiar = Math.min(0.2, Math.max(0.06, chao * 2));
+  const trechos: LongoEd['trechos'] = [];
+  let cortes = 0, segundos = 0;
+  for (const tr of L.trechos) {
+    let ini = tr.ini, run = -1, usou = false;
+    const id = () => (usou ? novoId() : ((usou = true), tr._id));
+    const i0 = Math.ceil(tr.ini / passo);
+    const fimIdx = Math.floor(tr.fim / passo);
+    const fecha = (a: number, b: number) => { // silêncio de a até b (segundos)
+      const ca = a + folga, cb = b - folga;
+      if (b - a < min || cb - ca < 0.2) return;
+      if (ca - ini >= 0.1) trechos.push({ _id: id(), ini: r3(ini), fim: r3(ca) });
+      segundos += cb - Math.max(ca, ini); cortes += 1;
+      ini = cb;
+    };
+    for (let k = i0; k <= fimIdx; k++) {
+      const quieto = (pk[k] ?? 0) < limiar;
+      if (quieto && run < 0) run = k;
+      if ((!quieto || k === fimIdx) && run >= 0) { fecha(Math.max(tr.ini, run * passo), Math.min(tr.fim, (quieto ? k + 1 : k) * passo)); run = -1; }
+    }
+    if (tr.fim - ini >= 0.1) trechos.push({ _id: id(), ini: r3(ini), fim: tr.fim });
+  }
+  if (!cortes || !trechos.length) return { L, cortes: 0, segundos: 0 };
+  return { L: { ...L, trechos }, cortes, segundos: r3(segundos) };
+}
+
+/** Quadro do vídeo final: o do bruto, reduzido para 1080p quando a fonte é maior (igual ao render). */
+export function quadro(L: { largura: number; altura: number }): { w: number; h: number } {
+  const { largura: w, altura: h } = L;
+  if (w <= 1920 && h <= 1920) return { w, h };
+  const par = (x: number) => Math.round(x / 2) * 2;
+  return w >= h ? { w: 1920, h: par((h * 1920) / w) } : { w: par((w * 1920) / h), h: 1920 };
+}
+export const paletaDe = (L: { paleta?: Partial<Paleta> }): Paleta => ({ ...PALETA_EUFORIA, ...(L.paleta ?? {}) });
+/** Novo texto do Studio (texto-chave, lower ou cartão) no ponto `inicio`. */
+export function novoTexto(L: LongoEd, id: string, camada: 'kw' | 'lw' | 'full', texto: string, inicio: number, dur: number, sub?: string): LongoEd {
+  const q = quadro(L);
+  const h = ALTURA(camada, q.h);
+  const el = { _id: id, camada, arquivo: '', texto, sub: sub || undefined, inicio: r3(inicio), dur, rotulo: texto.replace(/[*|]/g, ' ').replace(/\s+/g, ' ').trim(), w: q.w, h, y: q.h - h };
+  return { ...L, elementos: [...L.elementos, el] };
+}

@@ -5,17 +5,74 @@ Lê plano.json, segmentos.json (de cortar.py) e broll/ (de brolls.py). Gera fina
 "modelo": "nova-acropole" (cortes de palestra): legenda amarela o vídeo todo, marca d'água da NA (Instagram + logo)
 cartões brancos de citação (aspas, foto redonda e nome do autor) e de frase-chave, e o encerramento da Acrópole Play
 no fim; sem textos-chave, lowers, trilha nem tela final.
---sem-gfx reaproveita os grafismos já gerados; --previa renderiza só os primeiros 90 s, rápido, para conferir."""
+--sem-gfx reaproveita os grafismos já gerados; --previa renderiza só os primeiros 90 s, rápido, para conferir.
+--studio SAIDA [--cliente X --titulo Y]: não renderiza; grava o projeto para o Euforia Studio (ver studio.py)."""
 import json, os, re, subprocess, sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'pipeline'))
 import gfx as G
+import texto as T
 
 pasta = sys.argv[1]
 plano = json.load(open(os.path.join(pasta, 'plano.json')))
+# glossário do cliente também nos textos que o plano escreve (texto-chave, cartão, título), 07/11/2026
+_cli = os.path.join(pasta, 'cliente.json')
+CORRECOES = (json.load(open(_cli)).get('correcoes') or {}) if os.path.exists(_cli) else {}
+if CORRECOES:
+    for kw in plano.get('keywords', []):
+        kw['texto'] = T.corrigir_frase(kw['texto'], CORRECOES)
+    for c in plano.get('cartoes', []):
+        if 'linhas' in c:
+            c['linhas'] = [T.corrigir_frase(x, CORRECOES) for x in c['linhas']]
+        if 'texto' in c:
+            c['texto'] = T.corrigir_frase(c['texto'], CORRECOES)
+    if plano.get('titulo'):
+        plano['titulo']['linhas'] = [T.corrigir_frase(x, CORRECOES) for x in plano['titulo'].get('linhas', [])]
+        if plano['titulo'].get('sub'):
+            plano['titulo']['sub'] = T.corrigir_frase(plano['titulo']['sub'], CORRECOES)
 segs = json.load(open(os.path.join(pasta, 'segmentos.json')))
 W = json.load(open(os.path.join(pasta, 'transcricao.json')))['words']
-O = os.path.join(pasta, 'gfx'); G.configurar(O, plano.get('paleta'))
+O = os.path.join(pasta, 'gfx'); os.makedirs(O, exist_ok=True)
+
+
+def baixar_fonte(ref, nome):
+    """Fonte do cliente: {"arquivo": caminho} | {"file_id": "..."} (arquivo .ttf/.otf no Drive) |
+    {"google": "Playfair Display:700"} (Google Fonts, parecida quando o cliente não tem o arquivo)."""
+    if not ref:
+        return None
+    if isinstance(ref, str):
+        ref = {'arquivo': ref}
+    if ref.get('arquivo'):
+        return ref['arquivo'] if os.path.exists(ref['arquivo']) else None
+    arq = os.path.join(O, f'fonte_{nome}.ttf')
+    if os.path.exists(arq) and os.path.getsize(arq) > 1000:
+        return arq
+    try:
+        if ref.get('file_id'):
+            import ponte
+            ponte.baixar(ref['file_id'], arq)
+        elif ref.get('google'):
+            fam, _, peso = ref['google'].partition(':')
+            css = subprocess.run(['curl', '-sS', '-A', 'Mozilla/4.0', f"https://fonts.googleapis.com/css2?family={fam.strip().replace(' ', '+')}:wght@{peso or 400}"],
+                                 capture_output=True, text=True).stdout
+            url = re.search(r'url\((https://[^)]+\.ttf)\)', css)
+            subprocess.run(['curl', '-sS', '-o', arq, url.group(1)], check=True)
+        from PIL import ImageFont
+        ImageFont.truetype(arq, 40)
+        return arq
+    except Exception as e:
+        print('fonte não baixou:', nome, e)
+        return None
+
+
+# Fonte do cliente (05/11/2026): se a ficha tem fonte ("fontes": {"cliente": "Winthorpe", "titulo": {...}}), a máquina
+# usa ela ou uma parecida e PARA se não conseguir carregar; nunca troca sozinha pela fonte padrão.
+FT = plano.get('fontes') or {}
+FONTES = {'titulo': baixar_fonte(FT.get('titulo'), 'titulo'), 'texto': baixar_fonte(FT.get('texto'), 'texto')}
+if FT.get('cliente') and not FONTES['titulo']:
+    raise SystemExit(f"fonte do cliente ({FT['cliente']}) não carregou: ponha em plano.fontes.titulo o file_id do .ttf/.otf "
+                     "(pasta de fontes do cliente no Drive) ou uma parecida do Google Fonts, e rode de novo")
+G.configurar(O, plano.get('paleta'), FONTES)
 B = os.path.join(pasta, 'broll')
 TOTAL = segs[-1]['saida'] + segs[-1]['dur']
 KWD, END = 2.8, 8.0
@@ -95,7 +152,7 @@ EV = []  # (camada, arquivo, início no vídeo final, duração)
 for br in plano.get('brolls', []):
     f = next((os.path.join(B, f"{br['id']}.{e}") for e in ('mp4', 'jpg') if os.path.exists(os.path.join(B, f"{br['id']}.{e}"))), None)
     if f:
-        EV.append(('broll', f, t_saida(br['palavra']) - 0.1, br.get('dur', 3.0)))
+        EV.append(('broll', f, br['ini'] if 'ini' in br else t_saida(br['palavra']) - 0.1, br.get('dur', 3.0)))
     else:
         print('sem B-roll', br['id'])
 if tit:
@@ -121,6 +178,25 @@ baixo = sorted([e for e in EV if e[0] in ('kw', 'lw')], key=lambda e: e[2])
 for a, b in zip(baixo, baixo[1:]):
     if a[2] + a[3] > b[2]:
         avisos.append(f'textos de baixo sobrepostos: {os.path.basename(a[1])} e {os.path.basename(b[1])}')
+# Olhar (05/11/2026): todo trecho em que a pessoa não olha para a câmera (olhar.json, de olhar.py) precisa estar
+# coberto por B-roll, foto, cartão, título ou mapa. Sem olhar.json o vídeo não sai (rode olhar.py depois do cortar.py).
+OL = os.path.join(pasta, 'olhar.json')
+if not NA and not os.path.exists(OL) and '--forcar' not in sys.argv:
+    raise SystemExit('falta olhar.json: rode python3 longos/olhar.py ' + pasta + ' antes de montar')
+if not NA and os.path.exists(OL):
+    capa = sorted((e[2], e[2] + e[3]) for e in EV if e[0] in ('broll', 'full'))
+    for x in json.load(open(OL))['trechos']:
+        livre, t = 0.0, x['ini']
+        for a, b in capa:
+            if b <= t or a >= x['fim']:
+                continue
+            if a > t:
+                livre += a - t
+            t = max(t, b)
+        livre += max(0.0, x['fim'] - t)
+        if livre > 0.5:
+            avisos.append(f"rosto sem olhar para a câmera descoberto: {x['ini']:.1f}s a {x['fim']:.1f}s ({livre:.1f}s livres), "
+                          f"palavra {x['palavra']}: {x['texto'][:60]}")
 for m in avisos:
     print('AVISO', m)
 if avisos and '--forcar' not in sys.argv:
@@ -138,13 +214,18 @@ def legendas_na(arq):
     tokens, j, P = texto.split(), 0, []
     k = 0
     while k < len(W):
-        alvo, txt, usa = norm(W[k]['word']), W[k]['word'], 1
+        # a palavra corrigida pelo roteiro/glossário (texto.py) guarda o que o Whisper ouviu em "orig": casa pelo
+        # ouvido e escreve o certo, com a pontuação do texto corrido
+        alvo, txt, usa = norm(W[k].get('orig', W[k]['word'])), W[k]['word'], 1
         for m in range(j, min(j + 4, len(tokens))):
             nt = norm(tokens[m])
             if nt == alvo:
                 txt, j = tokens[m], m + 1; break
-            if k + 1 < len(W) and nt == alvo + norm(W[k + 1]['word']):
+            if k + 1 < len(W) and nt == alvo + norm(W[k + 1].get('orig', W[k + 1]['word'])):
                 txt, j, usa = tokens[m], m + 1, 2; break
+        if 'orig' in W[k]:
+            pont = re.search(r'[.,;:!?…]+$', txt)
+            txt = W[k]['word'] + (pont.group(0) if pont and W[k]['word'] else '')
         P.append({'t': txt})
         if usa == 2:
             P.append({'t': ''}); k += 1
@@ -183,6 +264,23 @@ def legendas_na(arq):
         '', '[Events]', 'Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text'] + linhas) + '\n')
     return len(blocos)
 
+
+if '--studio' in sys.argv:
+    # Euforia Studio (16/11/2026): grava o projeto para a equipe revisar/ajustar e renderizar no próprio PC
+    if NA:
+        raise SystemExit('o modelo Nova Acrópole ainda não abre no Studio')
+    import studio
+    def _opc(n):
+        return sys.argv[sys.argv.index(n) + 1] if n in sys.argv else None
+    mus = os.path.join(pasta, 'musica.aac')
+    if not os.path.exists(mus) and plano.get('musica_file_id'):
+        try:
+            import ponte; ponte.baixar(plano['musica_file_id'], mus)
+        except Exception as e:
+            print('sem trilha:', e)
+    studio.exportar(pasta, _opc('--studio'), plano=plano, segs=segs, W=W, EV=EV, TOTAL=TOTAL, END=END, gfx_dir=O,
+                    musica=mus, cliente=_opc('--cliente'), titulo=_opc('--titulo'))
+    sys.exit(0)
 
 order = {'broll': 0, 'full': 1, 'kw': 2, 'lw': 3}; EV.sort(key=lambda e: (order[e[0]], e[2]))
 previa = '--previa' in sys.argv

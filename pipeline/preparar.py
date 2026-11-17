@@ -30,6 +30,7 @@ print('analisando planos e rosto...', flush=True)
 info = analise.analisar_planos(fonte)
 info['tem_trilha'] = analise.tem_trilha(audio)
 info['duracao'] = dur
+info['tarjas'] = [t for t in analise.tarjas(fonte, info) if analise.tarja_no_recorte(t, info)]
 json.dump(info, open(os.path.join(pasta, 'planos.json'), 'w'), ensure_ascii=False, indent=1)
 
 # texto para o Claude: palavras com índice e tempo, uma frase por linha
@@ -43,7 +44,11 @@ if atual:
 brolls = [p for p in info['planos'] if p['tipo'] == 'broll' and p['fim'] - p['ini'] >= 0.8]
 with open(os.path.join(pasta, 'palavras.txt'), 'w') as f:
     f.write(f"VÍDEO: {W}x{H}, {dur:.0f}s, trilha de fundo: {'sim' if info['tem_trilha'] else 'não'}\n")
-    f.write(f"B-ROLLS JÁ NO VÍDEO (tempo de origem, s): " + '; '.join(f"#{k} {p['ini']:.1f}-{p['fim']:.1f}" for k, p in enumerate(brolls)) + '\n\n')
+    f.write(f"B-ROLLS JÁ NO VÍDEO (tempo de origem, s): " + '; '.join(f"#{k} {p['ini']:.1f}-{p['fim']:.1f}" for k, p in enumerate(brolls)) + '\n')
+    if info['tarjas']:
+        f.write("TARJAS DA EDIÇÃO (nome, Inscreva-se; o short NÃO pode pegar estes tempos): "
+                + '; '.join(f"{t['ini']:.1f}-{t['fim']:.1f}" for t in info['tarjas']) + '\n')
+    f.write('\n')
     f.write('\n'.join(linhas) + '\n')
 
 # folha de contato dos B-rolls existentes

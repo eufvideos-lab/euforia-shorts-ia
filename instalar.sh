@@ -14,5 +14,8 @@ if [ ! -f "$DIR/pipeline/produzir.py" ]; then
 fi
 cd "$DIR/remotion" && [ -d node_modules/remotion ] || npm ci --no-audit --no-fund --loglevel=error
 python3 -c "import cv2, numpy, PIL" 2>/dev/null || python3 -m pip install --break-system-packages -q "opencv-python-headless<5" numpy pillow
+# O PIL do sistema às vezes importa mas quebra no uso (versão de outro Python): testa de verdade e reinstala.
+python3 -c "from PIL import Image, ImageDraw, ImageFont; ImageDraw.Draw(Image.new('RGB', (8, 8))).text((0, 0), 'a', font=ImageFont.load_default())" 2>/dev/null \
+  || python3 -m pip install --break-system-packages -q --upgrade --force-reinstall pillow
 which ffmpeg >/dev/null || { echo "ffmpeg ausente"; exit 1; }
 echo "máquina pronta em $DIR"
