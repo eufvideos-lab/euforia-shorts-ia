@@ -89,6 +89,8 @@ export function EditorLongo({ proj, aoVoltar, aoRenderizar }: { proj: ProjetoLon
   const t = frame / fps;
   const total = duracao(L);
   const comFim = total + (L.fim?.dur ?? 0);
+  // props estáveis: um objeto novo a cada quadro fazia o Player recomeçar e a prévia andar devagar
+  const entrada = useMemo(() => ({ L } as unknown as Record<string, unknown>), [L]);
 
   const nomeArq = useCallback((s: string) => (proj.biblioteca ?? []).find((x) => x.src === s)?.descricao ?? s.split('/').pop() ?? s, [proj]);
   const ajustes = useMemo(() => diferencasLongo(original, L, nomeArq), [original, L, nomeArq]);
@@ -352,7 +354,7 @@ export function EditorLongo({ proj, aoVoltar, aoRenderizar }: { proj: ProjetoLon
             <Player
               ref={player}
               component={PreviaLongo as unknown as React.FC<Record<string, unknown>>}
-              inputProps={{ L } as unknown as Record<string, unknown>}
+              inputProps={entrada}
               durationInFrames={Math.max(1, Math.ceil(comFim * fps))}
               compositionWidth={L.largura}
               compositionHeight={L.altura}
@@ -535,23 +537,9 @@ function LinhaLonga({ L, t, total, comFim, tocando, sel, setSel, irPara, mexidos
   for (let s = 0; s <= comFim; s += passo) marcas.push(s);
   const ativo = (tipo: string, id: string) => (sel?.tipo === tipo && sel.id === id ? ' sel' : '') + (mexidos.has(id) ? ' mexido' : '');
 
-  return (
-    <section className="tl">
-      <div className="tl-barra">
-        <button className="bt mini" onClick={play}>{tocando ? '❚❚ Pausar' : '▶ Tocar'}</button>
-        <span className="tc">{tc(t)}</span>
-        <span className="tempo">/ {tc(total)}</span>
-        <button className="bt mini" onClick={dividir} title="S">✂ Dividir na agulha</button>
-        <span style={{ flex: 1 }} />
-        <span className="tempo">espaço toca · S divide · Delete tira · Ctrl+Z desfaz</span>
-        <button className="bt mini" onClick={() => setPps((p) => Math.max(2, p / 1.5))}>−</button>
-        <button className="bt mini" onClick={() => setPps((p) => Math.min(120, p * 1.5))}>+</button>
-      </div>
-      <div className="tl-corpo" ref={corpo}>
-        <div className="tl-trilhas" style={{ width: x(comFim) + 96 + 16 }}>
-          <div className="regua" onPointerDown={(e) => irPara((e.clientX - e.currentTarget.getBoundingClientRect().left) / pps)}>
-            {marcas.map((s) => <span key={s} style={{ left: x(s) }}>{tc(s).replace(/\.0$/, '')}</span>)}
-          </div>
+  // as trilhas só mudam quando o projeto, o zoom ou a seleção mudam (não a cada quadro tocando)
+  const trilhas = useMemo(() => (
+        <>
           <div className="trilha fala"><div className="trilha-nome">Fala</div>
             {L.trechos.map((s, i) => (
               <div key={s._id} className={'bloco co' + ativo('tr', s._id)} style={bloco(os_[i], os_[i] + s.fim - s.ini)}
@@ -576,6 +564,27 @@ function LinhaLonga({ L, t, total, comFim, tocando, sel, setSel, irPara, mexidos
               ))}
             </div>
           ))}
+        </>
+  ), [L, pps, sel, mexidos, picos, palavras, bruto, total, comFim]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  return (
+    <section className="tl">
+      <div className="tl-barra">
+        <button className="bt mini" onClick={play}>{tocando ? '❚❚ Pausar' : '▶ Tocar'}</button>
+        <span className="tc">{tc(t)}</span>
+        <span className="tempo">/ {tc(total)}</span>
+        <button className="bt mini" onClick={dividir} title="S">✂ Dividir na agulha</button>
+        <span style={{ flex: 1 }} />
+        <span className="tempo">espaço toca · S divide · Delete tira · Ctrl+Z desfaz</span>
+        <button className="bt mini" onClick={() => setPps((p) => Math.max(2, p / 1.5))}>−</button>
+        <button className="bt mini" onClick={() => setPps((p) => Math.min(120, p * 1.5))}>+</button>
+      </div>
+      <div className="tl-corpo" ref={corpo}>
+        <div className="tl-trilhas" style={{ width: x(comFim) + 96 + 16 }}>
+          <div className="regua" onPointerDown={(e) => irPara((e.clientX - e.currentTarget.getBoundingClientRect().left) / pps)}>
+            {marcas.map((s) => <span key={s} style={{ left: x(s) }}>{tc(s).replace(/\.0$/, '')}</span>)}
+          </div>
+          {trilhas}
           <div className="cabeca" style={{ left: x(t), top: 0 }} />
         </div>
       </div>
