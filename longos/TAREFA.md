@@ -78,10 +78,15 @@ apt-get install -y -q libegl1 libgles2 >/dev/null 2>&1 || (apt-get update -q >/d
    palestra inteira e sai um corte de 3 a 6 min, com legenda amarela, marca d'água e o encerramento da Acrópole Play. Para as fotos específicas,
    rode o fluxo de fotos (uma chamada com todas as buscas), pegue os IDs e ponha em `file_ids`.
    A trilha: `"musica_file_id": "15UN5dqdxX_VcaJAdcJ1vOyuGgtmBSoiQ"` (no modelo Nova Acrópole, sem trilha).
+   O montar.py repete só o corpo da música, com crossfade (sem a introdução e o fim mudo); para forçar o trecho
+   do laço, `"trilha_laco": [ini, fim]` em segundos.
 6. `python3 longos/texto.py pedidos/<id-curto> --limpar-plano` (tira do plano cada "corta"/"de novo"/"deixa eu voltar"
    com o pedaço errado e a 1ª passada das regravações; lista o que tirou: cole no log). Depois
    `python3 longos/cortar.py pedidos/<id-curto>` (corta e aplica o zoom; ~16 min para um bruto de 14 min).
    Confira 3 emendas: tire quadros e ouça se nenhuma palavra foi comida (veja a transcrição das bordas).
+   As emendas e as pausas internas são achadas no áudio (a voz caindo), não só no tempo do Whisper. Se ainda
+   comer final de palavra, abaixe `"limiar_corte"` no plano (padrão: 2,5x o ruído de fundo, mínimo 60); se sobrar
+   pausa longa (sala com ruído), suba.
 6b. `python3 longos/olhar.py pedidos/<id-curto>`: lista os trechos em que a pessoa não olha para a câmera. Cubra
    TODOS no plano (B-roll, foto ou cartão; regra em plano_longo.md) antes de seguir. O `montar.py` para se faltar.
 7. `python3 longos/brolls.py pedidos/<id-curto>` e olhe `brolls.png`. O que não mostra o que a pessoa fala sai do

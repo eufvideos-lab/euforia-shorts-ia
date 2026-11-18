@@ -41,6 +41,56 @@ def silencio(a, b):
     return (a + int(np.argmin(env[a:b]))) / SR
 
 
+# Emendas pelo áudio (18/11/2026): o Whisper marca o fim da palavra cedo e às vezes estica a palavra por cima de
+# um silêncio ("ela" com 6 s). Agora o fim/início de fala é achado na envoltória do áudio, não só no tempo do Whisper.
+# Limiar: "limiar_corte" no plano, senão 2,5x o ruído de fundo (mínimo 60, o valor que funcionou no João Vitor).
+LIMIAR = float(plano.get('limiar_corte') or max(60.0, 2.5 * float(np.percentile(env, 10))))
+FOLGA = 0.12      # depois que a voz cai, ainda deixa esse tanto (respiro e cauda da palavra)
+CALADO = 0.06     # silêncio mínimo para valer como "a voz caiu" (não para numa consoante)
+
+
+def _voz(i):
+    return i < len(env) and env[i] > LIMIAR
+
+
+def fim_fala(t, ate):
+    """Avança de t até a voz cair (por CALADO s) sem passar de `ate`; devolve o instante em que caiu."""
+    i, lim, cal = int(t * SR), min(len(env), int(ate * SR)), int(CALADO * SR)
+    while i < lim:
+        if not _voz(i) and not env[i:i + cal].max(initial=0) > LIMIAR:
+            break
+        i += 1
+    return i / SR
+
+
+def ini_fala(t, desde):
+    """Recua de t até antes do começo da voz, sem passar de `desde`."""
+    i, lim, cal = int(t * SR), max(0, int(desde * SR)), int(CALADO * SR)
+    while i > lim:
+        if not _voz(i - 1) and not env[max(0, i - cal):i].max(initial=0) > LIMIAR:
+            break
+        i -= 1
+    return i / SR
+
+
+def pausas(a, b, minimo):
+    """Silêncios do áudio (envoltória < LIMIAR) com mais de `minimo` s entre a e b: [(ini, fim), ...]."""
+    i0, i1 = max(0, int(a * SR)), min(len(env), int(b * SR))
+    q = env[i0:i1] <= LIMIAR
+    out, k = [], 0
+    while k < len(q):
+        if q[k]:
+            j = k
+            while j < len(q) and q[j]:
+                j += 1
+            if (j - k) / SR > minimo:
+                out.append(((i0 + k) / SR, (i0 + j) / SR))
+            k = j
+        else:
+            k += 1
+    return out
+
+
 NA = plano.get('modelo') == 'nova-acropole'  # cortes de palestra: imagem antiga, zoom mais leve e sem vinheta
 ZOOM = float(plano.get('zoom', 1.15 if NA else 1.22))
 CX, CY = plano.get('centro_zoom', [0.5, 0.4])
@@ -80,15 +130,27 @@ for i0, i1, gancho in trechos:
     if gancho:  # respiro natural: até ~0,35 s antes e ~0,5 s depois, sem invadir a palavra vizinha
         s2 = max(0.0, s - 0.35, (ant + s) / 2 if i0 > 0 else 0.0)
         e2 = min(info['duracao'], e + 0.5, (e + prox) / 2)
+        if prox > e:  # o Whisper marcou o fim cedo: nunca corta a palavra antes de a voz cair
+            e2 = max(e2, min(fim_fala(e, prox) + FOLGA, prox))
     else:
-        s2 = silencio(max(ant, s - 0.25), s - 0.02)
-        e2 = silencio(e + 0.03, min(prox, e + 0.30))
+        # começo: recua até antes da voz (o Whisper às vezes marca o início tarde), sem pegar a palavra anterior
+        sv = ini_fala(s, max(ant, s - 0.6))
+        s2 = max(ant, sv - FOLGA) if sv < s - 0.01 else silencio(max(ant, s - 0.25), s - 0.02)
+        # fim: avança até a voz cair de verdade (+ folga); só usa o ponto mais quieto se a próxima palavra estiver colada
+        ev = fim_fala(e, min(prox, e + 1.0) if prox > e else e + 0.05)
+        e2 = ev + FOLGA if ev + FOLGA <= prox else max(ev, silencio(ev, prox) if prox > ev else ev)
     ws = W[i0:i1 + 1]
-    # pausa longa no meio do trecho (ela mexendo no teleprompter/câmera): tira o silêncio, fica só um respiro
+    # pausa longa no meio do trecho (ela mexendo no teleprompter/câmera, ou palavra que o Whisper esticou por
+    # cima do silêncio): acha o silêncio no áudio, tira e deixa só um respiro
+    ps = pausas(s2 + 0.05, e2 - 0.05, PAUSA)
+    for j in range(len(ws) - 1):  # buraco grande na transcrição com barulho de fundo (o áudio não cai): regra antiga
+        a, b = ws[j]['end'], ws[j + 1]['start']
+        if b - a > PAUSA and not any(p0 < b and a < p1 for p0, p1 in ps):
+            ps.append((fim_fala(a, b), ini_fala(b, a)))
     blocos, ini = [], s2
-    for j in range(len(ws) - 1):
-        if ws[j + 1]['start'] - ws[j]['end'] > PAUSA:
-            blocos.append((ini, ws[j]['end'] + 0.25)); ini = ws[j + 1]['start'] - 0.2
+    for p0, p1 in sorted(ps):
+        if p1 - p0 > 2 * FOLGA + 0.08:
+            blocos.append((ini, p0 + FOLGA + 0.08)); ini = p1 - FOLGA
     blocos.append((ini, e2))
     for bi, (a0, b0) in enumerate(blocos):
         cortes, ult = [a0], a0

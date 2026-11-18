@@ -278,6 +278,9 @@ if '--studio' in sys.argv:
             import ponte; ponte.baixar(plano['musica_file_id'], mus)
         except Exception as e:
             print('sem trilha:', e)
+    if os.path.exists(mus):  # Studio também recebe a trilha já em laço (sem o fim mudo)
+        import trilha
+        mus = trilha.preparar(mus, TOTAL + END + 5, os.path.join(pasta, 'musica-laco.m4a'), plano.get('trilha_laco'))
     studio.exportar(pasta, _opc('--studio'), plano=plano, segs=segs, W=W, EV=EV, TOTAL=TOTAL, END=END, gfx_dir=O,
                     musica=mus, cliente=_opc('--cliente'), titulo=_opc('--titulo'))
     sys.exit(0)
@@ -310,8 +313,10 @@ if not os.path.exists(mus) and plano.get('musica_file_id'):
     except Exception as e:
         print('sem trilha:', e)
 tem_mus = os.path.exists(mus)
-if tem_mus:
-    cmd += ['-stream_loop', '-1', '-i', mus]
+if tem_mus:  # laço com crossfade só no corpo da música (18/11/2026: -stream_loop repetia o fim mudo do arquivo)
+    import trilha
+    mus = trilha.preparar(mus, TOTAL + END + 5, os.path.join(pasta, 'musica-laco.m4a'), plano.get('trilha_laco'))
+    cmd += ['-i', mus]
 fc = []; last = '[0:v]'
 for k, (kind, f, t0, d) in enumerate(EV, 1):
     if kind == 'broll':
