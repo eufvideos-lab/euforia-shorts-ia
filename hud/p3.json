@@ -1,0 +1,7 @@
+{"shorts":[{"titulo":"Resumo dos 3 planos","por_que":"vídeo de produto da página","gancho":"Resumo da ópera.","inicio_i":0,"fim_i":50,"gancho_movido":null,"remover":[[11,12]],"destaques":[],
+"cartoes":[
+{"inicio_i":7,"fim_i":10,"texto":"30 dias de plataforma","circular":"30"},
+{"inicio_i":18,"fim_i":21,"texto":"90 dias com mentoria","circular":"90"},
+{"inicio_i":29,"fim_i":32,"texto":"O plano anual","circular":"anual"}],
+"brolls":[],"nota_confianca":0.8}],
+"correcoes":[{"i":20,"de":"Comentoria","para":"Com mentoria"},{"i":7,"de":"Trinta","para":"30"},{"i":18,"de":"Noventa","para":"90"},{"i":25,"de":"noventa","para":"90"}]}

@@ -1,0 +1,10 @@
+{"shorts":[{"titulo":"Apresentando os produtos","por_que":"vídeo de produto da página","gancho":"O que a gente te oferece é um mapa","inicio_i":0,"fim_i":205,"gancho_movido":null,"remover":[],"destaques":[],
+"cartoes":[
+{"inicio_i":14,"fim_i":26,"texto":"Trabalho digno. Renda digna. Vida digna.","circular":"digna"},
+{"inicio_i":38,"fim_i":43,"texto":"Emergencial: 90 dias","circular":"90"},
+{"inicio_i":60,"fim_i":67,"texto":"Completo: o mapa inteiro","circular":"Completo"},
+{"inicio_i":114,"fim_i":128,"texto":"Vitrine: 30 dias de acesso completo","circular":"30"},
+{"inicio_i":140,"fim_i":150,"texto":"Não é cursinho. Não é videozinho. Não é coach.","circular":null},
+{"inicio_i":151,"fim_i":155,"texto":"O nosso produto é você.","circular":"você"}],
+"brolls":[],"nota_confianca":0.8}],
+"correcoes":[]}

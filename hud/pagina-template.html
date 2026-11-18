@@ -1,0 +1,276 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Mapa da Dignidade · Professor Anselmo Hudson</title>
+<link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+:root{--roxo:#291A73;--azul:#4C50EC;--noite:#140C3D;--claro:#F7F6FD;--cartao:#FFFFFF;--txt:#1E1840;--txt2:#57527A;--linha:#E3E1F4}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:Lato,Arial,sans-serif;color:var(--txt);background:var(--claro);line-height:1.55;font-size:18px}
+h1,h2,h3{line-height:1.12;font-weight:900}
+.w{max-width:1100px;margin:0 auto;padding:0 20px}
+.kick{font-size:13px;font-weight:900;letter-spacing:3px;text-transform:uppercase;color:var(--azul)}
+.btn{display:inline-block;background:var(--azul);color:#fff;font-weight:900;padding:18px 34px;border-radius:999px;text-decoration:none;font-size:18px;box-shadow:0 12px 30px rgba(76,80,236,.35);transition:transform .15s}
+.btn:hover{transform:translateY(-2px)}
+.btn.br{background:#fff;color:var(--roxo);box-shadow:none}
+section{padding:80px 0}
+/* topo */
+.hero{background:radial-gradient(1200px 600px at 85% 30%,#3b2a9a 0%,var(--roxo) 45%,var(--noite) 100%);color:#fff;overflow:hidden}
+.nav{display:flex;justify-content:space-between;align-items:center;padding:22px 0;font-size:14px;color:#cfcaf2}
+.nav b{color:#fff;font-size:18px;letter-spacing:.5px}
+.hero .g{display:grid;grid-template-columns:1.15fr .85fr;gap:28px;align-items:end}
+.hero .t{padding:30px 0 90px}
+.hero .kick{color:#AEB0FF}
+.hero h1{font-size:56px;margin:16px 0 20px}
+.hero h1 em{font-style:normal;color:#AEB0FF}
+.hero p.sub{font-size:21px;color:#E2DFFA;max-width:560px;margin-bottom:30px}
+.hero .foto img{width:100%;display:block;-webkit-mask-image:linear-gradient(to bottom,#000 78%,transparent 100%);mask-image:linear-gradient(to bottom,#000 78%,transparent 100%)}
+.etapas-mini{display:flex;gap:10px;flex-wrap:wrap;margin-top:26px}
+.etapas-mini span{border:1px solid rgba(255,255,255,.25);border-radius:999px;padding:8px 16px;font-size:14px;font-weight:700;color:#E2DFFA}
+/* vídeo */
+.vid{display:grid;grid-template-columns:.8fr 1.2fr;gap:56px;align-items:center}
+.vid.inv{grid-template-columns:1.2fr .8fr}
+.vid.inv .tela{order:2}
+.tela{position:relative;width:100%;max-width:340px;margin:0 auto;aspect-ratio:9/16;border-radius:28px;overflow:hidden;background:var(--noite);box-shadow:0 30px 70px rgba(41,26,115,.35);border:6px solid #fff}
+.tela iframe,.tela video{position:absolute;inset:0;width:100%;height:100%;border:0}
+.vid h2{font-size:40px;margin:12px 0 18px}
+.vid p{font-size:19px;color:var(--txt2);margin-bottom:14px}
+/* etapas */
+.etapas{background:#fff}
+.etapas h2{font-size:42px;margin:12px 0 40px;max-width:760px}
+.c3{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+.et{background:var(--claro);border:1px solid var(--linha);border-radius:22px;padding:30px}
+.et .n{width:46px;height:46px;border-radius:50%;background:var(--azul);color:#fff;font-weight:900;display:flex;align-items:center;justify-content:center;font-size:20px;margin-bottom:18px}
+.et h3{font-size:26px;margin-bottom:10px;color:var(--roxo)}
+.et p{color:var(--txt2);font-size:17px}
+/* planos */
+.planos{background:linear-gradient(180deg,var(--roxo),var(--noite));color:#fff}
+.planos h2{font-size:44px;margin:12px 0 12px;text-align:center}
+.planos .kick{color:#AEB0FF;text-align:center;display:block}
+.planos p.l{text-align:center;color:#D8D4F6;font-size:19px;max-width:700px;margin:0 auto 46px}
+.p3{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;align-items:stretch}
+.pl{background:#fff;color:var(--txt);border-radius:24px;padding:34px 28px;display:flex;flex-direction:column;position:relative}
+.pl.dest{border:3px solid var(--azul);transform:translateY(-10px);box-shadow:0 26px 60px rgba(0,0,0,.35)}
+.pl .selo{position:absolute;top:-15px;left:50%;transform:translateX(-50%);background:var(--azul);color:#fff;font-size:12px;font-weight:900;letter-spacing:2px;padding:7px 16px;border-radius:999px;white-space:nowrap}
+.pl h3{font-size:24px;color:var(--roxo)}
+.pl .dur{font-size:15px;color:var(--txt2);font-weight:700;margin-top:4px}
+.pl .preco{font-size:56px;font-weight:900;color:var(--roxo);margin:18px 0 8px;line-height:1}
+.pl .preco small{font-size:22px;vertical-align:top;margin-right:4px}
+.pl ul{list-style:none;margin:16px 0 26px;flex:1}
+.pl li{padding:9px 0 9px 30px;position:relative;border-top:1px solid var(--linha);font-size:16px}
+.pl li:before{content:"✓";position:absolute;left:4px;color:var(--azul);font-weight:900}
+.pl .btn{text-align:center;padding:16px 20px}
+.escada{display:flex;justify-content:center;gap:12px;flex-wrap:wrap;margin-top:44px;color:#D8D4F6;font-size:16px;text-align:center}
+.escada b{color:#fff}
+.seguro{text-align:center;color:#AFA9E6;font-size:14px;margin-top:22px}
+/* bônus */
+.bonus .box{background:#fff;border:2px dashed var(--azul);border-radius:26px;padding:44px;display:grid;grid-template-columns:auto 1fr;gap:30px;align-items:center}
+.bonus .ic{width:96px;height:96px;border-radius:24px;background:var(--azul);display:flex;align-items:center;justify-content:center;font-size:46px}
+.bonus h2{font-size:34px;margin:8px 0 12px;color:var(--roxo)}
+.bonus p{color:var(--txt2)}
+/* sobre */
+.sobre{background:#fff}
+.sobre .g{display:grid;grid-template-columns:.7fr 1.3fr;gap:50px;align-items:center}
+.sobre img{width:100%;border-radius:26px;display:block}
+.sobre h2{font-size:40px;margin:12px 0 18px}
+.sobre p{color:var(--txt2);font-size:19px;margin-bottom:14px}
+.tags{display:flex;flex-wrap:wrap;gap:10px;margin-top:20px}
+.tags span{background:var(--claro);border:1px solid var(--linha);border-radius:999px;padding:8px 16px;font-weight:700;font-size:15px;color:var(--roxo)}
+/* faq */
+.faq h2{font-size:40px;margin:12px 0 30px}
+details{background:#fff;border:1px solid var(--linha);border-radius:18px;padding:22px 26px;margin-bottom:12px}
+summary{font-weight:900;font-size:19px;cursor:pointer;color:var(--roxo);list-style:none}
+summary::-webkit-details-marker{display:none}
+summary:after{content:"+";float:right;color:var(--azul)}
+details[open] summary:after{content:"–"}
+details p{margin-top:12px;color:var(--txt2)}
+/* fim */
+.fim{background:radial-gradient(900px 500px at 50% 0%,#3b2a9a,var(--roxo) 55%,var(--noite));color:#fff;text-align:center}
+.fim h2{font-size:46px;max-width:800px;margin:0 auto 18px}
+.fim p{color:#D8D4F6;font-size:20px;margin-bottom:30px}
+footer{background:var(--noite);color:#8f89c4;text-align:center;font-size:14px;padding:26px 0}
+@media(max-width:860px){
+ body{font-size:17px}
+ section{padding:60px 0}
+ .hero .g,.vid,.vid.inv,.sobre .g{grid-template-columns:1fr}
+ .vid.inv .tela{order:0}
+ .hero .t{padding:10px 0 10px}
+ .hero h1{font-size:38px}
+ .hero p.sub{font-size:18px}
+ .hero .foto{max-width:340px;margin:0 auto}
+ .vid{gap:30px}.vid h2,.etapas h2,.sobre h2,.faq h2{font-size:30px}
+ .planos h2,.fim h2{font-size:32px}
+ .c3,.p3{grid-template-columns:1fr}
+ .pl.dest{transform:none}
+ .bonus .box{grid-template-columns:1fr;padding:30px;text-align:center}
+ .bonus .ic{margin:0 auto}
+ .tela{max-width:300px}
+}
+</style>
+</head>
+<body>
+
+<header class="hero">
+ <div class="w">
+  <div class="nav"><b>MAPA DA DIGNIDADE</b><span>Professor Anselmo Hudson</span></div>
+  <div class="g">
+   <div class="t">
+    <span class="kick">Mapa da Dignidade</span>
+    <h1>Saia da precariedade para um trabalho e uma renda <em>dignos</em>.</h1>
+    <p class="sub">Um caminho em 3 etapas, com o método do professor Anselmo Hudson, para você ter um trabalho digno, uma renda digna e a vida que você merece.</p>
+    <a class="btn" href="#planos">Ver os planos</a>
+    <div class="etapas-mini"><span>1 · Despertar</span><span>2 · Desenvolver</span><span>3 · Prosperar</span></div>
+   </div>
+   <div class="foto"><img src="data:image/webp;base64,{{FOTO}}" alt="Professor Anselmo Hudson"></div>
+  </div>
+ </div>
+</header>
+
+<section>
+ <div class="w vid">
+  <div class="tela">{{V1}}</div>
+  <div>
+   <span class="kick">Assista primeiro</span>
+   <h2>O que é o Mapa da Dignidade</h2>
+   <p>Em pouco mais de um minuto, o professor Anselmo Hudson desenha o caminho completo: de onde você está hoje até onde você quer chegar.</p>
+   <p>São três etapas, cada uma com um objetivo claro.</p>
+   <a class="btn" href="#etapas">Conhecer as 3 etapas</a>
+  </div>
+ </div>
+</section>
+
+<section class="etapas" id="etapas">
+ <div class="w">
+  <span class="kick">O método</span>
+  <h2>Um caminho composto por três etapas.</h2>
+  <div class="c3">
+   <div class="et"><div class="n">1</div><h3>Despertar</h3><p>Entender o que você é hoje e traçar onde você quer chegar.</p></div>
+   <div class="et"><div class="n">2</div><h3>Desenvolver</h3><p>O que você precisa fazer e aprender para conquistar aquilo que você quer.</p></div>
+   <div class="et"><div class="n">3</div><h3>Prosperar</h3><p>Chegou nos seus objetivos? Agora é manter e multiplicar o que você está conquistando.</p></div>
+  </div>
+ </div>
+</section>
+
+<section>
+ <div class="w vid inv">
+  <div class="tela">{{V2}}</div>
+  <div>
+   <span class="kick">O que a gente te oferece</span>
+   <h2>Não é cursinho. Não é videozinho. O produto é você.</h2>
+   <p>O Mapa da Dignidade existe para te transformar: desenvolver as competências e as habilidades necessárias para atingir o objetivo que você sempre quis na vida.</p>
+   <p>Você tem o professor Anselmo Hudson como ponto de apoio, com uma equipe inteira junto.</p>
+   <a class="btn" href="#planos">Escolher o meu plano</a>
+  </div>
+ </div>
+</section>
+
+<section class="planos" id="planos">
+ <div class="w">
+  <span class="kick">Escolha como começar</span>
+  <h2>Três jeitos de entrar no Mapa.</h2>
+  <p class="l">Gostou da degustação, vai para o emergencial. Gostou do emergencial, vem para o completo.</p>
+  <div class="p3">
+   <div class="pl">
+    <h3>Degustação</h3>
+    <div class="dur">30 dias</div>
+    <div class="preco"><small>R$</small>30</div>
+    <ul>
+     <li>Acesso total à plataforma por 30 dias</li>
+     <li>Para conhecer o método antes de decidir</li>
+    </ul>
+    <a class="btn" href="{{LINK_DEGUSTACAO}}" target="_blank" rel="noopener">Quero experimentar</a>
+   </div>
+   <div class="pl">
+    <h3>Emergencial</h3>
+    <div class="dur">90 dias</div>
+    <div class="preco"><small>R$</small>80</div>
+    <ul>
+     <li>Acesso à plataforma por 90 dias</li>
+     <li>Mentoria com o professor</li>
+     <li>Pequenos resultados rápidos para sair da condição de hoje</li>
+    </ul>
+    <a class="btn" href="{{LINK_EMERGENCIAL}}" target="_blank" rel="noopener">Quero o emergencial</a>
+   </div>
+   <div class="pl dest">
+    <span class="selo">O MAPA COMPLETO</span>
+    <h3>Mapa da Dignidade</h3>
+    <div class="dur">12 meses</div>
+    <div class="preco"><small>R$</small>280</div>
+    <ul>
+     <li>Acesso à plataforma por 12 meses</li>
+     <li>Mentoria inclusa</li>
+     <li>As 3 etapas completas: Despertar, Desenvolver e Prosperar</li>
+     <li>Trabalho de desenvolvimento com o professor e a equipe</li>
+    </ul>
+    <a class="btn" href="{{LINK_COMPLETO}}" target="_blank" rel="noopener">Quero o mapa completo</a>
+   </div>
+  </div>
+  <div class="escada"><span><b>30 dias</b> para conhecer</span><span>→</span><span><b>90 dias</b> com mentoria</span><span>→</span><span><b>12 meses</b> de mapa completo</span></div>
+  <p class="seguro">Pagamento seguro pela Hubla · Pix ou cartão</p>
+ </div>
+</section>
+
+<section>
+ <div class="w vid">
+  <div class="tela">{{V3}}</div>
+  <div>
+   <span class="kick">Resumo da ópera</span>
+   <h2>Os 3 planos em 20 segundos.</h2>
+   <p>Ficou curioso? Experimente 30 dias de plataforma. Gostou? Vá para o emergencial, com mentoria. Teve resultado? Venha para o plano anual.</p>
+   <a class="btn" href="#planos">Ver os planos de novo</a>
+  </div>
+ </div>
+</section>
+
+<section class="bonus">
+ <div class="w">
+  <div class="box">
+   <div class="ic">🎁</div>
+   <div>
+    <span class="kick">Bônus gratuito</span>
+    <h2>O seu Relatório de Dignidade</h2>
+    <p>Ao entrar no Mapa, você gera o seu Relatório de Dignidade: um diagnóstico da sua condição de trabalho hoje, para começar a etapa Despertar sabendo exatamente de onde você parte.</p>
+   </div>
+  </div>
+ </div>
+</section>
+
+<section class="sobre">
+ <div class="w g">
+  <img src="data:image/webp;base64,{{FOTO}}" alt="Professor Anselmo Hudson">
+  <div>
+   <span class="kick">Quem conduz o Mapa</span>
+   <h2>Professor Anselmo Hudson</h2>
+   <p>Economista, cientista social, professor e pesquisador, com 27 anos de experiência formando profissionais.</p>
+   <p>Criou o Mapa da Dignidade para levar quem está na precariedade a um trabalho justo, uma renda justa e a vida que merece.</p>
+   <div class="tags"><span>Economista</span><span>Cientista social</span><span>Professor</span><span>Pesquisador</span><span>27 anos de experiência</span></div>
+  </div>
+ </div>
+</section>
+
+<section class="faq">
+ <div class="w">
+  <span class="kick">Dúvidas comuns</span>
+  <h2>Perguntas frequentes</h2>
+  <details><summary>Qual plano eu escolho?</summary><p>Se você ainda está em dúvida, comece pela Degustação: 30 dias de acesso total à plataforma. Se quer resultado rápido com acompanhamento, o Emergencial dá 90 dias com mentoria. Se quer percorrer o caminho inteiro, o Mapa da Dignidade completo tem 12 meses com mentoria.</p></details>
+  <details><summary>Como funciona o acesso?</summary><p>Depois do pagamento, o acesso chega no seu e-mail. Você começa pela etapa Despertar.</p></details>
+  <details><summary>Quais são as formas de pagamento?</summary><p>O pagamento é feito pela Hubla, com Pix ou cartão.</p></details>
+  <details><summary>Posso começar pela Degustação e mudar depois?</summary><p>Sim. O caminho foi pensado assim: gostou da degustação, vai para o emergencial; gostou do emergencial, vem para o completo.</p></details>
+ </div>
+</section>
+
+<section class="fim">
+ <div class="w">
+  <h2>Um trabalho justo, uma renda justa e a vida que você merece.</h2>
+  <p>Vem com a gente. Já começou, falta só você.</p>
+  <a class="btn br" href="#planos">Escolher o meu plano</a>
+ </div>
+</section>
+
+<footer>Mapa da Dignidade · Professor Anselmo Hudson</footer>
+</body>
+</html>

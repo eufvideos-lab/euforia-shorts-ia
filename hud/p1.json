@@ -1,0 +1,12 @@
+{"shorts":[{"titulo":"O que é o Mapa da Dignidade","por_que":"vídeo de produto da página","gancho":"Deixa eu desenhar para você o que é o Mapa da Dignidade.","inicio_i":0,"fim_i":207,"gancho_movido":null,"remover":[],"destaques":[],
+"cartoes":[
+{"inicio_i":9,"fim_i":11,"texto":"O Mapa da Dignidade","circular":"Dignidade"},
+{"inicio_i":21,"fim_i":26,"texto":"Etapa 1: Despertar","circular":"Despertar"},
+{"inicio_i":42,"fim_i":47,"texto":"Etapa 2: Desenvolver","circular":"Desenvolver"},
+{"inicio_i":62,"fim_i":67,"texto":"Etapa 3: Prosperar","circular":"Prosperar"},
+{"inicio_i":100,"fim_i":110,"texto":"Emergencial: 90 dias","circular":"90"},
+{"inicio_i":121,"fim_i":125,"texto":"Completo: 12 meses de mentoria","circular":"12"},
+{"inicio_i":147,"fim_i":158,"texto":"Vitrine: 30 dias de acesso total","circular":"30"},
+{"inicio_i":182,"fim_i":198,"texto":"Trabalho justo. Renda justa. A vida que você merece.","circular":"merece"}],
+"brolls":[],"nota_confianca":0.8}],
+"correcoes":[{"i":107,"de":"uma","para":"num"},{"i":108,"de":"pia","para":"plano"},{"i":205,"de":"Fota","para":"Falta"},{"i":181,"de":"dignidade","para":"Dignidade"}]}
