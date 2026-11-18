@@ -3050,7 +3050,7 @@ function cvSugHtml(){
   if (g.caso) info.push(`<span>🪄 Caso criado para a Gerente. Ela faz e traz pronto para aprovação.${g.card ? ` <a href="${esc(g.card)}" target="_blank" rel="noopener">Ver card</a>` : ''}</span>`);
   return `<div class="cv-sug"><button class="btn" data-cvsug ${g.indo ? 'disabled' : ''}>${g.indo === 'sugerir' ? 'Pensando…' : '✨ Sugerir resposta'}</button><button class="btn" data-cvger ${g.indo || g.caso ? 'disabled' : ''}>${g.indo === 'gerente' ? 'Criando…' : '🪄 Passar para a Gerente'}</button></div>${info.length ? `<div class="cv-sug-info">${info.join('')}</div>` : ''}`;
 }
-const CV_MOTIVO = { grupo: 'Esse grupo não é de cliente do suporte.', noite: 'Fora do horário (22h às 7h). O texto fica guardado aqui; mande de manhã.', direcao: 'O cliente falou de assunto da diretoria (dinheiro, contrato ou jurídico). A diretoria responde; não responda por aqui.', texto: 'Escreva a resposta.', whatsapp: 'O WhatsApp não mandou. Tente de novo em 1 minuto.', acesso: 'Seu acesso caiu. Abra o painel de novo.', foto: 'Não consegui abrir essa foto agora.' };
+const CV_MOTIVO = { grupo: 'Esse grupo não é de cliente do suporte.', noite: 'Fora do horário (22h às 7h). O texto fica guardado aqui; mande de manhã.', direcao: 'O cliente falou de assunto da diretoria (dinheiro, contrato ou jurídico). A diretoria responde; não responda por aqui.', texto: 'Escreva a resposta.', whatsapp: 'O WhatsApp não mandou. Tente de novo em 1 minuto.', acesso: 'Seu acesso caiu. Abra o painel de novo.', foto: 'Não consegui abrir essa foto agora.', proibido: 'Não pode ir para o cliente: concordar com reclamação, admitir falha ou atraso, "agência" ou IA. Reescreva sem isso.' };
 function conversasHtml(){
   const topo = `<div class="head"><div><p class="eyebrow">WhatsApp do suporte${CV && CV.agora ? ' · atualizado às ' + esc(CV.agora) : ''}</p><h1>Conversas</h1></div><p class="sub">Escolha o cliente, leia as últimas mensagens do grupo e responda daqui. Sai pelo número do suporte com o seu nome em negrito na frente.</p></div>`;
   if (!CV) { carregarConversas(); return topo + '<p class="sub">Carregando…</p>'; }
@@ -3084,6 +3084,18 @@ function conversasHtml(){
   }
   return topo + `<div class="cv ${CVA ? 'aberta' : ''}">${lista}${chat}</div>`;
 }
+// Painel (18/11): mesma trava do servidor. Frases proibidas a cliente (Henrique, 18/11): concordar com reclamação, admitir falha/atraso, "agência", IA, citar a diretoria.
+const PROIB = [
+  ['concordar com a reclamação ("você tem razão")', /\b(voce|vc|ce)\s+(tem|ta|esta)\s+(toda\s+|total\s+|muita\s+|completa\s+)?(a\s+)?razao\b|\btem\s+toda\s+(a\s+)?razao\b|\bcom\s+(toda|muita)\s+razao\b|\bfaz\s+(todo|total|muito)\s+(o\s+)?sentido\b|\bvoce\s+esta\s+cert[oa]\b|\b(entendo|compreendo)\s+(perfeitamente\s+|totalmente\s+)?(a\s+|sua\s+|a\s+sua\s+)?(frustracao|insatisfacao|chateacao)/],
+  ['"agência" (somos empresa de mídia)', /\bagencias?\b/],
+  ['admitir falha, erro ou atraso', /\b(erro|erros|erramos|errei|falha|falhas|falhamos|atraso|atrasos|atrasou|atrasamos|atrasad[oa]s?|demoramos|demorou|demora|gargalos?|oscilacao|oscilacoes|instabilidade|desculpa|desculpas|desculpe|perdao|lamentamos|deixamos\s+a\s+desejar)\b|\bsentimos\s+muito\b|\bfase\s+de\s+ajustes?\b|\bproblemas?\s+intern|\bqueda\s+(na|no|da|do)\s+(recorrencia|ritmo|frequencia|constancia)/],
+  ['falar de IA', /\b(inteligencia\s+artificial|chatgpt|gpt|robo|robos)\b/],
+  ['citar a diretoria', /\b(henrique|flau)\b/]
+];
+const proibidos = t => { const n = semAcento(t); const r = PROIB.filter(p => p[1].test(n)).map(p => p[0]); if (/(^|[^A-Za-z])IAs?([^A-Za-z]|$)/.test(String(t || '')) && !r.includes('falar de IA')) r.push('falar de IA'); return r; };
+const limparProibidas = t => { const tir = new Set();
+  const pars = String(t || '').split(/\n\s*\n/).map(p => (p.match(/[^.!?\n]+[.!?]*\s*|\n/g) || []).filter(f => { const q = proibidos(f); q.forEach(x => tir.add(x)); return !q.length; }).join('').trim()).filter(Boolean);
+  return { texto: pars.join('\n\n'), tirou: Array.from(tir) }; };
 function cvEspera(m){ m = Number(m) || 0; return 'há ' + (m < 60 ? m + ' min' : m < 1440 ? Math.floor(m / 60) + 'h' + (m % 60 ? String(m % 60).padStart(2, '0') : '') : Math.floor(m / 1440) + (Math.floor(m / 1440) === 1 ? ' dia' : ' dias')); }
 function cvStatusHtml(x){
   if (!x || !x.status) return '';
@@ -3121,6 +3133,7 @@ document.addEventListener('click', async e => {
   if (e.target.closest('#main [data-cvsug]')) { const chat = CVA; CVSUG[chat] = { indo: 'sugerir' }; render();
     try { const r = await api('euforia-painel-sugerir', { acao: 'sugerir', chat, pedido: '' });
       if (!r || !r.ok) throw new Error((r && r.motivo) || 'erro');
+      const lp = limparProibidas(r.texto); if (lp.tirou.length) { r.texto = lp.texto; r.conferir = ('Tirei da sugestão frase proibida (' + lp.tirou.join(', ') + '). Releia antes de enviar. ' + (r.conferir || '')).trim(); }
       CVSUG[chat] = r; CVRASC[chat] = r.texto; }
     catch (er) { CVSUG[chat] = { erro: er.message }; }
     if (view === 'conversas' && CVA === chat) { render(); const t = $('#cvt'); if (t) { t.style.height = Math.min(160, t.scrollHeight) + 'px'; t.focus(); } } return; }
@@ -3136,6 +3149,7 @@ document.addEventListener('click', async e => {
   if (env) {
     const chat = CVA, t = (CVRASC[chat] || '').trim();
     if (t.length < 2) { toast(CV_MOTIVO.texto); return; }
+    const pr = diretor() ? [] : proibidos(t); if (pr.length) { toast('Não pode ir para o cliente: ' + pr.join(', ') + '. Reescreva sem isso.'); return; }
     ocupado = true; env.disabled = true; env.textContent = 'Enviando…';
     try { const r = await api('euforia-painel-conversas', { acao: 'mandar', chat, texto: t }); if (!r || !r.ok) throw new Error((r && r.motivo) || 'erro');
       delete CVRASC[chat]; ocupado = false;
