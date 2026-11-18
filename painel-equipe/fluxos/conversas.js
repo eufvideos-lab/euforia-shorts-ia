@@ -63,7 +63,7 @@ const ehAbrir = ifElse({ version: 2.2, config: { name: 'É abrir conversa?', par
 const ehMidia = ifElse({ version: 2.2, config: { name: 'É ver foto?', parameters: { conditions: {
   options: { caseSensitive: true, leftValue: '', typeValidation: 'loose' }, conditions: [{ leftValue: '={{ $json.acao }}', rightValue: 'midia', operator: { type: 'string', operation: 'equals' } }], combinator: 'and' } } } });
 
-// ---------- LISTA: todos os grupos de cliente do suporte com conversa nos últimos 30 dias ----------
+// ---------- LISTA: todos os grupos de cliente do suporte com conversa nos últimos 30 dias, com a situação de cada um (CRM, 18/11) ----------
 const buscarLista = node({ type: 'n8n-nodes-base.postgres', version: 2.6, config: { name: 'Grupos com conversa', credentials: PG, alwaysOutputData: true, parameters: {
   operation: 'executeQuery',
   query: `WITH ${TEAM_SQL},
@@ -76,15 +76,34 @@ msgs AS (
     AND tipo NOT IN ('reactionMessage','stickerMessage','protocolMessage','pollUpdateMessage')
   GROUP BY msg_id
 ),
-ult AS (SELECT DISTINCT ON (chat_id) * FROM msgs ORDER BY chat_id, enviado_em DESC),
-ult_equipe AS (SELECT chat_id, max(enviado_em) AS em FROM msgs WHERE da_equipe GROUP BY chat_id)
+-- 18/11 (CRM, Henrique): resposta automática da Érica (recebido, fora do expediente, almoço, acolhimento) não é resposta da equipe. Mesma regra da Gerente IA (Cobrança).
+m2 AS (
+  SELECT *, da_equipe AND COALESCE(texto,'') ~* '(sua mensagem chegou|recebemos sua mensagem|registramos sua mensagem|j[aá] vimos sua mensagem|time j[aá] est[aá] verificando|j[aá] estamos vendo isso|obrigada por escrever|fora do expediente|fora do hor[aá]rio de atendimento|hor[aá]rio de almo[cç]o|pausa para o almo[cç]o|intervalo de almo[cç]o|volta(mos)? do almo[cç]o|expediente)' AS auto
+  FROM msgs
+),
+ult AS (SELECT DISTINCT ON (chat_id) * FROM m2 ORDER BY chat_id, enviado_em DESC),
+hum AS (SELECT chat_id, max(enviado_em) AS em FROM m2 WHERE da_equipe AND NOT auto GROUP BY chat_id),
+cli AS (SELECT chat_id, max(enviado_em) AS em FROM m2 WHERE NOT da_equipe GROUP BY chat_id)
 SELECT u.chat_id,
   (SELECT c.nome FROM chats c WHERE c.chat_id = u.chat_id AND c.nome IS NOT NULL LIMIT 1) AS grupo,
-  u.msg_id, u.da_equipe, COALESCE(u.autor_nome, 'Cliente') AS autor, u.tipo, COALESCE(u.texto, '') AS texto, u.enviado_em,
-  (SELECT count(*) FROM msgs y WHERE y.chat_id = u.chat_id AND NOT y.da_equipe AND y.enviado_em > COALESCE(ue.em, 'epoch')) AS sem_resposta,
+  u.msg_id, u.da_equipe, u.auto AS ultima_auto, COALESCE(u.autor_nome, 'Cliente') AS autor, u.tipo, COALESCE(u.texto, '') AS texto, u.enviado_em,
+  h.em AS ult_humano, cl.em AS ult_cliente,
+  p.qtd AS sem_resposta, p.desde AS espera_desde, p.textos AS pendentes,
+  (SELECT max(a.enviado_em) FROM m2 a WHERE a.chat_id = u.chat_id AND a.auto AND a.enviado_em > p.desde) AS auto_em,
+  (SELECT l.texto FROM m2 l WHERE l.chat_id = u.chat_id AND NOT l.da_equipe ORDER BY l.enviado_em DESC LIMIT 1) AS texto_cliente,
+  g.card_url, g.n3_em,
   e.ultima_acao, e.classificacao
 FROM ult u
-LEFT JOIN ult_equipe ue ON ue.chat_id = u.chat_id
+LEFT JOIN hum h ON h.chat_id = u.chat_id
+LEFT JOIN cli cl ON cl.chat_id = u.chat_id
+LEFT JOIN LATERAL (
+  SELECT count(*) AS qtd, min(y.enviado_em) AS desde, json_agg(left(COALESCE(y.texto, '[' || y.tipo || ']'), 200) ORDER BY y.enviado_em) AS textos
+  FROM m2 y WHERE y.chat_id = u.chat_id AND NOT y.da_equipe AND y.enviado_em > COALESCE(h.em, '-infinity'::timestamptz)
+) p ON true
+LEFT JOIN LATERAL (
+  SELECT x.card_url, x.n3_em FROM gerente_cobranca x
+  WHERE x.chat_id = u.chat_id AND x.respondido_em IS NULL AND x.card_url IS NOT NULL ORDER BY x.desde DESC LIMIT 1
+) g ON true
 LEFT JOIN atendimento_estado e ON e.msg_id = u.msg_id
 WHERE u.chat_id NOT IN (SELECT chat_id FROM internos)
   AND EXISTS (SELECT 1 FROM chats c WHERE c.chat_id = u.chat_id AND c.origem LIKE 'suporte%')
@@ -111,6 +130,12 @@ for (const it of $('Clientes com grupo').all()) for (const p of (it.json.results
 }
 const DIRECAO = ['financeiro', 'cancelamento', 'jurídico', 'juridico'];
 const SENS = /(R[$]|(^|[^a-z])pix([^a-z]|$)|boleto|reembols|estorn|advogad|procon|reclame aqui|processo judicial|cancelar (o )?contrato|distrato)/i;
+// 18/11 (CRM, Henrique): situação de cada conversa. Resposta automática da Érica não conta como resposta da equipe. Mensagem trivial do cliente (ok, obrigado, bom dia) não deixa ninguém esperando. Mesma regra da Gerente IA (Cobrança).
+const sem = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+const TW = new Set('ok okay ta certo beleza blz combinado perfeito otimo show top obrigado obrigada obrigados obrigadas muito valeu grato grata amem bom boa dia tarde noite kk kkk kkkk rs sim entendi maravilha legal joia e pessoal gente romulo ismael daniel lorena erica erika victor equipe tudo certinho no aguardo ate breve'.split(' '));
+const trivial = l => { if (/\\[[a-z]+message\\]/i.test(l) && !/stickermessage/i.test(l)) return false; const w = sem(l).replace(/[^a-z\\s]/g, ' ').split(/\\s+/).filter(Boolean); return w.length <= 6 && w.every(x => TW.has(x)); };
+const ROTULO = { nos: 'Esperando nós', erica: 'Só a Érica respondeu', cliente: 'Esperando cliente', ok: 'Respondido' };
+const ORDEM = { nos: 0, erica: 0, cliente: 1, ok: 2 };
 const agora = DateTime.now().setZone(Z);
 const out = [];
 for (const it of $('Grupos com conversa').all()) {
@@ -120,15 +145,30 @@ for (const it of $('Grupos com conversa').all()) {
   const teste = /teste/i.test(r.grupo || '');
   if (v.teste ? !teste : !k) continue;
   const c = r.classificacao || {};
-  const oculto = !v.diretor && !r.da_equipe && ((c.sensivel === true && DIRECAO.includes(String(c.tema || '').toLowerCase())) || SENS.test(r.texto || ''));
+  const pend = Array.isArray(r.pendentes) ? r.pendentes : [];
+  const sensivel = (c.sensivel === true && DIRECAO.includes(String(c.tema || '').toLowerCase())) || SENS.test(r.texto || '') || pend.some(t => SENS.test(t || ''));
+  const oculto = !v.diretor && !r.da_equipe && sensivel;
   const em = DateTime.fromJSDate(new Date(r.enviado_em)).setZone(Z);
-  const espera = Number(r.sem_resposta) > 0 && r.ultima_acao !== 'ignorar' && !r.da_equipe;
+  const real = pend.filter(t => !trivial(t || ''));
+  let st;
+  if (Number(r.sem_resposta) > 0 && real.length) st = r.auto_em ? 'erica' : 'nos';
+  else if (r.ult_humano && (!r.ult_cliente || new Date(r.ult_humano) >= new Date(r.ult_cliente))) st = 'cliente';
+  else st = 'ok';
+  const espera = st === 'nos' || st === 'erica';
+  const desde = espera && r.espera_desde ? DateTime.fromJSDate(new Date(r.espera_desde)).setZone(Z) : null;
+  const min = desde ? Math.max(0, Math.round(agora.diff(desde, 'minutes').minutes)) : 0;
+  const quem = !espera ? '' : sensivel ? 'Diretoria' : 'Rômulo';
   out.push({ chat: r.chat_id, nome: (k && k.nome) || r.grupo || 'Grupo', grupo: r.grupo || '', faixa: (k && k.faixa) || '', atencao: !!(k && k.atencao),
-    ultima: oculto ? '🔒 Assunto da diretoria' : (r.da_equipe ? 'Euforia: ' : '') + (r.texto || '[' + String(r.tipo || 'mensagem').replace('Message', '') + ']').slice(0, 120),
+    ultima: oculto ? '🔒 Assunto da diretoria' : (r.da_equipe ? (r.ultima_auto ? 'Érica (automática): ' : 'Euforia: ') : '') + (r.texto || '[' + String(r.tipo || 'mensagem').replace('Message', '') + ']').slice(0, 120),
     quando: em.hasSame(agora, 'day') ? em.toFormat('HH:mm') : em.toFormat('dd/MM'), ts: em.toMillis(),
-    espera, naoLidas: espera ? Number(r.sem_resposta) : 0 });
+    espera, naoLidas: espera ? real.length : 0,
+    status: st, rotulo: ROTULO[st], esperaMin: min, desde: desde ? (desde.hasSame(agora, 'day') ? 'hoje ' + desde.toFormat('HH:mm') : desde.toFormat('dd/MM HH:mm')) : '',
+    quem, atrasado: espera && min >= 60, card: espera && r.card_url ? r.card_url : '' });
 }
-return [{ json: { resposta: { ok: true, agora: agora.toFormat('HH:mm'), conversas: out } } }];
+out.sort((a, b) => (ORDEM[a.status] - ORDEM[b.status]) || (a.espera ? b.esperaMin - a.esperaMin : b.ts - a.ts));
+const conta = { nos: 0, erica: 0, cliente: 0, ok: 0 };
+for (const x of out) conta[x.status]++;
+return [{ json: { resposta: { ok: true, agora: agora.toFormat('HH:mm'), conta, conversas: out } } }];
 ` } } });
 
 // ---------- ABRIR: últimas mensagens de um grupo ----------

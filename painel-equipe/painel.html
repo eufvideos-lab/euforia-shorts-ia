@@ -381,6 +381,15 @@ td .sub{font-size:13px}
 .cv-itens .n{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .cv-itens .q{font-size:12px;color:var(--muted);text-align:right}
 .cv-itens .u{font-size:13px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cv-itens .s{grid-column:1 / -1;display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
+.cv-itens .s .chip{font-size:11px;padding:1px 7px}
+.chip.st-nos{background:var(--bad-soft);color:var(--bad)}
+.chip.st-erica{background:var(--warn-soft);color:var(--warn)}
+.chip.st-cliente{background:var(--info-soft);color:var(--info)}
+.chip.st-ok{background:var(--ok-soft);color:var(--ok)}
+.cv-status{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:8px 14px;border-bottom:1px solid var(--line);background:var(--surface);font-size:13px;color:var(--muted)}
+.cv-status b{color:var(--ink)}
+.cv-status a{color:var(--accent-text);font-weight:600}
 .cv-itens .b{justify-self:end;background:var(--accent);color:var(--on-accent);border-radius:999px;font-size:12px;font-weight:700;min-width:20px;padding:0 6px;text-align:center;line-height:20px}
 .cv-chat{display:flex;flex-direction:column;min-height:0;background:var(--surface-2)}
 .cv-topo{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--line);background:var(--surface)}
@@ -3047,11 +3056,14 @@ function conversasHtml(){
   if (!CV) { carregarConversas(); return topo + '<p class="sub">Carregando…</p>'; }
   if (CV.erro) return topo + '<p class="empty">Não abriu agora. Tente de novo em alguns minutos.</p>';
   const q = CVQ.trim().toLowerCase();
-  const L = CV.conversas.filter(x => (CVF !== 'esperando' || x.espera) && (!q || (x.nome + ' ' + x.grupo).toLowerCase().includes(q)));
+  // CRM (18/11/2026, pedido do Henrique): cada conversa tem uma situação. "Só a Érica respondeu" = só saiu a resposta automática; ainda falta a equipe responder.
+  const L = CV.conversas.filter(x => (CVF === 'todas' || (CVF === 'esperando' ? x.espera : x.status === CVF)) && (!q || (x.nome + ' ' + x.grupo).toLowerCase().includes(q)));
   const esperando = CV.conversas.filter(x => x.espera).length;
-  const item = x => `<li><button data-cv="${esc(x.chat)}" ${x.chat === CVA ? 'aria-current="true"' : ''}><span class="n">${x.atencao ? '🔴 ' : ''}${esc(x.nome)}</span><span class="q">${esc(x.quando)}</span><span class="u">${esc(x.ultima)}</span>${x.naoLidas ? `<span class="b" title="Esperando resposta">${x.naoLidas}</span>` : '<span></span>'}</button></li>`;
+  const conta = st => CV.conversas.filter(x => x.status === st).length;
+  const tag = x => x.status ? `<span class="s"><span class="chip st-${esc(x.status)}">${esc(x.rotulo)}</span>${x.espera ? `<span class="chip ${x.atrasado ? 'red' : ''}">${cvEspera(x.esperaMin)}</span><span class="chip">Responde: ${esc(x.quem)}</span>` : ''}</span>` : '';
+  const item = x => `<li><button data-cv="${esc(x.chat)}" ${x.chat === CVA ? 'aria-current="true"' : ''}><span class="n">${x.atencao ? '🔴 ' : ''}${esc(x.nome)}</span><span class="q">${esc(x.quando)}</span><span class="u">${esc(x.ultima)}</span>${x.naoLidas ? `<span class="b" title="Esperando resposta">${x.naoLidas}</span>` : '<span></span>'}${tag(x)}</button></li>`;
   const lista = `<div class="cv-lista"><div class="cv-busca"><input type="search" id="cvq" placeholder="Buscar cliente" value="${esc(CVQ)}" aria-label="Buscar cliente">
-    <div class="cv-filtros"><button data-cvf="todas" aria-pressed="${CVF === 'todas'}">Todas</button><button data-cvf="esperando" aria-pressed="${CVF === 'esperando'}">Esperando resposta${esperando ? ' (' + esperando + ')' : ''}</button></div></div>
+    <div class="cv-filtros"><button data-cvf="todas" aria-pressed="${CVF === 'todas'}">Todas</button><button data-cvf="esperando" aria-pressed="${CVF === 'esperando'}">Falta responder${esperando ? ' (' + esperando + ')' : ''}</button><button data-cvf="erica" aria-pressed="${CVF === 'erica'}">Só a Érica${conta('erica') ? ' (' + conta('erica') + ')' : ''}</button><button data-cvf="cliente" aria-pressed="${CVF === 'cliente'}">Esperando cliente</button><button data-cvf="ok" aria-pressed="${CVF === 'ok'}">Respondido</button></div></div>
     <ul class="cv-itens">${L.length ? L.map(item).join('') : '<li class="cv-vazio">Nenhum cliente aqui.</li>'}</ul></div>`;
   let chat = '<div class="cv-chat"><p class="cv-vazio">Escolha um cliente na lista para ver a conversa.</p></div>';
   if (CVA) {
@@ -3068,9 +3080,15 @@ function conversasHtml(){
       else baixo = `${M.noite ? `<div class="cv-aviso">${CV_MOTIVO.noite}</div>` : ''}${cvSugHtml()}<div class="cv-caixa"><textarea id="cvt" rows="2" maxlength="3000" placeholder="Escreva a resposta para o grupo" aria-label="Resposta">${esc(CVRASC[CVA] || '')}</textarea><button class="btn primary" id="cvenviar" ${M.noite ? 'disabled' : ''}>Enviar</button></div>`;
     }
     chat = `<div class="cv-chat"><div class="cv-topo"><button class="btn cv-voltar" data-cvvoltar>←</button><div><b>${esc(x.nome)}</b>${x.grupo && x.grupo !== x.nome ? `<p class="sub">${esc(x.grupo)}</p>` : ''}</div></div>
-      <div class="cv-msgs" id="cvmsgs">${corpo}</div>${baixo}</div>`;
+      ${cvStatusHtml(x)}<div class="cv-msgs" id="cvmsgs">${corpo}</div>${baixo}</div>`;
   }
   return topo + `<div class="cv ${CVA ? 'aberta' : ''}">${lista}${chat}</div>`;
+}
+function cvEspera(m){ m = Number(m) || 0; return 'há ' + (m < 60 ? m + ' min' : m < 1440 ? Math.floor(m / 60) + 'h' + (m % 60 ? String(m % 60).padStart(2, '0') : '') : Math.floor(m / 1440) + (Math.floor(m / 1440) === 1 ? ' dia' : ' dias')); }
+function cvStatusHtml(x){
+  if (!x || !x.status) return '';
+  const txt = { nos: 'Ninguém da equipe respondeu ainda.', erica: 'Só saiu a resposta automática da Érica. Falta a equipe responder de verdade.', cliente: 'A equipe respondeu. Agora é com o cliente.', ok: 'Conversa respondida.' }[x.status] || '';
+  return `<div class="cv-status"><span class="chip st-${esc(x.status)}">${esc(x.rotulo)}</span><span>${txt}${x.espera && x.desde ? ` Cliente espera desde <b>${esc(x.desde)}</b> (${cvEspera(x.esperaMin)}).` : ''}${x.espera ? ` Responde: <b>${esc(x.quem)}</b>.` : ''}</span>${x.card ? `<a href="${esc(x.card)}" target="_blank" rel="noopener">Ver card</a>` : ''}</div>`;
 }
 function cvRolar(){ const el = $('#cvmsgs'); if (el) el.scrollTop = el.scrollHeight; }
 document.addEventListener('load', e => { if (e.target.tagName === 'IMG' && e.target.closest('#cvmsgs')) cvRolar(); }, true);
@@ -3124,7 +3142,7 @@ document.addEventListener('click', async e => {
       // Henrique avalia no Discord toda resposta que saiu a partir da sugestão (#sugestoes-enviadas).
       const sg = CVSUG[chat]; if (sg && sg.texto) { delete CVSUG[chat]; api('euforia-painel-sugerir', { acao: 'enviado', chat, sugestao: sg.texto, enviado: t, dica: sg.o_que_produzir || '' }).catch(() => {}); }
       if (CVM && CVM.chat === chat) CVM.mensagens.push({ id: 'local' + Date.now(), eu: true, autor: D.nome.split(' ')[0] + ' (você)', tipo: '', foto: false, oculto: false, texto: t, hora: new Date().toTimeString().slice(0, 5), dia: (CVM.mensagens.length ? CVM.mensagens[CVM.mensagens.length - 1].dia : 'Hoje') });
-      const c = CV.conversas.find(x => x.chat === chat); if (c) { c.espera = false; c.naoLidas = 0; }
+      const c = CV.conversas.find(x => x.chat === chat); if (c) { c.espera = false; c.naoLidas = 0; c.status = 'cliente'; c.rotulo = 'Esperando cliente'; c.card = ''; }
       render(); cvRolar(); toast('Resposta enviada no grupo.'); setTimeout(() => abrirConversa(chat, true), 6000); }
     catch (er) { ocupado = false; env.disabled = false; env.textContent = 'Enviar'; toast(CV_MOTIVO[er.message] || 'Deu erro, a diretoria está resolvendo.'); if (er.message === 'direcao') abrirConversa(chat, true); }
   }
@@ -3156,9 +3174,10 @@ function demoApi(path, b){
   }
   if (path === 'euforia-painel-conversas') {
     if (b.acao === 'lista') return wait({ ok: true, agora: '10:42', conversas: [
-      { chat: 'demo1@g.us', nome: 'Ana Exemplo', grupo: 'ANA EXEMPLO <> EUFORIA', faixa: 'A', atencao: true, ultima: 'Consegue me mandar a thumb do vídeo de hoje?', quando: '10:31', espera: true, naoLidas: 2 },
-      { chat: 'demo2@g.us', nome: 'Bruno Modelo', grupo: 'BRUNO MODELO <> EUFORIA', faixa: 'B', atencao: false, ultima: 'Euforia: Prontinho, já está no ar!', quando: '09:12', espera: false, naoLidas: 0 },
-      { chat: 'demo3@g.us', nome: 'Carla Teste', grupo: 'CARLA TESTE <> EUFORIA', faixa: 'C', atencao: false, ultima: '🔒 Assunto da diretoria', quando: '08/11', espera: true, naoLidas: 1 }] });
+      { chat: 'demo1@g.us', nome: 'Ana Exemplo', grupo: 'ANA EXEMPLO <> EUFORIA', faixa: 'A', atencao: true, ultima: 'Consegue me mandar a thumb do vídeo de hoje?', quando: '10:31', espera: true, naoLidas: 2, status: 'nos', rotulo: 'Esperando nós', esperaMin: 74, desde: 'hoje 09:28', quem: 'Rômulo', atrasado: true, card: '' },
+      { chat: 'demo2@g.us', nome: 'Bruno Modelo', grupo: 'BRUNO MODELO <> EUFORIA', faixa: 'B', atencao: false, ultima: 'Euforia: Prontinho, já está no ar!', quando: '09:12', espera: false, naoLidas: 0, status: 'cliente', rotulo: 'Esperando cliente', esperaMin: 0, desde: '', quem: '', atrasado: false, card: '' },
+      { chat: 'demo4@g.us', nome: 'Diana Amostra', grupo: 'DIANA AMOSTRA <> EUFORIA', faixa: 'B', atencao: false, ultima: 'Érica (automática): Olá! Sua mensagem chegou certinho.', quando: '04/11', espera: true, naoLidas: 1, status: 'erica', rotulo: 'Só a Érica respondeu', esperaMin: 20160, desde: '04/11 19:40', quem: 'Rômulo', atrasado: true, card: '' },
+      { chat: 'demo3@g.us', nome: 'Carla Teste', grupo: 'CARLA TESTE <> EUFORIA', faixa: 'C', atencao: false, ultima: '🔒 Assunto da diretoria', quando: '08/11', espera: true, naoLidas: 1, status: 'nos', rotulo: 'Esperando nós', esperaMin: 300, desde: 'hoje 05:42', quem: 'Diretoria', atrasado: true, card: '' }] });
     if (b.acao === 'abrir') return wait(b.chat === 'demo3@g.us'
       ? { ok: true, chat: b.chat, grupo: 'CARLA TESTE <> EUFORIA', bloqueio: 'direcao', noite: false, mensagens: [{ id: 'd31', eu: true, autor: 'Euforia', tipo: '', texto: 'Bom dia, Carla! Seguem os vídeos da semana.', hora: '09:00', dia: '07/11/2026' }, { id: 'd32', eu: false, autor: 'Carla', tipo: '', oculto: true, texto: '', hora: '18:20', dia: '08/11/2026' }] }
       : { ok: true, chat: b.chat, grupo: 'ANA EXEMPLO <> EUFORIA', bloqueio: '', noite: false, mensagens: [
