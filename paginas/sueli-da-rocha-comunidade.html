@@ -89,13 +89,13 @@ footer{background:var(--marinho);color:#9DB8E3;text-align:center;padding:28px;fo
 <section id="lista"><div class="wrap">
 <div class="eyebrow">Lista de espera</div>
 <h2>As vagas abrem primeiro para quem estiver na lista</h2>
-<form onsubmit="event.preventDefault();this.querySelector('.ok').style.display='block'">
-<label for="n">Nome</label><input id="n" required>
-<label for="w">WhatsApp</label><input id="w" inputmode="tel" required>
-<label for="e">E-mail</label><input id="e" type="email" required>
-<label for="c">Seu cargo hoje</label><input id="c">
+<form id="lf" onsubmit="event.preventDefault();var f=this,d=new FormData();d.append('entry.43530906',f.n.value);d.append('entry.636425701',f.w.value);d.append('entry.1482578005',f.e.value);d.append('entry.1218072712',f.c.value);d.append('entry.819153098',f.t.value);f.querySelector('button').disabled=true;fetch('https://docs.google.com/forms/d/e/1FAIpQLSf-AxwAmT3AZC0gOezRXPVJJkJ2qkLRdcsjZ1PJbpOR97GE8w/formResponse',{method:'POST',mode:'no-cors',body:d}).then(function(){f.querySelector('.ok').style.display='block';f.reset()}).catch(function(){f.querySelector('.ok').textContent='Não conseguimos enviar agora. Tente de novo em instantes.';f.querySelector('.ok').style.display='block'}).finally(function(){f.querySelector('button').disabled=false})">
+<label for="n">Nome</label><input id="n" name="n" required>
+<label for="w">WhatsApp</label><input id="w" name="w" inputmode="tel" required>
+<label for="e">E-mail</label><input id="e" name="e" type="email" required>
+<label for="c">Seu cargo hoje</label><input id="c" name="c">
 <label for="t">Quantas pessoas você lidera?</label>
-<select id="t"><option>1 a 5</option><option>6 a 15</option><option>16 a 50</option><option>Mais de 50</option></select>
+<select id="t" name="t"><option>1 a 5</option><option>6 a 15</option><option>16 a 50</option><option>Mais de 50</option></select>
 <button class="btn" type="submit">Entrar na lista de espera</button>
 <p class="ok">Pronto! Você está na lista. Vamos te avisar antes de todo mundo.</p>
 </form>
