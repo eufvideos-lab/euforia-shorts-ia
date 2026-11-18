@@ -13,6 +13,10 @@ const SEM_ERRO = { response: { response: { neverError: true, fullResponse: true 
 const PAPEIS = "['revisor', 'calls', 'diretor', 'teste']";
 // Assinatura da resposta: 'erica' = termina com "Érica, time de suporte, Grupo Euforia"; 'nome' = "*Lorena:* texto".
 const ASSINATURA = 'nome';
+// Número que envia as respostas. 18/11/2026: 'erica2' (Érica 2, contingência) enquanto o 'suporte' está fora. Voltar para 'suporte' quando a Érica voltar.
+const ENVIO = 'erica2';
+// Reserva quando o ENVIO falha (número fora do grupo): isabela.
+const ENVIO_RESERVA = 'isabela';
 
 // Mesma régua do "Painel | Fila de respostas": quem é da equipe e quais grupos são internos.
 const TEAM_SQL = `team AS (
@@ -294,8 +298,15 @@ const podeMandar = ifElse({ version: 2.2, config: { name: 'Pode mandar?', parame
   options: { caseSensitive: true, leftValue: '', typeValidation: 'loose' }, conditions: [{ leftValue: '={{ $json.ok }}', rightValue: '', operator: { type: 'boolean', operation: 'true', singleValue: true } }], combinator: 'and' } } } });
 
 const mandar = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, config: { name: 'Mandar no grupo', credentials: EVO, parameters: {
-  method: 'POST', url: `${BASE}/message/sendText/suporte`, authentication: 'genericCredentialType', genericAuthType: 'httpHeaderAuth',
+  method: 'POST', url: `${BASE}/message/sendText/${ENVIO}`, authentication: 'genericCredentialType', genericAuthType: 'httpHeaderAuth',
   sendBody: true, specifyBody: 'json', jsonBody: '={{ $json.corpo }}', options: SEM_ERRO } } });
+
+// 18/11: se a Érica 2 ainda não está no grupo (ou falhar), tenta pela Isa, que está em quase todos os grupos.
+const mandouOk = ifElse({ version: 2.2, config: { name: 'Saiu pela Érica 2?', parameters: { conditions: {
+  options: { caseSensitive: true, leftValue: '', typeValidation: 'loose' }, conditions: [{ leftValue: '={{ $json.statusCode >= 200 && $json.statusCode < 300 }}', rightValue: '', operator: { type: 'boolean', operation: 'true', singleValue: true } }], combinator: 'and' } } } });
+const mandarIsa = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, config: { name: 'Mandar pela Isa', credentials: EVO, parameters: {
+  method: 'POST', url: `${BASE}/message/sendText/${ENVIO_RESERVA}`, authentication: 'genericCredentialType', genericAuthType: 'httpHeaderAuth',
+  sendBody: true, specifyBody: 'json', jsonBody: '={{ $("Conferir envio").first().json.corpo }}', options: SEM_ERRO } } });
 
 const resultado = node({ type: 'n8n-nodes-base.code', version: 2, config: { name: 'Resultado do envio', parameters: { jsCode: `const r = $input.first().json || {};
 const v = $('Validar acesso').first().json;
@@ -331,7 +342,7 @@ const recusarEnvio = node({ type: 'n8n-nodes-base.respondToWebhook', version: 1.
 const recusar = node({ type: 'n8n-nodes-base.respondToWebhook', version: 1.5, config: { name: 'Recusar', parameters: {
   respondWith: 'json', responseBody: '={{ JSON.stringify($json.resposta) }}', options: {} } } });
 
-const nota = sticky('## Painel da equipe · conversas (V1)\nAba "Conversas" (estilo WhatsApp): lista os grupos de cliente do número do suporte, abre as últimas mensagens e responde dali.\nAções: lista, abrir, midia (foto), mandar. Sai sempre pelo número "suporte"; assinatura conforme ASSINATURA no código. Quem apertou fica na tabela "Painel · conversas enviadas".\nTravas: só grupo de ficha não encerrada (teste só grupo de teste); dinheiro, contrato e jurídico ficam ocultos e bloqueiam a resposta da equipe; nada da equipe sai entre 22h e 7h; frase proibida (você tem razão, admitir falha, agência, IA) não sai (18/11).', [], { color: 4 });
+const nota = sticky('## Painel da equipe · conversas (V1)\nAba "Conversas" (estilo WhatsApp): lista os grupos de cliente do número do suporte, abre as últimas mensagens e responde dali.\nAções: lista, abrir, midia (foto), mandar. Sai pelo número da constante ENVIO (18/11: erica2, contingência); se falhar, pela ENVIO_RESERVA (isabela); assinatura conforme ASSINATURA no código. Quem apertou fica na tabela "Painel · conversas enviadas".\nTravas: só grupo de ficha não encerrada (teste só grupo de teste); dinheiro, contrato e jurídico ficam ocultos e bloqueiam a resposta da equipe; nada da equipe sai entre 22h e 7h; frase proibida (você tem razão, admitir falha, agência, IA) não sai (18/11).', [], { color: 4 });
 
 export default workflow('painel-conversas', 'Painel | Conversas com clientes (V1)')
   .add(pedir).to(ler).to(acesso).to(validar)
@@ -343,7 +354,9 @@ export default workflow('painel-conversas', 'Painel | Conversas com clientes (V1
         .onFalse(ehMidia
           .onTrue(buscarMidia.to(baixar).to(montarMidia).to(devFoto))
           .onFalse(conferirGrupo.to(conferir).to(podeMandar
-            .onTrue(mandar.to(resultado).to(registrar).to(responderEnvio))
+            .onTrue(mandar.to(mandouOk
+              .onTrue(resultado.to(registrar).to(responderEnvio))
+              .onFalse(mandarIsa.to(resultado))))
             .onFalse(recusarEnvio))))))
     .onFalse(recusar))
   .add(nota);
