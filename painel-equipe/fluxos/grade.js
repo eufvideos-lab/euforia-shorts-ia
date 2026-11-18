@@ -5,6 +5,8 @@ const ORIGENS = 'https://lp.grupoeuforia.tech,https://grupoeuforia.com.br,https:
 const NOTION_HDR = { parameters: [{ name: 'Notion-Version', value: '2022-06-28' }] };
 const ACESSO = { __rl: true, mode: 'id', value: 'ilXDZWGAcOjoajx7', cachedResultName: 'Painel equipe · acesso' };
 const MARCAS = { __rl: true, mode: 'id', value: 'eyJ8FrBneYnl3Htu', cachedResultName: 'Painel · grade marcações' };
+// 18/11/2026 (Henrique): envio ao cliente para aprovar 1 dia antes. Uma linha por horário+data (chave = slot|AAAA-MM-DD), status enviado / aprovado / vazio.
+const APROV = { __rl: true, mode: 'id', value: '3xPGmlMr8aLrn1xp', cachedResultName: 'Painel · grade aprovações' };
 
 const pedir = trigger({ type: 'n8n-nodes-base.webhook', version: 2.1, config: { name: 'Grade do painel', parameters: {
   httpMethod: 'POST', path: 'euforia-painel-grade', responseMode: 'responseNode', options: { allowedOrigins: ORIGENS } } } });
@@ -18,7 +20,8 @@ const FORM = ['Vídeo padrão', 'Podcast', 'Corte horizontal', 'Shorts', 'Blog',
 const DIAS = ['1 Seg', '2 Ter', '3 Qua', '4 Qui', '5 Sex', '6 Sáb', '7 Dom'];
 const hora = String(s.horario || '').trim();
 return [{ json: { u: /^[0-9a-f]{24}$/.test(u) ? u : 'x', pin: String(b.pin || '').replace(/[^0-9]/g, '').slice(0, 6),
-  acao: ['salvar', 'pausar', 'reativar', 'marcar'].includes(b.acao) ? b.acao : 'listar',
+  acao: ['salvar', 'pausar', 'reativar', 'marcar', 'aprovacao'].includes(b.acao) ? b.acao : 'listar',
+  aprov: ['enviado', 'aprovado'].includes(b.aprov) ? b.aprov : '',
   marca: ['programado', 'postado'].includes(b.marca) ? b.marca : '', data: /^\\d{4}-\\d{2}-\\d{2}$/.test(String(b.data || '')) ? String(b.data) : '',
   link: (l => /^https?:\\/\\/[^\\s<>"']+\\.[^\\s<>"']+$/i.test(l) ? l.slice(0, 500) : '')(String(b.link || '').trim()),
   slot: { id: id(s.id), cliente: id(s.cliente), plataforma: PLAT.includes(s.plataforma) ? s.plataforma : '', formato: FORM.includes(s.formato) ? s.formato : '',
@@ -36,10 +39,16 @@ const slotAtual = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, confi
   sendHeaders: true, headerParameters: NOTION_HDR, options: {} } } });
 
 const clienteNode = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, config: { name: 'Cliente do horário', credentials: NOTION, onError: 'continueRegularOutput', alwaysOutputData: true, parameters: {
-  method: 'GET', url: '=https://api.notion.com/v1/pages/{{ $("Ler pedido").first().json.slot.cliente || "00000000000000000000000000000000" }}', authentication: 'genericCredentialType', genericAuthType: 'httpHeaderAuth',
+  method: 'GET', url: '=https://api.notion.com/v1/pages/{{ $("Ler pedido").first().json.slot.cliente || (((($("Horário atual").first().json.properties || {})["Cliente"] || {}).relation || [])[0] || {}).id || "00000000000000000000000000000000" }}', authentication: 'genericCredentialType', genericAuthType: 'httpHeaderAuth',
   sendHeaders: true, headerParameters: NOTION_HDR, options: {} } } });
 
-// Todos veem a grade. Só Ismael (revisor), Rômulo (calls) e o teste mudam; o teste só mexe no cliente TESTE Portal.
+// Linha de aprovação daquele horário naquela data (só pesa para cliente com "✋ Aprova antes de postar" na ficha).
+const aprovAtual = node({ type: 'n8n-nodes-base.dataTable', version: 1.1, config: { name: 'Aprovação do horário', alwaysOutputData: true, onError: 'continueRegularOutput', parameters: {
+  resource: 'row', operation: 'get', dataTableId: APROV, matchType: 'allConditions',
+  filters: { conditions: [{ keyName: 'chave', condition: 'eq', keyValue: '={{ $("Ler pedido").first().json.slot.id + "|" + $("Ler pedido").first().json.data }}' }] }, limit: 1 } } });
+
+// Todos veem a grade. Ismael (revisor) e Daniel (conferente), que postam, mudam; Rômulo/Lorena (calls) ainda podem ajudar; o teste só mexe no cliente TESTE Portal.
+// 10/11/2026 (Henrique): quem posta é o Ismael e o Daniel, não o Rômulo.
 const validar = node({ type: 'n8n-nodes-base.code', version: 2, config: { name: 'Validar pedido', parameters: { jsCode: `const Z = 'America/Recife';
 const p = $('Ler pedido').first().json;
 const r = $('Achar pessoa').first().json || {};
@@ -49,7 +58,7 @@ const sem = v => String(v || '').replace(/-/g, '');
 const txt = v => { if (!v) return ''; const a = v.title || v.rich_text; if (a) return a.map(t => t.plain_text).join('').trim(); if (v.select) return v.select.name; return ''; };
 const acessoOk = !!r.token && r.token === p.u && r.ativo === true && String(r.pin) === p.pin;
 const teste = r.papel === 'teste';
-const muda = ['revisor', 'calls', 'teste', 'diretor'].includes(r.papel);
+const muda = ['revisor', 'conferente', 'calls', 'teste', 'diretor'].includes(r.papel);
 const TESTE = '40598c0cdde081c78b98f3984e7009e8';
 // Cliente que a pessoa não pode atender (decisão da diretoria 04/11: Victor fora da Ana Mangia e da Além do CNPJ).
 const BLOQUEIO = { '3ea98c0cdde08182a952f3d9a5b73575': ['3ea98c0cdde081578305ec053b215822', '3ea98c0cdde081aaa244c92b808677f9'] };
@@ -65,17 +74,26 @@ else if (p.acao !== 'listar' && s.id && !daGrade) erro = 'horario';
 else if (p.acao === 'salvar' && (!s.cliente || sem((cli.parent || {}).database_id) !== '3ddc91b406be49e98e630c298d9162d8')) erro = 'cliente';
 else if (p.acao === 'salvar' && (!s.plataforma || !s.formato || !s.dia)) erro = 'campos';
 else if (teste && p.acao !== 'listar' && ((s.cliente && s.cliente !== TESTE) || (s.id && cliAtual !== TESTE))) erro = 'permissao';
-else if ((p.acao === 'pausar' || p.acao === 'reativar' || p.acao === 'marcar') && !s.id) erro = 'horario';
+else if ((p.acao === 'pausar' || p.acao === 'reativar' || p.acao === 'marcar' || p.acao === 'aprovacao') && !s.id) erro = 'horario';
 if (!erro && p.acao !== 'listar' && (BLOQUEIO[r.ficha] || []).some(c => c === cliAtual || c === s.cliente)) erro = 'bloqueio';
 const agora = DateTime.now().setZone(Z);
 // Marcar Programado / Postado: vale para o dia daquele horário, de 3 semanas atrás até 2 semanas à frente.
-if (!erro && p.acao === 'marcar') {
+// 18/11/2026 (Henrique): cliente que aprova antes de postar. Formato do horário -> opção da ficha.
+const APR = { 'Vídeo padrão': 'Vídeo longo', 'Podcast': 'Vídeo longo', 'Corte horizontal': 'Vídeo longo', 'Shorts': 'Shorts', 'Reels': 'Shorts', 'Carrossel': 'Carrossel' };
+const aprovaFicha = (((cli.properties || {})['✋ Aprova antes de postar'] || {}).multi_select || []).map(o => o.name);
+const precisaAprovar = sem(cli.id) === cliAtual && aprovaFicha.includes(APR[txt(ap['Formato'])] || '-');
+const aprovRow = $('Aprovação do horário').first().json || {};
+if (!erro && (p.acao === 'marcar' || p.acao === 'aprovacao')) {
   const d = DateTime.fromISO(p.data, { zone: Z });
   const diaSlot = txt(ap['Dia']);
   const dif = d.isValid ? Math.round(d.startOf('day').diff(agora.startOf('day'), 'days').days) : 99;
   if (!d.isValid || !diaSlot || Number(diaSlot[0]) !== d.weekday || dif < -21 || dif > 14) erro = 'data';
   // Henrique 05/11: só marca Programado/Postado com o link da publicação.
   else if (p.marca && !p.link) erro = 'link';
+  // Sem o OK do cliente não marca Programado/Postado (a diretoria pode passar por cima).
+  else if (p.acao === 'marcar' && p.marca && precisaAprovar && aprovRow.status !== 'aprovado' && r.papel !== 'diretor') erro = 'aprovacao';
+  // Enviei para aprovação: pede o link do que foi mandado ao cliente.
+  else if (p.acao === 'aprovacao' && p.aprov === 'enviado' && !p.link) erro = 'link';
 }
 const desde = agora.startOf('day').minus({ days: (agora.weekday - 1) + 14 }).toISODate();
 const nomeCli = txt((cli.properties || {})['Cliente']);
@@ -95,8 +113,11 @@ if (p.acao === 'salvar') {
 if (p.acao === 'pausar') props['Status do slot'] = { select: { name: '⏸️ Pausado' } };
 if (p.acao === 'reativar') props['Status do slot'] = { select: { name: '✅ Publicar' } };
 const cria = p.acao === 'salvar' && !s.id;
-return [{ json: { ok: !erro, listar: p.acao === 'listar', marcar: p.acao === 'marcar', podeMudar: muda, podeMarcar: true, teste, desde, bloq: BLOQUEIO[r.ficha] || [],
-  marca: { chave: s.id + '|' + p.data, slot: s.id, dia: p.data, status: p.marca, por: r.nome || '', quando: agora.toFormat('dd/MM HH:mm'), link: p.marca ? p.link : '' },
+return [{ json: { ok: !erro, listar: p.acao === 'listar', marcar: p.acao === 'marcar' || p.acao === 'aprovacao', aprovacao: p.acao === 'aprovacao', podeMudar: muda, podeMarcar: true, teste, desde, bloq: BLOQUEIO[r.ficha] || [],
+  marca: { chave: s.id + '|' + p.data, slot: s.id, dia: p.data, status: p.acao === 'aprovacao' ? p.aprov : p.marca, por: r.nome || '', quando: agora.toFormat('dd/MM HH:mm'),
+    link: p.acao === 'aprovacao' ? (p.aprov === 'enviado' ? p.link : p.aprov === 'aprovado' ? (aprovRow.link || p.link || '') : '') : p.marca ? p.link : '' },
+  // Henrique 10/11: Programado/Postado com link na grade fecha também o card do Entregas daquele cliente e daquela data.
+  card: { fechar: p.acao === 'marcar' && !!p.marca && !!p.link && !teste && !!cliAtual, cliente: cliAtual, formato: txt(ap['Formato']), ficha: r.ficha || '' },
   metodo: cria ? 'POST' : 'PATCH', url: cria ? 'https://api.notion.com/v1/pages' : 'https://api.notion.com/v1/pages/' + s.id,
   body: JSON.stringify(cria ? { parent: { database_id: '2d21b7a7166240f5afaa4d697c3d1ae8' }, properties: props } : { properties: props }),
   resposta: { ok: false, motivo: erro } } }];
@@ -157,7 +178,7 @@ for (const it of $('Clientes ativos').all()) for (const p of (it.json.results ||
   const nome = txt(pr['Cliente']);
   if (!v.teste && /^TESTE/i.test(nome)) continue;
   cli[sem(p.id)] = { id: sem(p.id), nome, faixa: txt(pr['Faixa']) || txt(pr['Faixa base']), atencao: !!(pr['🔴 Atenção redobrada'] || {}).checkbox, situacao: txt(pr['Situação']),
-    yt: ((pr['Dias YouTube'] || {}).multi_select || []).map(o => o.name).join(', '), tt: ((pr['Dias TikTok'] || {}).multi_select || []).map(o => o.name).join(', ') };
+    aprova: ((pr['✋ Aprova antes de postar'] || {}).multi_select || []).map(o => o.name), yt: ((pr['Dias YouTube'] || {}).multi_select || []).map(o => o.name).join(', '), tt: ((pr['Dias TikTok'] || {}).multi_select || []).map(o => o.name).join(', ') };
 }
 const horarios = [];
 for (const it of $('Horários da grade').all()) for (const p of (it.json.results || [])) {
@@ -168,17 +189,45 @@ for (const it of $('Horários da grade').all()) for (const p of (it.json.results
   horarios.push({ id: sem(p.id), cliente: c, plataforma: txt(pr['Plataforma']), formato: txt(pr['Formato']), dia: txt(pr['Dia']), horario: txt(pr['Horário']),
     qtd: (pr['Quantidade'] || {}).number || 1, status: txt(pr['Status do slot']), nota: obs.split('\\n').filter(l => !/^\\[Painel /.test(l)).join(' ').slice(0, 200) });
 }
-const lista = Object.values(cli).map(c => ({ id: c.id, nome: c.nome, faixa: c.faixa, atencao: c.atencao, ativo: c.situacao === 'Ativo', pausado: c.situacao === 'Pausado', yt: c.yt, tt: c.tt }));
+const lista = Object.values(cli).map(c => ({ id: c.id, nome: c.nome, faixa: c.faixa, atencao: c.atencao, aprova: c.aprova, ativo: c.situacao === 'Ativo', pausado: c.situacao === 'Pausado', yt: c.yt, tt: c.tt }));
 const ids = new Set(horarios.map(h => h.id));
 const marcas = {};
 for (const it of $('Marcações da grade').all()) { const m = it.json || {}; if (m.chave && m.status && ids.has(m.slot)) marcas[m.chave] = { status: m.status, por: m.por || '', quando: m.quando || '', link: m.link || '' }; }
-return [{ json: { ok: true, podeMudar: v.podeMudar, podeMarcar: v.podeMarcar, clientes: lista, horarios, marcas } }];
+const aprov = {};
+for (const it of $('Aprovações da grade').all()) { const m = it.json || {}; if (m.chave && m.status && ids.has(m.slot)) aprov[m.chave] = { status: m.status, por: m.por || '', quando: m.quando || '', link: m.link || '' }; }
+return [{ json: { ok: true, podeMudar: v.podeMudar, podeMarcar: v.podeMarcar, clientes: lista, horarios, marcas, aprov } }];
 ` } } });
 
 // Programado (cinza) e Postado (laranja) de cada horário em cada data. Uma linha por horário+data; desmarcar grava status vazio.
 const marcacoes = node({ type: 'n8n-nodes-base.dataTable', version: 1.1, config: { name: 'Marcações da grade', executeOnce: true, alwaysOutputData: true, parameters: {
   resource: 'row', operation: 'get', dataTableId: MARCAS, matchType: 'allConditions',
   filters: { conditions: [{ keyName: 'dia', condition: 'gte', keyValue: '={{ $("Validar pedido").first().json.desde }}' }] }, returnAll: true } } });
+
+const aprovacoes = node({ type: 'n8n-nodes-base.dataTable', version: 1.1, config: { name: 'Aprovações da grade', executeOnce: true, alwaysOutputData: true, onError: 'continueRegularOutput', parameters: {
+  resource: 'row', operation: 'get', dataTableId: APROV, matchType: 'allConditions',
+  filters: { conditions: [{ keyName: 'dia', condition: 'gte', keyValue: '={{ $("Validar pedido").first().json.desde }}' }] }, returnAll: true } } });
+
+const ehAprov = ifElse({ version: 2.2, config: { name: 'Aprovação ou marcação?', parameters: { conditions: {
+  options: { caseSensitive: true, leftValue: '', typeValidation: 'loose' },
+  conditions: [{ leftValue: '={{ $json.aprovacao }}', rightValue: '', operator: { type: 'boolean', operation: 'true', singleValue: true } }],
+  combinator: 'and' } } } });
+
+const gravarAprov = node({ type: 'n8n-nodes-base.dataTable', version: 1.1, config: { name: 'Gravar aprovação', parameters: {
+  resource: 'row', operation: 'upsert', dataTableId: APROV, matchType: 'allConditions',
+  filters: { conditions: [{ keyName: 'chave', condition: 'eq', keyValue: '={{ $json.marca.chave }}' }] },
+  columns: { mappingMode: 'defineBelow', value: {
+    chave: '={{ $json.marca.chave }}', slot: '={{ $json.marca.slot }}', dia: '={{ $json.marca.dia }}', status: '={{ $json.marca.status }}',
+    por: '={{ $json.marca.por }}', quando: '={{ $json.marca.quando }}', link: '={{ $json.marca.link }}' }, matchingColumns: [], schema: [
+    { id: 'chave', displayName: 'chave', type: 'string', display: true, required: false, defaultMatch: false },
+    { id: 'slot', displayName: 'slot', type: 'string', display: true, required: false, defaultMatch: false },
+    { id: 'dia', displayName: 'dia', type: 'string', display: true, required: false, defaultMatch: false },
+    { id: 'status', displayName: 'status', type: 'string', display: true, required: false, defaultMatch: false },
+    { id: 'por', displayName: 'por', type: 'string', display: true, required: false, defaultMatch: false },
+    { id: 'quando', displayName: 'quando', type: 'string', display: true, required: false, defaultMatch: false },
+    { id: 'link', displayName: 'link', type: 'string', display: true, required: false, defaultMatch: false }] }, options: {} } } });
+
+const confirmarAprov = node({ type: 'n8n-nodes-base.respondToWebhook', version: 1.5, config: { name: 'Confirmar aprovação', parameters: {
+  respondWith: 'json', responseBody: '={{ JSON.stringify({ ok: true, aprov: $("Validar pedido").first().json.marca }) }}', options: {} } } });
 
 const ehMarcar = ifElse({ version: 2.2, config: { name: 'Marcar ou ajustar?', parameters: { conditions: {
   options: { caseSensitive: true, leftValue: '', typeValidation: 'loose' },
@@ -202,20 +251,63 @@ const gravarMarca = node({ type: 'n8n-nodes-base.dataTable', version: 1.1, confi
 const confirmarMarca = node({ type: 'n8n-nodes-base.respondToWebhook', version: 1.5, config: { name: 'Confirmar marcação', parameters: {
   respondWith: 'json', responseBody: '={{ JSON.stringify({ ok: true, marca: $("Validar pedido").first().json.marca }) }}', options: {} } } });
 
+// Fecha o card do Entregas: mesmo cliente, Postar em = data marcada, tipo que bate com o formato do horário.
+const cardsDoHorario = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, config: { name: 'Cards do horário', credentials: NOTION, onError: 'continueRegularOutput', alwaysOutputData: true, parameters: {
+  method: 'POST', url: 'https://api.notion.com/v1/databases/74b3076a325749e3bac4ba6659215e48/query', authentication: 'genericCredentialType', genericAuthType: 'httpHeaderAuth',
+  sendHeaders: true, headerParameters: NOTION_HDR, sendBody: true, specifyBody: 'json',
+  jsonBody: '={{ JSON.stringify({ filter: { and: [ { property: "Cliente", relation: { contains: $("Validar pedido").first().json.card.cliente } }, { property: "Postar em", date: { equals: $("Validar pedido").first().json.marca.dia } }, { property: "Status", select: { does_not_equal: "Cancelado" } } ] }, sorts: [{ timestamp: "created_time", direction: "ascending" }], page_size: 20 }) }}', options: {} } } });
+
+const montarCard = node({ type: 'n8n-nodes-base.code', version: 2, config: { name: 'Montar fechamento do card', parameters: { jsCode: `const v = $('Validar pedido').first().json;
+const m = v.marca, c = v.card;
+const txt = x => { if (!x) return ''; const a = x.title || x.rich_text; if (a) return a.map(t => t.plain_text).join('').trim(); if (x.select) return x.select.name; return ''; };
+const TIPOS = { 'Vídeo padrão': ['Vídeo longo'], 'Corte horizontal': ['Vídeo longo'], 'Podcast': ['Podcast', 'Vídeo longo'], 'Shorts': ['Shorts'], 'Reels': ['Shorts'], 'Carrossel': ['Carrossel'], 'Blog': ['Blog'] };
+const tipos = TIPOS[c.formato] || [];
+const nome = c.formato.toUpperCase();
+const cards = (($input.first().json || {}).results || []).map(p => ({ id: p.id, pr: p.properties || {} }))
+  .filter(k => tipos.includes(txt(k.pr['Tipo'])) && !['Feito', 'Cancelado'].includes(txt(k.pr['Status'])));
+// Mais de um card no mesmo dia: o que tem o formato no nome, depois o que ainda não foi fechado, depois o mais antigo.
+const nota = k => (txt(k.pr['Entrega']).toUpperCase().includes(nome) ? 0 : 2) + (['Postado', 'Agendado'].includes(txt(k.pr['Status'])) ? 1 : 0);
+const k = cards.sort((a, b) => nota(a) - nota(b))[0];
+if (!k) return [{ json: { fechar: false } }];
+const status = txt(k.pr['Status']);
+// O que o Victor agenda ou posta fica em Agendado até o Daniel ou o Ismael conferir (regra de 04/11).
+const assistente = c.ficha === '3ea98c0cdde08182a952f3d9a5b73575';
+const para = status === 'Postado' ? 'Postado' : (m.status === 'postado' && !assistente) ? 'Postado' : 'Agendado';
+const linha = '[Painel ' + m.quando + '] ' + m.por + ' marcou ' + (m.status === 'postado' ? 'Postado' : 'Programado') + ' na grade (' + m.link + ')';
+const obs = (linha + (txt(k.pr['Obs']) ? '\\n' + txt(k.pr['Obs']) : '')).match(/[\\s\\S]{1,1990}/g).slice(0, 10).map(x => ({ type: 'text', text: { content: x } }));
+const props = { 'Status': { select: { name: para } }, 'Link da postagem': { url: m.link }, 'Obs': { rich_text: obs } };
+if (para === 'Postado' && !((k.pr['Postado em'] || {}).date || {}).start) props['Postado em'] = { date: { start: m.dia } };
+return [{ json: { fechar: true, url: 'https://api.notion.com/v1/pages/' + k.id, body: JSON.stringify({ properties: props }) } }];
+` } } });
+
+const temCard = ifElse({ version: 2.2, config: { name: 'Achou o card?', parameters: { conditions: {
+  options: { caseSensitive: true, leftValue: '', typeValidation: 'loose' },
+  conditions: [{ leftValue: '={{ $json.fechar }}', rightValue: '', operator: { type: 'boolean', operation: 'true', singleValue: true } }],
+  combinator: 'and' } } } });
+
+const fecharCard = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, config: { name: 'Fechar card', credentials: NOTION, onError: 'continueRegularOutput', parameters: {
+  method: 'PATCH', url: '={{ $json.url }}', authentication: 'genericCredentialType', genericAuthType: 'httpHeaderAuth',
+  sendHeaders: true, headerParameters: NOTION_HDR, sendBody: true, specifyBody: 'json', jsonBody: '={{ $json.body }}', options: {} } } });
+
+const vaiFechar = ifElse({ version: 2.2, config: { name: 'Fechar card?', parameters: { conditions: {
+  options: { caseSensitive: true, leftValue: '', typeValidation: 'loose' },
+  conditions: [{ leftValue: '={{ $("Validar pedido").first().json.card.fechar }}', rightValue: '', operator: { type: 'boolean', operation: 'true', singleValue: true } }],
+  combinator: 'and' } } } });
+
 const devolver = node({ type: 'n8n-nodes-base.respondToWebhook', version: 1.5, config: { name: 'Devolver grade', parameters: {
   respondWith: 'json', responseBody: '={{ JSON.stringify($json) }}', options: {} } } });
 
 const recusar = node({ type: 'n8n-nodes-base.respondToWebhook', version: 1.5, config: { name: 'Recusar', parameters: {
   respondWith: 'json', responseBody: '={{ JSON.stringify($json.resposta) }}', options: {} } } });
 
-const nota = sticky('## Painel da equipe · grade de postagem (V1)\nLê o banco Grade de Postagem (horários fixos de cada cliente: plataforma, formato, dia, horário, quantidade) e devolve a semana para a aba Grade.\nTodos veem. Ismael (revisor), Rômulo (calls) e o teste podem criar, ajustar, pausar e reativar um horário. Toda mudança vira uma linha [Painel dd/mm] no topo da Obs do horário. Nunca encerra nem apaga.\nTodos marcam Programado ou Postado em cada data, sempre com o link da publicação (tabela Painel · grade marcações; desmarcar grava status vazio).', [], { color: 4 });
+const nota = sticky('## Painel da equipe · grade de postagem (V1)\nLê o banco Grade de Postagem (horários fixos de cada cliente: plataforma, formato, dia, horário, quantidade) e devolve a semana para a aba Grade.\nTodos veem. Ismael (revisor) e Daniel (conferente), que postam, além de Rômulo/Lorena (calls) e o teste, podem criar, ajustar, pausar e reativar um horário. Toda mudança vira uma linha [Painel dd/mm] no topo da Obs do horário. Nunca encerra nem apaga.\nTodos marcam Programado ou Postado em cada data, sempre com o link da publicação (tabela Painel · grade marcações; desmarcar grava status vazio).\nDesde 10/11: a marcação com link também fecha o card do Entregas do mesmo cliente e da mesma data (Programado → Agendado, Postado → Postado + Postado em + Link da postagem; o que o Victor marca fica em Agendado). Desmarcar não mexe no card.\nDesde 18/11: cliente com "✋ Aprova antes de postar" na ficha tem a etapa Enviar para aprovação (1 dia antes, com link) e Cliente aprovou (tabela Painel · grade aprovações). Sem o OK, Programado/Postado não marca (a diretoria passa por cima).', [], { color: 4 });
 
 export default workflow('painel-grade', 'Painel | Grade de postagem (V1)')
-  .add(pedir).to(ler).to(acesso).to(slotAtual).to(clienteNode).to(validar)
+  .add(pedir).to(ler).to(acesso).to(slotAtual).to(clienteNode).to(aprovAtual).to(validar)
   .to(podeSeguir
     .onTrue(ehListar
-      .onTrue(grade.to(clientes).to(marcacoes).to(montar).to(devolver))
-      .onFalse(ehMarcar.onTrue(gravarMarca.to(confirmarMarca))
+      .onTrue(grade.to(clientes).to(marcacoes).to(aprovacoes).to(montar).to(devolver))
+      .onFalse(ehMarcar.onTrue(ehAprov.onTrue(gravarAprov.to(confirmarAprov)).onFalse(gravarMarca.to(confirmarMarca).to(vaiFechar.onTrue(cardsDoHorario.to(montarCard).to(temCard.onTrue(fecharCard))))))
         .onFalse(ehNovo.onTrue(criar.to(confirmar)).onFalse(ajustar.to(confirmarAjuste)))))
     .onFalse(recusar))
   .add(nota);

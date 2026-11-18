@@ -260,6 +260,16 @@ button.slot:hover,.slot .abre:hover b{border-color:var(--muted)}
 .slot.post{background:var(--accent-soft);border-color:var(--accent);border-left-color:var(--accent)}
 .slot.prog.confirmar,.slot.post.confirmar{background-image:none}
 .slot .quem{font-size:11px;color:var(--muted)}
+/* 18/11/2026: envio ao cliente para aprovar 1 dia antes */
+.slot .apr{display:flex;flex-direction:column;gap:3px;border-top:1px dashed var(--line);padding-top:4px;margin-top:2px}
+.slot .apr .st{font-size:11px;font-weight:600;color:var(--muted)}
+.slot .apr .st.atras{color:var(--bad)}.slot .apr .st.env{color:var(--warn)}.slot .apr .st.ok{color:var(--ok)}
+.slot .apr .bts{display:grid;grid-template-columns:1fr 1fr;gap:4px}
+.slot .apr button{min-width:0;font:inherit;font-size:11px;font-weight:600;padding:4px 4px;border-radius:6px;border:1px solid var(--line);background:var(--surface);color:var(--muted);cursor:pointer}
+.slot .apr button[aria-pressed="true"].a-env{background:var(--warn-soft);border-color:var(--warn);color:var(--warn)}
+.slot .apr button[aria-pressed="true"].a-ok{background:var(--ok-soft);border-color:var(--ok);color:var(--ok)}
+.slot .marcar button.travado{opacity:.45;cursor:not-allowed}
+.slot.apr-atras{border-left-color:var(--bad)}
 .semnav{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .semnav .rot{font-weight:600;margin:0 4px}
 .acs{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
@@ -1007,12 +1017,16 @@ const VIEWS = {
       const EST = (DEMO || ESTREIAS_NO_AR) && ES && ES.estreias ? ES.estreias : [];
       if ((DEMO || ESTREIAS_NO_AR) && !ES) carregarEstreias();
       const estreiaDe = (cid, dt) => GP === 'YouTube' ? EST.find(e => e.cliente === cid && e.data === dt) : null;
+      const AP = G.aprov || {};
       const cartao = h => { const m = marcaDe(h), dt = iso(GDIAS.indexOf(h.dia)), st = m ? m.status : '', es = h.formato !== 'Shorts' ? estreiaDe(h.cliente, dt) : null;
-        const bt = (k, t) => `<button type="button" class="m-${k === 'programado' ? 'prog' : 'post'}" data-marca="${k}" data-ms="${h.id}" data-md="${dt}" aria-pressed="${st === k}" title="${st === k ? 'Clique de novo para desmarcar' : 'Marcar como ' + t.toLowerCase()}">${t}</button>`;
-        return `<div class="slot ${esc(h.plataforma)} ${es ? 'estreia' : ''} ${h.status.includes('Pausado') ? 'pausado' : ''} ${h.status.includes('Confirmar') ? 'confirmar' : ''} ${st === 'postado' ? 'post' : st === 'programado' ? 'prog' : ''}">
+        const pa = precisaAprovar(h), ap = pa ? AP[h.id + '|' + dt] || null : null, trava = pa && (!ap || ap.status !== 'aprovado') && !diretor() && !st;
+        const aps = pa ? aprovSituacao(h, dt, ap, st) : null;
+        const bt = (k, t) => `<button type="button" class="m-${k === 'programado' ? 'prog' : 'post'}${trava ? ' travado' : ''}" data-marca="${k}" data-ms="${h.id}" data-md="${dt}" ${trava ? 'data-trava="1"' : ''} aria-pressed="${st === k}" title="${trava ? 'Só depois que o cliente aprovar' : st === k ? 'Clique de novo para desmarcar' : 'Marcar como ' + t.toLowerCase()}">${t}</button>`;
+        return `<div class="slot ${esc(h.plataforma)} ${es ? 'estreia' : ''} ${h.status.includes('Pausado') ? 'pausado' : ''} ${h.status.includes('Confirmar') ? 'confirmar' : ''} ${st === 'postado' ? 'post' : st === 'programado' ? 'prog' : ''} ${aps && aps.atras ? 'apr-atras' : ''}">
         ${es ? '<span class="chip estreia">🚀 Vídeo 1 · estreia' + (es.hora ? ' ' + esc(es.hora) : '') + '</span>' : ''}<button type="button" class="abre" data-slot="${h.id}"><b>${esc(nome(h.cliente))}</b><span class="sub">${esc(h.plataforma)} · ${esc(h.formato)}${h.qtd > 1 ? ' ×' + h.qtd : ''}</span>
         <span class="sub">${h.horario ? esc(h.horario) : 'sem horário'}${h.status.includes('Pausado') ? ' · pausado' : h.status.includes('Confirmar') ? ' · ❓ confirmar' : ''}</span></button>
         ${m ? `<span class="quem">${st === 'postado' ? '✓ Postado' : '🕒 Programado'} · ${esc(m.por)} ${esc(m.quando)}${m.link ? ` · <a href="${esc(m.link)}" target="_blank" rel="noopener">link</a>` : ''}</span>` : ''}
+        ${aps && (ap || !st) ? blocoAprov(h, dt, ap, aps) : ''}
         ${G.podeMarcar !== false ? `<div class="marcar">${bt('programado', 'Programado')}${bt('postado', 'Postado')}</div>` : ''}</div>`; };
       const soEstreia = i => GP !== 'YouTube' ? [] : EST.filter(e => e.data === iso(i) && (!GC || e.cliente === GC) && !hs.some(h => h.cliente === e.cliente && h.dia === GDIAS[i] && h.formato !== 'Shorts'));
       const cartaoEstreia = e => `<div class="slot YouTube estreia"><span class="chip estreia">🚀 Vídeo 1 · estreia</span><b>${esc(nome(e.cliente) || e.clienteNome)}</b><span class="sub">YouTube · Vídeo 1 · ${esc(e.hora || 'sem horário')}</span></div>`;
@@ -1042,13 +1056,14 @@ const VIEWS = {
         ${G.podeMudar ? '<button class="btn primary" id="g-novo">+ Adicionar dia</button>' : ''}
       </div>
       <div class="semnav"><button class="btn" data-gw="-1" ${GW <= -2 ? 'disabled' : ''}>← Semana anterior</button><span class="rot">${GW === 0 ? 'Esta semana' : GW === 1 ? 'Próxima semana' : GW === -1 ? 'Semana passada' : 'Há 2 semanas'} · ${fmt(0)} a ${fmt(6)}</span>${GW !== 0 ? '<button class="btn" data-gw="0">Esta semana</button>' : ''}<button class="btn" data-gw="1" ${GW >= 1 ? 'disabled' : ''}>Próxima semana →</button></div>
+      ${listaAprovar()}
       <div class="legenda"><span><i style="background:var(--cinza)"></i>programado</span><span><i style="background:var(--accent)"></i>postado</span><span><i style="background:var(--warn-soft);border:1px solid var(--warn)"></i>❓ confirmar com a diretoria</span><span><i style="border:1px dashed var(--muted)"></i>pausado</span>${(DEMO || ESTREIAS_NO_AR) && GP === 'YouTube' ? '<span><i style="background:var(--accent-soft);border:2px solid var(--accent)"></i>🚀 Vídeo 1 (estreia do canal)</span>' : ''}</div>
       ${(DEMO || ESTREIAS_NO_AR) && GP === 'YouTube' ? blocoEstreias(['revisor', 'calls', 'diretor', 'teste'].includes(papel())) : ''}
       <div class="semana">${cols}</div>
       ${sem.length ? `<section class="group"><h2>${GP === 'YouTube' ? 'Clientes ativos sem dia no YouTube' : 'Com ' + esc(GP) + ' na ficha e sem dia na grade'} <span class="count">${sem.length}</span></h2><ul class="rows">${sem.map(c => `<li class="item"><span class="stripe"></span>
         <div class="main" style="cursor:default"><span class="t">${esc(c.nome)}</span><span class="meta">${c.faixa ? `<span class="chip">Faixa ${esc(c.faixa)}</span>` : ''}${c.atencao ? '<span class="chip red">🔴 Atenção</span>' : ''}${c.yt ? `<span class="chip">Ficha: YouTube ${esc(c.yt)}</span>` : ''}${c.tt ? `<span class="chip">Ficha: TikTok ${esc(c.tt)}</span>` : ''}</span></div>
         <span class="act">${G.podeMudar ? `<button class="btn" data-definir="${c.id}">Definir dia</button>` : ''}</span></li>`).join('')}</ul></section>` : ''}
-      <p class="note">Agendou ou postou? Aperte "Programado" ou "Postado" no horário e cole o link da publicação: fica cinza ou laranja para todo mundo. Sem o link não marca. Apertou errado? Clique de novo e volta ao normal. A grade é o combinado fixo de cada cliente. A data de cada peça continua no card ("Vai ao ar"). ${G.podeMudar ? 'Toda mudança fica registrada com seu nome e a hora.' : 'Quem ajusta a grade é o Ismael ou o Rômulo.'}</p>`;
+      <p class="note">Agendou ou postou? Aperte "Programado" ou "Postado" no horário e cole o link da publicação: fica cinza ou laranja para todo mundo. Sem o link não marca. Apertou errado? Clique de novo e volta ao normal. Cliente com ✋ aprova antes de ir ao ar: mande o vídeo para ele até 1 dia antes, aperte "Enviei" e cole o link do que mandou; quando ele aprovar, aperte "Aprovou". Só depois disso o Programado e o Postado destravam. A grade é o combinado fixo de cada cliente. A data de cada peça continua no card ("Vai ao ar"). ${G.podeMudar ? 'Toda mudança fica registrada com seu nome e a hora.' : 'Quem ajusta a grade é o Ismael ou o Rômulo.'}</p>`;
     } },
   pedir: { nome: 'Pedir ao escritório', pode: () => papel() !== 'editor',
     html(){
@@ -2113,17 +2128,96 @@ function abrirDD(id){
 const GDIAS = ['1 Seg', '2 Ter', '3 Qua', '4 Qui', '5 Sex', '6 Sáb', '7 Dom'];
 const GPLAT = ['YouTube', 'TikTok', 'Instagram', 'Blog'];
 const GFORM = ['Vídeo padrão', 'Shorts', 'Corte horizontal', 'Podcast', 'Carrossel', 'Reels', 'Blog', 'Outro'];
-const GMOTIVO = { bloqueio:'Esse cliente não está com você.',permissao:'Só o Ismael e o Rômulo mudam a grade.', campos:'Escolha plataforma, formato e dia.', horario:'Esse horário mudou. A grade foi atualizada.', cliente:'Escolha um cliente ativo.', acesso: MOTIVO.acesso};
+const GMOTIVO = { aprovacao:'Esse cliente aprova antes de ir ao ar. Mande o vídeo para ele aprovar e marque "Cliente aprovou" primeiro.', bloqueio:'Esse cliente não está com você.',permissao:'Só o Ismael e o Rômulo mudam a grade.', campos:'Escolha plataforma, formato e dia.', horario:'Esse horário mudou. A grade foi atualizada.', cliente:'Escolha um cliente ativo.', acesso: MOTIVO.acesso};
 async function carregarGrade(){
   if (carregarGrade.indo) return; carregarGrade.indo = true;
   try { const r = await api('euforia-painel-grade', { acao: 'listar' }); if (r && r.ok) { G = r; if (['grade', 'geral', 'fila'].includes(view) && !ocupado && !$('#layer').innerHTML) render(); } else if (r && r.motivo === 'acesso') { PIN = ''; carregar(); } }
   catch (e) { if (view === 'grade' && !G) $('#main').innerHTML = `<div class="view"><h1>Grade de postagem</h1><p class="sub">${ERRO}</p></div>`; }
   carregarGrade.indo = false;
 }
+// ✋ Envio para aprovação (Henrique 18/11/2026): cliente com "✋ Aprova antes de postar" na ficha.
+// Enviar ao cliente até 1 dia antes do horário; sem "Cliente aprovou" não marca Programado/Postado (diretoria passa por cima).
+const APR_FORMATO = { 'Vídeo padrão': 'Vídeo longo', 'Podcast': 'Vídeo longo', 'Corte horizontal': 'Vídeo longo', 'Shorts': 'Shorts', 'Reels': 'Shorts', 'Carrossel': 'Carrossel' };
+function precisaAprovar(h){ const c = ((G && G.clientes) || []).find(x => x.id === h.cliente) || {}; return !!APR_FORMATO[h.formato] && (c.aprova || []).includes(APR_FORMATO[h.formato]); }
+function isoMais(dt, n){ const t = dia(dt); t.setDate(t.getDate() + n); return t.getFullYear() + '-' + String(t.getMonth() + 1).padStart(2, '0') + '-' + String(t.getDate()).padStart(2, '0'); }
+function aprovSituacao(h, dt, ap, st){
+  const ate = isoMais(dt, -1), d = diff(ate), s = ap ? ap.status : '';
+  const atras = !s && !st && d < 0 && diff(dt) >= 0;
+  const t = s === 'aprovado' ? '✅ Cliente aprovou' : s === 'enviado' ? '📤 Enviado · esperando o OK' : st ? '' : d < 0 ? '✋ Enviar para aprovar: atrasado (era ' + fmt(ate) + ')' : d === 0 ? '✋ Enviar para aprovar HOJE' : '✋ Enviar para aprovar até ' + fmt(ate);
+  return { ate, atras, t, cls: s === 'aprovado' ? 'ok' : s === 'enviado' ? 'env' : (d <= 0 && !st) ? 'atras' : '' };
+}
+function blocoAprov(h, dt, ap, aps){
+  const s = ap ? ap.status : '', quem = ap ? ' · ' + esc(ap.por) + ' ' + esc(ap.quando) + (ap.link ? ` · <a href="${esc(ap.link)}" target="_blank" rel="noopener">o que foi</a>` : '') : '';
+  const b = (k, t, tit) => `<button type="button" class="a-${k === 'enviado' ? 'env' : 'ok'}" data-aprov="${k}" data-ms="${h.id}" data-md="${dt}" aria-pressed="${s === k}" title="${s === k ? 'Clique de novo para desmarcar' : tit}">${t}</button>`;
+  return `<div class="apr">${aps.t ? `<span class="st ${aps.cls}">${aps.t}${quem}</span>` : ''}
+    ${G.podeMarcar !== false ? `<div class="bts">${b('enviado', 'Enviei', 'Mandei o vídeo para o cliente aprovar')}${b('aprovado', 'Aprovou', 'O cliente aprovou no grupo')}</div>` : ''}</div>`;
+}
+// Lista no topo da grade: o que precisa ir para o cliente aprovar hoje/amanhã ou está esperando o OK (de 2 dias atrás até 3 dias à frente).
+function listaAprovar(){
+  if (!G || !(G.clientes || []).some(c => (c.aprova || []).length)) return '';
+  const nome = id => (G.clientes.find(c => c.id === id) || {}).nome || '';
+  const itens = [];
+  for (let n = -2; n <= 3; n++) {
+    const dt = isoMais(D.hoje, n), wd = (dia(dt).getDay() + 6) % 7;
+    for (const h of G.horarios.filter(x => x.dia === GDIAS[wd] && x.status.includes('Publicar') && precisaAprovar(x))) {
+      const ap = (G.aprov || {})[h.id + '|' + dt] || null, st = ((G.marcas || {})[h.id + '|' + dt] || {}).status || '';
+      if (st || (ap && ap.status === 'aprovado')) continue;
+      if (!ap && n > 1) continue;
+      itens.push({ h, dt, ap, aps: aprovSituacao(h, dt, ap, st) });
+    }
+  }
+  if (!itens.length) return '';
+  itens.sort((a, b) => a.dt.localeCompare(b.dt) || (a.h.horario || '99').localeCompare(b.h.horario || '99'));
+  return `<section class="group"><h2>✋ Enviar para o cliente aprovar <span class="count">${itens.length}</span></h2><ul class="rows">${itens.map(x => `<li class="item"><span class="stripe" style="background:var(--${x.aps.cls === 'atras' ? 'bad' : x.aps.cls === 'env' ? 'warn' : 'muted'})"></span>
+    <div class="main" style="cursor:default"><span class="t">${esc(nome(x.h.cliente))} · ${esc(x.h.formato)}</span><span class="meta"><span class="chip ${x.aps.cls === 'atras' ? 'red' : x.aps.cls === 'env' ? 'warn' : ''}">${x.aps.t}</span><span class="sub" style="font-size:12px">vai ao ar ${esc(fmt(x.dt))}${x.h.horario ? ' ' + esc(x.h.horario) : ''}${x.ap ? ' · enviado por ' + esc(x.ap.por) + ' ' + esc(x.ap.quando) : ''}</span></span></div>
+    <span class="act">${G.podeMarcar !== false ? (x.ap ? `<button class="btn" data-aprov="aprovado" data-ms="${x.h.id}" data-md="${x.dt}">Cliente aprovou</button>` : `<button class="btn primary" data-aprov="enviado" data-ms="${x.h.id}" data-md="${x.dt}">Enviei para aprovar</button>`) : ''}</span></li>`).join('')}</ul>
+    <p class="note">Mande o vídeo no grupo do cliente até 1 dia antes do horário. Depois aperte "Enviei" e cole o link do que mandou. Quando o cliente aprovar, aperte "Cliente aprovou".</p></section>`;
+}
+function aprovarSlot(b){
+  if (b.disabled) return;
+  const chave = b.dataset.ms + '|' + b.dataset.md, antes = (G.aprov || {})[chave];
+  const nova = antes && antes.status === b.dataset.aprov ? '' : b.dataset.aprov;
+  if (nova !== 'enviado') { gravarAprov(b, nova, ''); return; }
+  const h = (G.horarios || []).find(x => x.id === b.dataset.ms) || {};
+  const nomeC = ((G.clientes || []).find(c => c.id === h.cliente) || {}).nome || '';
+  $('#layer').innerHTML = `<div class="scrim" data-x></div><aside class="drawer" role="dialog" aria-modal="true" aria-labelledby="ap-t"><div class="drawer-in">
+    <button class="close" data-x>Fechar</button>
+    <div><p class="eyebrow">Enviei para o cliente aprovar · vai ao ar ${esc(fmt(b.dataset.md))}</p><h2 id="ap-t" style="font-size:26px">${esc(nomeC)}</h2><p class="sub">${esc(h.plataforma || '')} · ${esc(h.formato || '')}${h.horario ? ' · ' + esc(h.horario) : ''}</p></div>
+    <form id="faprov"><label for="ap-url"><b>Link do que você mandou</b></label>
+      <input id="ap-url" type="url" inputmode="url" required placeholder="https://drive.google.com/..." style="width:100%">
+      <p class="note">Cole o link do vídeo (ou da peça) que foi para o grupo do cliente, o mesmo que ele vai abrir. Sem o link não dá para marcar.</p>
+      <div class="actions"><button class="btn primary" type="submit">Marcar como enviado</button></div></form></div></aside>`;
+  setTimeout(() => { const i = $('#ap-url'); if (i) i.focus(); }, 50);
+  $('#layer').onclick = ev => { if (ev.target.closest('[data-x]')) fechar(); };
+  $('#layer').onsubmit = ev => {
+    if (ev.target.id !== 'faprov') return; ev.preventDefault();
+    const link = $('#ap-url').value.trim();
+    if (!/^https?:\/\/[^\s<>"']+\.[^\s<>"']+$/i.test(link)) { toast('Cole o link completo, começando com https://'); return; }
+    fechar(); gravarAprov(b, nova, link);
+  };
+}
+async function gravarAprov(b, nova, link){
+  const chave = b.dataset.ms + '|' + b.dataset.md, antes = (G.aprov || {})[chave];
+  const agora = new Date(), q = String(agora.getDate()).padStart(2, '0') + '/' + String(agora.getMonth() + 1).padStart(2, '0') + ' ' + agora.toTimeString().slice(0, 5);
+  G.aprov = G.aprov || {};
+  if (nova) G.aprov[chave] = { status: nova, por: (D && D.nome) || '', quando: q, link: link || (antes && antes.link) || '' }; else delete G.aprov[chave];
+  marcarSlot.n = (marcarSlot.n || 0) + 1; render();
+  try {
+    const r = await api('euforia-painel-grade', { acao: 'aprovacao', aprov: nova, data: b.dataset.md, link, slot: { id: b.dataset.ms } });
+    if (!r || !r.ok) throw new Error((r && r.motivo) || 'erro');
+    if (r.aprov && nova) G.aprov[chave] = { status: r.aprov.status, por: r.aprov.por, quando: r.aprov.quando, link: r.aprov.link || link };
+    if (nova === 'aprovado') toast('Anotado: o cliente aprovou. Já pode programar.');
+  } catch (err) {
+    if (antes) G.aprov[chave] = antes; else delete G.aprov[chave];
+    toast(err.message === 'data' ? 'Essa data não bate com o dia do horário.' : err.message === 'link' ? 'Cole o link do que você mandou.' : GMOTIVO[err.message] || ERRO);
+  }
+  marcarSlot.n--; if (view === 'grade' && !$('#layer').innerHTML) render();
+}
 // Programado / Postado: muda na tela na hora e grava; se der erro, volta como estava.
 // Henrique 05/11: para marcar é obrigatório colar o link da publicação (desmarcar não pede).
 function marcarSlot(b){
   if (b.disabled) return;
+  if (b.dataset.trava) { toast(GMOTIVO.aprovacao); return; }
   const chave = b.dataset.ms + '|' + b.dataset.md, antes = (G.marcas || {})[chave];
   const nova = antes && antes.status === b.dataset.marca ? '' : b.dataset.marca;
   if (!nova) { gravarSlot(b, nova, ''); return; }
@@ -2388,6 +2482,7 @@ document.addEventListener('click', async e => {
   const ga = e.target.closest('#main [data-gaba]'); if (ga) { GP = ga.dataset.gaba; render(); return; }
   const gw = e.target.closest('#main [data-gw]'); if (gw) { const n = Number(gw.dataset.gw); GW = n === 0 ? 0 : Math.max(-2, Math.min(1, GW + n)); render(); return; }
   const mk = e.target.closest('#main [data-marca]'); if (mk) { marcarSlot(mk); return; }
+  const apv = e.target.closest('#main [data-aprov]'); if (apv) { aprovarSlot(apv); return; }
   const fo = e.target.closest('#main [data-form]'); if (fo) { abrirFormulario(fo.dataset.form); return; }
   const ff = e.target.closest('#main [data-fof]'); if (ff) { FOF = FOF === ff.dataset.fof ? '' : ff.dataset.fof; render(); return; }
   const ef = e.target.closest('#main [data-cef]'); if (ef) { CEF = CEF === ef.dataset.cef ? '' : ef.dataset.cef; render(); return; }
@@ -3226,6 +3321,7 @@ function demoApi(path, b){
     { tipo: 'short', nome: 'SHORT 1', titulo: 'Sua empresa parcela, paga e volta a dever?', outros: [], descricao: 'O número é o sintoma: a causa está nas decisões. #shorts #tributos', tags: 'dívida tributária', criado: '2026-11-16' }] });
   if (path === 'euforia-painel-grade') {
     if (b.acao === 'listar') return wait(JSON.parse(JSON.stringify(DEMO_G)));
+    if (b.acao === 'aprovacao') { const k = b.slot.id + '|' + b.data, m = { status: b.aprov, por: DEMO_D.nome, quando: '26/10 ' + new Date().toTimeString().slice(0, 5), link: b.link || '' }; DEMO_G.aprov = DEMO_G.aprov || {}; if (b.aprov) DEMO_G.aprov[k] = m; else delete DEMO_G.aprov[k]; return wait({ ok: true, aprov: Object.assign({ chave: k, slot: b.slot.id, dia: b.data }, m) }); }
     if (b.acao === 'marcar') { const k = b.slot.id + '|' + b.data, m = { status: b.marca, por: DEMO_D.nome, quando: '26/10 ' + new Date().toTimeString().slice(0, 5), link: b.link || '' }; if (b.marca) DEMO_G.marcas[k] = m; else delete DEMO_G.marcas[k]; return wait({ ok: true, marca: Object.assign({ chave: k, slot: b.slot.id, dia: b.data }, m) }); }
     const s = b.slot, h = DEMO_G.horarios.find(x => x.id === s.id);
     if (b.acao === 'pausar') h.status = '⏸️ Pausado';
@@ -3304,8 +3400,8 @@ const DEMO_D = {"ok":true,"nome":"Ismael (exemplo)","papel":"revisor","hoje":"20
   {"id":"k7","cod":407,"titulo":"","nome":"CARROSSEL 08","cliente":"c1","clienteNome":"Dra. Helena (exemplo)","tipo":"Carrossel","qtd":1,"status":"Aguardando cliente","prazo":"2026-10-24","postar":"2026-10-27","link":"https://drive.google.com/demo","linkPost":"","obs":"","resp":["Lorena"],"meu":false,"voltas":0}]};
 
 const DEMO_G = {"ok":true,"podeMudar":true,"podeMarcar":true,
- "marcas":{"g7|2026-10-26":{"status":"postado","por":"Ismael (exemplo)","quando":"26/10 17:04"},"g1|2026-10-27":{"status":"programado","por":"Daniel (exemplo)","quando":"25/10 21:30"},"g3|2026-10-28":{"status":"programado","por":"Daniel (exemplo)","quando":"25/10 21:41"}},
- "clientes":[{"id":"c1","nome":"Dra. Helena (exemplo)","faixa":"A","atencao":true,"ativo":true,"pausado":false,"inicio":"2026-10-05","yt":"Ter, Qui","tt":""},
+ "marcas":{"g7|2026-10-26":{"status":"postado","por":"Ismael (exemplo)","quando":"26/10 17:04"},"g3|2026-10-28":{"status":"programado","por":"Daniel (exemplo)","quando":"25/10 21:41"}},
+ "clientes":[{"id":"c1","nome":"Dra. Helena (exemplo)","faixa":"A","atencao":true,"aprova":["Vídeo longo"],"ativo":true,"pausado":false,"inicio":"2026-10-05","yt":"Ter, Qui","tt":""},
   {"id":"c2","nome":"Instituto Aurora (exemplo)","faixa":"A","atencao":false,"ativo":true,"pausado":false,"inicio":"2026-10-05","yt":"Qua","tt":"Seg, Qua, Sex"},
   {"id":"c3","nome":"Marcos Lima (exemplo)","faixa":"B","atencao":false,"ativo":true,"pausado":false,"inicio":"2026-10-05","yt":"Seg","tt":""},
   {"id":"c4","nome":"Paula Reis (exemplo)","faixa":"B","atencao":true,"ativo":true,"pausado":false,"inicio":"2026-10-05","yt":"Sex","tt":""},
