@@ -261,6 +261,19 @@ SELECT (SELECT c.nome FROM chats c WHERE c.chat_id = $1 AND c.origem LIKE 'supor
   options: { queryReplacement: '={{ [ $json.chat ] }}' } } } });
 
 const conferir = node({ type: 'n8n-nodes-base.code', version: 2, config: { name: 'Conferir envio', parameters: { jsCode: `const v = $('Validar acesso').first().json;
+// Frases proibidas a cliente (Henrique, 18/11): concordar com reclamação, admitir falha/atraso, "agência", IA, citar a diretoria.
+const PROIB = [
+  ['concordar com a reclamação ("você tem razão")', /\\b(voce|vc|ce)\\s+(tem|ta|esta)\\s+(toda\\s+|total\\s+|muita\\s+|completa\\s+)?(a\\s+)?razao\\b|\\btem\\s+toda\\s+(a\\s+)?razao\\b|\\bcom\\s+(toda|muita)\\s+razao\\b|\\bfaz\\s+(todo|total|muito)\\s+(o\\s+)?sentido\\b|\\bvoce\\s+esta\\s+cert[oa]\\b|\\b(entendo|compreendo)\\s+(perfeitamente\\s+|totalmente\\s+)?(a\\s+|sua\\s+|a\\s+sua\\s+)?(frustracao|insatisfacao|chateacao)/],
+  ['"agência" (somos empresa de mídia)', /\\bagencias?\\b/],
+  ['admitir falha, erro ou atraso', /\\b(erro|erros|erramos|errei|falha|falhas|falhamos|atraso|atrasos|atrasou|atrasamos|atrasad[oa]s?|demoramos|demorou|demora|gargalos?|oscilacao|oscilacoes|instabilidade|desculpa|desculpas|desculpe|perdao|lamentamos|deixamos\\s+a\\s+desejar)\\b|\\bsentimos\\s+muito\\b|\\bfase\\s+de\\s+ajustes?\\b|\\bproblemas?\\s+intern|\\bqueda\\s+(na|no|da|do)\\s+(recorrencia|ritmo|frequencia|constancia)/],
+  ['falar de IA', /\\b(inteligencia\\s+artificial|chatgpt|gpt|robo|robos)\\b/],
+  ['citar a diretoria', /\\b(henrique|flau)\\b/]
+];
+const semAcento = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+const proibidos = t => { const n = semAcento(t); const r = PROIB.filter(p => p[1].test(n)).map(p => p[0]); if (/(^|[^A-Za-z])IAs?([^A-Za-z]|$)/.test(String(t || '')) && !r.includes('falar de IA')) r.push('falar de IA'); return r; };
+const limparProibidas = t => { const tir = new Set();
+  const pars = String(t || '').split(/\\n\\s*\\n/).map(p => (p.match(/[^.!?\\n]+[.!?]*\\s*|\\n/g) || []).filter(f => { const q = proibidos(f); q.forEach(x => tir.add(x)); return !q.length; }).join('').trim()).filter(Boolean);
+  return { texto: pars.join('\\n\\n'), tirou: Array.from(tir) }; };
 const g = $input.first().json || {};
 const DIRECAO = ['financeiro', 'cancelamento', 'jurídico', 'juridico'];
 const SENS = /(R[$]|(^|[^a-z])pix([^a-z]|$)|boleto|reembols|estorn|advogad|procon|reclame aqui|processo judicial|cancelar (o )?contrato|distrato)/i;
@@ -270,6 +283,7 @@ if (!g.grupo || g.interno) motivo = 'grupo';
 else if (v.teste && !/teste/i.test(g.grupo)) motivo = 'grupo';
 else if (!v.diretor && (h >= 22 || h < 7)) motivo = 'noite';
 else if (!v.diretor && (g.pendentes || []).some(p => { const c = p.classificacao || {}; return (c.sensivel === true && DIRECAO.includes(String(c.tema || '').toLowerCase())) || SENS.test(p.texto || ''); })) motivo = 'direcao';
+if (!motivo && !v.diretor && proibidos(v.texto).length) motivo = 'proibido';
 const nome = String(v.nome || '').split(' ')[0];
 // Diretoria sempre sai como Érica. Equipe: conforme ASSINATURA.
 const texto = v.diretor || '${ASSINATURA}' === 'erica' ? v.texto + String.fromCharCode(10, 10) + '*Érica, time de suporte, Grupo Euforia*' : '*' + nome + ':* ' + v.texto;
@@ -317,7 +331,7 @@ const recusarEnvio = node({ type: 'n8n-nodes-base.respondToWebhook', version: 1.
 const recusar = node({ type: 'n8n-nodes-base.respondToWebhook', version: 1.5, config: { name: 'Recusar', parameters: {
   respondWith: 'json', responseBody: '={{ JSON.stringify($json.resposta) }}', options: {} } } });
 
-const nota = sticky('## Painel da equipe · conversas (V1)\nAba "Conversas" (estilo WhatsApp): lista os grupos de cliente do número do suporte, abre as últimas mensagens e responde dali.\nAções: lista, abrir, midia (foto), mandar. Sai sempre pelo número "suporte"; assinatura conforme ASSINATURA no código. Quem apertou fica na tabela "Painel · conversas enviadas".\nTravas: só grupo de ficha não encerrada (teste só grupo de teste); dinheiro, contrato e jurídico ficam ocultos e bloqueiam a resposta da equipe; nada da equipe sai entre 22h e 7h.', [], { color: 4 });
+const nota = sticky('## Painel da equipe · conversas (V1)\nAba "Conversas" (estilo WhatsApp): lista os grupos de cliente do número do suporte, abre as últimas mensagens e responde dali.\nAções: lista, abrir, midia (foto), mandar. Sai sempre pelo número "suporte"; assinatura conforme ASSINATURA no código. Quem apertou fica na tabela "Painel · conversas enviadas".\nTravas: só grupo de ficha não encerrada (teste só grupo de teste); dinheiro, contrato e jurídico ficam ocultos e bloqueiam a resposta da equipe; nada da equipe sai entre 22h e 7h; frase proibida (você tem razão, admitir falha, agência, IA) não sai (18/11).', [], { color: 4 });
 
 export default workflow('painel-conversas', 'Painel | Conversas com clientes (V1)')
   .add(pedir).to(ler).to(acesso).to(validar)
