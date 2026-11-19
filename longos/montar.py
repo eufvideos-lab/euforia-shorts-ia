@@ -72,7 +72,7 @@ FONTES = {'titulo': baixar_fonte(FT.get('titulo'), 'titulo'), 'texto': baixar_fo
 if FT.get('cliente') and not FONTES['titulo']:
     raise SystemExit(f"fonte do cliente ({FT['cliente']}) não carregou: ponha em plano.fontes.titulo o file_id do .ttf/.otf "
                      "(pasta de fontes do cliente no Drive) ou uma parecida do Google Fonts, e rode de novo")
-G.configurar(O, plano.get('paleta'), FONTES)
+G.configurar(O, plano.get('paleta'), FONTES, sombra=bool(plano.get('sombra')))
 B = os.path.join(pasta, 'broll')
 TOTAL = segs[-1]['saida'] + segs[-1]['dur']
 KWD, END = 2.8, 8.0

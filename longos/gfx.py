@@ -1,4 +1,5 @@
-# Grafismos animados do formato Padrão: paleta do cliente, textos-chave grandes em caps com sombra e pop suave,
+# Grafismos animados do formato Padrão: paleta do cliente, textos-chave grandes em caps e pop suave (sem sombra desde
+# 19/11/2026: a revisão pediu duas vezes, a sombra borrada atrapalhava a leitura; "sombra": true no plano traz de volta),
 # cartões de tela cheia, mapa de cidades, lowers minimalistas centralizados e tela final.
 import numpy as np, subprocess, math, os
 from PIL import Image, ImageDraw, ImageFont, ImageFilter
@@ -15,9 +16,9 @@ def font(w,s):
 # paleta do cliente (padrão = Grupo Euforia: preto, branco, laranja e degradê branco→pêssego→laranja)
 # caixa = fundo dos lowers; brilho = luz do fundo dos cartões e da tela final; degrade = destaque em degradê (Euforia)
 # ou em cor sólida (cliente sem degradê na marca).
-P={'bg':(5,5,5),'acc':(255,101,24),'acc2':(254,176,137),'txt':(255,255,255),'caixa':None,'brilho':None,'degrade':True}
+P={'bg':(5,5,5),'acc':(255,101,24),'acc2':(254,176,137),'txt':(255,255,255),'caixa':None,'brilho':None,'degrade':True,'sombra':False}
 def hexrgb(h): h=h.lstrip('#'); return tuple(int(h[i:i+2],16) for i in (0,2,4))
-def configurar(out,paleta=None,fontes=None):
+def configurar(out,paleta=None,fontes=None,sombra=False):
     """paleta: {'fundo':'#050505','destaque':'#FF6518','destaque2':'#FEB089','texto':'#FFFFFF',
     'caixa':'#FF6518','brilho':'#FF6518','degrade':True}"""
     global OUT
@@ -26,7 +27,7 @@ def configurar(out,paleta=None,fontes=None):
     for k,c in (('fundo','bg'),('destaque','acc'),('destaque2','acc2'),('texto','txt'),('caixa','caixa'),('brilho','brilho')):
         if paleta.get(k): P[c]=hexrgb(paleta[k])
     if 'degrade' in paleta: P['degrade']=paleta['degrade'] not in (False,'nao','não','0',0)
-    P['caixa']=P['caixa'] or P['acc']; P['brilho']=P['brilho'] or P['acc']
+    P['caixa']=P['caixa'] or P['acc']; P['brilho']=P['brilho'] or P['acc']; P['sombra']=bool(sombra)
     FONTE.clear(); FONTE.update({k:v for k,v in (fontes or {}).items() if v})
 def ease_out(x): x=min(max(x,0),1); return 1-(1-x)**3
 def ease_back(x): x=min(max(x,0),1); c1=1.7; c3=c1+1; return 1+c3*(x-1)**3+c1*(x-1)**2
@@ -60,7 +61,7 @@ def parse(text):
     return out
 def text_layer(line,f,pad=40,hl_only=True):
     line=line.replace(' ','  ') if f.size>=80 else line
-    # linha com trechos destacados -> RGBA com sombra suave
+    # linha com trechos destacados -> RGBA (sombra só com "sombra": true no plano)
     segs=parse(line); tw=int(sum(f.getlength(t) for t,_ in segs)); bb=f.getbbox('ÁgQ')
     th=bb[3]+10; w=tw+2*pad; h=th+2*pad
     mask=Image.new('L',(w,h),0); d=ImageDraw.Draw(mask); x=pad; fills=[]
@@ -68,14 +69,16 @@ def text_layer(line,f,pad=40,hl_only=True):
         m=Image.new('L',(w,h),0); ImageDraw.Draw(m).text((x,pad),t,font=f,fill=255)
         fills.append((m,hl,x,f.getlength(t))); d.text((x,pad),t,font=f,fill=255); x+=f.getlength(t)
     im=Image.new('RGBA',(w,h),(0,0,0,0))
-    sh=mask.filter(ImageFilter.MaxFilter(9)).filter(ImageFilter.GaussianBlur(16)).point(lambda v:min(255,int(v*1.3)))
-    im.paste((0,0,0,255),(4,8),sh)
-    hard=mask.filter(ImageFilter.MaxFilter(5)).filter(ImageFilter.GaussianBlur(2)).point(lambda v:int(v*0.75)); im.paste((0,0,0,255),(2,4),hard)
+    if P['sombra']: _sombra(im,mask)
     for m,hl,x0,lw in fills:
         im.paste(grad(int(lw)+1,h,hl_only) if hl else Image.new('RGB',(int(lw)+1,h),P['txt']),(int(x0),0),m.crop((int(x0),0,int(x0)+int(lw)+1,h)))
     return im
+def _sombra(im,mask):
+    sh=mask.filter(ImageFilter.MaxFilter(9)).filter(ImageFilter.GaussianBlur(16)).point(lambda v:min(255,int(v*1.3)))
+    im.paste((0,0,0,255),(4,8),sh)
+    hard=mask.filter(ImageFilter.MaxFilter(5)).filter(ImageFilter.GaussianBlur(2)).point(lambda v:int(v*0.75)); im.paste((0,0,0,255),(2,4),hard)
 def keyword(name,text,dur):
-    # texto-chave: caps grande, sombra, surge com pop e sai encolhendo
+    # texto-chave: caps grande, surge com pop e sai encolhendo
     f=font('blk',92); lines=[l.upper() for l in text.split('|')]
     layers=[text_layer(l,f) for l in lines]
     BH=420; wr=Writer(f'{OUT}/{name}.mov',W,BH,True); n=int(round(dur*FPS))

@@ -28,6 +28,17 @@ USADOS = set(json.load(open(_USO))) if os.path.exists(_USO) else set()
 
 
 def pixabay(br, busca=None):
+    # Ajuste cirúrgico (19/11/2026): o clipe escolhido fica gravado no plano ("clipe"). Num "Ajustar", o B-roll que a
+    # revisão não pediu para trocar volta IGUAL (antes a máquina buscava de novo e aparecia erro novo a cada volta).
+    # Para trocar um B-roll, mude a "busca" (ou apague "clipe") só dele.
+    c = br.get('clipe')
+    if c and c.get('busca') == br['busca'] and c.get('url'):
+        tmp = os.path.join(dest, f'_px_{c["id"]}.mp4')
+        try:
+            ponte.broll_baixar(c['url'], tmp)
+            return _encaixar(br, tmp), f'pixabay {c["id"]} (o mesmo da versão anterior)'
+        except Exception as e:
+            print(f"{br['id']}: clipe salvo não baixou ({e}), buscando de novo", flush=True)
     busca = busca or br['busca']
     palavras = [w for w in re.findall(r'[a-z]+', busca.lower()) if w not in ('a', 'an', 'the', 'of', 'in', 'on', 'at', 'with', 'and', 'to')]
     def nota(h):
@@ -46,12 +57,17 @@ def pixabay(br, busca=None):
     h = bons[0]; USADOS.add(h.get('id')); json.dump(sorted(USADOS, key=str), open(_USO, 'w'))
     tmp = os.path.join(dest, f'_px_{h["id"]}.mp4')
     ponte.broll_baixar(h['url'], tmp)
+    br['clipe'] = {'id': h.get('id'), 'url': h['url'], 'busca': br['busca'], 'tags': h.get('tags')}
+    return _encaixar(br, tmp), f'pixabay {h["id"]} ({h.get("tags")})'
+
+
+def _encaixar(br, tmp):
     out = os.path.join(dest, f"{br['id']}.mp4")
     subprocess.run(['ffmpeg', '-v', 'error', '-y', '-i', tmp, '-t', f"{br.get('dur', 3) + 1:.1f}", '-an', '-vf',
                     'scale=1920:1080:force_original_aspect_ratio=increase,crop=1920:1080,fps=30', '-c:v', 'libx264',
                     '-preset', 'veryfast', '-crf', '18', out], check=True)
     os.remove(tmp)
-    return out, f'pixabay {h["id"]} ({h.get("tags")})'
+    return out
 
 
 def credito(im, texto):
@@ -112,6 +128,9 @@ for br in plano.get('brolls', []):
     rel[br['id']] = msg
     print(f"{br['id']}: {msg}", flush=True)
 
+# o plano guarda o clipe escolhido de cada B-roll (ajuste cirúrgico): é este plano.json que sobe para a pasta da máquina
+json.dump(plano, open(os.path.join(pasta, 'plano.json'), 'w'), ensure_ascii=False, indent=1)
+
 # folha de conferência
 itens = []
 for br in plano.get('brolls', []):
@@ -119,18 +138,36 @@ for br in plano.get('brolls', []):
         f = os.path.join(dest, f"{br['id']}.{e}")
         if os.path.exists(f):
             itens.append((br, f))
+# a folha mostra, embaixo de cada B-roll, a FALA daquele momento (19/11/2026): a conferência compara imagem x fala,
+# não imagem x busca (era assim que passavam criança para "família" e raiz de árvore para "raízes").
+_tr = os.path.join(pasta, 'transcricao.json')
+WW = json.load(open(_tr))['words'] if os.path.exists(_tr) else []
+def fala(br):
+    k = br.get('palavra')
+    if not isinstance(k, int) or not WW:
+        return ''
+    return ' '.join(w['word'] for w in WW[max(0, k - 3):k + 9] if w.get('word'))
 if itens:
+    from PIL import ImageFont
+    try:
+        FT = ImageFont.truetype(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'fontes', 'InterDisplay-SemiBold.otf'), 15)
+    except Exception:
+        FT = None  # sem a fonte, a padrão (sem acento)
     th = []
     for br, f in itens:
         q = f + '.thumb.png'
         subprocess.run(['ffmpeg', '-v', 'error', '-y'] + (['-ss', '1'] if f.endswith('mp4') else []) + ['-i', f, '-frames:v', '1', '-vf', 'scale=480:270', q])
         if os.path.exists(q):
-            im = Image.open(q).convert('RGB'); d = ImageDraw.Draw(im)
-            d.rectangle((0, 238, 480, 270), fill=(0, 0, 0)); d.text((6, 246), f"{br['id']}: {br['busca']}"[:70], fill=(255, 255, 0))
+            im0 = Image.open(q).convert('RGB'); im = Image.new('RGB', (480, 320)); im.paste(im0, (0, 0)); d = ImageDraw.Draw(im)
+            d.rectangle((0, 238, 480, 320), fill=(0, 0, 0)); d.text((6, 244), f"{br['id']}: {br['busca']}"[:70], fill=(255, 255, 0), font=FT)
+            import textwrap
+            for i_, ln in enumerate(textwrap.wrap('FALA: ' + fala(br), 60)[:2]):
+                d.text((6, 266 + 22 * i_), ln, fill=(255, 255, 255), font=FT)
             th.append(im); os.remove(q)
     cols = 4; rows = (len(th) + cols - 1) // cols
-    folha = Image.new('RGB', (480 * cols, 270 * rows))
+    folha = Image.new('RGB', (480 * cols, 320 * rows))
     for j, im in enumerate(th):
-        folha.paste(im, ((j % cols) * 480, (j // cols) * 270))
+        folha.paste(im, ((j % cols) * 480, (j // cols) * 320))
     folha.save(os.path.join(pasta, 'brolls.png'))
-print('OK: folha em brolls.png. Confira: o que não mostrar o que a pessoa fala sai do plano.')
+print('OK: folha em brolls.png (imagem + FALA do momento). Confira cada um: se a imagem não mostra o que a FALA diz, '
+      'troque a busca ou tire o B-roll (melhor sem B-roll do que B-roll sem relação).')
