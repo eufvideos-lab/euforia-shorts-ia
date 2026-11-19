@@ -2,7 +2,7 @@ import { workflow, node, trigger, sticky } from '@n8n/workflow-sdk';
 
 // Quando a equipe marca Programado/Postado num horário de VÍDEO LONGO (YouTube: Vídeo padrão, Podcast ou Corte horizontal) na Grade do painel,
 // a Érica avisa o grupo do cliente. Uma vez por vídeo (horário + data). Espera 10 min (dá tempo de desmarcar engano). Silêncio 22h–7h.
-// MODO: 'primeiro' = avisa no 1º botão marcado (Programado → "agendado"; direto Postado → "no ar"); 'agendado'; 'postado'; 'ambos'.
+// MODO: 'primeiro' = avisa no 1º botão marcado. Desde 19/11 o texto é sempre "foi programado e sai [dia] às [hora]", sem link; se o horário já passou, não avisa.
 // (MODO e CLIENTES ficam dentro dos nós de código)
 // Começa só com a BM Vagas (Betânia Machado), pedido do Henrique 05/11. Lista vazia = todos os clientes.
 const NOTION = { httpHeaderAuth: { id: 'VYOze6gUMvjy3QXF', name: 'Notion Euforia' } };
@@ -76,18 +76,16 @@ return $input.all().map((it, i) => {
   else if (!/@g\\.us$/.test(grupo)) motivo = 'sem_grupo';
   else if (txt(cp['Situação']) === 'Encerrado') motivo = 'encerrado';
   const oque = formato === 'Podcast' ? 'O episódio novo do podcast' : formato === 'Corte horizontal' ? 'O corte novo do podcast' : 'O vídeo novo do canal';
+  // Pedido da BM Vagas (reunião 19/11): só "foi programado e sai [dia] às [hora]". Sem link (estreia fica privada) e nunca "no ar".
   const d = DateTime.fromISO(c.dia, { zone: Z }).setLocale('pt-BR');
   const dif = Math.round(d.startOf('day').diff(hoje, 'days').days);
-  const hr = (m => m ? Number(m[1]) + 'h' + (m[2] === '00' ? '' : m[2]) : '')(txt(hp['Horário']).match(/^(\\d{1,2}):(\\d{2})/));
-  let tipo = c.tipo;
-  if (tipo === 'agendado' && dif < 0) tipo = 'postado';
-  let texto;
-  if (tipo === 'agendado') {
-    const quando = dif === 0 ? 'hoje' : dif === 1 ? 'amanhã (' + d.toFormat('dd/MM') + ')' : d.toFormat('cccc') + ' (' + d.toFormat('dd/MM') + ')';
-    texto = 'Oi, pessoal! 🎬\\n\\n' + oque + ' já está agendado no YouTube para ' + quando + (hr ? ' às ' + hr : '') + '.' + (c.link ? ' O link já é este: ' + c.link : '') + '\\n\\nJá dá para avisar a sua audiência nos stories para dar aquele impulso inicial.' + ASS;
-  } else {
-    texto = 'Oi, pessoal! 🎬\\n\\n' + oque + ' já está no ar no YouTube' + (c.link ? ': ' + c.link : '.') + '\\n\\nVale compartilhar nos stories para dar aquele impulso inicial.' + ASS;
-  }
+  const hm = txt(hp['Horário']).match(/^(\\d{1,2})[:h](\\d{2})?/);
+  const hr = hm ? Number(hm[1]) + 'h' + (!hm[2] || hm[2] === '00' ? '' : hm[2]) : '';
+  const sai = hm ? d.set({ hour: Number(hm[1]), minute: Number(hm[2] || 0) }) : null;
+  if (!motivo && (sai ? sai <= DateTime.now().setZone(Z) : dif <= 0)) motivo = 'ja_saiu'; // horário já passou: não manda nada
+  const tipo = 'programado';
+  const quando = dif === 0 ? 'hoje' : dif === 1 ? 'amanhã (' + d.toFormat('dd/MM') + ')' : d.toFormat('cccc') + ' (' + d.toFormat('dd/MM') + ')';
+  const texto = 'Oi, pessoal! 🎬\\n\\n' + oque + ' foi programado e sai ' + quando + (hr ? ' às ' + hr : '') + '.\\n\\n' + (hr ? 'A partir desse horário' : 'Assim que sair') + ', ele aparece no canal e já dá para compartilhar nos stories.' + ASS;
   return { json: { ...c, tipo, cliente: nome, grupo, texto, mandar: !motivo, motivo } };
 });
 ` } } });
@@ -121,7 +119,7 @@ const gravar = node({ type: 'n8n-nodes-base.dataTable', version: 1.1, config: { 
     { id: 'ok', displayName: 'ok', type: 'boolean', display: true, required: false, defaultMatch: false }] },
   options: {} } } });
 
-const nota = sticky('## Grade · aviso de vídeo longo ao cliente\nA cada 5 min lê as marcações Programado/Postado da Grade do painel. Se o horário é YouTube Vídeo padrão, Podcast ou Corte horizontal, a Érica (número suporte) avisa no grupo do cliente que o vídeo foi agendado (ou está no ar). Um aviso por vídeo; espera 10 min para dar tempo de desmarcar engano; nada entre 22h e 7h. Registro na tabela Grade · avisos ao cliente (envio que falhou tenta de novo na rodada seguinte).', [], { color: 4 });
+const nota = sticky('## Grade · aviso de vídeo longo ao cliente\nA cada 5 min lê as marcações Programado/Postado da Grade do painel. Se o horário é YouTube Vídeo padrão, Podcast ou Corte horizontal, a Érica (número suporte) avisa no grupo do cliente só que o vídeo foi programado e sai [dia] às [hora] (sem link e nunca \"no ar\", pedido da BM Vagas 19/11). Se o horário já passou, não manda nada. Um aviso por vídeo; espera 10 min para dar tempo de desmarcar engano; nada entre 22h e 7h. Registro na tabela Grade · avisos ao cliente (envio que falhou tenta de novo na rodada seguinte).', [], { color: 4 });
 
 export default workflow('grade-aviso-longo', 'Grade | Avisar cliente de vídeo longo (V1)')
   .add(relogio).to(marcas).to(avisados).to(candidatos).to(horario).to(cliente).to(montar).to(vaiMandar).to(enviar).to(resultado).to(gravar)
