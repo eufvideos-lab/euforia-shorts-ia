@@ -13,10 +13,10 @@ const SEM_ERRO = { response: { response: { neverError: true, fullResponse: true 
 const PAPEIS = "['revisor', 'calls', 'diretor', 'teste']";
 // Assinatura da resposta: 'erica' = termina com "Érica, time de suporte, Grupo Euforia"; 'nome' = "*Lorena:* texto".
 const ASSINATURA = 'nome';
-// Número que envia as respostas. 18/11/2026: 'erica2' (Érica 2, contingência) enquanto o 'suporte' está fora. Voltar para 'suporte' quando a Érica voltar.
-const ENVIO = 'erica2';
-// Reserva quando o ENVIO falha (número fora do grupo): isabela.
-const ENVIO_RESERVA = 'isabela';
+// Números que enviam as respostas, em ordem; se um falhar (fora do ar ou fora do grupo), tenta o próximo.
+// 19/11/2026: 1º o número de suporte de quem apertou (instância 'suporte-<nome>', ligada pelo QR na aba Responder/Conversas;
+// diretoria não tem), depois a Érica ('suporte'), a Érica 2 ('erica2', contingência) e por último a Isa ('isabela').
+const ENVIOS_ORDEM = "['suporte', 'erica2', 'isabela']";
 
 // Mesma régua do "Painel | Fila de respostas": quem é da equipe e quais grupos são internos.
 const TEAM_SQL = `team AS (
@@ -135,7 +135,7 @@ for (const it of $('Clientes com grupo').all()) for (const p of (it.json.results
 const DIRECAO = ['financeiro', 'cancelamento', 'jurídico', 'juridico'];
 const SENS = /(R[$]|(^|[^a-z])pix([^a-z]|$)|boleto|reembols|estorn|advogad|procon|reclame aqui|processo judicial|cancelar (o )?contrato|distrato)/i;
 // 18/11 (CRM, Henrique): situação de cada conversa. Resposta automática da Érica não conta como resposta da equipe. Mensagem trivial do cliente (ok, obrigado, bom dia) não deixa ninguém esperando. Mesma regra da Gerente IA (Cobrança).
-const sem = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+const sem = s => String(s || '').normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').toLowerCase();
 const TW = new Set('ok okay ta certo beleza blz combinado perfeito otimo show top obrigado obrigada obrigados obrigadas muito valeu grato grata amem bom boa dia tarde noite kk kkk kkkk rs sim entendi maravilha legal joia e pessoal gente romulo ismael daniel lorena erica erika victor equipe tudo certinho no aguardo ate breve'.split(' '));
 const trivial = l => { if (/\\[[a-z]+message\\]/i.test(l) && !/stickermessage/i.test(l)) return false; const w = sem(l).replace(/[^a-z\\s]/g, ' ').split(/\\s+/).filter(Boolean); return w.length <= 6 && w.every(x => TW.has(x)); };
 const ROTULO = { nos: 'Esperando nós', erica: 'Só a Érica respondeu', cliente: 'Esperando cliente', ok: 'Respondido' };
@@ -273,7 +273,7 @@ const PROIB = [
   ['falar de IA', /\\b(inteligencia\\s+artificial|chatgpt|gpt|robo|robos)\\b/],
   ['citar a diretoria', /\\b(henrique|flau)\\b/]
 ];
-const semAcento = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+const semAcento = s => String(s || '').normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').toLowerCase();
 const proibidos = t => { const n = semAcento(t); const r = PROIB.filter(p => p[1].test(n)).map(p => p[0]); if (/(^|[^A-Za-z])IAs?([^A-Za-z]|$)/.test(String(t || '')) && !r.includes('falar de IA')) r.push('falar de IA'); return r; };
 const limparProibidas = t => { const tir = new Set();
   const pars = String(t || '').split(/\\n\\s*\\n/).map(p => (p.match(/[^.!?\\n]+[.!?]*\\s*|\\n/g) || []).filter(f => { const q = proibidos(f); q.forEach(x => tir.add(x)); return !q.length; }).join('').trim()).filter(Boolean);
@@ -291,28 +291,43 @@ if (!motivo && !v.diretor && proibidos(v.texto).length) motivo = 'proibido';
 const nome = String(v.nome || '').split(' ')[0];
 // Diretoria sempre sai como Érica. Equipe: conforme ASSINATURA.
 const texto = v.diretor || '${ASSINATURA}' === 'erica' ? v.texto + String.fromCharCode(10, 10) + '*Érica, time de suporte, Grupo Euforia*' : '*' + nome + ':* ' + v.texto;
-return [{ json: { ok: !motivo, grupo: g.grupo || '', corpo: JSON.stringify({ number: v.chat, text: texto }), resposta: { ok: false, motivo } } }];
+const slug = nome.normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]/g, '');
+const ordem = (!v.diretor && slug ? ['suporte-' + slug] : []).concat(${ENVIOS_ORDEM});
+while (ordem.length < 4) ordem.push(ordem[ordem.length - 1]);
+return [{ json: { ok: !motivo, grupo: g.grupo || '', corpo: JSON.stringify({ number: v.chat, text: texto }), ordem, resposta: { ok: false, motivo } } }];
 ` } } });
 
 const podeMandar = ifElse({ version: 2.2, config: { name: 'Pode mandar?', parameters: { conditions: {
   options: { caseSensitive: true, leftValue: '', typeValidation: 'loose' }, conditions: [{ leftValue: '={{ $json.ok }}', rightValue: '', operator: { type: 'boolean', operation: 'true', singleValue: true } }], combinator: 'and' } } } });
 
-const mandar = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, config: { name: 'Mandar no grupo', credentials: EVO, parameters: {
-  method: 'POST', url: `${BASE}/message/sendText/${ENVIO}`, authentication: 'genericCredentialType', genericAuthType: 'httpHeaderAuth',
-  sendBody: true, specifyBody: 'json', jsonBody: '={{ $json.corpo }}', options: SEM_ERRO } } });
-
-// 18/11: se a Érica 2 ainda não está no grupo (ou falhar), tenta pela Isa, que está em quase todos os grupos.
-const mandouOk = ifElse({ version: 2.2, config: { name: 'Saiu pela Érica 2?', parameters: { conditions: {
-  options: { caseSensitive: true, leftValue: '', typeValidation: 'loose' }, conditions: [{ leftValue: '={{ $json.statusCode >= 200 && $json.statusCode < 300 }}', rightValue: '', operator: { type: 'boolean', operation: 'true', singleValue: true } }], combinator: 'and' } } } });
-const mandarIsa = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, config: { name: 'Mandar pela Isa', credentials: EVO, parameters: {
-  method: 'POST', url: `${BASE}/message/sendText/${ENVIO_RESERVA}`, authentication: 'genericCredentialType', genericAuthType: 'httpHeaderAuth',
+// Até 4 tentativas: cada uma pelo próximo número da lista 'ordem' (Conferir envio). Pára na primeira que sair.
+const mandar1 = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, config: { name: 'Mandar 1', credentials: EVO, parameters: {
+  method: 'POST', url: `={{ '${BASE}/message/sendText/' + $("Conferir envio").first().json.ordem[0] }}`, authentication: 'genericCredentialType', genericAuthType: 'httpHeaderAuth',
   sendBody: true, specifyBody: 'json', jsonBody: '={{ $("Conferir envio").first().json.corpo }}', options: SEM_ERRO } } });
+const mandar2 = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, config: { name: 'Mandar 2', credentials: EVO, parameters: {
+  method: 'POST', url: `={{ '${BASE}/message/sendText/' + $("Conferir envio").first().json.ordem[1] }}`, authentication: 'genericCredentialType', genericAuthType: 'httpHeaderAuth',
+  sendBody: true, specifyBody: 'json', jsonBody: '={{ $("Conferir envio").first().json.corpo }}', options: SEM_ERRO } } });
+const mandar3 = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, config: { name: 'Mandar 3', credentials: EVO, parameters: {
+  method: 'POST', url: `={{ '${BASE}/message/sendText/' + $("Conferir envio").first().json.ordem[2] }}`, authentication: 'genericCredentialType', genericAuthType: 'httpHeaderAuth',
+  sendBody: true, specifyBody: 'json', jsonBody: '={{ $("Conferir envio").first().json.corpo }}', options: SEM_ERRO } } });
+const mandar4 = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, config: { name: 'Mandar 4', credentials: EVO, parameters: {
+  method: 'POST', url: `={{ '${BASE}/message/sendText/' + $("Conferir envio").first().json.ordem[3] }}`, authentication: 'genericCredentialType', genericAuthType: 'httpHeaderAuth',
+  sendBody: true, specifyBody: 'json', jsonBody: '={{ $("Conferir envio").first().json.corpo }}', options: SEM_ERRO } } });
+const saiu1 = ifElse({ version: 2.2, config: { name: 'Saiu no 1?', parameters: { conditions: {
+  options: { caseSensitive: true, leftValue: '', typeValidation: 'loose' }, conditions: [{ leftValue: '={{ $json.statusCode >= 200 && $json.statusCode < 300 }}', rightValue: '', operator: { type: 'boolean', operation: 'true', singleValue: true } }], combinator: 'and' } } } });
+const saiu2 = ifElse({ version: 2.2, config: { name: 'Saiu no 2?', parameters: { conditions: {
+  options: { caseSensitive: true, leftValue: '', typeValidation: 'loose' }, conditions: [{ leftValue: '={{ $json.statusCode >= 200 && $json.statusCode < 300 }}', rightValue: '', operator: { type: 'boolean', operation: 'true', singleValue: true } }], combinator: 'and' } } } });
+const saiu3 = ifElse({ version: 2.2, config: { name: 'Saiu no 3?', parameters: { conditions: {
+  options: { caseSensitive: true, leftValue: '', typeValidation: 'loose' }, conditions: [{ leftValue: '={{ $json.statusCode >= 200 && $json.statusCode < 300 }}', rightValue: '', operator: { type: 'boolean', operation: 'true', singleValue: true } }], combinator: 'and' } } } });
 
 const resultado = node({ type: 'n8n-nodes-base.code', version: 2, config: { name: 'Resultado do envio', parameters: { jsCode: `const r = $input.first().json || {};
 const v = $('Validar acesso').first().json;
 const ok = r.statusCode >= 200 && r.statusCode < 300;
-return [{ json: { quando: new Date().toISOString(), nome: v.nome, chat_id: v.chat, grupo: $('Conferir envio').first().json.grupo, texto: v.texto, ok,
-  resposta: ok ? { ok: true } : { ok: false, motivo: 'whatsapp' } } }];
+const c = $('Conferir envio').first().json;
+const feitas = ['Mandar 1', 'Mandar 2', 'Mandar 3', 'Mandar 4'].filter(n => $(n).isExecuted).length;
+const via = ok ? c.ordem[Math.max(0, feitas - 1)] : '';
+return [{ json: { quando: new Date().toISOString(), nome: v.nome, chat_id: v.chat, grupo: c.grupo, texto: v.texto, ok,
+  resposta: ok ? { ok: true, via } : { ok: false, motivo: 'whatsapp' } } }];
 ` } } });
 
 // Registro de quem mandou o quê (a mensagem sai pelo número do suporte; aqui fica o nome de quem apertou).
@@ -342,7 +357,7 @@ const recusarEnvio = node({ type: 'n8n-nodes-base.respondToWebhook', version: 1.
 const recusar = node({ type: 'n8n-nodes-base.respondToWebhook', version: 1.5, config: { name: 'Recusar', parameters: {
   respondWith: 'json', responseBody: '={{ JSON.stringify($json.resposta) }}', options: {} } } });
 
-const nota = sticky('## Painel da equipe · conversas (V1)\nAba "Conversas" (estilo WhatsApp): lista os grupos de cliente do número do suporte, abre as últimas mensagens e responde dali.\nAções: lista, abrir, midia (foto), mandar. Sai pelo número da constante ENVIO (18/11: erica2, contingência); se falhar, pela ENVIO_RESERVA (isabela); assinatura conforme ASSINATURA no código. Quem apertou fica na tabela "Painel · conversas enviadas".\nTravas: só grupo de ficha não encerrada (teste só grupo de teste); dinheiro, contrato e jurídico ficam ocultos e bloqueiam a resposta da equipe; nada da equipe sai entre 22h e 7h; frase proibida (você tem razão, admitir falha, agência, IA) não sai (18/11).', [], { color: 4 });
+const nota = sticky('## Painel da equipe · conversas (V1)\nAba "Conversas" (estilo WhatsApp): lista os grupos de cliente do número do suporte, abre as últimas mensagens e responde dali.\nAções: lista, abrir, midia (foto), mandar. Sai pelo número de suporte de quem apertou (suporte-<nome>, ligado pelo QR); se falhar, Érica (suporte), Érica 2 (erica2) e Isa (isabela), nessa ordem (19/11); assinatura conforme ASSINATURA no código. Quem apertou fica na tabela "Painel · conversas enviadas".\nTravas: só grupo de ficha não encerrada (teste só grupo de teste); dinheiro, contrato e jurídico ficam ocultos e bloqueiam a resposta da equipe; nada da equipe sai entre 22h e 7h; frase proibida (você tem razão, admitir falha, agência, IA) não sai (18/11).', [], { color: 4 });
 
 export default workflow('painel-conversas', 'Painel | Conversas com clientes (V1)')
   .add(pedir).to(ler).to(acesso).to(validar)
@@ -354,9 +369,13 @@ export default workflow('painel-conversas', 'Painel | Conversas com clientes (V1
         .onFalse(ehMidia
           .onTrue(buscarMidia.to(baixar).to(montarMidia).to(devFoto))
           .onFalse(conferirGrupo.to(conferir).to(podeMandar
-            .onTrue(mandar.to(mandouOk
+            .onTrue(mandar1.to(saiu1
               .onTrue(resultado.to(registrar).to(responderEnvio))
-              .onFalse(mandarIsa.to(resultado))))
+              .onFalse(mandar2.to(saiu2
+                .onTrue(resultado)
+                .onFalse(mandar3.to(saiu3
+                  .onTrue(resultado)
+                  .onFalse(mandar4.to(resultado))))))))
             .onFalse(recusarEnvio))))))
     .onFalse(recusar))
   .add(nota);
