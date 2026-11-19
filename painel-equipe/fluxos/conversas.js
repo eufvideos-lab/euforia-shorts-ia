@@ -36,7 +36,7 @@ const pedir = trigger({ type: 'n8n-nodes-base.webhook', version: 2.1, config: { 
 
 const ler = node({ type: 'n8n-nodes-base.code', version: 2, config: { name: 'Ler pedido', parameters: { jsCode: `const b = ($input.first().json.body) || {};
 const u = String(b.u || '').toLowerCase();
-const acao = ['lista', 'abrir', 'midia', 'mandar'].includes(b.acao) ? b.acao : 'lista';
+const acao = ['lista', 'abrir', 'midia', 'mandar', 'resolver'].includes(b.acao) ? b.acao : 'lista';
 return [{ json: { u: /^[0-9a-f]{24}$/.test(u) ? u : 'x', pin: String(b.pin || '').replace(/[^0-9]/g, '').slice(0, 6), acao,
   chat: /^[0-9-]{6,40}@g[.]us$/.test(String(b.chat || '')) ? b.chat : '',
   msg: /^[A-Za-z0-9_-]{6,80}$/.test(String(b.msg || '')) ? b.msg : '',
@@ -155,7 +155,9 @@ for (const it of $('Grupos com conversa').all()) {
   const em = DateTime.fromJSDate(new Date(r.enviado_em)).setZone(Z);
   const real = pend.filter(t => !trivial(t || ''));
   let st;
-  if (Number(r.sem_resposta) > 0 && real.length) st = r.auto_em ? 'erica' : 'nos';
+  const resolvido = r.tipo === 'resolvidoPainel';
+  if (resolvido) st = 'ok';
+  else if (Number(r.sem_resposta) > 0 && real.length) st = r.auto_em ? 'erica' : 'nos';
   else if (r.ult_humano && (!r.ult_cliente || new Date(r.ult_humano) >= new Date(r.ult_cliente))) st = 'cliente';
   else st = 'ok';
   const espera = st === 'nos' || st === 'erica';
@@ -163,10 +165,10 @@ for (const it of $('Grupos com conversa').all()) {
   const min = desde ? Math.max(0, Math.round(agora.diff(desde, 'minutes').minutes)) : 0;
   const quem = !espera ? '' : sensivel ? 'Diretoria' : 'Rômulo';
   out.push({ chat: r.chat_id, nome: (k && k.nome) || r.grupo || 'Grupo', grupo: r.grupo || '', faixa: (k && k.faixa) || '', atencao: !!(k && k.atencao),
-    ultima: oculto ? '🔒 Assunto da diretoria' : (r.da_equipe ? (r.ultima_auto ? 'Érica (automática): ' : 'Euforia: ') : '') + (r.texto || '[' + String(r.tipo || 'mensagem').replace('Message', '') + ']').slice(0, 120),
+    ultima: resolvido ? '✔ Resolvido por enquanto (' + String(r.autor || '').replace(/^Euforia · /, '') + ')' : oculto ? '🔒 Assunto da diretoria' : (r.da_equipe ? (r.ultima_auto ? 'Érica (automática): ' : 'Euforia: ') : '') + (r.texto || '[' + String(r.tipo || 'mensagem').replace('Message', '') + ']').slice(0, 120),
     quando: em.hasSame(agora, 'day') ? em.toFormat('HH:mm') : em.toFormat('dd/MM'), ts: em.toMillis(),
     espera, naoLidas: espera ? real.length : 0,
-    status: st, rotulo: ROTULO[st], esperaMin: min, desde: desde ? (desde.hasSame(agora, 'day') ? 'hoje ' + desde.toFormat('HH:mm') : desde.toFormat('dd/MM HH:mm')) : '',
+    status: st, rotulo: resolvido ? 'Resolvido por enquanto' : ROTULO[st], esperaMin: min, desde: desde ? (desde.hasSame(agora, 'day') ? 'hoje ' + desde.toFormat('HH:mm') : desde.toFormat('dd/MM HH:mm')) : '',
     quem, atrasado: espera && min >= 60, card: espera && r.card_url ? r.card_url : '' });
 }
 out.sort((a, b) => (ORDEM[a.status] - ORDEM[b.status]) || (a.espera ? b.esperaMin - a.esperaMin : b.ts - a.ts));
@@ -210,6 +212,9 @@ const msgs = (r.mensagens || []).map(m => {
   const c = m.classificacao || {};
   const oculto = !v.diretor && !m.da_equipe && ((c.sensivel === true && DIRECAO.includes(String(c.tema || '').toLowerCase())) || SENS.test(m.texto || ''));
   const em = DateTime.fromJSDate(new Date(m.enviado_em)).setZone(Z);
+  if (m.tipo === 'resolvidoPainel') { const em0 = DateTime.fromJSDate(new Date(m.enviado_em)).setZone(Z);
+    return { id: m.msg_id, eu: true, resolvido: true, autor: String(m.autor_nome || '').replace(/^Euforia · /, ''), tipo: '', foto: false, oculto: false, texto: '',
+      hora: em0.toFormat('HH:mm'), dia: em0.hasSame(agora, 'day') ? 'Hoje' : em0.hasSame(agora.minus({ days: 1 }), 'day') ? 'Ontem' : em0.toFormat('dd/MM/yyyy') }; }
   return { id: m.msg_id, eu: !!m.da_equipe, autor: m.da_equipe ? (m.from_me ? 'Euforia' : (m.autor_nome || 'Euforia')) : (m.autor_nome || 'Cliente'),
     tipo: TIPO[m.tipo] || '', foto: !oculto && m.tipo === 'imageMessage', oculto,
     texto: oculto ? '' : String(m.texto || '').slice(0, 3000),
@@ -285,9 +290,9 @@ const h = DateTime.now().setZone('America/Recife').hour;
 let motivo = '';
 if (!g.grupo || g.interno) motivo = 'grupo';
 else if (v.teste && !/teste/i.test(g.grupo)) motivo = 'grupo';
-else if (!v.diretor && (h >= 22 || h < 7)) motivo = 'noite';
+else if (!v.diretor && v.acao === 'mandar' && (h >= 22 || h < 7)) motivo = 'noite';
 else if (!v.diretor && (g.pendentes || []).some(p => { const c = p.classificacao || {}; return (c.sensivel === true && DIRECAO.includes(String(c.tema || '').toLowerCase())) || SENS.test(p.texto || ''); })) motivo = 'direcao';
-if (!motivo && !v.diretor && proibidos(v.texto).length) motivo = 'proibido';
+if (!motivo && !v.diretor && v.acao === 'mandar' && proibidos(v.texto).length) motivo = 'proibido';
 const nome = String(v.nome || '').split(' ')[0];
 // Diretoria sempre sai como Érica. Equipe: conforme ASSINATURA.
 const texto = v.diretor || '${ASSINATURA}' === 'erica' ? v.texto + String.fromCharCode(10, 10) + '*Érica, time de suporte, Grupo Euforia*' : '*' + nome + ':* ' + v.texto;
@@ -299,6 +304,22 @@ return [{ json: { ok: !motivo, grupo: g.grupo || '', corpo: JSON.stringify({ num
 
 const podeMandar = ifElse({ version: 2.2, config: { name: 'Pode mandar?', parameters: { conditions: {
   options: { caseSensitive: true, leftValue: '', typeValidation: 'loose' }, conditions: [{ leftValue: '={{ $json.ok }}', rightValue: '', operator: { type: 'boolean', operation: 'true', singleValue: true } }], combinator: 'and' } } } });
+
+// 19/11/2026 (Henrique): "Resolvido por enquanto". Quando não precisa responder o cliente, grava uma marca da equipe no histórico
+// (mensagens, tipo 'resolvidoPainel', nada vai ao WhatsApp). Para a Conversas, a Gerente e o Monitor isso conta como resposta da equipe:
+// a conversa sai da fila e o card RESPONDER GRUPO fecha. Se o cliente escrever de novo, volta para a fila. Mesmas travas do Enviar (grupo, diretoria).
+const ehResolver = ifElse({ version: 2.2, config: { name: 'É resolvido?', parameters: { conditions: {
+  options: { caseSensitive: true, leftValue: '', typeValidation: 'loose' }, conditions: [{ leftValue: '={{ $("Validar acesso").first().json.acao }}', rightValue: 'resolver', operator: { type: 'string', operation: 'equals' } }], combinator: 'and' } } } });
+const marcar = node({ type: 'n8n-nodes-base.postgres', version: 2.6, config: { name: 'Marcar resolvido', credentials: PG, alwaysOutputData: true, parameters: {
+  operation: 'executeQuery',
+  query: `INSERT INTO mensagens (origem, msg_id, chat_id, is_group, autor_jid, autor_nome, from_me, tipo, texto, enviado_em, raw)
+VALUES ('suporte', 'painel-resolvido-' || md5($1 || clock_timestamp()::text), $1, true, NULL, 'Euforia · ' || $2, true, 'resolvidoPainel', NULL, now(),
+  jsonb_build_object('painel', 'resolvido', 'por', $2::text))
+ON CONFLICT (origem, msg_id) DO NOTHING
+RETURNING msg_id;`,
+  options: { queryReplacement: '={{ [ $("Validar acesso").first().json.chat, String($("Validar acesso").first().json.nome || "").split(" ")[0] || "Equipe" ] }}' } } } });
+const confirmarResolvido = node({ type: 'n8n-nodes-base.respondToWebhook', version: 1.5, config: { name: 'Confirmar resolvido', parameters: {
+  respondWith: 'json', responseBody: '={{ JSON.stringify($json.msg_id ? { ok: true } : { ok: false, motivo: "erro" }) }}', options: {} } } });
 
 // Até 4 tentativas: cada uma pelo próximo número da lista 'ordem' (Conferir envio). Pára na primeira que sair.
 const mandar1 = node({ type: 'n8n-nodes-base.httpRequest', version: 4.4, config: { name: 'Mandar 1', credentials: EVO, parameters: {
@@ -357,7 +378,7 @@ const recusarEnvio = node({ type: 'n8n-nodes-base.respondToWebhook', version: 1.
 const recusar = node({ type: 'n8n-nodes-base.respondToWebhook', version: 1.5, config: { name: 'Recusar', parameters: {
   respondWith: 'json', responseBody: '={{ JSON.stringify($json.resposta) }}', options: {} } } });
 
-const nota = sticky('## Painel da equipe · conversas (V1)\nAba "Conversas" (estilo WhatsApp): lista os grupos de cliente do número do suporte, abre as últimas mensagens e responde dali.\nAções: lista, abrir, midia (foto), mandar. Sai pelo número de suporte de quem apertou (suporte-<nome>, ligado pelo QR); se falhar, só pela Érica (suporte) (19/11, Henrique); assinatura conforme ASSINATURA no código. Quem apertou fica na tabela "Painel · conversas enviadas".\nTravas: só grupo de ficha não encerrada (teste só grupo de teste); dinheiro, contrato e jurídico ficam ocultos e bloqueiam a resposta da equipe; nada da equipe sai entre 22h e 7h; frase proibida (você tem razão, admitir falha, agência, IA) não sai (18/11).', [], { color: 4 });
+const nota = sticky('## Painel da equipe · conversas (V1)\nAba "Conversas" (estilo WhatsApp): lista os grupos de cliente do número do suporte, abre as últimas mensagens e responde dali.\nAções: lista, abrir, midia (foto), mandar, resolver ("Resolvido por enquanto": marca no histórico, nada vai ao cliente; conta como resposta da equipe até o cliente escrever de novo). Sai pelo número de suporte de quem apertou (suporte-<nome>, ligado pelo QR); se falhar, só pela Érica (suporte) (19/11, Henrique); assinatura conforme ASSINATURA no código. Quem apertou fica na tabela "Painel · conversas enviadas".\nTravas: só grupo de ficha não encerrada (teste só grupo de teste); dinheiro, contrato e jurídico ficam ocultos e bloqueiam a resposta da equipe; nada da equipe sai entre 22h e 7h; frase proibida (você tem razão, admitir falha, agência, IA) não sai (18/11).', [], { color: 4 });
 
 export default workflow('painel-conversas', 'Painel | Conversas com clientes (V1)')
   .add(pedir).to(ler).to(acesso).to(validar)
@@ -369,13 +390,15 @@ export default workflow('painel-conversas', 'Painel | Conversas com clientes (V1
         .onFalse(ehMidia
           .onTrue(buscarMidia.to(baixar).to(montarMidia).to(devFoto))
           .onFalse(conferirGrupo.to(conferir).to(podeMandar
-            .onTrue(mandar1.to(saiu1
+            .onTrue(ehResolver
+              .onTrue(marcar.to(confirmarResolvido))
+              .onFalse(mandar1.to(saiu1
               .onTrue(resultado.to(registrar).to(responderEnvio))
               .onFalse(mandar2.to(saiu2
                 .onTrue(resultado)
                 .onFalse(mandar3.to(saiu3
                   .onTrue(resultado)
-                  .onFalse(mandar4.to(resultado))))))))
+                  .onFalse(mandar4.to(resultado)))))))))
             .onFalse(recusarEnvio))))))
     .onFalse(recusar))
   .add(nota);

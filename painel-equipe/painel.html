@@ -3170,12 +3170,13 @@ function conversasHtml(){
       let dia = '';
       corpo = M.mensagens.map(m => { let h = ''; if (m.dia !== dia) { dia = m.dia; h += `<span class="cv-dia">${esc(dia)}</span>`; }
         const foto = m.foto ? (CVFOTO[m.id] && CVFOTO[m.id] !== 'erro' ? `<img src="${CVFOTO[m.id]}" alt="Foto enviada no grupo">` : `<button class="btn" data-cvfoto="${esc(m.id)}" style="margin:4px 0">${CVFOTO[m.id] === 'erro' ? 'Não abriu. Tentar de novo' : CVFOTO[m.id] === 'indo' ? 'Abrindo…' : '📷 Ver foto'}</button>`) : (m.tipo && !m.texto ? esc(m.tipo) : '');
+        if (m.resolvido) return h + `<span class="cv-dia">✔ ${esc(m.autor || 'Equipe')} marcou como resolvido por enquanto · ${esc(m.hora)}</span>`;
         return h + `<div class="cv-m ${m.eu ? 'eu' : ''} ${m.oculto ? 'oc' : ''}"><span class="a">${esc(m.autor)}</span>${m.oculto ? '🔒 Assunto da diretoria' : foto + (m.foto && m.texto ? '<br>' : '') + esc(m.texto)}<span class="h">${esc(m.hora)}</span></div>`; }).join('') || '<p class="cv-vazio">Sem mensagens nos últimos 60 dias.</p>';
       if (M.bloqueio === 'direcao') baixo = `<div class="cv-aviso">${CV_MOTIVO.direcao}</div>`;
       else baixo = `${M.noite ? `<div class="cv-aviso">${CV_MOTIVO.noite}</div>` : ''}${cvSugHtml()}<div class="cv-caixa"><textarea id="cvt" rows="2" maxlength="3000" placeholder="Escreva a resposta para o grupo" aria-label="Resposta">${esc(CVRASC[CVA] || '')}</textarea><button class="btn primary" id="cvenviar" ${M.noite ? 'disabled' : ''}>Enviar</button></div>`;
     }
     chat = `<div class="cv-chat"><div class="cv-topo"><button class="btn cv-voltar" data-cvvoltar>←</button><div><b>${esc(x.nome)}</b>${x.grupo && x.grupo !== x.nome ? `<p class="sub">${esc(x.grupo)}</p>` : ''}</div></div>
-      ${cvStatusHtml(x)}<div class="cv-msgs" id="cvmsgs">${corpo}</div>${baixo}</div>`;
+      ${cvStatusHtml(x, M && M.bloqueio === 'direcao' && !diretor())}<div class="cv-msgs" id="cvmsgs">${corpo}</div>${baixo}</div>`;
   }
   return topo + `<div class="cv ${CVA ? 'aberta' : ''}">${lista}${chat}</div>`;
 }
@@ -3192,10 +3193,11 @@ const limparProibidas = t => { const tir = new Set();
   const pars = String(t || '').split(/\n\s*\n/).map(p => (p.match(/[^.!?\n]+[.!?]*\s*|\n/g) || []).filter(f => { const q = proibidos(f); q.forEach(x => tir.add(x)); return !q.length; }).join('').trim()).filter(Boolean);
   return { texto: pars.join('\n\n'), tirou: Array.from(tir) }; };
 function cvEspera(m){ m = Number(m) || 0; return 'há ' + (m < 60 ? m + ' min' : m < 1440 ? Math.floor(m / 60) + 'h' + (m % 60 ? String(m % 60).padStart(2, '0') : '') : Math.floor(m / 1440) + (Math.floor(m / 1440) === 1 ? ' dia' : ' dias')); }
-function cvStatusHtml(x){
+// "Resolvido por enquanto" (19/11/2026, Henrique): tira da fila quando não precisa responder. Nada vai ao cliente; se ele escrever de novo, volta.
+function cvStatusHtml(x, semResolver){
   if (!x || !x.status) return '';
   const txt = { nos: 'Ninguém da equipe respondeu ainda.', erica: 'Só saiu a resposta automática da Érica. Falta a equipe responder de verdade.', cliente: 'A equipe respondeu. Agora é com o cliente.', ok: 'Conversa respondida.' }[x.status] || '';
-  return `<div class="cv-status"><span class="chip st-${esc(x.status)}">${esc(x.rotulo)}</span><span>${txt}${x.espera && x.desde ? ` Cliente espera desde <b>${esc(x.desde)}</b> (${cvEspera(x.esperaMin)}).` : ''}${x.espera ? ` Responde: <b>${esc(x.quem)}</b>.` : ''}</span>${x.card ? `<a href="${esc(x.card)}" target="_blank" rel="noopener">Ver card</a>` : ''}</div>`;
+  return `<div class="cv-status"><span class="chip st-${esc(x.status)}">${esc(x.rotulo)}</span><span>${txt}${x.espera && x.desde ? ` Cliente espera desde <b>${esc(x.desde)}</b> (${cvEspera(x.esperaMin)}).` : ''}${x.espera ? ` Responde: <b>${esc(x.quem)}</b>.` : ''}</span>${x.card ? `<a href="${esc(x.card)}" target="_blank" rel="noopener">Ver card</a>` : ''}${x.espera && !semResolver ? `<button class="btn" data-cvresolver ${x.resolvendo ? 'disabled' : ''}>${x.resolvendo ? 'Marcando…' : '✔ Resolvido por enquanto'}</button>` : ''}</div>`;
 }
 function cvRolar(){ const el = $('#cvmsgs'); if (el) el.scrollTop = el.scrollHeight; }
 document.addEventListener('load', e => { if (e.target.tagName === 'IMG' && e.target.closest('#cvmsgs')) cvRolar(); }, true);
@@ -3240,6 +3242,14 @@ document.addEventListener('click', async e => {
       CVSUG[chat] = Object.assign({}, g, { indo: '', caso: true, card: r.card, erro: '' }); toast('Caso criado para a Gerente.'); }
     catch (er) { CVSUG[chat] = Object.assign({}, g, { indo: '', erro: er.message }); }
     if (view === 'conversas' && CVA === chat) render(); return; }
+  if (e.target.closest('#main [data-cvresolver]')) { const chat = CVA, c = CV.conversas.find(x => x.chat === chat);
+    if (!c || !confirm('Marcar como resolvido por enquanto? Nada vai para o cliente. A conversa sai da fila e volta se o cliente escrever de novo.')) return;
+    c.resolvendo = true; render();
+    try { const r = await api('euforia-painel-conversas', { acao: 'resolver', chat }); if (!r || !r.ok) throw new Error((r && r.motivo) || 'erro');
+      Object.assign(c, { resolvendo: false, espera: false, naoLidas: 0, status: 'ok', rotulo: 'Resolvido por enquanto', card: '', atrasado: false });
+      toast('Marcado como resolvido por enquanto.'); setTimeout(() => abrirConversa(chat, true), 1500); }
+    catch (er) { c.resolvendo = false; toast(CV_MOTIVO[er.message] || 'Deu erro, a diretoria está resolvendo.'); if (er.message === 'direcao') abrirConversa(chat, true); }
+    if (view === 'conversas') render(); return; }
   const env = e.target.closest('#main #cvenviar');
   if (env) {
     const chat = CVA, t = (CVRASC[chat] || '').trim();
@@ -3294,6 +3304,7 @@ function demoApi(path, b){
         { id: 'd12', eu: false, autor: 'Ana', tipo: '🎤 Áudio', texto: '🎤 Perfeito, obrigada! Amanhã eu gravo os próximos.', hora: '16:30', dia: 'Ontem' },
         { id: 'd13', eu: false, autor: 'Ana', tipo: '📷 Foto', foto: true, texto: 'Essa foto serve para a thumb?', hora: '10:29', dia: 'Hoje' },
         { id: 'd14', eu: false, autor: 'Ana', tipo: '', texto: 'Consegue me mandar a thumb do vídeo de hoje?', hora: '10:31', dia: 'Hoje' }] });
+    if (b.acao === 'resolver') return wait({ ok: true });
     if (b.acao === 'midia') return wait({ ok: true, mime: 'image/svg+xml', base64: btoa('<svg xmlns="http://www.w3.org/2000/svg" width="320" height="180"><rect width="320" height="180" fill="#FF6518"/><text x="160" y="98" font-size="22" text-anchor="middle" fill="#fff" font-family="Arial">foto de exemplo</text></svg>') });
     return wait({ ok: true });
   }
