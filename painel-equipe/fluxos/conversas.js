@@ -14,9 +14,9 @@ const PAPEIS = "['revisor', 'calls', 'diretor', 'teste']";
 // Assinatura da resposta: 'erica' = termina com "Érica, time de suporte, Grupo Euforia"; 'nome' = "*Lorena:* texto".
 const ASSINATURA = 'nome';
 // Números que enviam as respostas, em ordem; se um falhar (fora do ar ou fora do grupo), tenta o próximo.
-// 19/11/2026: 1º o número de suporte de quem apertou (instância 'suporte-<nome>', ligada pelo QR na aba Responder/Conversas;
-// diretoria não tem), depois a Érica ('suporte'), a Érica 2 ('erica2', contingência) e por último a Isa ('isabela').
-const ENVIOS_ORDEM = "['suporte', 'erica2', 'isabela']";
+// 19/11/2026 (Henrique, cartão): 1º o número de suporte de quem apertou (instância 'suporte-<nome>', ligada pelo QR na aba Responder;
+// diretoria não tem); se falhar, só a Érica ('suporte'). Érica 2 e Isa ficam de fora (contingência manual).
+const ENVIOS_ORDEM = "['suporte']";
 
 // Mesma régua do "Painel | Fila de respostas": quem é da equipe e quais grupos são internos.
 const TEAM_SQL = `team AS (
@@ -357,7 +357,7 @@ const recusarEnvio = node({ type: 'n8n-nodes-base.respondToWebhook', version: 1.
 const recusar = node({ type: 'n8n-nodes-base.respondToWebhook', version: 1.5, config: { name: 'Recusar', parameters: {
   respondWith: 'json', responseBody: '={{ JSON.stringify($json.resposta) }}', options: {} } } });
 
-const nota = sticky('## Painel da equipe · conversas (V1)\nAba "Conversas" (estilo WhatsApp): lista os grupos de cliente do número do suporte, abre as últimas mensagens e responde dali.\nAções: lista, abrir, midia (foto), mandar. Sai pelo número de suporte de quem apertou (suporte-<nome>, ligado pelo QR); se falhar, Érica (suporte), Érica 2 (erica2) e Isa (isabela), nessa ordem (19/11); assinatura conforme ASSINATURA no código. Quem apertou fica na tabela "Painel · conversas enviadas".\nTravas: só grupo de ficha não encerrada (teste só grupo de teste); dinheiro, contrato e jurídico ficam ocultos e bloqueiam a resposta da equipe; nada da equipe sai entre 22h e 7h; frase proibida (você tem razão, admitir falha, agência, IA) não sai (18/11).', [], { color: 4 });
+const nota = sticky('## Painel da equipe · conversas (V1)\nAba "Conversas" (estilo WhatsApp): lista os grupos de cliente do número do suporte, abre as últimas mensagens e responde dali.\nAções: lista, abrir, midia (foto), mandar. Sai pelo número de suporte de quem apertou (suporte-<nome>, ligado pelo QR); se falhar, só pela Érica (suporte) (19/11, Henrique); assinatura conforme ASSINATURA no código. Quem apertou fica na tabela "Painel · conversas enviadas".\nTravas: só grupo de ficha não encerrada (teste só grupo de teste); dinheiro, contrato e jurídico ficam ocultos e bloqueiam a resposta da equipe; nada da equipe sai entre 22h e 7h; frase proibida (você tem razão, admitir falha, agência, IA) não sai (18/11).', [], { color: 4 });
 
 export default workflow('painel-conversas', 'Painel | Conversas com clientes (V1)')
   .add(pedir).to(ler).to(acesso).to(validar)
