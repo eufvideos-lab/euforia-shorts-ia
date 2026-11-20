@@ -39,11 +39,11 @@ const ehThumb = ifElse({ version: 2.2, config: { name: 'É thumb?', parameters: 
   conditions: [{ leftValue: '={{ $json._thumb === true }}', rightValue: '', operator: { type: 'boolean', operation: 'true', singleValue: true } }],
   combinator: 'and' } } } });
 // Atualiza todas as linhas do pedido (longo: a thumb; shorts: a pasta com as capas do pedido).
-const atualizar = node({ type: 'n8n-nodes-base.dataTable', version: 1.1, config: { name: 'Pôr thumb no pacote', parameters: {
+const atualizar = node({ type: 'n8n-nodes-base.dataTable', version: 1.1, config: { name: 'Pôr thumb no pacote', alwaysOutputData: true, parameters: {
   resource: 'row', operation: 'update', dataTableId: PACOTES, matchType: 'allConditions',
   filters: { conditions: [{ keyName: 'pedido', condition: 'ilike', keyValue: '={{ "%" + $json.pid + "%" }}' }] },
   columns: { mappingMode: 'defineBelow', value: { thumb_canva: '={{ $json.thumb_canva }}' } }, options: {} } } });
-const okThumb = node({ type: 'n8n-nodes-base.respondToWebhook', version: 1.5, config: { name: 'Thumb gravada', parameters: { respondWith: 'json', responseBody: '={{ JSON.stringify({ ok: true, atualizados: $input.all().length }) }}', options: {} } } });
+const okThumb = node({ type: 'n8n-nodes-base.respondToWebhook', version: 1.5, config: { name: 'Thumb gravada', parameters: { respondWith: 'json', responseBody: '={{ JSON.stringify({ ok: true, atualizados: $input.all().filter(i => i.json.id).length }) }}', options: {} } } });
 const gravar = node({ type: 'n8n-nodes-base.dataTable', version: 1.1, config: { name: 'Gravar pacotes', parameters: {
   resource: 'row', operation: 'insert', dataTableId: PACOTES, columns: { mappingMode: 'autoMapInputData', value: null }, options: {} } } });
 const ok = node({ type: 'n8n-nodes-base.respondToWebhook', version: 1.5, config: { name: 'Gravado', parameters: { respondWith: 'json', responseBody: '={{ JSON.stringify({ ok: true, gravados: $input.all().length }) }}', options: {} } } });
