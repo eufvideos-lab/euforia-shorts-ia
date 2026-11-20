@@ -2320,6 +2320,7 @@ async function pubCarregar(clienteId, formato){
         <textarea readonly rows="6" style="width:100%">${esc(p.descricao)}</textarea>
         ${p.tags ? `<div class="pub-l"><span>Tags</span><button class="btn" type="button" data-pubc="${i}|tags">Copiar</button></div><p class="pub-n">${esc(p.tags)}</p>` : ''}
         ${p.comentario ? `<div class="pub-l"><span>Comentário para fixar</span><button class="btn" type="button" data-pubc="${i}|comentario">Copiar</button></div><p class="pub-n">${esc(p.comentario)}</p>` : ''}
+        ${p.thumb_canva ? `<p class="pub-n"><a href="${esc(p.thumb_canva)}" target="_blank" rel="noopener">🎨 ${p.tipo === 'short' ? 'Capas editáveis' : 'Thumb editável'} no Canva</a></p>` : ''}
         ${p.link ? `<p class="pub-n"><a href="${esc(p.link)}" target="_blank" rel="noopener">Abrir o arquivo no Drive</a></p>` : ''}
       </div></details>`).join('') + `<p class="note">Sugestão da máquina, feita a partir da fala do vídeo. Confira antes de publicar.</p>`;
     b.onclick = e => {
