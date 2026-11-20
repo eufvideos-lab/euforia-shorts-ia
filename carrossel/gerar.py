@@ -305,9 +305,37 @@ def main():
     fcss, flink = fontes_css(sorted({idt['fontes']['titulo'], idt['fontes']['texto']}), pasta_fontes)
     saida = os.path.join(pasta, 'saida'); os.makedirs(saida, exist_ok=True)
     trabalhos, grupos = [], []
-    for ci, car in enumerate(pedido['carrosseis'], 1):
+    # Carrosséis por roteiro (20/11/2026): "por_roteiro": N no carrosseis.json (vem de "Por roteiro: N" nas
+    # observações). Os carrosséis do mesmo roteiro ficam juntos e numerados: pasta "01-R01-C1de3-<título>".
+    cars = pedido['carrosseis']; por = int(pedido.get('por_roteiro') or 0)
+    ordem_r = []
+    for car in cars:
+        r = car.get('roteiro') or '(sem roteiro)'
+        if r not in ordem_r: ordem_r.append(r)
+    grupo_r = {r: [i for i, c in enumerate(cars, 1) if (c.get('roteiro') or '(sem roteiro)') == r] for r in ordem_r}
+    numerar = por > 1 or any(len(v) > 1 for v in grupo_r.values())
+    avisos_r = []
+    if por:
+        for r, idx in grupo_r.items():
+            if len(idx) != por and r != ordem_r[-1]:
+                avisos_r.append(f'roteiro {ordem_r.index(r) + 1} tem {len(idx)} carrossel(is), o pedido é {por} por roteiro')
+    if numerar:
+        linhas = []
+        for rn, r in enumerate(ordem_r, 1):
+            linhas.append(f'Roteiro {rn}: {r}')
+            linhas += [f'  {i:02d} · {k}/{len(grupo_r[r])} · {cars[i - 1].get("titulo", "")} ({cars[i - 1].get("formato", "")})'
+                       for k, i in enumerate(grupo_r[r], 1)]
+        open(os.path.join(saida, 'roteiros.txt'), 'w').write('\n'.join(linhas) + '\n')
+    def rotulo(ci, car):
+        r = car.get('roteiro') or '(sem roteiro)'; rn = ordem_r.index(r) + 1; idx = grupo_r[r]
+        return rn, idx.index(ci) + 1, len(idx)
+    for ci, car in enumerate(cars, 1):
         if so and ci != so: continue
-        nome = f'{ci:02d}-{slug(car.get("titulo", ""))}'
+        if numerar:
+            rn, k, n = rotulo(ci, car)
+            nome = f'{ci:02d}-R{rn:02d}-C{k}de{n}-{slug(car.get("titulo", ""))}'
+        else:
+            nome = f'{ci:02d}-{slug(car.get("titulo", ""))}'
         dcar = os.path.join(saida, nome)
         if os.path.isdir(dcar): shutil.rmtree(dcar)
         os.makedirs(os.path.join(dcar, '_html'))
@@ -333,7 +361,10 @@ def main():
         dcar = os.path.join(saida, nome)
         for p in pngs:  # JPG para o Instagram
             Image.open(p).convert('RGB').save(p[:-4] + '.jpg', quality=92)
-        visao_geral(pngs, os.path.join(saida, f'visao-geral-{ci:02d}.jpg'), f'{ci:02d} · {car.get("titulo", "")}')
+        tit = f'{ci:02d} · {car.get("titulo", "")}'
+        if numerar:
+            rn, k, n = rotulo(ci, car); tit = f'{ci:02d} · Roteiro {rn} · {k} de {n} · {car.get("titulo", "")}'
+        visao_geral(pngs, os.path.join(saida, f'visao-geral-{ci:02d}.jpg'), tit)
         shutil.rmtree(os.path.join(dcar, '_html'), ignore_errors=True)
     # pacote único para subir/baixar
     zp = os.path.join(saida, 'carrosseis.zip')
@@ -341,11 +372,14 @@ def main():
         for ci, nome, car, pngs in grupos:
             for f in sorted(os.listdir(os.path.join(saida, nome))):
                 if f.endswith(('.png', '.txt')): z.write(os.path.join(saida, nome, f), f'{nome}/{f}')
+        if os.path.exists(os.path.join(saida, 'roteiros.txt')): z.write(os.path.join(saida, 'roteiros.txt'), 'roteiros.txt')
     os.remove(jobs); os.remove(jobs + '.res')
     print(f'OK: {len(grupos)} carrossel(is), {len(trabalhos)} slides em {saida}')
     reduz = [f"{os.path.relpath(x['png'], saida)} ({x['k']})" for x in res if x.get('k', 1) < 0.85 and not x.get('estoura')]
     if reduz: print('Texto reduzido para caber (conferir):', ', '.join(reduz))
+    alertas += avisos_r
     if alertas: print('ALERTAS:', ', '.join(alertas))
+    if numerar: print('Índice por roteiro em', os.path.join(saida, 'roteiros.txt'))
 
 
 if __name__ == '__main__':

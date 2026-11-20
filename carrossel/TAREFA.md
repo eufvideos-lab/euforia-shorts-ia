@@ -69,6 +69,11 @@ O Chrome já vem no ambiente (/opt/pw-browsers). Se não achar, use `CHROME=<cam
    carrossel), as "Observações para a máquina" e a "Direção criativa" do cliente. Escreva
    `pedidos/<id-curto>/carrosseis.json` seguindo `carrossel/prompts/roteiro_carrossel.md`, com a quantidade do
    "Pacote" (1, 3, 6 ou 12).
+   **Por roteiro (20/11/2026):** se as Observações têm "Por roteiro: N" (ou o pedido diz "N por roteiro"), pegue
+   Pacote ÷ N roteiros (os ligados ao pedido; faltando, os mais recentes do cliente que ainda não viraram carrossel)
+   e faça N carrosséis de cada, com `"por_roteiro": N` no arquivo. O `gerar.py` numera ("01-R01-C1de3-...") e avisa
+   em ALERTAS se algum roteiro ficou com outra quantidade. Na entrega, as subpastas usam o mesmo nome numerado
+   ("01 - R01 C1de3 - <título>") e o `roteiros.txt` vai na raiz da pasta; no log, liste "Roteiro 1: <título> → 01, 02, 03".
    **Sem roteiro não é erro.** Se o cliente não tiver roteiro disponível, busque o conteúdo nesta ordem:
    a. Vídeos citados nas Observações (título ou data) ou, sem citação, os mais recentes do cliente: ache o vídeo no
       Drive do cliente (campo "Drive": vídeos editados, ARQUIVOS BRUTOS) e transcreva com

@@ -47,7 +47,11 @@ def ini(j):
 
 
 NA = plano.get('modelo') == 'nova-acropole'  # cortes de palestra: imagem antiga, zoom mais leve e sem vinheta
-ZOOM = float(plano.get('zoom', 1.15 if NA else 1.22))
+# Podcast (Betânia/BM Cast, Além do CNPJ, 20/11/2026): o bruto já vem com as câmeras trocadas (vMix/multicâmera) e tem
+# duas ou mais pessoas na tela. Sem zoom alternado e sem enquadramento pelo rosto (ele pegaria a pessoa errada),
+# a não ser que o plano peça ("zoom" ou "enquadramento": "auto").
+PODCAST = plano.get('modelo') == 'podcast'
+ZOOM = float(plano.get('zoom', 1.15 if NA else 1.0 if PODCAST else 1.22))
 CX, CY = plano.get('centro_zoom', [0.5, 0.4])
 # Pessoa gravada fora do centro: "centralizar": true faz o plano aberto também cortar em volta dela.
 ABERTO = float(plano.get('zoom_aberto', 1.0))
@@ -56,7 +60,7 @@ if plano.get('centralizar') and 'zoom_aberto' not in plano:
 # Enquadramento automático (Henrique, 07/11/2026): sempre centralizado e perto o bastante, pelo rosto achado no
 # bruto (enquadrar.py, roda no preparar). "enquadramento": "manual" no plano mantém centro_zoom/zoom_aberto do plano.
 _enq = os.path.join(pasta, 'enquadramento.json')
-if not NA and plano.get('enquadramento') != 'manual':
+if not NA and plano.get('enquadramento') != 'manual' and (not PODCAST or plano.get('enquadramento') == 'auto'):
     if not os.path.exists(_enq):
         subprocess.run([sys.executable, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'enquadrar.py'), pasta])
     if os.path.exists(_enq):
@@ -68,6 +72,8 @@ if not NA and plano.get('enquadramento') != 'manual':
 if ABERTO > 1:
     ZOOM = min(max(ZOOM, ABERTO * 1.15), max(ABERTO * 1.15, 1.8))
     print(f'centralizando: plano aberto {ABERTO:.2f}x, fechado {ZOOM:.2f}x', flush=True)
+if plano.get('zoom_alternado') is False:  # o plano pede câmera parada (sem o zoom que alterna a cada emenda)
+    ZOOM = ABERTO
 # Gancho (os primeiros "gancho" trechos do plano, padrão 1): deixa a pessoa respirar, sem corte seco.
 GANCHO = int(plano.get('gancho', 1))
 trechos = []  # trechos seguidos no bruto viram um só (sem emenda)
@@ -125,7 +131,7 @@ for i0, i1, gancho in trechos:
                     cortes.append(t); ult = t
         cortes.append(b0)
         for n, (a, b) in enumerate(zip(cortes[:-1], cortes[1:])):
-            segs.append({'s': round(a, 3), 'e': round(b, 3), 'join': n > 0})
+            segs.append({'s': round(a, 3), 'e': round(b, 3), 'join': n > 0, 'gancho': bool(gancho)})
 # Frame solto (Lorena, NA 0:08): pedaço de menos de 0,5 s entre cortes. Emenda contínua junta no vizinho;
 # pedaço solto de verdade para a máquina (o plano tem um trecho curto demais).
 limpos = []
@@ -140,7 +146,7 @@ if soltos and '--forcar-curto' not in sys.argv:
         f"{x['s']:.2f}-{x['e']:.2f}s do bruto" for x in soltos) + '. Junte com o trecho vizinho ou tire do plano.')
 sys.argv = [a for a in sys.argv if a != '--forcar-curto']
 for n, x in enumerate(segs):
-    x['zoom'] = ZOOM if n % 2 else ABERTO
+    x['zoom'] = ZOOM if n % 2 and ZOOM > ABERTO else ABERTO
 
 # Redução de ruído (ar-condicionado, rua) fica no plano (19/11/2026): antes era feita à mão numa rodada e sumia no
 # Ajustar seguinte. "reduzir_ruido": true (normal) ou "forte".

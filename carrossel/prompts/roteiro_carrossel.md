@@ -10,6 +10,12 @@ Tudo em português do Brasil, na voz do cliente (1ª pessoa quando o cliente é 
 - Menos roteiros que carrosséis: tire mais de um carrossel do mesmo roteiro, sempre com formato e ângulo
   diferentes (ex.: um "Erros comuns" e outro "O que fazer amanhã"). Máximo 3 carrosséis por roteiro.
   Faltou roteiro mesmo assim: entregue o que der e explique no log.
+- **"Por roteiro: N"** nas observações (20/11/2026; ex.: "12 carrosséis, 3 por roteiro"): use Pacote ÷ N roteiros e
+  tire exatamente N carrosséis de cada um (até 4 quando pedido). Ponha `"por_roteiro": N` no topo do arquivo e os
+  carrosséis do mesmo roteiro em sequência, todos com o mesmo `roteiro`. Os N de um roteiro precisam ser diferentes
+  entre si: formato diferente E parte diferente do roteiro (ex.: 1 = os erros, 2 = o passo a passo, 3 = a virada ou
+  o mito). Nunca o mesmo conteúdo com outra capa. A máquina numera as pastas ("01-R01-C1de3-...") e faz o
+  `roteiros.txt` para a revisão.
 - Use só o que está no roteiro (e no briefing do cliente). Nunca invente número, data, lei, caso ou promessa.
   Trecho marcado "PEDIR AO CLIENTE" ou "⚠️ conferir" não entra no carrossel.
 
@@ -52,7 +58,7 @@ Qualquer slide aceita `"tema": "claro" | "escuro" | "destaque"` e `"rotulo"`. Fo
 
 ## Arquivo completo
 ```json
-{"carrosseis":[{"titulo":"nome curto do carrossel","roteiro":"link do roteiro no Notion","formato":"Erros comuns",
+{"por_roteiro":3,"carrosseis":[{"titulo":"nome curto do carrossel","roteiro":"link do roteiro no Notion","formato":"Erros comuns",
   "rotulo":"Liderança","slides":[...],"legenda":"..."}]}
 ```
 

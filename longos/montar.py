@@ -77,6 +77,9 @@ B = os.path.join(pasta, 'broll')
 TOTAL = segs[-1]['saida'] + segs[-1]['dur']
 KWD, END = 2.8, 8.0
 NA = plano.get('modelo') == 'nova-acropole'
+PODCAST = plano.get('modelo') == 'podcast'
+SEM_GFX = '--sem-gfx' in sys.argv
+EL = plano.get('elementos') or {}
 MODELOS = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'modelos')
 ENCERRAMENTO_NA = '118KGGb-75bLeEMHKnrIcZGi4Zrwod_71'  # CTA Acrópole Play em motion (v3, aprovado 26/10/2026); antigo: ACROPOLEPLAY.mov 1aGYR5P_zELGIDjghjC1JGL4be6h2F15S
 
@@ -127,26 +130,53 @@ def cartoes_na():
     return out
 
 
+def falta(arq):
+    """--sem-gfx (Ajustar) reaproveita os grafismos que já existem, mas gera os que faltam (20/11/2026: antes,
+    um lower ou texto-chave novo num ajuste quebrava o vídeo por falta do arquivo)."""
+    return not SEM_GFX or not os.path.exists(arq)
+
+
+def elemento(ref, nome):
+    """Elemento do cliente (vinheta, tela final, marca, lower): {"arquivo": caminho} ou {"file_id": id do Drive},
+    salvo em PASTA/elementos/. Pasta de origem no Drive: 01 - ELEMENTOS ESSENCIAIS/05 - IDENTIDADE AUDIOVISUAL."""
+    if not ref:
+        return None
+    if isinstance(ref, str):
+        ref = {'arquivo': ref} if os.path.exists(ref) else {'file_id': ref}
+    if ref.get('arquivo'):
+        return ref['arquivo']
+    os.makedirs(os.path.join(pasta, 'elementos'), exist_ok=True)
+    arq = os.path.join(pasta, 'elementos', nome + ref.get('ext', ''))
+    if not os.path.exists(arq):
+        import ponte; ponte.baixar(ref['file_id'], arq)
+    return arq
+
+
+def tem_audio(f):
+    return bool(subprocess.run(['ffprobe', '-v', 'error', '-select_streams', 'a', '-show_entries', 'stream=index', '-of',
+                                'csv=p=0', f], capture_output=True, text=True).stdout.strip())
+
+
 tit = plano.get('titulo'); mapa = plano.get('mapa')
 CNA = cartoes_na() if NA else []
-if '--sem-gfx' not in sys.argv and NA:
+if NA:
     for k, (arq, t0, d, kw) in enumerate(CNA):
-        G.citacao(f'c{k}', dur=d, **kw)
-if '--sem-gfx' not in sys.argv and not NA:
+        if falta(arq):
+            G.citacao(f'c{k}', dur=d, **kw)
+if not NA:
     for k, kw in enumerate(plano.get('keywords', [])):
-        G.keyword(f'kw{k}', kw['texto'], KWD)
-    if tit:
+        if falta(f'{O}/kw{k}.mov'):
+            G.keyword(f'kw{k}', kw['texto'], KWD, lado=plano.get('keyword_lado', 'centro'))
+    if tit and falta(f'{O}/titulo.mp4'):
         G.card('titulo', tit['linhas'], tit.get('dur', 5.0), sub=tit.get('sub'), big=True)
     for k, c in enumerate(plano.get('cartoes', [])):
-        G.card(f'c{k}', c['linhas'], c.get('dur', 5.0), sub=c.get('sub'))
-    if mapa:
+        if falta(f'{O}/c{k}.mp4'):
+            G.card(f'c{k}', c['linhas'], c.get('dur', 5.0), sub=c.get('sub'))
+    if mapa and falta(f'{O}/mapa.mp4'):
         ts = [t_saida(c['palavra']) for c in mapa['cidades']]; t0 = ts[0] - 0.35
         G.route('mapa', [c['nome'] for c in mapa['cidades']], [x - t0 for x in ts], ts[-1] - t0 + 1.8, mapa.get('titulo', ''))
-    G.endscreen('fim', END)
-    G.lower('lw_inscreva', 'INSCREVA-SE NO CANAL', 4.0, 'play')
-    G.lower('lw_like', 'DÊ LIKE  •  COMPARTILHE  •  COMENTE', 4.5, 'heart')
-    if plano.get('nome'):
-        G.lower('lw_nome', plano['nome'].upper(), 4.5)
+    if not EL.get('tela_final') and falta(f'{O}/fim.mp4'):
+        G.endscreen('fim', END)
 
 EV = []  # (camada, arquivo, início no vídeo final, duração)
 for br in plano.get('brolls', []):
@@ -165,25 +195,92 @@ if mapa:
     EV.append(('full', f'{O}/mapa.mp4', t_saida(mapa['cidades'][0]['palavra']) - 0.35, dur(f'{O}/mapa.mp4')))
 for k, kw in enumerate(plano.get('keywords', [])):
     EV.append(('kw', f'{O}/kw{k}.mov', t_saida(kw['palavra']) - 0.1, KWD))
-for lw in plano.get('lowers', []):
-    nome = {'inscreva': 'lw_inscreva', 'like': 'lw_like', 'nome': 'lw_nome'}[lw['tipo']]
-    EV.append(('lw', f'{O}/{nome}.mov', t_saida(lw['palavra']), 4.5 if lw['tipo'] != 'inscreva' else 4.0))
-
 avisos = []
+
+
+def t_lower(lw):
+    return lw['ini'] if 'ini' in lw else t_saida(lw['palavra'])
+
+
+def livre(t0, d, camadas=('kw', 'lw', 'png', 'full')):
+    return all(t0 + d <= e[2] - 0.3 or t0 >= e[2] + e[3] + 0.3 for e in EV if e[0] in camadas)
+
+
+def encaixar(t0, d):
+    """Primeiro horário livre a partir de t0 (anda de 1 em 1 s até 25 s), para o lower não cobrir outro texto."""
+    for k in range(26):
+        if t0 + k + d < TOTAL - 1 and livre(t0 + k, d):
+            return t0 + k
+    return None
+
+
+# Lowers (20/11/2026): todo vídeo do formato Padrão, Educativo e Podcast sai com 2 "inscreva-se" e 1 "like".
+# Se o plano não trouxer, a máquina põe sozinha em ~25%, ~50% e ~72% do vídeo, num ponto livre.
+# Lower de nome: {"tipo":"nome","palavra":i,"nome":"Vanessa Dala","cargo":"CONVIDADA"} (vários por vídeo; sem "nome"
+# usa plano.nome). Lower do cliente (PNG ou .mov com fundo transparente): {"tipo":"cliente","palavra":i,"elemento":"lower"}
+# usa plano.elementos.lower (ou .lower_instagram etc.). "lowers_auto": false no plano desliga o automático.
+POS = {}  # posição dos lowers do cliente: {"escala": 0.8, "x": 60, "y": 1040} (y = base do lower; padrão canto de baixo à esquerda)
+LOWERS = [dict(x) for x in plano.get('lowers', [])]
+if not NA and plano.get('lowers_auto', True) and TOTAL > 60:
+    tem = [x['tipo'] for x in LOWERS]
+    for tipo, frac in (('inscreva', 0.25), ('like', 0.5), ('inscreva', 0.72)):
+        if tem.count(tipo) > 0:
+            tem.remove(tipo); continue
+        LOWERS.append({'tipo': tipo, 'ini': TOTAL * frac, 'auto': True})
+TXT = {'inscreva': ('INSCREVA-SE NO CANAL', 4.0, 'play'), 'like': ('DÊ LIKE  •  COMPARTILHE  •  COMENTE', 4.5, 'heart')}
+for k, lw in enumerate(sorted(LOWERS, key=lambda x: (x.get('auto', False), t_lower(x)))):
+    tipo = lw['tipo']
+    if tipo in TXT and EL.get(tipo):  # o cliente tem o próprio (ex.: "DEIXE SEU LIKE!" animado do Dr. Gustavo)
+        lw = dict(lw, tipo='cliente', elemento=tipo); tipo = 'cliente'
+    if tipo in TXT:
+        txt, d, ic = TXT[tipo]; arq = f'{O}/lw_{tipo}.mov'
+        if falta(arq) and not os.path.exists(arq + '.ok'):
+            G.lower(f'lw_{tipo}', txt, d, ic); open(arq + '.ok', 'w').close()
+        kind = 'lw'
+    elif tipo == 'nome':
+        nome = lw.get('nome') or plano.get('nome')
+        if not nome:
+            avisos.append('lower de nome sem nome: pulei (ponha "nome" no lower ou no plano)'); continue
+        d = 5.0 if lw.get('cargo') else 4.5; arq = f'{O}/lw_nome{k}.mov'
+        if falta(arq):
+            if EL.get('lower_convidado') or plano.get('lower_estilo') == 'etiqueta':
+                G.lower_etiqueta(f'lw_nome{k}', nome.upper(), (lw.get('cargo') or '').upper(), d, EL.get('lower_convidado'))
+            else:
+                G.lower(f'lw_nome{k}', nome.upper(), d, sub=(lw.get('cargo') or '').upper() or None)
+        kind = 'lw'
+    elif tipo == 'cliente':
+        arq = elemento(EL.get(lw.get('elemento', 'lower')), lw.get('elemento', 'lower'))
+        if not arq:
+            avisos.append(f"lower do cliente sem arquivo ({lw.get('elemento', 'lower')}): pulei"); continue
+        d = lw.get('dur', 5.0) if arq.lower().endswith('.png') else min(lw.get('dur', 99), dur(arq)); kind = 'png'
+    else:
+        avisos.append(f'lower de tipo desconhecido ({tipo}): pulei'); continue
+    t0 = t_lower(lw)
+    if lw.get('auto'):
+        t0 = encaixar(t0, d)
+        if t0 is None:
+            print(f'lower automático ({tipo}) sem espaço livre: ficou de fora'); continue
+    if kind == 'png':
+        ref = EL.get(lw.get('elemento', 'lower'))
+        POS[arq] = ref if isinstance(ref, dict) else {}
+    EV.append((kind, arq, t0, d))
 tela = sorted([e for e in EV if e[0] in ('broll', 'full')], key=lambda e: e[2])
+for e in EV:
+    if not os.path.exists(e[1]):
+        raise SystemExit(f'falta o arquivo {e[1]} ({e[0]}): rode sem --sem-gfx ou confira o plano')
 for a, b in zip(tela, tela[1:]):
     if a[2] + a[3] > b[2]:
         avisos.append(f'tela cheia sobreposta: {os.path.basename(a[1])} e {os.path.basename(b[1])}')
-baixo = sorted([e for e in EV if e[0] in ('kw', 'lw')], key=lambda e: e[2])
+baixo = sorted([e for e in EV if e[0] in ('kw', 'lw', 'png')], key=lambda e: e[2])
 for a, b in zip(baixo, baixo[1:]):
     if a[2] + a[3] > b[2]:
         avisos.append(f'textos de baixo sobrepostos: {os.path.basename(a[1])} e {os.path.basename(b[1])}')
 # Olhar (05/11/2026): todo trecho em que a pessoa não olha para a câmera (olhar.json, de olhar.py) precisa estar
 # coberto por B-roll, foto, cartão, título ou mapa. Sem olhar.json o vídeo não sai (rode olhar.py depois do cortar.py).
 OL = os.path.join(pasta, 'olhar.json')
-if not NA and not os.path.exists(OL) and '--forcar' not in sys.argv:
+if not NA and not PODCAST and not os.path.exists(OL) and '--forcar' not in sys.argv:
     raise SystemExit('falta olhar.json: rode python3 longos/olhar.py ' + pasta + ' antes de montar')
-if not NA and os.path.exists(OL):
+if not NA and not PODCAST and os.path.exists(OL):
     capa = sorted((e[2], e[2] + e[3]) for e in EV if e[0] in ('broll', 'full'))
     for x in json.load(open(OL))['trechos']:
         livre, t = 0.0, x['ini']
@@ -286,7 +383,7 @@ if '--studio' in sys.argv:
                     musica=mus, cliente=_opc('--cliente'), titulo=_opc('--titulo'))
     sys.exit(0)
 
-order = {'broll': 0, 'full': 1, 'kw': 2, 'lw': 3}; EV.sort(key=lambda e: (order[e[0]], e[2]))
+order = {'broll': 0, 'full': 1, 'kw': 2, 'lw': 3, 'png': 4}; EV.sort(key=lambda e: (order[e[0]], e[2]))
 previa = '--previa' in sys.argv
 LIM = 90.0 if previa else TOTAL
 if previa:
@@ -295,7 +392,7 @@ lista = os.path.join(pasta, 'lista.txt')
 open(lista, 'w').write(''.join(f"file '{os.path.abspath(os.path.join(pasta, 'segs', f'{i:03d}.mkv'))}'\n" for i in range(len(segs))))
 cmd = ['ffmpeg', '-v', 'error', '-y', '-f', 'concat', '-safe', '0', '-i', lista]
 for kind, f, t0, d in EV:
-    img = f.endswith('.jpg')
+    img = f.lower().endswith(('.jpg', '.png'))
     cmd += (['-loop', '1', '-framerate', '30'] if img else ['-stream_loop', '-1'] if kind == 'broll' else []) + ['-t', f'{d:.3f}', '-i', f]
 if NA:
     fim_arq = os.path.join(pasta, 'encerramento.mov')
@@ -306,7 +403,20 @@ if NA:
     ass = os.path.abspath(os.path.join(pasta, 'legendas.ass'))
     print(f'{legendas_na(ass)} legendas', flush=True)
 else:
-    cmd += ['-i', f'{O}/fim.mp4']
+    # tela final do cliente (elementos.tela_final) no lugar da gerada, com o áudio dela
+    fim_arq = elemento(EL.get('tela_final'), 'tela_final') or f'{O}/fim.mp4'
+    if EL.get('tela_final'):
+        END = dur(fim_arq)
+    cmd += ['-i', fim_arq]
+# marca do cliente (PNG transparente por cima do vídeo todo, menos nos cartões de tela cheia), ex.: site + logo do
+# Dr. Gustavo no topo, logo do Além do CNPJ no canto
+MARCA = elemento(EL.get('marca'), 'marca.png') if not NA else None
+VIN = elemento(EL.get('vinheta'), 'vinheta') if not NA else None
+if MARCA:
+    cmd += ['-loop', '1', '-framerate', '30', '-i', MARCA]
+if VIN:
+    cmd += ['-i', VIN]
+VIND = dur(VIN) if VIN else 0.0
 mus = os.path.join(pasta, 'musica.aac')
 if not os.path.exists(mus) and plano.get('musica_file_id'):
     try:
@@ -329,8 +439,14 @@ for k, (kind, f, t0, d) in enumerate(EV, 1):
         pre = ''; fd = 0
     fade = (f"fade=t=in:st=0:d={fd}:alpha=1,fade=t=out:st={d - fd:.3f}:d={fd}:alpha=1," if fd else '')
     fc.append(f"[{k}:v]{pre}fps=30,setsar=1,format=yuva420p,{fade}setpts=PTS-STARTPTS+{t0:.3f}/TB[g{k}]")
-    y = {'kw': '660', 'lw': '840'}.get(kind, '0')
-    fc.append(f"{last}[g{k}]overlay=x=0:y={y}:enable='between(t,{t0:.3f},{t0 + d:.3f})':eof_action=pass[v{k}]")
+    x, y = '0', {'kw': '660', 'lw': 'H-h'}.get(kind, '0')
+    if kind == 'png':  # lower do cliente: escala e posição do elemento; padrão canto de baixo à esquerda
+        ps = POS.get(f, {}); esc = float(ps.get('escala', 1.0))
+        fc[-1] = fc[-1].replace(f"[{k}:v]", f"[{k}:v]scale=iw*{esc}:-1,", 1).replace(
+            f"fps=30,setsar=1,format=yuva420p,", f"fps=30,setsar=1,format=yuva420p,fade=t=in:st=0:d=0.3:alpha=1,"
+            f"fade=t=out:st={max(0.0, d - 0.3):.3f}:d=0.3:alpha=1,", 1)
+        x, y = str(ps.get('x', 60)), f"{ps.get('y', 1040)}-h"
+    fc.append(f"{last}[g{k}]overlay=x={x}:y={y}:enable='between(t,{t0:.3f},{t0 + d:.3f})':eof_action=pass[v{k}]")
     last = f'[v{k}]'
 n = len(EV) + 1
 if NA:  # marca d'água por cima de tudo (B-roll também), legenda amarela, depois o encerramento da Acrópole Play
@@ -342,13 +458,43 @@ if NA:  # marca d'água por cima de tudo (B-roll também), legenda amarela, depo
     fc.append(f"[{n}:a]aresample=48000,aformat=channel_layouts=stereo[enda]")
     n += 1  # a trilha (se houver) vem depois da marca
 else:
-    fc.append(f"[{n}:v]fps=30,format=yuv420p,setsar=1,fade=t=in:st=0:d=0.4[endv]")
-    fc.append(f"anullsrc=r=48000:cl=stereo,atrim=0:{END}[enda]")
+    fc.append(f"[{n}:v]scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2,"
+              f"fps=30,format=yuv420p,setsar=1,fade=t=in:st=0:d=0.4[endv]")
+    if EL.get('tela_final') and tem_audio(fim_arq):
+        fc.append(f"[{n}:a]aresample=48000,aformat=channel_layouts=stereo,atrim=0:{END:.3f}[enda]")
+    else:
+        fc.append(f"anullsrc=r=48000:cl=stereo,atrim=0:{END}[enda]")
+    if MARCA:
+        n += 1
+        fora = '*'.join(f'not(between(t,{t0:.3f},{t0 + d:.3f}))' for k, f, t0, d in EV if k == 'full') or '1'
+        fc.append(f"[{n}:v]scale=1920:1080,format=rgba[marca]")
+        fc.append(f"{last}[marca]overlay=0:0:shortest=1:enable='{fora}'[vmc]"); last = '[vmc]'
+    if VIN:
+        n += 1
+        fc.append(f"[{n}:v]scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2,"
+                  f"fps=30,format=yuv420p,setsar=1[vinv]")
+        fc.append(f"[{n}:a]aresample=48000,aformat=channel_layouts=stereo[vina]" if tem_audio(VIN) else
+                  f"anullsrc=r=48000:cl=stereo,atrim=0:{VIND:.3f}[vina]")
 fc.append("[0:a]highpass=f=70,acompressor=threshold=-20dB:ratio=3:attack=10:release=150:makeup=2,"
           "aformat=channel_layouts=stereo:sample_rates=48000[aa]")
 fc.append(f"{last}fps=30,format=yuv420p,setsar=1[vm]")
-fc.append("[vm][aa][endv][enda]concat=n=2:v=1:a=1[vo][voz]")
-L = TOTAL + END
+# vinheta do cliente: logo depois do gancho (fim do último trecho marcado como gancho no cortar.py) ou no início.
+# No início entra aqui; depois do gancho entra numa segunda passada (cortar o vídeo pronto no ponto do gancho é mais
+# leve que segurar o gancho inteiro na memória durante a montagem).
+TG = 0.0
+if VIN and not (isinstance(EL.get('vinheta'), dict) and EL['vinheta'].get('posicao') == 'inicio'):
+    gs = [x for x in segs if x.get('gancho')]
+    TG = (gs[-1]['saida'] + gs[-1]['dur']) if gs and len(gs) < len(segs) else 0.0
+if VIN and TG == 0 and not previa:
+    fc.append("[vinv][vina][vm][aa][endv][enda]concat=n=3:v=1:a=1[vo][voz]")
+else:
+    if VIN:
+        fc.append("[vinv]nullsink"); fc.append("[vina]anullsink")
+    fc.append("[vm][aa][endv][enda]concat=n=2:v=1:a=1[vo][voz]")
+VIN_DEPOIS = bool(VIN and TG > 0 and not previa)
+if previa or VIN_DEPOIS:
+    VIND = 0.0
+L = TOTAL + END + VIND
 if tem_mus:
     vol = plano.get('volume_trilha_db', -31)
     fc.append("[voz]asplit=2[voz1][voz2]")
@@ -363,6 +509,21 @@ saida = os.path.join(pasta, 'previa.mp4' if previa else 'final.mp4')
 cmd += ['-filter_complex_script', fcf, '-map', '[vo]', '-map', '[ao]'] + (['-t', str(LIM)] if previa else []) + [
     '-c:v', 'libx264', '-preset', 'veryfast' if previa else 'medium', '-crf', '20', '-maxrate', '6M', '-bufsize', '12M',
     '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-b:a', '192k', '-movflags', '+faststart', saida]
+if not previa:  # para o publicacao.py acertar os capítulos depois da vinheta
+    json.dump({'vinheta_em': TG if VIN else 0.0, 'vinheta_dur': dur(VIN) if VIN else 0.0},
+              open(os.path.join(pasta, 'montagem.json'), 'w'))
 print(f'renderizando {saida} ({len(EV)} elementos, {L / 60:.1f} min)...', flush=True)
 subprocess.run(cmd, check=True)
+if VIN_DEPOIS:
+    tmp = saida + '.sem_vinheta.mp4'; os.replace(saida, tmp)
+    va = (f"[1:a]aresample=48000,aformat=channel_layouts=stereo,loudnorm=I=-14:TP=-1.5:LRA=11,aresample=48000[a1]"
+          if tem_audio(VIN) else f"anullsrc=r=48000:cl=stereo,atrim=0:{dur(VIN):.3f}[a1]")
+    fc2 = (f"[1:v]scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2,fps=30,"
+           f"format=yuv420p,setsar=1[v1];{va};[0:v][0:a][v1][a1][2:v][2:a]concat=n=3:v=1:a=1[vo][ao]")
+    print(f'vinheta depois do gancho ({TG:.1f}s)...', flush=True)
+    subprocess.run(['ffmpeg', '-v', 'error', '-y', '-t', f'{TG:.3f}', '-i', tmp, '-i', VIN, '-ss', f'{TG:.3f}', '-i', tmp,
+                    '-filter_complex', fc2, '-map', '[vo]', '-map', '[ao]', '-c:v', 'libx264', '-preset', 'medium',
+                    '-crf', '20', '-maxrate', '6M', '-bufsize', '12M', '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-b:a',
+                    '192k', '-movflags', '+faststart', saida], check=True)
+    os.remove(tmp)
 print(f'OK: {saida} ({os.path.getsize(saida) / 1e6:.0f} MB)')
