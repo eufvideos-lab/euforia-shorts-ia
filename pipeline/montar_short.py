@@ -88,28 +88,12 @@ def _energia(audio, a, b, sr=16000, win=0.03, hop=0.01):
 
 
 def ponto_silencio(audio, a, b, sentido='fim', sr=16000):
-    """Acha o silêncio de verdade entre duas palavras.
-    A transcrição erra o tempo das palavras em até 0,3 s; aqui o corte vai para a PRIMEIRA pausa
-    depois da última palavra (sentido='fim') ou para a ÚLTIMA pausa antes da primeira palavra
-    (sentido='inicio'). Pausa = pelo menos 50 ms abaixo do ruído de fundo + 6 dB (funciona com trilha)."""
-    import numpy as np
-    if audio is None or b - a < 0.05:
-        return (a + b) / 2
-    _, ref = _energia(audio, a - 2, b + 2, sr)
-    limite = float(np.percentile(ref, 10)) + 6 if ref else -1e9
-    ts, es = _energia(audio, a, b, sr)
-    corridas, ini = [], None
-    for k, e in enumerate(es + [1e9]):
-        if e < limite and ini is None:
-            ini = k
-        elif e >= limite and ini is not None:
-            if ts[k - 1] - ts[ini] >= 0.04:
-                corridas.append((ts[ini], ts[k - 1]))
-            ini = None
-    if not corridas:
-        k = int(np.argmin(es)); return ts[k]
-    c = corridas[0] if sentido == 'fim' else corridas[-1]
-    return (c[0] + c[1]) / 2
+    """Acha o silêncio de verdade entre duas palavras (ver pipeline/emenda.py, 19/11/2026).
+    A transcrição erra o tempo das palavras em até 0,3 s; o corte vai para a PRIMEIRA pausa real depois da última
+    palavra (sentido='fim') ou para a ÚLTIMA pausa real antes da primeira (sentido='inicio'). Pausa real = 120 ms ou
+    mais abaixo do ruído de fundo + 6 dB: silêncio mais curto pode ser o "t" de "tatuagem" e cortava a palavra."""
+    import emenda
+    return emenda.ponto(audio, a, b, sentido, sr)
 
 
 def validar(pal, ini, fim):

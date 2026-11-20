@@ -82,19 +82,26 @@ bash instalar.sh   # instala Remotion e OpenCV (~15 s)
    IMPORTANTE: nunca encerre a sua vez esperando um comando em segundo plano (a rotina não acorda de novo e o
    pedido fica preso em "Em edição"). Rode em primeiro plano com timeout longo, ou, se for em segundo plano,
    fique conferindo com `sleep 120` em loop até o processo terminar. Só termine depois do aviso no Discord.
-9. Confira cada short: tire 6 quadros (ffmpeg) de cada arquivo em `saida/` e olhe. Corte no meio de frase, legenda
-   errada, B-roll sem relação ou tela preta = refaça aquele short antes de entregar.
+9. Confira cada short:
+   - **Conferência da fala (19/11/2026, obrigatória):** para cada short gerado, rode
+     `python3 pipeline/conferir_fala.py short pedidos/<id-curto> props_<n-1>.json` (transcreve de novo só a fala cortada
+     e compara com o plano). Código 2 = achou palavra cortada na emenda, frase repetida ou frame solto: o
+     `conferencia_props_<n>.md` diz o minuto. Corrija o plano (comece/termine uma palavra antes ou depois, tire a 1ª
+     tomada repetida) e rode `produzir.py ... --shorts <n>` só daquele short. Até 2 tentativas; se ainda acusar, entregue
+     com "🔎 Revisão obrigatória (Lorena): conferência da fala" no log e o problema escrito.
+   - Tire 6 quadros (ffmpeg) de cada arquivo em `saida/` e olhe. Legenda errada, legenda dupla, B-roll sem relação ou
+     tela preta = refaça aquele short antes de entregar.
 9a. **Título, descrição e SEO** (16/11/2026; substitui o Gemini que a equipe usava): leia `prompts/publicacao.md` e
    escreva `pedidos/<id-curto>/publicacao.json` com o pacote de cada short (mesma ordem do plano) e o do vídeo longo
    (`longo`, com `topicos`, sem capítulos: o longo é editado à mão a partir deste bruto). Use a transcrição, o roteiro
    (se o pedido tiver) e a ficha do cliente (nicho, "Direção criativa", links e "📝 Rodapé da descrição (YouTube)").
-9b. Projeto do Euforia Studio (16/11/2026; é o que a equipe abre para ajustar e renderizar no PC):
-   `python3 pipeline/projeto_editor.py pedidos/<id-curto> pedidos/<id-curto>/studio --cliente "<nome>"`, depois
-   `python3 pipeline/publicacao.py pedidos/<id-curto> --cliente "<nome>" --pasta-drive <pasta dos shorts> --studio pedidos/<id-curto>/studio --cliente-id <id da ficha do cliente> --pedido <link do pedido>`
-   (confere as regras do YouTube, sobe um "título e descrição.txt" por vídeo ao lado dos shorts, põe o pacote no
-   projeto e no Painel da Equipe, na gaveta do horário da Grade, onde quem posta copia; se parar com ERRO, corrija o publicacao.json e rode de novo; avisos não param). Crie com o
-   Google Drive a pasta "<Cliente> - <id-curto>" dentro de EDITOR (1Je4ZPgF6m3ocRinFlMNewtyljHD7unLX) e rode
-   `python3 pipeline/studio_drive.py pedidos/<id-curto>/studio <id da pasta> [--revisar "<motivo>"]`.
+9b. Título e descrição no Drive e no Painel:
+   `python3 pipeline/publicacao.py pedidos/<id-curto> --cliente "<nome>" --pasta-drive <pasta dos shorts> --cliente-id <id da ficha do cliente> --pedido <link do pedido>`
+   (confere as regras do YouTube, sobe um "título e descrição.txt" por vídeo ao lado dos shorts e põe o pacote no
+   Painel da Equipe, na gaveta do horário da Grade, onde quem posta copia; se parar com ERRO, corrija o publicacao.json
+   e rode de novo; avisos não param).
+   O projeto do Euforia Studio NÃO é mais gerado (decisão do Henrique, 19/11/2026: a equipe ajusta no CapCut e os
+   ajustes voltam para a máquina pelo painel). Não rode projeto_editor.py nem studio_drive.py.
    **Revisão obrigatória da Lorena** (decisão do Henrique, 16/11/2026). Vale se QUALQUER um for verdade:
    cliente com "🔴 Atenção redobrada" marcado na ficha; algum short com `nota_confianca` abaixo de 0,6; cliente com "📄 Contrato início" há menos de 30 dias.
    O motivo é curto: "cliente 🔴", "confiança baixa (55%)", "cliente novo". O resto a equipe revisa por amostragem.
@@ -112,8 +119,7 @@ bash instalar.sh   # instala Remotion e OpenCV (~15 s)
     Editáveis no Canva" faz as capas (`escritorio/editaveis/AUTOMATICO.md`) e põe o link em "🎨 Capas no Canva".
 12. Avise no Discord, assinando como Érica, curto:
     "🎬 Shorts prontos: <Cliente> (<n> shorts, <estilo>). Para revisão da Lorena <@827882215185973279>: <link da pasta>. Título e descrição de cada vídeo (e do longo) já estão na pasta. — Érica, time de suporte, Grupo Euforia"
-    Com revisão obrigatória, troque "Para revisão da Lorena" por "🔎 Revisão obrigatória da Lorena <@827882215185973279> (<motivo>)" e
-    acrescente "Abrir no Euforia Studio: pasta EDITOR / <Cliente> - <id-curto>".
+    Com revisão obrigatória, troque "Para revisão da Lorena" por "🔎 Revisão obrigatória da Lorena <@827882215185973279> (<motivo>)".
 
 ## Regras
 - Nunca mande nada para cliente. A entrega é interna (Drive + Notion + Discord).

@@ -19,13 +19,20 @@ Você recebe `palavras.txt` (cada palavra como `índice:palavra[tempo]`, uma fra
   O plano aberto também corta em volta do rosto e a pessoa fica no meio. Confira num quadro do segmento 000 que ela
   ficou centralizada e sem cortar a cabeça; se precisar, ajuste com `"zoom_aberto"` (1.0 a 1.6). Em bruto 1080p,
   zoom acima de ~1.4 perde nitidez: prefira centralizar só até onde a imagem continua boa (bruto 4K aguenta tudo).
-- **Textos-chave** (`keywords`): só termos importantes, 8 a 14 num vídeo de 8 min. GRANDES, CAPS, brancos com sombra,
-  sem tarja; `*palavra*` sai no degradê do cliente. Máximo ~30 letras; use `|` para quebrar em duas linhas.
+- **Textos-chave** (`keywords`): só termos importantes, 8 a 14 num vídeo de 8 min. GRANDES, CAPS, brancos, SEM sombra
+  (decisão do Henrique, 19/11/2026; `"sombra": true` no plano só se o cliente pedir) e sem tarja; `*palavra*` sai no degradê do cliente. Máximo ~30 letras; use `|` para quebrar em duas linhas.
 - **Cartões de tópico** (`cartoes`): frases de impacto em tela cheia na cor do cliente, ~5 s, 4 a 6 por vídeo.
   Até 3 linhas curtas (máx. ~22 letras cada). Um cartão de título (`titulo`) logo depois do gancho.
 - **Mapa** (`mapa`, opcional): quando a pessoa cita 3 ou mais cidades seguidas. Uma imagem única, sem piscar.
 - **B-roll é obrigatório**, 10 a 16 num vídeo de 8 min, 2,5 a 3,5 s cada (os que cobrem olhar fora da câmera duram o trecho todo):
   - `"fonte": "pixabay"` para o genérico (`busca` em inglês, 2 a 4 palavras, cena real, nada de desenho);
+  - **B-roll pela FRASE, não pela palavra (19/11/2026, 8 dos 12 ajustes de longos tinham B-roll fora de contexto):**
+    leia a frase inteira e busque a cena que mostra o SENTIDO dela. Metáfora não vira imagem literal ("criar raízes"
+    não é raiz de árvore; "carregar o peso" não é academia). Frase abstrata sem cena clara não leva B-roll do banco:
+    use foto real, cartão de tópico ou deixe o rosto (se a pessoa olha para a câmera). Pessoas com cara de Brasil
+    quando a cena é de gente comum. Na dúvida, menos B-roll;
+  - cada B-roll guarda o clipe escolhido em `"clipe"` (o `brolls.py` grava); num ajuste ele volta igual. Não apague
+    `"clipe"` de quem a revisão não pediu para trocar;
   - `"fonte": "foto"` para o específico (pessoa citada, faculdade, empresa, lugar): busque no Google pelo fluxo de
     fotos do n8n (ver TAREFA) e ponha os `file_ids` das partes salvas no Drive;
   - nunca trecho de vídeo do YouTube.
@@ -42,8 +49,28 @@ Você recebe `palavras.txt` (cada palavra como `índice:palavra[tempo]`, uma fra
   `"fontes": {"cliente": "Winthorpe", "titulo": {"file_id": "..."}}` com o arquivo .ttf/.otf da pasta do cliente no
   Drive. Sem o arquivo, use a mais parecida do Google Fonts (`"titulo": {"google": "Playfair Display:800"}`) e avise no
   log. `"texto"` (lowers) é opcional. `montar.py` para se a fonte não carregar; nunca troca sozinho pela padrão.
+- **Som e olhar (opcionais, ficam no plano para os próximos ajustes):** `"reduzir_ruido": true` (ou `"forte"`) quando o
+  bruto tem chiado/ruído de fundo; `"volume_trilha_db"` (padrão -31; mais negativo = música mais baixa);
+  `"olhar_limite"` (padrão 0.6) para o `olhar.py`.
 - **Lowers** (`lowers`): "inscreva" 2 vezes e "like" 1 vez (de preferência quando a pessoa pede para se inscrever
-  ou comentar). Lower de nome (`"tipo": "nome"` + campo `nome`) só se o cliente mandar o nome/cargo.
+  ou comentar). Se você não puser, a máquina põe sozinha (20/11/2026: era a causa dos "lowers que não vêm"), em
+  ~25%, ~50% e ~72% do vídeo, num ponto sem outro texto; `"lowers_auto": false` desliga. Lower de nome:
+  `{"tipo": "nome", "palavra": i, "nome": "Vanessa Dala", "cargo": "Convidada"}` (pode haver vários; sem `nome` usa
+  o `nome` do plano; sem nenhum dos dois, a máquina pula e avisa). Nome comprido diminui sozinho para caber.
+- **Elementos do cliente** (`elementos`, 20/11/2026): quando o cliente tem identidade audiovisual própria no Drive
+  (`01 - ELEMENTOS ESSENCIAIS/05 - IDENTIDADE AUDIOVISUAL`), use a dele em vez da gerada. Cada um é
+  `{"file_id": "<id no Drive>", "ext": ".mp4"}` (ou `{"arquivo": caminho}`):
+  - `vinheta`: entra logo depois do gancho (`"posicao": "inicio"` para abrir o vídeo com ela).
+  - `tela_final`: substitui a tela final gerada, com o som dela.
+  - `marca`: PNG transparente do tamanho do vídeo (logo, site) por cima do vídeo todo, menos nos cartões.
+  - `lower`, `lower_instagram`...: PNG ou .mov transparente do cliente, usado com `{"tipo": "cliente", "palavra": i,
+    "elemento": "lower_instagram"}`. Aceita `"escala"` (0.8), `"x"` e `"y"` (base do lower; padrão 60 e 1040).
+  - `like` / `inscreva`: se o cliente tem o próprio (ex.: "DEIXE SEU LIKE!" do Dr. Gustavo), ele entra no lugar do nosso.
+  - `lower_convidado`: cores do lower de convidado em etiqueta (`{"caixa": "#FFFFFF", "nome": "#111111", "aba":
+    "#FF6A00", "cargo": "#FFFFFF"}`); com ele (ou `"lower_estilo": "etiqueta"`) o lower de nome vira etiqueta.
+  O que já existe por cliente está em `longos/modelos/clientes.md`.
+- **Texto-chave no canto** (`"keyword_lado": "esquerda"`): menor e alinhado à esquerda embaixo, como nos vídeos do
+  Dr. Gustavo ("2. ALIMENTOS ULTRAPROCESSADOS").
 - **Trilha** royalty free bem baixa (-31 dB com ducking); a máquina cuida.
 - **Paleta do cliente sempre, em TODOS os elementos** (textos-chave, cartões, lowers, inscreva-se, tela final): campo
   "Identidade shorts (IA)" do cliente no Notion, copiado como está para `paleta`. Chaves: `fundo` (cartões e tela
@@ -117,7 +144,9 @@ reais, igual ao modelo de Shorts da NA.
 - **B-roll (`brolls`): muitos, uma foto a cada ~25 a 40 s (10 a 16 num corte de 7 min), 3 a 4 s cada; foto basta, não
   precisa ser vídeo. Só imagem real e verdadeira** (`"fonte": "foto"`): obra de arte
   real (pintura, escultura) com nome e autor, estátua real de filósofo, foto real da pessoa ou do lugar citado, capa
-  real do livro. Natureza pode, com cara de Brasil (Dedo de Deus, Mata Atlântica, ipê, pôr do sol no litoral). Nada de
+  real do livro. Natureza só quando a FALA é sobre natureza ou sobre aquele lugar (20/11/2026: Cataratas do Iguaçu e
+  Baía do Sancho apareceram num trecho que não falava disso e a revisão teve que tirar). Paisagem bonita não serve de
+  "tapa-buraco": sem imagem que mostre o que ela diz, use cartão de frase-chave ou deixe o rosto. Nada de
   banco genérico (Pixabay é ignorado neste modelo), desenho ou ilustração. Cada um com `"legenda"`: crédito curto que
   aparece no canto ("Gustave Courbet · Os Quebradores de Pedras (1849)", "Dedo de Deus · Serra dos Órgãos (RJ)");
   `null` para natureza sem lugar certo. Pense primeiro em obras famosas que contam a mesma coisa que ela (no Quebrador
@@ -149,3 +178,32 @@ Exemplo:
   ]
 }
 ```
+
+## Modelo "Podcast" (BM Cast da Betânia, cortes do Além do CNPJ; 20/11/2026)
+Vale quando o pedido tem Modelo "Podcast" ou o bruto é um episódio com duas ou mais pessoas conversando.
+O bruto já vem com as câmeras trocadas (multicâmera/vMix). A máquina não faz zoom alternado nem enquadra pelo rosto,
+e a regra do olhar não vale (ninguém fala para a câmera).
+- Ponha `"modelo": "podcast"` no plano. Sem `brolls` e sem `mapa`; `keywords` só se as observações pedirem (no máximo
+  1 a cada 2 min); sem trilha (`musica_file_id` fora) a não ser que peçam.
+- **Episódio completo:** `trechos` do começo ao fim, tirando só erro de gravação, pausa longa, conversa de bastidor
+  ("pode cortar", "tá gravando?") e intervalo. Nunca tire pergunta ou resposta do convidado. `"gancho"`: 15 a 40 s
+  com a fala mais forte do episódio (a vinheta entra logo depois).
+- **Cortes do episódio** (8 a 15 min, um tema fechado; o Além do CNPJ publica assim): rode
+  `python3 longos/derivar.py pedidos/<id-curto> <nome-do-corte>` para cada corte e escreva o plano de cada um na
+  subpasta. Comece numa pergunta ou frase forte do tema, termine numa conclusão. Não repita o mesmo trecho em dois cortes.
+- **Lowers:** lower de nome para cada convidado na primeira vez que ele fala bem (`"cargo"`: "Convidada"/"Convidado"
+  ou o cargo que o cliente informar), e para a anfitriã só se o cliente pedir. Inscreva e like como no Padrão.
+- **Betânia (BM Cast):** vinheta "BM CAST" depois do gancho, tela final dela, lower de convidado em etiqueta (caixa
+  branca, nome em preto, aba laranja com o cargo). Ver `longos/modelos/clientes.md`.
+- **Além do CNPJ:** logo "além do CNPJ" no canto de baixo à direita o vídeo todo (`marca`), tela final dele, sem
+  vinheta nos cortes. Os patrocinadores aparecem na TV do estúdio: nunca cubra a TV com texto.
+
+## Modelo "Educativo" (Dr. Gustavo Bonfadini; 20/11/2026)
+É o formato Padrão (zoom alternado, B-roll, cortes, textos) com a identidade do cliente:
+- `elementos`: `marca` (site à esquerda e logo à direita no topo), `vinheta` (abre depois do gancho), `tela_final`,
+  `like` (o "DEIXE SEU LIKE!" animado dele) e `lower_instagram` (PNG com @gustavobonfadini, uma vez no meio do vídeo).
+- `paleta`: destaque `#0094CD`, caixa `#1E2A5E` (azul-marinho), texto branco, `degrade: nao`.
+- `keyword_lado`: `esquerda`; textos-chave nos tópicos numerados do roteiro ("1. AÇÚCAR", "2. ALIMENTOS ULTRAPROCESSADOS").
+- A fonte da marca é Visby (sem Google Fonts); sem o arquivo dela, use `"titulo": {"google": "Plus Jakarta Sans:800"}`
+  e diga no log.
+- Assunto médico: B-roll só real (consultório, exame, alimento); nada de desenho de órgão ou cena de cirurgia.
