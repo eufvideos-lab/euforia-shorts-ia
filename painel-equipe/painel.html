@@ -1093,6 +1093,7 @@ const VIEWS = {
         <p class="note" id="npautas" hidden>Pautas e roteiros já saem em lote de 12.</p>
         <p class="note" id="nsetup" hidden><b>Setup faz tudo de uma vez:</b> copy (página de vendas pronta), funil e estratégia. Se precisar só de um deles, peça Copy, Funil ou Estratégia separado.</p>
         <label for="pqtd" id="lpqtd" hidden>Quantos<select id="pqtd"></select></label>
+        <label for="ppr" id="lppr" hidden>Por roteiro<select id="ppr"><option value="">A máquina decide</option><option value="1">1 por roteiro</option><option value="2">2 por roteiro</option><option value="3">3 por roteiro</option><option value="4">4 por roteiro</option></select></label>
         <label for="ptema" id="lptema" hidden>Tema ou texto da thumb (num pacote, separe por vírgula ou escreva "vídeos 05 a 08"; em branco, a máquina tira do roteiro do vídeo)<input type="text" id="ptema" maxlength="600" placeholder="Ex.: os 3 erros do primeiro emprego"></label>
         <label for="pfoto" id="lpfoto" hidden>Foto ou pasta (opcional)<input type="text" id="pfoto" maxlength="500" placeholder="Link da foto ou da pasta. Sem isso a máquina procura no Drive do cliente."></label>
         <div class="anexos" id="lpmod" hidden><b>Modelo para seguir (opcional)</b>
@@ -1287,7 +1288,7 @@ function atualizarPedido(){
   $('#lpmod').hidden = !['thumb', 'carrossel', 'arte'].includes(t.id);
   // Pacotes: carrossel e thumb 1/3/6/12; shorts saem de um vídeo só (1 ou 3). Pautas e roteiros já vêm em lote de 12.
   const QTD = { carrossel: ['1 carrossel', '3 carrosséis', '6 carrosséis', '12 carrosséis'], thumb: ['1 thumb', '3 thumbs', '6 thumbs', '12 thumbs'], shorts: ['3 shorts', '1 short'] }[t.id];
-  $('#lpqtd').hidden = !QTD; $('#npautas').hidden = t.id !== 'pautas'; $('#nsetup').hidden = t.id !== 'setup';
+  $('#lpqtd').hidden = !QTD; $('#lppr').hidden = t.id !== 'carrossel'; $('#npautas').hidden = t.id !== 'pautas'; $('#nsetup').hidden = t.id !== 'setup';
   if (QTD && $('#pqtd').dataset.tipo !== t.id) { $('#pqtd').innerHTML = QTD.map(q => `<option>${q}</option>`).join(''); $('#pqtd').dataset.tipo = t.id; } $('#po-min').hidden = t.id !== 'outro';
   $('#resumo').innerHTML = `<p class="eyebrow">O que acontece</p>
     <dl class="dl"><dt>Quem faz</dt><dd><b>${manual ? 'Escritório, à mão' : t.maq}</b>${manual ? ' em ' + esc(pf.value) : ''}</dd>
@@ -2605,7 +2606,8 @@ document.addEventListener('submit', async e => {
   if (t.id === 'outro' && $('#po').value.trim().length < 40) { $('#po').focus(); toast('Explique melhor o pedido: pelo menos 40 letras, com o que é, para quê e onde vai.'); return; }
   const extra = t.id === 'thumb' ? '\nTema da thumb: ' + ($('#ptema').value.trim().length >= 3 ? $('#ptema').value.trim() : 'do roteiro do vídeo') + ($('#pfoto').value.trim() ? '\nFoto ou pasta: ' + $('#pfoto').value.trim() : '')
     : t.id === 'carrossel' && $('#pvt').value.trim() ? '\nVídeo ou tema: ' + $('#pvt').value.trim() : '';
-  const qtd = !$('#lpqtd').hidden ? '\nQuantidade: ' + $('#pqtd').value : '';
+  const qtd = (!$('#lpqtd').hidden ? '\nQuantidade: ' + $('#pqtd').value : '') +
+    (!$('#lppr').hidden && $('#ppr').value ? '\nPor roteiro: ' + $('#ppr').value + ' carrosséis por roteiro' : '');
   let texto = t.so ? t.nome + ($('#po').value.trim() ? '\nFoco: ' + $('#po').value.trim() : '') : ajustes ? ajustes + ($('#po').value.trim() ? '\nDetalhes: ' + $('#po').value.trim() : '') : $('#po').value.trim() + extra + qtd;
   ocupado = true; b.disabled = true;
   try {
