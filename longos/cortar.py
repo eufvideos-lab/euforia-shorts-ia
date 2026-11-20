@@ -137,12 +137,41 @@ GRADE = plano.get('cor', "eq=contrast=1.03:saturation=1.03" if NA else "eq=contr
 os.makedirs(os.path.join(pasta, 'segs'), exist_ok=True)
 
 
+# Enquadramento trecho a trecho (20/11/2026, revisão: "do nada no 15:42 a pessoa saiu do centro"). O centro geral vem
+# da mediana do vídeo todo; se a pessoa se mexeu (mudou de cadeira, câmera esbarrada), aquele trecho ficava torto.
+# Aqui cada trecho com zoom confere o rosto em 3 quadros e, se ele cai fora do miolo do recorte, recentra só esse trecho.
+def centro_do_trecho(x):
+    if NA or plano.get('enquadramento') == 'manual':
+        return CX, CY
+    try:
+        import enquadrar as EQ
+        pts = []
+        for _, img in EQ.quadros(bruto, info['duracao'], n=3, de=x['s'], ate=x['e']):
+            rs = EQ.rostos(img)
+            if rs:
+                fx, fy, fw, fh = max(rs, key=lambda r: r[2] * r[3]); Hh, Ww = img.shape[:2]
+                pts.append(((fx + fw / 2) / Ww, (fy + fh / 2) / Hh))
+        if len(pts) < 2:
+            return CX, CY
+        rx = sorted(p[0] for p in pts)[len(pts) // 2]; ry = sorted(p[1] for p in pts)[len(pts) // 2]
+        meia_l = 0.5 / x['zoom']
+        # rosto a mais de 40% da meia-largura do recorte para o lado: recentra (mesma altura de olhos do geral)
+        if abs(rx - CX) > 0.4 * meia_l or abs(ry - (CY - (0.5 - 0.36) / x['zoom'])) > 0.5 * meia_l:
+            ncy = ry + (0.5 - 0.36) / x['zoom']
+            print(f"trecho {x['s']:.1f}-{x['e']:.1f}s: pessoa fora do centro (rosto em x={rx:.2f}); recentrado", flush=True)
+            return rx, min(0.95, max(0.05, ncy))
+    except Exception as e:
+        print('enquadramento do trecho não conferido:', e, flush=True)
+    return CX, CY
+
+
 def render(n):
     x = segs[n]; dur = x['e'] - x['s']
     vf = TM + "scale=1920:1080:force_original_aspect_ratio=increase,crop=1920:1080,"
     if x['zoom'] > 1:
         cw = int(1920 / x['zoom']) // 2 * 2; ch = int(1080 / x['zoom']) // 2 * 2
-        cx = min(max(int(CX * 1920 - cw / 2), 0), 1920 - cw); cy = min(max(int(CY * 1080 - ch / 2), 0), 1080 - ch)
+        CXt, CYt = centro_do_trecho(x)
+        cx = min(max(int(CXt * 1920 - cw / 2), 0), 1920 - cw); cy = min(max(int(CYt * 1080 - ch / 2), 0), 1080 - ch)
         vf += f"crop={cw}:{ch}:{cx}:{cy},scale=1920:1080:flags=lanczos,"
     vf += GRADE + ',fps=30,format=yuv420p'
     prox = segs[n + 1]['join'] if n + 1 < len(segs) else False

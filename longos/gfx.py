@@ -186,7 +186,7 @@ def lower(name,text,dur,icon=None):
         pin=ease_out(t/0.45); pout=ease_in((t-(dur-0.4))/0.4); p=pin*(1-pout)
         cw=int(bw*p)
         if cw>2:
-            s2=sh.copy(); s2.putalpha(s2.getchannel('A').point(lambda v:int(v*p))); fr.alpha_composite(s2,(x0-30,y0-30))
+            if P['sombra']: s2=sh.copy(); s2.putalpha(s2.getchannel('A').point(lambda v:int(v*p))); fr.alpha_composite(s2,(x0-30,y0-30))
             l=(bw-cw)//2; fr.alpha_composite(box.crop((l,0,l+cw,bh)),(x0+l,y0))
             ta=ease_out((t-0.2)/0.35)*(1-pout)
             if ta>0.01:
