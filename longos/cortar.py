@@ -103,6 +103,22 @@ for i0, i1, gancho in trechos:
             f_a, i_b = fim(a), ini(b)
             if i_b - f_a > PAUSA:
                 blocos.append((b_ini, f_a)); b_ini = i_b
+    # palavra que a transcrição esticou por cima de um silêncio ("ela" com 6 s, 18/11/2026): o buraco não aparece
+    # entre as palavras, então procura o silêncio dentro dela e tira, deixando só um respiro
+    cortes_pal = []
+    for j in ws:
+        if W[j]['end'] - W[j]['start'] > PAUSA + 0.5:
+            for p0, p1 in EM.pausas(audio, W[j]['start'], W[j]['end'], SR)[0]:
+                if p1 - p0 > PAUSA:
+                    cortes_pal.append((p0 + 0.15, p1 - 0.15))
+    if cortes_pal:
+        novos = []
+        for a0, b0 in blocos + [(b_ini, e2)]:
+            for c0, c1 in sorted(cortes_pal):
+                if a0 < c0 and c1 < b0:
+                    novos.append((a0, c0)); a0 = c1
+            novos.append((a0, b0))
+        blocos = novos[:-1]; b_ini, e2 = novos[-1]
     blocos.append((b_ini, e2))
     for bi, (a0, b0) in enumerate(blocos):
         cortes, ult = [a0], a0

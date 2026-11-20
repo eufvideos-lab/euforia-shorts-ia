@@ -78,6 +78,8 @@ apt-get install -y -q libegl1 libgles2 >/dev/null 2>&1 || (apt-get update -q >/d
    palestra inteira e sai um corte de 3 a 6 min, com legenda amarela, marca d'água e o encerramento da Acrópole Play. Para as fotos específicas,
    rode o fluxo de fotos (uma chamada com todas as buscas), pegue os IDs e ponha em `file_ids`.
    A trilha: `"musica_file_id": "15UN5dqdxX_VcaJAdcJ1vOyuGgtmBSoiQ"` (no modelo Nova Acrópole, sem trilha).
+   O montar.py repete só o corpo da música, com crossfade (sem a introdução e o fim mudo); para forçar o trecho
+   do laço, `"trilha_laco": [ini, fim]` em segundos.
    **Modelos por cliente (20/11/2026):** Betânia (BM Cast) e Além do CNPJ = seção "Modelo Podcast"; Dr. Gustavo =
    "Modelo Educativo". Vale também para quem tiver Modelo "Podcast"/"Educativo" no pedido. Para eles (e para qualquer
    cliente com identidade audiovisual no Drive), ache os arquivos de `longos/modelos/clientes.md` e ponha em
