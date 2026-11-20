@@ -120,10 +120,12 @@ def recortar_vertical(video, saida, info, t0=0.0, t1=None):
     subprocess.run(args, check=True)
 
 
-def clipe_encaixado(video, ini, fim, saida):
-    """B-roll horizontal inteiro no meio da tela vertical, com o próprio vídeo desfocado atrás."""
+def clipe_encaixado(video, ini, fim, saida, cortar_baixo=0.0):
+    """B-roll horizontal inteiro no meio da tela vertical, com o próprio vídeo desfocado atrás.
+    cortar_baixo: tira essa fração de baixo antes (vídeo com legenda gravada; senão aparece legenda dupla)."""
+    pre = f'[0:v]crop=iw:trunc(ih*{1 - cortar_baixo}/2)*2:0:0[c];[c]' if cortar_baixo > 0 else '[0:v]'
     subprocess.run(['ffmpeg', '-v', 'error', '-y', '-ss', f'{ini:.3f}', '-i', video, '-t', f'{fim - ini:.3f}', '-filter_complex',
-                    '[0:v]split[a][b];[a]scale=-2:1920,crop=1080:1920,boxblur=30:3,eq=brightness=-0.06[bg];[b]scale=1080:-2[fg];[bg][fg]overlay=0:(H-h)/2',
+                    pre + 'split[a][b];[a]scale=-2:1920,crop=1080:1920,boxblur=30:3,eq=brightness=-0.06[bg];[b]scale=1080:-2[fg];[bg][fg]overlay=0:(H-h)/2',
                     '-an', '-c:v', 'libx264', '-crf', '19', '-preset', 'veryfast', saida], check=True)
 
 
@@ -137,18 +139,23 @@ def clipe_vertical_cobrir(video, saida, dur=None):
     subprocess.run(args, check=True)
 
 
-def clipe_broll_fonte(video, plano, ini, fim, saida, info):
+def clipe_broll_fonte(video, plano, ini, fim, saida, info, cortar_baixo=0.0):
     """B-roll que já está no vídeo: close (rosto grande) preenche a tela centrado no rosto;
-    plano aberto (várias pessoas, paisagem) entra inteiro com fundo desfocado."""
+    plano aberto (várias pessoas, paisagem) entra inteiro com fundo desfocado.
+    cortar_baixo > 0 (vídeo com legenda gravada, 19/11/2026): a faixa de baixo sai também do B-roll, senão a legenda
+    antiga aparece junto com a nossa (legenda dupla, revisão da Lorena na Nova Acrópole)."""
     W, H = info['largura'], info['altura']
     if H >= W or plano.get('rosto_w', 0) >= 0.12:
         cw = int(round(H * 9 / 16 / 2) * 2)
         x0 = int(min(max(plano['x_centro'] - cw / 2, 0), W - cw)) // 2 * 2 if W > H else 0
         vf = f'crop={cw}:{H}:{x0}:0,scale=1080:1920' if W > H else 'scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920'
+        if cortar_baixo > 0:
+            f = cortar_baixo
+            vf += f',crop=trunc(iw*{1 - f}/2)*2:trunc(ih*{1 - f}/2)*2:(iw-iw*{1 - f})/2:0,scale=1080:1920'
         subprocess.run(['ffmpeg', '-v', 'error', '-y', '-ss', f'{ini:.3f}', '-i', video, '-t', f'{fim - ini:.3f}', '-vf', vf,
                         '-an', '-c:v', 'libx264', '-crf', '19', '-preset', 'superfast', saida], check=True)
     else:
-        clipe_encaixado(video, ini, fim, saida)
+        clipe_encaixado(video, ini, fim, saida, cortar_baixo)
 
 
 def rosto_vertical(video, tempos):

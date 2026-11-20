@@ -60,6 +60,7 @@ cor = a.cor or {'viral': '#FAC800', 'nova-acropole': '#076358'}.get(a.modelo, '#
 t0 = time.time()
 log = []
 
+
 def passo(msg):
     log.append(f'[{time.time() - t0:5.0f}s] {msg}'); print(log[-1], flush=True)
 
@@ -170,7 +171,7 @@ for n_sh, sh in enumerate(plano['shorts']):
         if chave.startswith('#'):
             k = int(chave[1:]); p = brolls_fonte[k]
             out = os.path.join(pub, f'fonte_{k}.mp4')
-            analise.clipe_broll_fonte(fonte, p, p['ini'], p['fim'], out, info)
+            analise.clipe_broll_fonte(fonte, p, p['ini'], p['fim'], out, info, a.cortar_baixo)
             mapa[chave] = f'{pid}/fonte_{k}.mp4'
             continue
         if chave.startswith('foto:'):
@@ -315,7 +316,7 @@ for n, sh in enumerate(plano['shorts']):
             o0 = s['outStart'] + ini - s['srcStart']; o1 = s['outStart'] + fim - s['srcStart']
             P['brolls'] = [b for b in P['brolls'] if b['end'] <= o0 - 0.3 or b['start'] >= o1 + 0.3]
             out = os.path.join(pub, f'enc_{n}_{extra}.mp4')
-            analise.clipe_broll_fonte(fonte, p, ini, fim, out, info)
+            analise.clipe_broll_fonte(fonte, p, ini, fim, out, info, a.cortar_baixo)
             P['brolls'].append({'start': round(o0, 3), 'end': round(o1, 3), 'src': f'{pid}/enc_{n}_{extra}.mp4', 'mode': 'cheio'})
             extra += 1
     if P['brolls'] and P['brolls'][0]['start'] < 0.25:
