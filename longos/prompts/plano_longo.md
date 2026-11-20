@@ -53,7 +53,24 @@ Você recebe `palavras.txt` (cada palavra como `índice:palavra[tempo]`, uma fra
   bruto tem chiado/ruído de fundo; `"volume_trilha_db"` (padrão -31; mais negativo = música mais baixa);
   `"olhar_limite"` (padrão 0.6) para o `olhar.py`.
 - **Lowers** (`lowers`): "inscreva" 2 vezes e "like" 1 vez (de preferência quando a pessoa pede para se inscrever
-  ou comentar). Lower de nome (`"tipo": "nome"` + campo `nome`) só se o cliente mandar o nome/cargo.
+  ou comentar). Se você não puser, a máquina põe sozinha (20/11/2026: era a causa dos "lowers que não vêm"), em
+  ~25%, ~50% e ~72% do vídeo, num ponto sem outro texto; `"lowers_auto": false` desliga. Lower de nome:
+  `{"tipo": "nome", "palavra": i, "nome": "Vanessa Dala", "cargo": "Convidada"}` (pode haver vários; sem `nome` usa
+  o `nome` do plano; sem nenhum dos dois, a máquina pula e avisa). Nome comprido diminui sozinho para caber.
+- **Elementos do cliente** (`elementos`, 20/11/2026): quando o cliente tem identidade audiovisual própria no Drive
+  (`01 - ELEMENTOS ESSENCIAIS/05 - IDENTIDADE AUDIOVISUAL`), use a dele em vez da gerada. Cada um é
+  `{"file_id": "<id no Drive>", "ext": ".mp4"}` (ou `{"arquivo": caminho}`):
+  - `vinheta`: entra logo depois do gancho (`"posicao": "inicio"` para abrir o vídeo com ela).
+  - `tela_final`: substitui a tela final gerada, com o som dela.
+  - `marca`: PNG transparente do tamanho do vídeo (logo, site) por cima do vídeo todo, menos nos cartões.
+  - `lower`, `lower_instagram`...: PNG ou .mov transparente do cliente, usado com `{"tipo": "cliente", "palavra": i,
+    "elemento": "lower_instagram"}`. Aceita `"escala"` (0.8), `"x"` e `"y"` (base do lower; padrão 60 e 1040).
+  - `like` / `inscreva`: se o cliente tem o próprio (ex.: "DEIXE SEU LIKE!" do Dr. Gustavo), ele entra no lugar do nosso.
+  - `lower_convidado`: cores do lower de convidado em etiqueta (`{"caixa": "#FFFFFF", "nome": "#111111", "aba":
+    "#FF6A00", "cargo": "#FFFFFF"}`); com ele (ou `"lower_estilo": "etiqueta"`) o lower de nome vira etiqueta.
+  O que já existe por cliente está em `longos/modelos/clientes.md`.
+- **Texto-chave no canto** (`"keyword_lado": "esquerda"`): menor e alinhado à esquerda embaixo, como nos vídeos do
+  Dr. Gustavo ("2. ALIMENTOS ULTRAPROCESSADOS").
 - **Trilha** royalty free bem baixa (-31 dB com ducking); a máquina cuida.
 - **Paleta do cliente sempre, em TODOS os elementos** (textos-chave, cartões, lowers, inscreva-se, tela final): campo
   "Identidade shorts (IA)" do cliente no Notion, copiado como está para `paleta`. Chaves: `fundo` (cartões e tela
@@ -161,3 +178,32 @@ Exemplo:
   ]
 }
 ```
+
+## Modelo "Podcast" (BM Cast da Betânia, cortes do Além do CNPJ; 20/11/2026)
+Vale quando o pedido tem Modelo "Podcast" ou o bruto é um episódio com duas ou mais pessoas conversando.
+O bruto já vem com as câmeras trocadas (multicâmera/vMix). A máquina não faz zoom alternado nem enquadra pelo rosto,
+e a regra do olhar não vale (ninguém fala para a câmera).
+- Ponha `"modelo": "podcast"` no plano. Sem `brolls` e sem `mapa`; `keywords` só se as observações pedirem (no máximo
+  1 a cada 2 min); sem trilha (`musica_file_id` fora) a não ser que peçam.
+- **Episódio completo:** `trechos` do começo ao fim, tirando só erro de gravação, pausa longa, conversa de bastidor
+  ("pode cortar", "tá gravando?") e intervalo. Nunca tire pergunta ou resposta do convidado. `"gancho"`: 15 a 40 s
+  com a fala mais forte do episódio (a vinheta entra logo depois).
+- **Cortes do episódio** (8 a 15 min, um tema fechado; o Além do CNPJ publica assim): rode
+  `python3 longos/derivar.py pedidos/<id-curto> <nome-do-corte>` para cada corte e escreva o plano de cada um na
+  subpasta. Comece numa pergunta ou frase forte do tema, termine numa conclusão. Não repita o mesmo trecho em dois cortes.
+- **Lowers:** lower de nome para cada convidado na primeira vez que ele fala bem (`"cargo"`: "Convidada"/"Convidado"
+  ou o cargo que o cliente informar), e para a anfitriã só se o cliente pedir. Inscreva e like como no Padrão.
+- **Betânia (BM Cast):** vinheta "BM CAST" depois do gancho, tela final dela, lower de convidado em etiqueta (caixa
+  branca, nome em preto, aba laranja com o cargo). Ver `longos/modelos/clientes.md`.
+- **Além do CNPJ:** logo "além do CNPJ" no canto de baixo à direita o vídeo todo (`marca`), tela final dele, sem
+  vinheta nos cortes. Os patrocinadores aparecem na TV do estúdio: nunca cubra a TV com texto.
+
+## Modelo "Educativo" (Dr. Gustavo Bonfadini; 20/11/2026)
+É o formato Padrão (zoom alternado, B-roll, cortes, textos) com a identidade do cliente:
+- `elementos`: `marca` (site à esquerda e logo à direita no topo), `vinheta` (abre depois do gancho), `tela_final`,
+  `like` (o "DEIXE SEU LIKE!" animado dele) e `lower_instagram` (PNG com @gustavobonfadini, uma vez no meio do vídeo).
+- `paleta`: destaque `#0094CD`, caixa `#1E2A5E` (azul-marinho), texto branco, `degrade: nao`.
+- `keyword_lado`: `esquerda`; textos-chave nos tópicos numerados do roteiro ("1. AÇÚCAR", "2. ALIMENTOS ULTRAPROCESSADOS").
+- A fonte da marca é Visby (sem Google Fonts); sem o arquivo dela, use `"titulo": {"google": "Plus Jakarta Sans:800"}`
+  e diga no log.
+- Assunto médico: B-roll só real (consultório, exame, alimento); nada de desenho de órgão ou cena de cirurgia.

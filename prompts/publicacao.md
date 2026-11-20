@@ -72,4 +72,6 @@ conferir e para a thumb.
 - Máquina de shorts: `shorts` na mesma ordem do `plano.json` e, sempre que o pedido for de um vídeo que também vira
   longo (o normal), `longo` com `topicos` (sem capítulos). Assim o longo editado à mão também sai com título e descrição.
 - Máquina de longos: só `longo`, com `capitulos` (índices de palavra do `palavras.txt`, em trechos mantidos).
+- Vídeo editado à mão (rotina `publicacao/TAREFA.md`, 20/11/2026): `pipeline/seo_video.py` transcreve o vídeo PRONTO;
+  `longo` com `capitulos` (índices do `palavras.txt` dele) ou `shorts` com 1 item.
 - `descricao` NÃO repete capítulos, CTA, rodapé nem hashtags: o script junta tudo na ordem certa.

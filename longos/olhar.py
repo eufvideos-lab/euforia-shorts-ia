@@ -14,6 +14,11 @@ info = json.load(open(os.path.join(pasta, 'info.json')))
 segs = json.load(open(os.path.join(pasta, 'segmentos.json')))
 W = json.load(open(os.path.join(pasta, 'transcricao.json')))['words']
 plano = json.load(open(os.path.join(pasta, 'plano.json')))
+if plano.get('modelo') == 'podcast':
+    # Podcast (20/11/2026): as pessoas conversam entre si, não com a câmera; a regra do olhar não vale.
+    json.dump({'trechos': [], 'podcast': True}, open(os.path.join(pasta, 'olhar.json'), 'w'))
+    print('modelo podcast: regra do olhar não se aplica (olhar.json vazio)')
+    sys.exit(0)
 MODELO = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'modelos', 'olhar', 'face_landmarker.task')
 FPS = 4  # quadros analisados por segundo
 # calibrado no bruto da Regina (05/11): olhando para a câmera dá baixo < 0,3 e cabeça reta ou para cima; lendo o

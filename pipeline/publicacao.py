@@ -38,17 +38,28 @@ def hashtag(h):
 def tempo_final(pasta):
     """Função palavra → segundo no vídeo final (máquina de longos), ou None se não houver segmentos.json."""
     seg_arq, tr_arq = os.path.join(pasta, 'segmentos.json'), os.path.join(pasta, 'transcricao.json')
+    if os.path.exists(os.path.join(pasta, 'video_final')) and os.path.exists(tr_arq):
+        # transcrição do próprio vídeo pronto (seo_video.py): o tempo da palavra já é o do vídeo final
+        W = json.load(open(tr_arq))['words']
+        return lambda idx: W[idx]['start'] if 0 <= idx < len(W) else None
     if not (os.path.exists(seg_arq) and os.path.exists(tr_arq)):
         return None
     segs = json.load(open(seg_arq)); W = json.load(open(tr_arq))['words']
+    # vinheta do cliente (montar.py grava montagem.json): o que vem depois dela anda a duração da vinheta
+    mt = os.path.join(pasta, 'montagem.json')
+    mt = json.load(open(mt)) if os.path.exists(mt) else {}
+    vin_t, vin_d = mt.get('vinheta_em', 0.0), mt.get('vinheta_dur', 0.0)
+
+    def desloca(x):
+        return None if x is None else (x + vin_d if vin_d and x >= vin_t else x)
 
     def t(idx):
         w = W[idx]['start']
         for x in segs:
             if x['s'] - 0.05 <= w < x['e'] + 0.05:
-                return x['saida'] + max(0.0, w - x['s'])
+                return desloca(x['saida'] + max(0.0, w - x['s']))
         prox = [x for x in segs if x['s'] > w]  # palavra cortada: o capítulo começa no próximo trecho mantido
-        return prox[0]['saida'] if prox else None
+        return desloca(prox[0]['saida']) if prox else None
     return t
 
 
