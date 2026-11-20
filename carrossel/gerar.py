@@ -219,6 +219,9 @@ def montar_slide(sl, i, n, car, idt, base):
         sub = f'<p class="sub">{t("subtitulo")}</p>' if sl.get('subtitulo') else ''
         corpo = f'<div class="barra"></div><h1>{t("titulo")}</h1>{sub}'
         deco = '<div class="circ" style="width:520px;height:520px;right:-200px;top:-210px"></div>'
+        if idt.get('capa_contador_embaixo'):
+            topo = f'<div class="topo"><span class="rot">{rot}</span><span></span></div>'
+            rodape = rodape.replace("<span>" + dir_, "<span>" + cont + " · " + dir_)
         return f'<div class="slide capa {tema}">{deco}{topo}<div class="corpo">{corpo}</div>{rodape}</div>'
     if tipo == 'passo':
         corpo = f'<div class="num">{html.escape(str(sl.get("numero", "")))}</div><h2>{t("titulo")}</h2>{paras}'
