@@ -77,9 +77,11 @@ def _sombra(im,mask):
     sh=mask.filter(ImageFilter.MaxFilter(9)).filter(ImageFilter.GaussianBlur(16)).point(lambda v:min(255,int(v*1.3)))
     im.paste((0,0,0,255),(4,8),sh)
     hard=mask.filter(ImageFilter.MaxFilter(5)).filter(ImageFilter.GaussianBlur(2)).point(lambda v:int(v*0.75)); im.paste((0,0,0,255),(2,4),hard)
-def keyword(name,text,dur):
-    # texto-chave: caps grande, surge com pop e sai encolhendo
-    f=font('blk',92); lines=[l.upper() for l in text.split('|')]
+def keyword(name,text,dur,lado='centro'):
+    # texto-chave: caps grande, surge com pop e sai encolhendo. lado='esquerda' (modelo Educativo, Dr. Gustavo): menor,
+    # alinhado à esquerda no canto de baixo
+    esq=lado=='esquerda'
+    f=font('blk',62 if esq else 92); lines=[l.upper() for l in text.split('|')]
     layers=[text_layer(l,f) for l in lines]
     BH=420; wr=Writer(f'{OUT}/{name}.mov',W,BH,True); n=int(round(dur*FPS))
     for k in range(n):
@@ -90,8 +92,8 @@ def keyword(name,text,dur):
             if a<=0.01: continue
             lw,lh=L.size; im=L.resize((max(1,int(lw*sc)),max(1,int(lh*sc))),Image.BICUBIC)
             if a<1: im.putalpha(im.getchannel('A').point(lambda v:int(v*a)))
-            cy=BH-60-(len(layers)-i-0.5)*112+(1-ease_out(p))*30
-            fr.alpha_composite(im,(int(W/2-im.width/2),int(cy-im.height/2)))
+            cy=BH-60-(len(layers)-i-0.5)*(76 if esq else 112)+(1-ease_out(p))*30
+            fr.alpha_composite(im,(int(60-(im.width-lw)/2) if esq else int(W/2-im.width/2),int(cy-im.height/2)))
         wr.put(fr)
     wr.close(); return BH
 def card(name,lines,dur,sub=None,big=False):
@@ -164,21 +166,35 @@ def endscreen(name,dur):
         lay.alpha_composite(t2,(int(1450-t2.width/2),700)); lay.alpha_composite(t3,(int(1450-t3.width/2),766))
         lay.putalpha(lay.getchannel('A').point(lambda v:int(v*a))); fr.alpha_composite(lay); wr.put(fr)
     wr.close()
-def lower(name,text,dur,icon=None):
-    # lower minimalista centralizado: retângulo na cor (ou degradê) da marca abre do centro, texto branco sobe; sai ao contrário
-    f=font('blk',40); n=int(round(dur*FPS)); BW,BH=W,240
-    tw=int(f.getlength(text)); pad=34; ic=56 if icon else 0
-    bw=tw+2*pad+ic; bh=74; x0=(W-bw)//2; y0=BH-60-bh
+def lower(name,text,dur,icon=None,sub=None):
+    # lower minimalista centralizado: retângulo na cor (ou degradê) da marca abre do centro, texto branco sobe; sai ao contrário.
+    # 20/11/2026: o texto se ajusta à largura (antes, um nome comprido estourava a tela e o lower não era gerado) e
+    # sub= faz o lower de duas linhas (nome em cima, cargo embaixo), usado para convidados de podcast.
+    MAXW=W-240; pad=34; ic=56 if icon else 0; n=int(round(dur*FPS)); BW,BH=W,240
+    tam=40
+    while tam>24 and int(font('blk',tam).getlength(text))+2*pad+ic>MAXW: tam-=2
+    f=font('blk',tam)
+    while len(text)>4 and int(f.getlength(text))+2*pad+ic>MAXW: text=text[:-2].rstrip()+'…'
+    fs=None
+    if sub:
+        ts=30
+        while ts>20 and int(font('sb',ts).getlength(sub))+2*pad>MAXW: ts-=2
+        fs=font('sb',ts)
+        while len(sub)>4 and int(fs.getlength(sub))+2*pad>MAXW: sub=sub[:-2].rstrip()+'…'
+    tw=max(int(f.getlength(text))+ic,int(fs.getlength(sub)) if fs else 0)
+    bw=tw+2*pad; bh=74 if not sub else 116; x0=(W-bw)//2; y0=BH-40-bh
     g=np.linspace(0,1,bw)[None,:,None]
     a=np.array(P['caixa'],np.float32); b2=np.array(P['acc2'],np.float32)*0.55+a*0.45 if P['degrade'] else a
     box=Image.fromarray(np.repeat(a+(b2-a)*g,bh,0).astype(np.uint8)).convert('RGBA')
     m=Image.new('L',(bw,bh),0); ImageDraw.Draw(m).rounded_rectangle((0,0,bw-1,bh-1),radius=16,fill=255); box.putalpha(m)
     txt=Image.new('RGBA',(bw,bh),(0,0,0,0)); d=ImageDraw.Draw(txt)
+    cy0=bh/2 if not sub else 40
     if icon=='play':
-        cx,cy=pad+16,bh/2; d.rounded_rectangle((cx-18,cy-13,cx+18,cy+13),radius=6,fill=P['txt']); d.polygon([(cx-5,cy-7),(cx-5,cy+7),(cx+8,cy)],fill=P['caixa'])
+        cx,cy=pad+16,cy0; d.rounded_rectangle((cx-18,cy-13,cx+18,cy+13),radius=6,fill=P['txt']); d.polygon([(cx-5,cy-7),(cx-5,cy+7),(cx+8,cy)],fill=P['caixa'])
     if icon=='heart':
-        cx,cy=pad+16,bh/2+1; d.ellipse((cx-15,cy-12,cx+1,cy+3),fill=P['txt']); d.ellipse((cx-1,cy-12,cx+15,cy+3),fill=P['txt']); d.polygon([(cx-15,cy-3),(cx+15,cy-3),(cx,cy+14)],fill=P['txt'])
-    d.text((pad+ic,bh/2),text,font=f,fill=P['txt'],anchor='lm')
+        cx,cy=pad+16,cy0+1; d.ellipse((cx-15,cy-12,cx+1,cy+3),fill=P['txt']); d.ellipse((cx-1,cy-12,cx+15,cy+3),fill=P['txt']); d.polygon([(cx-15,cy-3),(cx+15,cy-3),(cx,cy+14)],fill=P['txt'])
+    d.text((pad+ic,cy0),text,font=f,fill=P['txt'],anchor='lm')
+    if sub: d.text((pad,84),sub,font=fs,fill=P['txt']+(225,),anchor='lm')
     sh=Image.new('RGBA',(bw+60,bh+60),(0,0,0,0)); sm=Image.new('L',(bw+60,bh+60),0); ImageDraw.Draw(sm).rounded_rectangle((30,36,30+bw,36+bh),radius=16,fill=150); sh.putalpha(sm.filter(ImageFilter.GaussianBlur(14)))
     wr=Writer(f'{OUT}/{name}.mov',BW,BH,True)
     for k in range(n):
@@ -192,6 +208,34 @@ def lower(name,text,dur,icon=None):
             if ta>0.01:
                 tt=txt.crop((l,0,l+cw,bh)); tt.putalpha(tt.getchannel('A').point(lambda v:int(v*ta)))
                 fr.alpha_composite(tt,(x0+l,y0+int((1-ease_out((t-0.2)/0.35))*14)))
+        wr.put(fr)
+    wr.close()
+def lower_etiqueta(name,nome,cargo,dur,cores=None):
+    # Lower de convidado no estilo etiqueta (modelo Podcast, BM Cast): caixa clara com o nome em preto pesado e,
+    # embaixo à esquerda, uma aba na cor da marca com o cargo ("CONVIDADA"). Entra deslizando da esquerda.
+    # cores: {"caixa":"#FFFFFF","nome":"#111111","aba":"#FF6A00","cargo":"#FFFFFF"} (padrão: caixa branca e aba no destaque)
+    c=cores if isinstance(cores,dict) else {}
+    cx=hexrgb(c['caixa']) if c.get('caixa') else (255,255,255); cn=hexrgb(c['nome']) if c.get('nome') else (17,17,17)
+    ca=hexrgb(c['aba']) if c.get('aba') else P['acc']; cc=hexrgb(c['cargo']) if c.get('cargo') else (255,255,255)
+    MAXW=1100; tam=64
+    while tam>30 and font('blk',tam).getlength(nome)+80>MAXW: tam-=2
+    f=font('blk',tam); fs=font('b',28)
+    bw=int(f.getlength(nome))+80; bh=int(tam*1.55); aw=int(fs.getlength(cargo))+70 if cargo else 0; ah=46
+    BW,BH=W,300; x0=80; y0=BH-40-bh-(ah-10 if cargo else 0)
+    lay=Image.new('RGBA',(bw+40+max(0,aw-bw),bh+ah+20),(0,0,0,0)); d=ImageDraw.Draw(lay)
+    d.rounded_rectangle((14,6,bw+14,bh+6),radius=18,fill=ca)                      # sombra colorida (detalhe da marca)
+    d.rounded_rectangle((0,0,bw,bh),radius=18,fill=cx)
+    d.text((40,bh/2),nome,font=f,fill=cn,anchor='lm')
+    if cargo:
+        d.polygon([(18,bh-4),(18+aw,bh-4),(aw-6,bh+ah-14),(18,bh+ah-14)],fill=ca)
+        d.text((48,bh+ah/2-9),cargo,font=fs,fill=cc,anchor='lm')
+    n=int(round(dur*FPS)); wr=Writer(f'{OUT}/{name}.mov',BW,BH,True)
+    for k in range(n):
+        t=k/FPS; fr=Image.new('RGBA',(BW,BH),(0,0,0,0))
+        pin=ease_out(t/0.5); pout=ease_in((t-(dur-0.4))/0.4); a=pin*(1-pout)
+        if a>0.01:
+            im=lay.copy(); im.putalpha(im.getchannel('A').point(lambda v:int(v*a)))
+            fr.alpha_composite(im,(int(x0-(1-pin)*60-pout*40),y0))
         wr.put(fr)
     wr.close()
 # ---- Modelo Nova Acrópole: cartão de citação (aspas, foto redonda do autor, nome) e frase-chave, no manual da NA ----

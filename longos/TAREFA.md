@@ -78,6 +78,12 @@ apt-get install -y -q libegl1 libgles2 >/dev/null 2>&1 || (apt-get update -q >/d
    palestra inteira e sai um corte de 3 a 6 min, com legenda amarela, marca d'água e o encerramento da Acrópole Play. Para as fotos específicas,
    rode o fluxo de fotos (uma chamada com todas as buscas), pegue os IDs e ponha em `file_ids`.
    A trilha: `"musica_file_id": "15UN5dqdxX_VcaJAdcJ1vOyuGgtmBSoiQ"` (no modelo Nova Acrópole, sem trilha).
+   **Modelos por cliente (20/11/2026):** Betânia (BM Cast) e Além do CNPJ = seção "Modelo Podcast"; Dr. Gustavo =
+   "Modelo Educativo". Vale também para quem tiver Modelo "Podcast"/"Educativo" no pedido. Para eles (e para qualquer
+   cliente com identidade audiovisual no Drive), ache os arquivos de `longos/modelos/clientes.md` e ponha em
+   `plano.elementos` (vinheta, tela final, marca, lowers do cliente). Pedido de cortes de um episódio ("3 cortes do
+   EP 5"): prepare o episódio uma vez e rode `python3 longos/derivar.py pedidos/<id-curto> <nome>` para cada corte; os
+   passos 6 a 11 rodam em cada subpasta `pedidos/<id-curto>/cortes/<nome>` e cada corte é entregue como um vídeo.
 6. `python3 longos/texto.py pedidos/<id-curto> --limpar-plano` (tira do plano cada "corta"/"de novo"/"deixa eu voltar"
    com o pedaço errado e a 1ª passada das regravações; lista o que tirou: cole no log). Depois
    `python3 longos/cortar.py pedidos/<id-curto>` (corta e aplica o zoom; ~16 min para um bruto de 14 min).
@@ -89,7 +95,8 @@ apt-get install -y -q libegl1 libgles2 >/dev/null 2>&1 || (apt-get update -q >/d
    começa/termina uma palavra antes ou depois; tire a 1ª tomada) e rode `cortar.py` de novo; depois a conferência de
    novo. Até 2 voltas. Se ainda acusar, siga, ponha "🔎 Revisão obrigatória (Lorena): conferência da fala" na 1ª linha
    do log e cole o `conferencia.md`. Cole a conferência no log sempre (mesmo "Nenhum problema").
-6b. `python3 longos/olhar.py pedidos/<id-curto>`: lista os trechos em que a pessoa não olha para a câmera. Cubra
+6b. (No modelo Podcast o olhar não se aplica; o comando só grava um olhar.json vazio.)
+   `python3 longos/olhar.py pedidos/<id-curto>`: lista os trechos em que a pessoa não olha para a câmera. Cubra
    TODOS no plano (B-roll, foto ou cartão; regra em plano_longo.md) antes de seguir. O `montar.py` para se faltar.
 7. `python3 longos/brolls.py pedidos/<id-curto>` e ABRA `brolls.png` (obrigatório, 19/11/2026): embaixo de cada
    imagem está a FALA daquele momento. Para cada um pergunte "a imagem mostra o que a fala diz?". Se não, troque a
