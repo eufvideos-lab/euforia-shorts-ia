@@ -105,6 +105,11 @@ bash instalar.sh   # instala Remotion e OpenCV (~15 s)
     **Card do Entregas** (17/11/2026, quem revisa é a Lorena): se as Observações do pedido têm o link do card ("Card no Entregas: <link>" ou "Card: <link>"), atualize esse card: Status "Em revisão", "Link do arquivo" = a pasta dos shorts, "Revisor" = Lorena (ficha 3ea98c0cdde08163bd16f0213b098cb5), "🏢 Escritório IA" = "Feito pela IA" e uma linha no topo do Obs `[Máquina dd/MM HH:mm] Pronto para revisão da Lorena: <link do pedido>`. É assim que a peça entra na fila de revisão dela no Painel da Equipe. Sem link de card, siga sem isso.
 11. Registre cada short na tabela de medição (Caminho "B - Próprio (Claude + Remotion)", Status "Gerado",
     Tempo de máquina, Corte no meio de frase = não, Link do short).
+11b. **Capas automáticas no Canva** (20/11/2026): crie no banco Entregas o card
+    `<CLIENTE> | EDITÁVEIS NO CANVA · CAPAS AUTOMÁTICAS`, Cliente ligado, Responsável "Escritório (Flau + IA)", Status
+    "A fazer", Prazo = hoje, e no Obs (uma linha cada): `Pedido: <link do pedido>`, `Card do vídeo: <link>` (se houver),
+    uma linha `Short N: <título recomendado>` por short e `Pasta do vídeo: <pasta dos shorts>`. A "Máquina de
+    Editáveis no Canva" faz as capas (`escritorio/editaveis/AUTOMATICO.md`) e põe o link em "🎨 Capas no Canva".
 12. Avise no Discord, assinando como Érica, curto:
     "🎬 Shorts prontos: <Cliente> (<n> shorts, <estilo>). Para revisão da Lorena <@827882215185973279>: <link da pasta>. Título e descrição de cada vídeo (e do longo) já estão na pasta. — Érica, time de suporte, Grupo Euforia"
     Com revisão obrigatória, troque "Para revisão da Lorena" por "🔎 Revisão obrigatória da Lorena <@827882215185973279> (<motivo>)" e

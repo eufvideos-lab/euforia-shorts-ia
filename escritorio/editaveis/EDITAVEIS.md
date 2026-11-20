@@ -9,6 +9,9 @@ apresentação. Este arquivo é lido pela rotina da Máquina do Escritório (`es
 | `CLIENTE \| EDITÁVEIS NO CANVA (painel)` | Pedido no painel (Ismael, Rômulo ou diretoria), tipo "Editáveis no Canva (cliente aprovou)" |
 | `CLIENTE \| EDITÁVEIS NO CANVA` | Criado à mão ou por outra máquina depois de uma aprovação |
 
+**Card com "THUMB AUTOMÁTICA" ou "CAPAS AUTOMÁTICAS" no nome** (criado pela máquina de longos ou de shorts quando o
+vídeo fica pronto): siga `escritorio/editaveis/AUTOMATICO.md`, não este arquivo. Não precisa de aprovação do cliente.
+
 **Só depois da aprovação.** Se a Obs não diz o que foi aprovado e não há sinal de aprovação (grupo do WhatsApp, card
 Aprovado, anotação da call), marque **Falta informação** com "O que o cliente aprovou e em qual call/apresentação?".
 
