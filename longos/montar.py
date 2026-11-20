@@ -357,7 +357,8 @@ def legendas_na(arq):
         'Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, '
         'Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, '
         'MarginR, MarginV, Encoding',
-        'Style: NA,Inter Display,56,&H001FD2FF,&H001FD2FF,&H00000000,&H80000000,-1,0,0,0,100,100,0,0,1,4,2,2,80,80,150,1',
+        # sem sombra (19/11/2026, pedido da revisão: atrapalha a leitura); fica só o contorno
+        'Style: NA,Inter Display,56,&H001FD2FF,&H001FD2FF,&H00000000,&H80000000,-1,0,0,0,100,100,0,0,1,4,0,2,80,80,150,1',
         '', '[Events]', 'Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text'] + linhas) + '\n')
     return len(blocos)
 

@@ -1471,7 +1471,15 @@ function abrir(id){
     <div class="actions"><button class="btn primary" data-act="gravou">Cliente mandou o material</button></div>`;
   if (revisor() && c.status === 'Em revisão') acoes = `
     <p class="note">Arquivo: ${c.link ? `<a href="${esc(c.link)}" target="_blank" rel="noopener"><b>abrir</b></a>` : '<b>sem link</b>'}</p>
-    <div class="actions"><button class="btn ok" data-act="aprovar">✔ Revisado (vai para o cliente aprovar)</button>${naoPosta(c) ? '<button class="btn" data-act="feito">Revisado · interno (não vai ao cliente)</button>' : ''}<button class="btn warn" data-act="mostrar-ajuste">Pedir ajuste</button></div>
+    <div class="actions"><button class="btn ok" data-act="aprovar">✔ Revisado (vai para o cliente aprovar)</button>${naoPosta(c) ? '<button class="btn" data-act="feito">Revisado · interno (não vai ao cliente)</button>' : ''}<button class="btn warn" data-act="mostrar-ajuste">Pedir ajuste</button><button class="btn" data-act="mostrar-jafiz">Já fiz o ajuste</button></div>
+    <div id="ljafiz" hidden style="display:flex;flex-direction:column;gap:10px">
+      <p class="note">Corrigiu você mesma? Mande a versão certa: ela sobe para a pasta do cliente no Drive, troca o arquivo do card e a peça vai para o cliente aprovar.</p>
+      <div class="drop" id="drop"><b>Solte a versão corrigida aqui</b><span>ou</span><label class="btn" for="file" style="flex-direction:row">Escolher arquivo<input type="file" id="file" hidden></label><span class="mono">vai para a pasta do cliente no Drive</span></div>
+      <div class="up" id="up" hidden><span class="bar"><span id="up-bar" style="width:0%"></span></span><span class="mono" id="up-txt"></span></div>
+      <p class="or">ou cole o link</p>
+      <label for="lk">Link da versão corrigida (Drive, Canva, Frame.io…)<input type="url" id="lk" placeholder="https://"></label>
+      <label for="jfnota">O que você ajustou? (opcional)<input type="text" id="jfnota" maxlength="300" placeholder="Ex.: tirei a sombra da legenda e troquei o B-roll do minuto 3"></label>
+      <div class="actions"><button class="btn ok" data-act="jafiz" type="button">✔ Mandar a versão certa e liberar para o cliente</button></div></div>
     <div id="lmotivo" hidden style="display:flex;flex-direction:column;gap:10px"><label for="motivo">Qual ajuste? (obrigatório)<textarea id="motivo" maxlength="1000" placeholder="Ex.: legenda do minuto 2 cobre o rosto"></textarea></label>
       <div class="actions"><button class="btn warn" data-act="ajuste" type="button">À mão (volta para quem fez)</button><button class="btn warn" data-act="ajustemaq" type="button">Pela máquina</button></div>
       <p class="note">À mão: o card volta para ${esc((c.resp || []).join(', ') || 'quem fez')} com o seu recado. Pela máquina: ${VIDEO_MAQ.includes(c.tipo) && c.link ? 'o ajuste vai para a máquina que fez o vídeo e ela refaz' : 'o card vai para a fila do Escritório (máquinas)'}.</p></div>`;
@@ -1548,7 +1556,10 @@ function abrir(id){
     const act = a.dataset.act;
     if (act === 'completar' && $('#ctx').value.trim().length < 3) { $('#ctx').focus(); toast('Escreva o que está faltando antes de devolver.'); return; }
     if (act === 'lernotion') { abrirLeitor(c.id, ''); return; }
-    if (act === 'mostrar-ajuste') { $('#lmotivo').hidden = false; $('#motivo').focus(); return; }
+    if (act === 'mostrar-ajuste') { $('#lmotivo').hidden = false; if ($('#ljafiz')) $('#ljafiz').hidden = true; $('#motivo').focus(); return; }
+    // Já fiz o ajuste (20/11/2026, pedido da Lorena): quem revisa corrigiu à mão e manda a versão certa junto com o Revisado.
+    if (act === 'mostrar-jafiz') { $('#ljafiz').hidden = false; $('#lmotivo').hidden = true; $('#lk').focus(); return; }
+    if (act === 'jafiz' && !arquivo && !/^https:\/\//.test($('#lk').value.trim())) { $('#lk').focus(); toast('Escolha o arquivo corrigido ou cole o link.'); return; }
     if ((act === 'ajuste' || act === 'ajustemaq') && $('#motivo').value.trim().length < 3) { $('#motivo').focus(); toast('Escreva o ajuste antes de mandar.'); return; }
     if ((act === 'agendei' || act === 'postei') && !/^https:\/\//.test($('#lpost').value.trim())) { $('#lpost').focus(); toast('Cole o link da postagem (começa com https://).'); return; }
     if (act === 'travei' && $('#trmot').value.trim().length < 3) { $('#trmot').focus(); toast('Escreva o que travou antes de pedir ajuda.'); return; }
@@ -1561,6 +1572,7 @@ function abrir(id){
       let link = '', texto = '';
       if (act === 'revisao') { link = arquivo ? await enviar({ card: c.id }, arquivo) : $('#lk').value.trim(); texto = $('#nota').value.trim(); }
       if (act === 'ajuste' || act === 'ajustemaq') texto = $('#motivo').value.trim();
+      if (act === 'jafiz') { link = arquivo ? await enviar({ card: c.id }, arquivo) : $('#lk').value.trim(); const n = $('#jfnota').value.trim(); texto = 'fez o ajuste ' + (n ? '(' + n + ')' : 'e mandou a versão certa'); }
       // Ajuste pela máquina em vídeo: primeiro o pedido original no quadro de Longos/Shorts volta para "Ajustar".
       if (act === 'ajustemaq' && VIDEO_MAQ.includes(c.tipo) && /^https:\/\//.test(c.link || '')) {
         const hoje = String(D.hoje || '').slice(0, 10), pz = c.prazo && String(c.prazo).slice(0, 10) >= hoje ? String(c.prazo).slice(0, 10) : hoje;
@@ -1580,12 +1592,12 @@ function abrir(id){
         for (let j = 0; j < CANEXOS.length; j++) { $('#up').hidden = false; $('#up-txt').textContent = 'Enviando anexo ' + (j + 1) + ' de ' + CANEXOS.length + '…'; anexos.push({ nome: CANEXOS[j].name, link: await enviar({ modo: 'pedido', cliente: c.cliente }, CANEXOS[j]) }); }
         $('#clinks').value.split(/\s+/).filter(x => /^https:\/\/\S+$/.test(x)).slice(0, 10).forEach((l, j) => anexos.push({ nome: 'Link ' + (j + 1), link: l }));
       }
-      let acao = act, fim = '';
+      let acao = act === 'jafiz' ? 'aprovar' : act, fim = '';
       if (act === 'fim') { const v = document.querySelector('input[name=fim]:checked').value; acao = v === 'naoemeu' ? 'naoemeu' : 'jafeito'; fim = acao === 'jafeito' ? v : ''; texto = $('#fmot').value.trim(); link = /^https:\/\//.test($('#flk').value.trim()) ? $('#flk').value.trim() : ''; }
       const r = await api('euforia-painel-acao', { card: c.id, acao, texto, link, fim, anexos, para: act === 'passar' ? $('#pp').value : '', prazo: act === 'prazo' ? $('#npz').value : '' });
       if (!r || !r.ok) throw new Error((r && r.motivo) || 'erro');
       ocupado = false; fechar();
-      toast({ comecar: 'Bom trabalho! Card em Fazendo.', revisao: 'Mandado para revisão. O Daniel e o Ismael foram avisados.', aprovar: 'Revisado. A peça já aparece para o cliente aprovar no portal.', ajuste: 'Voltou para ajuste com o seu recado.', ajustemaq: 'Mandado para a máquina refazer com o seu recado.', agendei: 'Marcado como agendado.', postei: 'Marcado como postado.', feito: 'Marcado como feito.', prazo: 'Prazo mudado.', conferido: 'Conferido. A peça já aparece para o cliente aprovar no portal.', passar: 'Card passado. A pessoa foi avisada.', travei: 'Pedido de ajuda enviado. O guardião do cliente foi chamado.', fim: 'Pronto, ficou registrado e a equipe foi avisada.', pegar: 'É seu! O card já está na sua fila.', completar: 'Pronto! O pedido voltou para a fila do escritório.', naogravou: 'Pronto. O card saiu da fila e está esperando o cliente gravar.', gravou: 'Voltou para a fila em A fazer.' }[act]);
+      toast({ comecar: 'Bom trabalho! Card em Fazendo.', revisao: 'Mandado para revisão. O Daniel e o Ismael foram avisados.', aprovar: 'Revisado. A peça já aparece para o cliente aprovar no portal.', jafiz: 'Versão certa salva e liberada para o cliente aprovar no portal.', ajuste: 'Voltou para ajuste com o seu recado.', ajustemaq: 'Mandado para a máquina refazer com o seu recado.', agendei: 'Marcado como agendado.', postei: 'Marcado como postado.', feito: 'Marcado como feito.', prazo: 'Prazo mudado.', conferido: 'Conferido. A peça já aparece para o cliente aprovar no portal.', passar: 'Card passado. A pessoa foi avisada.', travei: 'Pedido de ajuda enviado. O guardião do cliente foi chamado.', fim: 'Pronto, ficou registrado e a equipe foi avisada.', pegar: 'É seu! O card já está na sua fila.', completar: 'Pronto! O pedido voltou para a fila do escritório.', naogravou: 'Pronto. O card saiu da fila e está esperando o cliente gravar.', gravou: 'Voltou para a fila em A fazer.' }[act]);
       await carregar(true);
     } catch (err) {
       ocupado = false;

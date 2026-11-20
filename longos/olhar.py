@@ -24,7 +24,11 @@ FPS = 4  # quadros analisados por segundo
 # calibrado no bruto da Regina (05/11): olhando para a câmera dá baixo < 0,3 e cabeça reta ou para cima; lendo o
 # teleprompter dá baixo > 0,5 com a cabeça inclinada para baixo (pitch negativo).
 LIMITE = float(plano.get('olhar_limite', 0.6))
-MIN_DUR, JUNTA = 0.8, 0.7  # trecho menor que isso não conta; buracos menores que JUNTA viram um trecho só
+# 20/11/2026 (revisão: "olhou o relógio do nada e continuou", Aposentado Rico, João Victor): a olhada rápida de
+# 0,4 s também aparece na tela; antes só contava a partir de 0,8 s. Trecho curto ganha folga até DUR_MIN_COBRIR,
+# para o B-roll não piscar.
+MIN_DUR, JUNTA, DUR_MIN_COBRIR = 0.4, 0.7, 1.5  # trecho menor que MIN_DUR não conta; buracos menores que JUNTA viram um trecho só
+GIRO_BAIXO, GIRO_LADO = 9.0, 18.0  # graus de cabeça para baixo / para o lado em relação à posição normal da pessoa
 
 from mediapipe.tasks.python import vision, BaseOptions
 import mediapipe as mp
@@ -45,7 +49,8 @@ def quadros(s, e):
 
 
 def medir(img):
-    """(baixo, lado, pitch): olhar para baixo (0 a 1), para o lado (0 a 1) e inclinação da cabeça (graus, negativo = cabeça para baixo)."""
+    """(baixo, lado, pitch, yaw): olhar para baixo (0 a 1), para o lado (0 a 1), inclinação da cabeça (graus, negativo =
+    cabeça para baixo) e giro da cabeça para o lado (graus)."""
     r = det.detect(mp.Image(image_format=mp.ImageFormat.SRGB, data=np.ascontiguousarray(img)))
     if not r.face_blendshapes:
         return None
@@ -54,7 +59,8 @@ def medir(img):
     lado = max((b.get('eyeLookOutLeft', 0) + b.get('eyeLookInRight', 0)) / 2, (b.get('eyeLookInLeft', 0) + b.get('eyeLookOutRight', 0)) / 2)
     m = np.array(r.facial_transformation_matrixes[0])
     pitch = float(np.degrees(np.arctan2(-m[1, 2], m[2, 2])))  # negativo = cabeça para baixo
-    return baixo, lado, pitch
+    yaw = float(np.degrees(np.arctan2(m[0, 2], m[2, 2])))
+    return baixo, lado, pitch, yaw
 
 
 amostras = []  # (tempo no final, baixo, lado, pitch) ou None
@@ -71,9 +77,12 @@ com = [a for t, a in amostras if a]
 if not com:
     raise SystemExit('nenhum rosto achado: confira o bruto')
 base_pitch = float(np.median([a[2] for a in com]))
+base_yaw = float(np.median([a[3] for a in com]))
 fora = []
 for t, a in amostras:
-    fora.append(bool(a) and (a[0] >= LIMITE or (a[0] >= LIMITE - 0.12 and a[2] < -4) or a[1] > 0.6))
+    # olhos para baixo/lado OU a cabeça abaixa/gira em relação ao jeito normal da pessoa (olhar o relógio, o celular)
+    fora.append(bool(a) and (a[0] >= LIMITE or (a[0] >= LIMITE - 0.12 and a[2] < -4) or a[1] > 0.6
+                             or a[2] - base_pitch < -GIRO_BAIXO or abs(a[3] - base_yaw) > GIRO_LADO))
 
 # junta os quadros "fora" em trechos no tempo final
 trechos, ini = [], None
@@ -90,7 +99,12 @@ for a, b in trechos:
         junt[-1][1] = b
     else:
         junt.append([a, b])
-junt = [[round(a - 0.15, 2), round(b + 0.15, 2)] for a, b in junt if b - a >= MIN_DUR]
+junt = [[a - 0.15, b + 0.15] for a, b in junt if b - a >= MIN_DUR]
+for x in junt:
+    falta = DUR_MIN_COBRIR - (x[1] - x[0])
+    if falta > 0:
+        x[0] = max(0.0, x[0] - falta / 2); x[1] += falta / 2
+junt = [[round(a, 2), round(b, 2)] for a, b in junt]
 
 
 def palavra_em(t):

@@ -144,7 +144,9 @@ reais, igual ao modelo de Shorts da NA.
 - **B-roll (`brolls`): muitos, uma foto a cada ~25 a 40 s (10 a 16 num corte de 7 min), 3 a 4 s cada; foto basta, não
   precisa ser vídeo. Só imagem real e verdadeira** (`"fonte": "foto"`): obra de arte
   real (pintura, escultura) com nome e autor, estátua real de filósofo, foto real da pessoa ou do lugar citado, capa
-  real do livro. Natureza pode, com cara de Brasil (Dedo de Deus, Mata Atlântica, ipê, pôr do sol no litoral). Nada de
+  real do livro. Natureza só quando a FALA é sobre natureza ou sobre aquele lugar (20/11/2026: Cataratas do Iguaçu e
+  Baía do Sancho apareceram num trecho que não falava disso e a revisão teve que tirar). Paisagem bonita não serve de
+  "tapa-buraco": sem imagem que mostre o que ela diz, use cartão de frase-chave ou deixe o rosto. Nada de
   banco genérico (Pixabay é ignorado neste modelo), desenho ou ilustração. Cada um com `"legenda"`: crédito curto que
   aparece no canto ("Gustave Courbet · Os Quebradores de Pedras (1849)", "Dedo de Deus · Serra dos Órgãos (RJ)");
   `null` para natureza sem lugar certo. Pense primeiro em obras famosas que contam a mesma coisa que ela (no Quebrador
