@@ -138,6 +138,11 @@ apt-get install -y -q libegl1 libgles2 >/dev/null 2>&1 || (apt-get update -q >/d
     "Palavras corrigidas" do `relatorio.md` (o revisor confere em 10 s) e as frases do roteiro não achadas.
     Palavra errada que a equipe achar na revisão vira uma linha em `correcoes` na ficha do cliente.
     **Card do Entregas** (17/11/2026, quem revisa é a Lorena): se as Observações do pedido têm o link do card ("Card no Entregas: <link>" ou "Card: <link>"), atualize esse card: Status "Em revisão", "Link do arquivo" = o link do vídeo pronto, "Revisor" = Lorena (ficha 3ea98c0cdde08163bd16f0213b098cb5), "🏢 Escritório IA" = "Feito pela IA" e uma linha no topo do Obs `[Máquina dd/MM HH:mm] Pronto para revisão da Lorena: <link do pedido>`. É assim que a peça entra na fila de revisão dela no Painel da Equipe. Sem link de card, siga sem isso.
+11b. **Thumb automática no Canva** (20/11/2026): crie no banco Entregas o card
+    `<CLIENTE> | EDITÁVEIS NO CANVA · THUMB AUTOMÁTICA`, Cliente ligado, Responsável "Escritório (Flau + IA)", Status
+    "A fazer", Prazo = hoje, e no Obs (uma linha cada): `Pedido: <link do pedido>`, `Card do vídeo: <link>` (se houver),
+    `Texto da thumb: <texto_thumb do publicacao.json>` e `Pasta do vídeo: <link>`. A "Máquina de Editáveis no Canva"
+    faz a thumb (`escritorio/editaveis/AUTOMATICO.md`) e põe o link em "🎨 Thumb no Canva" e na Grade. Não espere.
 12. Avise no #longos-automáticos, marcando todos (@everyone), assinando como Érica:
     "@everyone 🎞️ Vídeo longo pronto: <Cliente> (<duração>). Para revisão da Lorena <@827882215185973279>: <link>. Título, descrição e capítulos na mesma pasta. — Érica, time de suporte, Grupo Euforia"
     Com revisão obrigatória, acrescente "🔎 Revisão obrigatória (<motivo>)".

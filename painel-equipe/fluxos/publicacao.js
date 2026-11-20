@@ -17,15 +17,33 @@ const senha = ifElse({ version: 2.2, config: { name: 'Senha confere?', parameter
 const montar = node({ type: 'n8n-nodes-base.code', version: 2, config: { name: 'Montar linhas', parameters: { jsCode: `const b = $input.first().json.body || {};
 const id = v => { const s = String(v || '').replace(/-/g, '').toLowerCase(); return /^[0-9a-f]{32}$/.test(s) ? s : ''; };
 const t = (v, n) => String(v || '').slice(0, n);
+// 20/11/2026: a máquina de editáveis manda {acao:'thumb', pedido (link ou id do Notion), thumb_canva} depois de criar a thumb/capa no Canva.
+if (b.acao === 'thumb') {
+  const u = String(b.thumb_canva || '');
+  if (!/^https:\\/\\/(www\\.)?canva\\.(com|link)\\//.test(u) || !b.pedido) throw new Error('faltou pedido ou link do Canva');
+  const pid = (String(b.pedido).replace(/-/g, '').match(/[0-9a-f]{32}/i) || [''])[0].toLowerCase();
+  if (!pid) throw new Error('pedido sem id do Notion');
+  return [{ json: { _thumb: true, pid, thumb_canva: t(u, 300) } }];
+}
 const cli = id(b.cliente_id);
 if (!cli || !Array.isArray(b.videos) || !b.videos.length) throw new Error('faltou cliente_id ou videos');
 const agora = DateTime.now().setZone('America/Recife').toISO();
 return b.videos.slice(0, 12).map(v => ({ json: {
   cliente_id: cli, cliente: t(b.cliente, 120), tipo: v.tipo === 'longo' ? 'longo' : 'short', nome: t(v.nome, 120),
   titulo: t(v.titulo, 120), outros_titulos: JSON.stringify((v.outros_titulos || []).slice(0, 4).map(x => t(x, 120))),
-  descricao: t(v.descricao, 5200), tags: t((v.tags || []).join(', '), 600), comentario: t(v.comentario, 400), thumb: t(v.thumb, 120),
+  descricao: t(v.descricao, 5200), tags: t((v.tags || []).join(', '), 600), comentario: t(v.comentario, 400), thumb: t(v.thumb, 120), thumb_canva: '',
   link: /^https:\\/\\//.test(String(v.drive || '')) ? t(v.drive, 300) : '', pedido: t(b.pedido, 300), criado: agora } }));
 ` } } });
+const ehThumb = ifElse({ version: 2.2, config: { name: 'É thumb?', parameters: { conditions: {
+  options: { caseSensitive: true, leftValue: '', typeValidation: 'loose' },
+  conditions: [{ leftValue: '={{ $json._thumb === true }}', rightValue: '', operator: { type: 'boolean', operation: 'true', singleValue: true } }],
+  combinator: 'and' } } } });
+// Atualiza todas as linhas do pedido (longo: a thumb; shorts: a pasta com as capas do pedido).
+const atualizar = node({ type: 'n8n-nodes-base.dataTable', version: 1.1, config: { name: 'Pôr thumb no pacote', parameters: {
+  resource: 'row', operation: 'update', dataTableId: PACOTES, matchType: 'allConditions',
+  filters: { conditions: [{ keyName: 'pedido', condition: 'ilike', keyValue: '={{ "%" + $json.pid + "%" }}' }] },
+  columns: { mappingMode: 'defineBelow', value: { thumb_canva: '={{ $json.thumb_canva }}' } }, options: {} } } });
+const okThumb = node({ type: 'n8n-nodes-base.respondToWebhook', version: 1.5, config: { name: 'Thumb gravada', parameters: { respondWith: 'json', responseBody: '={{ JSON.stringify({ ok: true, atualizados: $input.all().length }) }}', options: {} } } });
 const gravar = node({ type: 'n8n-nodes-base.dataTable', version: 1.1, config: { name: 'Gravar pacotes', parameters: {
   resource: 'row', operation: 'insert', dataTableId: PACOTES, columns: { mappingMode: 'autoMapInputData', value: null }, options: {} } } });
 const ok = node({ type: 'n8n-nodes-base.respondToWebhook', version: 1.5, config: { name: 'Gravado', parameters: { respondWith: 'json', responseBody: '={{ JSON.stringify({ ok: true, gravados: $input.all().length }) }}', options: {} } } });
@@ -58,7 +76,7 @@ const buscar = node({ type: 'n8n-nodes-base.dataTable', version: 1.1, config: { 
 const resumir = node({ type: 'n8n-nodes-base.code', version: 2, config: { name: 'Montar resposta', parameters: { jsCode: `const limite = DateTime.now().minus({ days: 45 });
 const lista = $input.all().map(i => i.json).filter(x => x.titulo && (!x.criado || DateTime.fromISO(x.criado) > limite)).map(x => {
   let outros = []; try { outros = JSON.parse(x.outros_titulos || '[]'); } catch (e) {}
-  return { tipo: x.tipo, nome: x.nome, titulo: x.titulo, outros, descricao: x.descricao, tags: x.tags, comentario: x.comentario, thumb: x.thumb, link: x.link, criado: x.criado };
+  return { tipo: x.tipo, nome: x.nome, titulo: x.titulo, outros, descricao: x.descricao, tags: x.tags, comentario: x.comentario, thumb: x.thumb, thumb_canva: x.thumb_canva || '', link: x.link, criado: x.criado };
 });
 return [{ json: { ok: true, pacotes: lista } }];
 ` } } });
@@ -66,5 +84,5 @@ const devolver = node({ type: 'n8n-nodes-base.respondToWebhook', version: 1.5, c
 const recusar = node({ type: 'n8n-nodes-base.respondToWebhook', version: 1.5, config: { name: 'Recusar', parameters: { respondWith: 'json', responseBody: '{"ok":false,"motivo":"acesso"}', options: {} } } });
 
 export default workflow('painel-publicacao', 'Painel | Título e descrição (V1)')
-  .add(receber).to(senha.onTrue(montar.to(gravar.to(ok))).onFalse(negar))
+  .add(receber).to(senha.onTrue(montar.to(ehThumb.onTrue(atualizar.to(okThumb)).onFalse(gravar.to(ok)))).onFalse(negar))
   .add(pedir).to(ler).to(acesso).to(validar).to(valido.onTrue(buscar.to(resumir.to(devolver))).onFalse(recusar));
