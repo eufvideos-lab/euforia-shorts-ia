@@ -83,14 +83,22 @@ apt-get install -y -q libegl1 libgles2 >/dev/null 2>&1 || (apt-get update -q >/d
 6. `python3 longos/texto.py pedidos/<id-curto> --limpar-plano` (tira do plano cada "corta"/"de novo"/"deixa eu voltar"
    com o pedaço errado e a 1ª passada das regravações; lista o que tirou: cole no log). Depois
    `python3 longos/cortar.py pedidos/<id-curto>` (corta e aplica o zoom; ~16 min para um bruto de 14 min).
-   Confira 3 emendas: tire quadros e ouça se nenhuma palavra foi comida (veja a transcrição das bordas).
-   As emendas e as pausas internas são achadas no áudio (a voz caindo), não só no tempo do Whisper. Se ainda
-   comer final de palavra, abaixe `"limiar_corte"` no plano (padrão: 2,5x o ruído de fundo, mínimo 60); se sobrar
-   pausa longa (sala com ruído), suba.
+   O corte agora cai pelo som da palavra (pipeline/emenda.py, 19/11/2026), não pelo tempo da transcrição.
+   Se parar com "pedaço solto de menos de 0,5 s", junte o trecho curto ao vizinho ou tire do plano.
+6a. **Conferência da fala (19/11/2026, obrigatória):** `python3 pipeline/conferir_fala.py longo pedidos/<id-curto>`.
+   Ela transcreve de novo o áudio JÁ CORTADO e compara com o plano. Código 2 = achou palavra comida numa emenda, frase
+   repetida (1ª tomada que ficou) ou frame solto; o `conferencia.md` diz o minuto e o texto. Corrija o plano (trecho
+   começa/termina uma palavra antes ou depois; tire a 1ª tomada) e rode `cortar.py` de novo; depois a conferência de
+   novo. Até 2 voltas. Se ainda acusar, siga, ponha "🔎 Revisão obrigatória (Lorena): conferência da fala" na 1ª linha
+   do log e cole o `conferencia.md`. Cole a conferência no log sempre (mesmo "Nenhum problema").
 6b. `python3 longos/olhar.py pedidos/<id-curto>`: lista os trechos em que a pessoa não olha para a câmera. Cubra
    TODOS no plano (B-roll, foto ou cartão; regra em plano_longo.md) antes de seguir. O `montar.py` para se faltar.
-7. `python3 longos/brolls.py pedidos/<id-curto>` e olhe `brolls.png`. O que não mostra o que a pessoa fala sai do
-   plano (troque a busca e rode `brolls.py pasta <id>` só daquele).
+7. `python3 longos/brolls.py pedidos/<id-curto>` e ABRA `brolls.png` (obrigatório, 19/11/2026): embaixo de cada
+   imagem está a FALA daquele momento. Para cada um pergunte "a imagem mostra o que a fala diz?". Se não, troque a
+   busca e rode `brolls.py pasta <id>` só daquele, ou tire o B-roll (melhor rosto ou cartão do que B-roll sem relação).
+   Reprove na hora: desenho/3D/animação, imagem com cara de amadora ou tremida, metáfora ao pé da letra ("raízes" =
+   raiz de árvore, "família" = criança aleatória), pessoa estrangeira demais para o assunto. Escreva no log
+   "brolls.png conferida: N ok, M trocados, K tirados".
 8. `python3 longos/montar.py pedidos/<id-curto> --previa` e olhe 6 quadros da prévia (90 s). Depois
    `python3 longos/montar.py pedidos/<id-curto> --sem-gfx` para o final (~15 min para 8 min de vídeo).
    IMPORTANTE: nunca encerre a sua vez esperando um comando em segundo plano. Rode em primeiro plano com timeout
@@ -99,13 +107,11 @@ apt-get install -y -q libegl1 libgles2 >/dev/null 2>&1 || (apt-get update -q >/d
 9a. **Título, descrição e SEO** (16/11/2026; substitui o Gemini que a equipe usava): leia `prompts/publicacao.md` e
    escreva `pedidos/<id-curto>/publicacao.json` só com `longo`, COM `capitulos` (índices de palavra do `palavras.txt`
    em trechos mantidos; o script põe os minutos do vídeo final). Use a transcrição, o roteiro e a ficha do cliente.
-9b. Projeto do Euforia Studio (16/11/2026; a equipe abre, ajusta e renderiza no PC):
-   `python3 longos/montar.py pedidos/<id-curto> --sem-gfx --studio pedidos/<id-curto>/studio --cliente "<nome>" --titulo "<título>"`
-   (não renderiza de novo: só monta o projeto, ~2 min). Use o título recomendado do publicacao.json. Depois
-   `python3 pipeline/publicacao.py pedidos/<id-curto> --cliente "<nome>" --studio pedidos/<id-curto>/studio`
-   (o .txt sobe no passo 10). Se parar com ERRO, corrija o publicacao.json e rode de novo. Fora o modelo Nova Acrópole, que ainda não abre no Studio.
-   Crie com o Google Drive a pasta "<Cliente> - <id-curto>" dentro de EDITOR (1Je4ZPgF6m3ocRinFlMNewtyljHD7unLX) e rode
-   `python3 pipeline/studio_drive.py pedidos/<id-curto>/studio <id da pasta> [--revisar "<motivo>"]`.
+9b. Projeto do Euforia Studio: NÃO gere mais (decisão do Henrique, 19/11/2026: a equipe ajusta no CapCut e os
+   ajustes voltam para a máquina pelo painel). Exceção: pedido que veio do Studio (tem "ID DO STUDIO"), porque quem
+   mandou espera abrir lá: `python3 longos/montar.py pedidos/<id-curto> --sem-gfx --studio pedidos/<id-curto>/studio --cliente "<nome>" --titulo "<título>"`,
+   pasta "<Cliente> - <id-curto>" em EDITOR (1Je4ZPgF6m3ocRinFlMNewtyljHD7unLX) e
+   `python3 pipeline/studio_drive.py pedidos/<id-curto>/studio <id da pasta>`.
    **Revisão obrigatória da Lorena** (decisão do Henrique, 16/11/2026). Vale se QUALQUER um for verdade:
    cliente com "🔴 Atenção redobrada" marcado na ficha; cliente com "📄 Contrato início" há menos de 30 dias.
    O motivo é curto: "cliente 🔴", "cliente novo". O resto a equipe revisa por amostragem.
@@ -116,8 +122,9 @@ apt-get install -y -q libegl1 libgles2 >/dev/null 2>&1 || (apt-get update -q >/d
     (upload retomável direto no Drive; aguenta 300+ MB). Nunca reduza a resolução para caber: se o upload falhar,
     é erro (#ia-status), não entrega comprimida. Confira com ffprobe que o final tem 1920x1080 antes de subir.
     Suba o "título e descrição" ao lado do vídeo:
-    `python3 pipeline/publicacao.py pedidos/<id-curto> --cliente "<nome>" --pasta-drive <pasta> --studio pedidos/<id-curto>/studio --cliente-id <id da ficha do cliente> --pedido <link do pedido>`
-    (vai também para o Painel da Equipe, na gaveta do horário da Grade; se o modelo não abre no Studio, rode sem `--studio`).
+    `python3 pipeline/publicacao.py pedidos/<id-curto> --cliente "<nome>" --pasta-drive <pasta> --cliente-id <id da ficha do cliente> --pedido <link do pedido>`
+    (vai também para o Painel da Equipe, na gaveta do horário da Grade; só pedido do Studio leva `--studio pedidos/<id-curto>/studio`).
+    Se parar com ERRO, corrija o publicacao.json e rode de novo.
     Suba também o `plano.json` para a pasta da máquina (1rF9yJwVPCp4IvTHfb6Gm3YbdLhWdX3eI) com o nome
     `plano-longo-<id-curto>.json` (é o que permite um "Ajustar" depois).
 11. Atualize o pedido: "Vídeo pronto" (link), "Entregue em" (agora), Status "Pronto para revisão" e um resumo
@@ -128,14 +135,19 @@ apt-get install -y -q libegl1 libgles2 >/dev/null 2>&1 || (apt-get update -q >/d
     **Card do Entregas** (17/11/2026, quem revisa é a Lorena): se as Observações do pedido têm o link do card ("Card no Entregas: <link>" ou "Card: <link>"), atualize esse card: Status "Em revisão", "Link do arquivo" = o link do vídeo pronto, "Revisor" = Lorena (ficha 3ea98c0cdde08163bd16f0213b098cb5), "🏢 Escritório IA" = "Feito pela IA" e uma linha no topo do Obs `[Máquina dd/MM HH:mm] Pronto para revisão da Lorena: <link do pedido>`. É assim que a peça entra na fila de revisão dela no Painel da Equipe. Sem link de card, siga sem isso.
 12. Avise no #longos-automáticos, marcando todos (@everyone), assinando como Érica:
     "@everyone 🎞️ Vídeo longo pronto: <Cliente> (<duração>). Para revisão da Lorena <@827882215185973279>: <link>. Título, descrição e capítulos na mesma pasta. — Érica, time de suporte, Grupo Euforia"
-    Com revisão obrigatória, acrescente "🔎 Revisão obrigatória (<motivo>)" e
-    "Abrir no Euforia Studio: pasta EDITOR / <Cliente> - <id-curto>".
+    Com revisão obrigatória, acrescente "🔎 Revisão obrigatória (<motivo>)".
 
 ## Regras
 - Nunca mande nada para cliente. A entrega é interna (Drive + Notion + Discord).
 - Erro: Status "Erro"; no log só "Erro na edição. A diretoria está resolvendo."; detalhe técnico no #ia-status com o
   link do pedido; aviso curto no #longos-automáticos.
 - Não apague arquivos do Drive. Não crie páginas soltas no Notion. Não faça commit nem push.
-- "Ajustar": baixe o `plano-longo-<id-curto>.json` da pasta da máquina (busque pelo nome no Google Drive e use
-  `ponte.baixar`), rode de novo o preparar, aplique só o que as observações pedem e siga do passo 6.
-  Volte para "Pronto para revisão".
+- "Ajustar" é CIRÚRGICO (19/11/2026): muda só o que a revisão pediu, o resto volta igual. Baixe o
+  `plano-longo-<id-curto>.json` da pasta da máquina (busque pelo nome no Google Drive e use `ponte.baixar`), rode de
+  novo o preparar e aplique só o que as observações pedem, seguindo do passo 6.
+  - B-rolls: cada um guarda o clipe escolhido (`"clipe"`); o `brolls.py` baixa o MESMO clipe. Para trocar só um,
+    mude a `busca` dele (ou apague o `"clipe"` dele). Não mexa nos outros.
+  - Ruído/chiado: `"reduzir_ruido": true` (ou `"forte"`) no plano. Música alta/baixa: `"volume_trilha_db"`.
+    Olhar fora da câmera: `"olhar_limite"`. Tudo fica gravado no plano e vale nas próximas voltas.
+  - Palavra cortada/frase repetida/frame solto: a conferência do passo 6a acha; corrija o plano e rode de novo.
+  - Anote no log, para cada item pedido, o minuto e o que foi feito. Volte para "Pronto para revisão".

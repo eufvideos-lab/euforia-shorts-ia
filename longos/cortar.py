@@ -2,12 +2,15 @@
 """Vídeo longo, etapa 2: corta o bruto seguindo os trechos do plano.json.
 Uso: python3 longos/cortar.py PASTA_DO_PEDIDO [indices dos segmentos para refazer...]
 - Cada trecho [palavra_inicial, palavra_final] vira um ou mais segmentos de ~8 s.
-- O corte cai no ponto mais silencioso perto da palavra (nunca come final de palavra; melhor sobrar um pouco).
+- O corte cai numa pausa de verdade, achada pelo som (pipeline/emenda.py), nunca no tempo da transcrição: não come
+  começo nem final de palavra (19/11/2026). Pedaço de menos de 0,5 s para a máquina (frame solto).
 - Zoom alternado (plano aberto / fechado) a cada segmento, para esconder as emendas.
 - HDR do iPhone é convertido para SDR; tudo sai em 1920x1080, 30 fps.
 Gera segs/NNN.mkv e segmentos.json (com o tempo de cada segmento no vídeo final)."""
 import json, os, subprocess, sys
 import numpy as np
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'pipeline'))
+import emenda as EM
 from concurrent.futures import ThreadPoolExecutor
 
 pasta = sys.argv[1]
@@ -27,68 +30,20 @@ if os.path.exists(_tx) and '--forcar' not in sys.argv:
             '. Tire o pedaço errado e o comando do trecho (veja relatorio.md); se for fala de verdade, ponha o índice em '
             '"ignorar_comandos" no plano.')
 sys.argv = [a for a in sys.argv if a != '--forcar']
-SR = 8000
-raw = subprocess.run(['ffmpeg', '-v', 'error', '-i', bruto, '-vn', '-ac', '1', '-ar', str(SR), '-f', 's16le', '-'],
-                     capture_output=True).stdout
-audio = np.frombuffer(raw, np.int16).astype(np.float32)
-janela = int(0.02 * SR)
-env = np.sqrt(np.convolve(audio ** 2, np.ones(janela) / janela, 'same'))
+SR = 16000
+audio = EM.carregar(bruto, SR)
 
 
-def silencio(a, b):
-    """Instante mais silencioso entre a e b (s)."""
-    a = max(0, int(a * SR)); b = max(a + 1, min(len(env), int(b * SR)))
-    return (a + int(np.argmin(env[a:b]))) / SR
+def fim(j):
+    """Fim de verdade da palavra j (pelo som, não pela transcrição): o corte nunca come o final."""
+    lim = W[j + 1]['start'] + 0.15 if j + 1 < len(W) else W[j]['end'] + 0.6
+    return EM.fim_real(audio, W[j]['end'], min(lim, W[j]['end'] + 0.6), SR)
 
 
-# Emendas pelo áudio (18/11/2026): o Whisper marca o fim da palavra cedo e às vezes estica a palavra por cima de
-# um silêncio ("ela" com 6 s). Agora o fim/início de fala é achado na envoltória do áudio, não só no tempo do Whisper.
-# Limiar: "limiar_corte" no plano, senão 2,5x o ruído de fundo (mínimo 60, o valor que funcionou no João Vitor).
-LIMIAR = float(plano.get('limiar_corte') or max(60.0, 2.5 * float(np.percentile(env, 10))))
-FOLGA = 0.12      # depois que a voz cai, ainda deixa esse tanto (respiro e cauda da palavra)
-CALADO = 0.06     # silêncio mínimo para valer como "a voz caiu" (não para numa consoante)
-
-
-def _voz(i):
-    return i < len(env) and env[i] > LIMIAR
-
-
-def fim_fala(t, ate):
-    """Avança de t até a voz cair (por CALADO s) sem passar de `ate`; devolve o instante em que caiu."""
-    i, lim, cal = int(t * SR), min(len(env), int(ate * SR)), int(CALADO * SR)
-    while i < lim:
-        if not _voz(i) and not env[i:i + cal].max(initial=0) > LIMIAR:
-            break
-        i += 1
-    return i / SR
-
-
-def ini_fala(t, desde):
-    """Recua de t até antes do começo da voz, sem passar de `desde`."""
-    i, lim, cal = int(t * SR), max(0, int(desde * SR)), int(CALADO * SR)
-    while i > lim:
-        if not _voz(i - 1) and not env[max(0, i - cal):i].max(initial=0) > LIMIAR:
-            break
-        i -= 1
-    return i / SR
-
-
-def pausas(a, b, minimo):
-    """Silêncios do áudio (envoltória < LIMIAR) com mais de `minimo` s entre a e b: [(ini, fim), ...]."""
-    i0, i1 = max(0, int(a * SR)), min(len(env), int(b * SR))
-    q = env[i0:i1] <= LIMIAR
-    out, k = [], 0
-    while k < len(q):
-        if q[k]:
-            j = k
-            while j < len(q) and q[j]:
-                j += 1
-            if (j - k) / SR > minimo:
-                out.append(((i0 + k) / SR, (i0 + j) / SR))
-            k = j
-        else:
-            k += 1
-    return out
+def ini(j):
+    """Começo de verdade da palavra j (pelo som)."""
+    lim = W[j - 1]['end'] - 0.15 if j > 0 else W[j]['start'] - 0.5
+    return EM.inicio_real(audio, W[j]['start'], max(lim, W[j]['start'] - 0.5, 0.0), SR)
 
 
 NA = plano.get('modelo') == 'nova-acropole'  # cortes de palestra: imagem antiga, zoom mais leve e sem vinheta
@@ -127,47 +82,103 @@ for i0, i1, gancho in trechos:
     s, e = W[i0]['start'], W[i1]['end']
     ant = W[i0 - 1]['end'] if i0 > 0 else 0.0
     prox = W[i1 + 1]['start'] if i1 + 1 < len(W) else info['duracao']
+    s_r, e_r = (ini(i0) if i0 > 0 else max(0.0, s - 0.3)), fim(i1)
     if gancho:  # respiro natural: até ~0,35 s antes e ~0,5 s depois, sem invadir a palavra vizinha
-        s2 = max(0.0, s - 0.35, (ant + s) / 2 if i0 > 0 else 0.0)
-        e2 = min(info['duracao'], e + 0.5, (e + prox) / 2)
-        if prox > e:  # o Whisper marcou o fim cedo: nunca corta a palavra antes de a voz cair
-            e2 = max(e2, min(fim_fala(e, prox) + FOLGA, prox))
+        s2 = max(0.0, min(s_r, s - 0.35) if i0 == 0 else max(min(s_r, s - 0.35), (ant + s_r) / 2))
+        e2 = min(info['duracao'], max(e_r, min(e + 0.5, (e_r + prox) / 2)))
     else:
-        # começo: recua até antes da voz (o Whisper às vezes marca o início tarde), sem pegar a palavra anterior
-        sv = ini_fala(s, max(ant, s - 0.6))
-        s2 = max(ant, sv - FOLGA) if sv < s - 0.01 else silencio(max(ant, s - 0.25), s - 0.02)
-        # fim: avança até a voz cair de verdade (+ folga); só usa o ponto mais quieto se a próxima palavra estiver colada
-        ev = fim_fala(e, min(prox, e + 1.0) if prox > e else e + 0.05)
-        e2 = ev + FOLGA if ev + FOLGA <= prox else max(ev, silencio(ev, prox) if prox > ev else ev)
-    ws = W[i0:i1 + 1]
-    # pausa longa no meio do trecho (ela mexendo no teleprompter/câmera, ou palavra que o Whisper esticou por
-    # cima do silêncio): acha o silêncio no áudio, tira e deixa só um respiro
-    ps = pausas(s2 + 0.05, e2 - 0.05, PAUSA)
-    for j in range(len(ws) - 1):  # buraco grande na transcrição com barulho de fundo (o áudio não cai): regra antiga
-        a, b = ws[j]['end'], ws[j + 1]['start']
-        if b - a > PAUSA and not any(p0 < b and a < p1 for p0, p1 in ps):
-            ps.append((fim_fala(a, b), ini_fala(b, a)))
-    blocos, ini = [], s2
-    for p0, p1 in sorted(ps):
-        if p1 - p0 > 2 * FOLGA + 0.08:
-            blocos.append((ini, p0 + FOLGA + 0.08)); ini = p1 - FOLGA
-    blocos.append((ini, e2))
+        s2, e2 = s_r, min(info['duracao'], e_r)
+    ws = list(range(i0, i1 + 1))
+    # pausa longa no meio do trecho (ela mexendo no teleprompter/câmera): tira o silêncio, fica só um respiro.
+    # As bordas vêm do som (fim()/ini()), não da transcrição: era aqui que o fim da palavra era comido (18/11).
+    blocos, b_ini = [], s2
+    for a, b in zip(ws, ws[1:]):
+        if W[b]['start'] - W[a]['end'] > PAUSA:
+            f_a, i_b = fim(a), ini(b)
+            if i_b - f_a > PAUSA:
+                blocos.append((b_ini, f_a)); b_ini = i_b
+    # palavra que a transcrição esticou por cima de um silêncio ("ela" com 6 s, 18/11/2026): o buraco não aparece
+    # entre as palavras, então procura o silêncio dentro dela e tira, deixando só um respiro
+    cortes_pal = []
+    for j in ws:
+        if W[j]['end'] - W[j]['start'] > PAUSA + 0.5:
+            for p0, p1 in EM.pausas(audio, W[j]['start'], W[j]['end'], SR)[0]:
+                if p1 - p0 > PAUSA:
+                    cortes_pal.append((p0 + 0.15, p1 - 0.15))
+    if cortes_pal:
+        novos = []
+        for a0, b0 in blocos + [(b_ini, e2)]:
+            for c0, c1 in sorted(cortes_pal):
+                if a0 < c0 and c1 < b0:
+                    novos.append((a0, c0)); a0 = c1
+            novos.append((a0, b0))
+        blocos = novos[:-1]; b_ini, e2 = novos[-1]
+    blocos.append((b_ini, e2))
     for bi, (a0, b0) in enumerate(blocos):
         cortes, ult = [a0], a0
-        for j in range(len(ws) - 1):
-            t = (ws[j]['end'] + ws[j + 1]['start']) / 2
+        for a, b in zip(ws, ws[1:]):
+            t = (W[a]['end'] + W[b]['start']) / 2
             if a0 < t < b0 and t - ult > 7.5 and b0 - t > 4:
-                cortes.append(t); ult = t
+                # emenda interna (só troca o zoom, o áudio é contínuo): mesmo assim no silêncio entre as palavras
+                t = EM.ponto(audio, W[a]['end'] - 0.05, W[b]['start'] + 0.05, 'fim', SR)
+                if a0 < t < b0:
+                    cortes.append(t); ult = t
         cortes.append(b0)
         for n, (a, b) in enumerate(zip(cortes[:-1], cortes[1:])):
             segs.append({'s': round(a, 3), 'e': round(b, 3), 'join': n > 0})
+# Frame solto (Lorena, NA 0:08): pedaço de menos de 0,5 s entre cortes. Emenda contínua junta no vizinho;
+# pedaço solto de verdade para a máquina (o plano tem um trecho curto demais).
+limpos = []
+for x in segs:
+    if x['e'] - x['s'] < 0.5 and x['join'] and limpos:
+        limpos[-1]['e'] = x['e']; continue
+    limpos.append(x)
+segs = limpos
+soltos = [x for x in segs if x['e'] - x['s'] < 0.5]
+if soltos and '--forcar-curto' not in sys.argv:
+    raise SystemExit('pedaço solto de menos de 0,5 s (vira frame solto no vídeo): ' + ', '.join(
+        f"{x['s']:.2f}-{x['e']:.2f}s do bruto" for x in soltos) + '. Junte com o trecho vizinho ou tire do plano.')
+sys.argv = [a for a in sys.argv if a != '--forcar-curto']
 for n, x in enumerate(segs):
     x['zoom'] = ZOOM if n % 2 else ABERTO
 
+# Redução de ruído (ar-condicionado, rua) fica no plano (19/11/2026): antes era feita à mão numa rodada e sumia no
+# Ajustar seguinte. "reduzir_ruido": true (normal) ou "forte".
+_RR = plano.get('reduzir_ruido')
+RUIDO = ('highpass=f=70,lowpass=f=13000,afftdn=nf=-28:tn=1,anlmdn=s=4,' if _RR is True or _RR == 'normal' else
+         'highpass=f=80,lowpass=f=12000,afftdn=nf=-22:tn=1,anlmdn=s=7,agate=threshold=0.02:ratio=2:release=150,' if _RR == 'forte' else '')
 TM = ("zscale=t=linear:npl=100,format=gbrpf32le,zscale=p=bt709,tonemap=hable:desat=0,"
       "zscale=t=bt709:m=bt709:r=tv,format=yuv420p,") if info['hdr'] else ''
 GRADE = plano.get('cor', "eq=contrast=1.03:saturation=1.03" if NA else "eq=contrast=1.05:saturation=1.05,vignette=PI/6")
 os.makedirs(os.path.join(pasta, 'segs'), exist_ok=True)
+
+
+# Enquadramento trecho a trecho (20/11/2026, revisão: "do nada no 15:42 a pessoa saiu do centro"). O centro geral vem
+# da mediana do vídeo todo; se a pessoa se mexeu (mudou de cadeira, câmera esbarrada), aquele trecho ficava torto.
+# Aqui cada trecho com zoom confere o rosto em 3 quadros e, se ele cai fora do miolo do recorte, recentra só esse trecho.
+def centro_do_trecho(x):
+    if NA or plano.get('enquadramento') == 'manual':
+        return CX, CY
+    try:
+        import enquadrar as EQ
+        pts = []
+        for _, img in EQ.quadros(bruto, info['duracao'], n=3, de=x['s'], ate=x['e']):
+            rs = EQ.rostos(img)
+            if rs:
+                fx, fy, fw, fh = max(rs, key=lambda r: r[2] * r[3]); Hh, Ww = img.shape[:2]
+                pts.append(((fx + fw / 2) / Ww, (fy + fh / 2) / Hh))
+        if len(pts) < 2:
+            return CX, CY
+        rx = sorted(p[0] for p in pts)[len(pts) // 2]; ry = sorted(p[1] for p in pts)[len(pts) // 2]
+        meia_l = 0.5 / x['zoom']
+        # rosto a mais de 40% da meia-largura do recorte para o lado: recentra (mesma altura de olhos do geral)
+        if abs(rx - CX) > 0.4 * meia_l or abs(ry - (CY - (0.5 - 0.36) / x['zoom'])) > 0.5 * meia_l:
+            ncy = ry + (0.5 - 0.36) / x['zoom']
+            print(f"trecho {x['s']:.1f}-{x['e']:.1f}s: pessoa fora do centro (rosto em x={rx:.2f}); recentrado", flush=True)
+            return rx, min(0.95, max(0.05, ncy))
+    except Exception as e:
+        print('enquadramento do trecho não conferido:', e, flush=True)
+    return CX, CY
 
 
 def render(n):
@@ -175,7 +186,8 @@ def render(n):
     vf = TM + "scale=1920:1080:force_original_aspect_ratio=increase,crop=1920:1080,"
     if x['zoom'] > 1:
         cw = int(1920 / x['zoom']) // 2 * 2; ch = int(1080 / x['zoom']) // 2 * 2
-        cx = min(max(int(CX * 1920 - cw / 2), 0), 1920 - cw); cy = min(max(int(CY * 1080 - ch / 2), 0), 1080 - ch)
+        CXt, CYt = centro_do_trecho(x)
+        cx = min(max(int(CXt * 1920 - cw / 2), 0), 1920 - cw); cy = min(max(int(CYt * 1080 - ch / 2), 0), 1080 - ch)
         vf += f"crop={cw}:{ch}:{cx}:{cy},scale=1920:1080:flags=lanczos,"
     vf += GRADE + ',fps=30,format=yuv420p'
     prox = segs[n + 1]['join'] if n + 1 < len(segs) else False
@@ -185,7 +197,7 @@ def render(n):
     if not prox:
         af.append(f'afade=t=out:st={dur - 0.04:.3f}:d=0.04')
     cmd = ['ffmpeg', '-v', 'error', '-y', '-ss', f"{x['s']:.3f}", '-i', bruto, '-t', f'{dur:.3f}', '-vf', vf,
-           '-af', (','.join(af) or 'anull') + ',aresample=48000,aformat=channel_layouts=stereo',
+           '-af', RUIDO + (','.join(af) or 'anull') + ',aresample=48000,aformat=channel_layouts=stereo',
            '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '18', '-c:a', 'pcm_s16le', os.path.join(pasta, 'segs', f'{n:03d}.mkv')]
     r = subprocess.run(cmd, capture_output=True, text=True)
     return None if r.returncode == 0 else f'segmento {n}: {r.stderr[-300:]}'

@@ -19,13 +19,20 @@ Você recebe `palavras.txt` (cada palavra como `índice:palavra[tempo]`, uma fra
   O plano aberto também corta em volta do rosto e a pessoa fica no meio. Confira num quadro do segmento 000 que ela
   ficou centralizada e sem cortar a cabeça; se precisar, ajuste com `"zoom_aberto"` (1.0 a 1.6). Em bruto 1080p,
   zoom acima de ~1.4 perde nitidez: prefira centralizar só até onde a imagem continua boa (bruto 4K aguenta tudo).
-- **Textos-chave** (`keywords`): só termos importantes, 8 a 14 num vídeo de 8 min. GRANDES, CAPS, brancos com sombra,
-  sem tarja; `*palavra*` sai no degradê do cliente. Máximo ~30 letras; use `|` para quebrar em duas linhas.
+- **Textos-chave** (`keywords`): só termos importantes, 8 a 14 num vídeo de 8 min. GRANDES, CAPS, brancos, SEM sombra
+  (decisão do Henrique, 19/11/2026; `"sombra": true` no plano só se o cliente pedir) e sem tarja; `*palavra*` sai no degradê do cliente. Máximo ~30 letras; use `|` para quebrar em duas linhas.
 - **Cartões de tópico** (`cartoes`): frases de impacto em tela cheia na cor do cliente, ~5 s, 4 a 6 por vídeo.
   Até 3 linhas curtas (máx. ~22 letras cada). Um cartão de título (`titulo`) logo depois do gancho.
 - **Mapa** (`mapa`, opcional): quando a pessoa cita 3 ou mais cidades seguidas. Uma imagem única, sem piscar.
 - **B-roll é obrigatório**, 10 a 16 num vídeo de 8 min, 2,5 a 3,5 s cada (os que cobrem olhar fora da câmera duram o trecho todo):
   - `"fonte": "pixabay"` para o genérico (`busca` em inglês, 2 a 4 palavras, cena real, nada de desenho);
+  - **B-roll pela FRASE, não pela palavra (19/11/2026, 8 dos 12 ajustes de longos tinham B-roll fora de contexto):**
+    leia a frase inteira e busque a cena que mostra o SENTIDO dela. Metáfora não vira imagem literal ("criar raízes"
+    não é raiz de árvore; "carregar o peso" não é academia). Frase abstrata sem cena clara não leva B-roll do banco:
+    use foto real, cartão de tópico ou deixe o rosto (se a pessoa olha para a câmera). Pessoas com cara de Brasil
+    quando a cena é de gente comum. Na dúvida, menos B-roll;
+  - cada B-roll guarda o clipe escolhido em `"clipe"` (o `brolls.py` grava); num ajuste ele volta igual. Não apague
+    `"clipe"` de quem a revisão não pediu para trocar;
   - `"fonte": "foto"` para o específico (pessoa citada, faculdade, empresa, lugar): busque no Google pelo fluxo de
     fotos do n8n (ver TAREFA) e ponha os `file_ids` das partes salvas no Drive;
   - nunca trecho de vídeo do YouTube.
@@ -42,6 +49,9 @@ Você recebe `palavras.txt` (cada palavra como `índice:palavra[tempo]`, uma fra
   `"fontes": {"cliente": "Winthorpe", "titulo": {"file_id": "..."}}` com o arquivo .ttf/.otf da pasta do cliente no
   Drive. Sem o arquivo, use a mais parecida do Google Fonts (`"titulo": {"google": "Playfair Display:800"}`) e avise no
   log. `"texto"` (lowers) é opcional. `montar.py` para se a fonte não carregar; nunca troca sozinho pela padrão.
+- **Som e olhar (opcionais, ficam no plano para os próximos ajustes):** `"reduzir_ruido": true` (ou `"forte"`) quando o
+  bruto tem chiado/ruído de fundo; `"volume_trilha_db"` (padrão -31; mais negativo = música mais baixa);
+  `"olhar_limite"` (padrão 0.6) para o `olhar.py`.
 - **Lowers** (`lowers`): "inscreva" 2 vezes e "like" 1 vez (de preferência quando a pessoa pede para se inscrever
   ou comentar). Lower de nome (`"tipo": "nome"` + campo `nome`) só se o cliente mandar o nome/cargo.
 - **Trilha** royalty free bem baixa (-31 dB com ducking); a máquina cuida.
@@ -117,7 +127,9 @@ reais, igual ao modelo de Shorts da NA.
 - **B-roll (`brolls`): muitos, uma foto a cada ~25 a 40 s (10 a 16 num corte de 7 min), 3 a 4 s cada; foto basta, não
   precisa ser vídeo. Só imagem real e verdadeira** (`"fonte": "foto"`): obra de arte
   real (pintura, escultura) com nome e autor, estátua real de filósofo, foto real da pessoa ou do lugar citado, capa
-  real do livro. Natureza pode, com cara de Brasil (Dedo de Deus, Mata Atlântica, ipê, pôr do sol no litoral). Nada de
+  real do livro. Natureza só quando a FALA é sobre natureza ou sobre aquele lugar (20/11/2026: Cataratas do Iguaçu e
+  Baía do Sancho apareceram num trecho que não falava disso e a revisão teve que tirar). Paisagem bonita não serve de
+  "tapa-buraco": sem imagem que mostre o que ela diz, use cartão de frase-chave ou deixe o rosto. Nada de
   banco genérico (Pixabay é ignorado neste modelo), desenho ou ilustração. Cada um com `"legenda"`: crédito curto que
   aparece no canto ("Gustave Courbet · Os Quebradores de Pedras (1849)", "Dedo de Deus · Serra dos Órgãos (RJ)");
   `null` para natureza sem lugar certo. Pense primeiro em obras famosas que contam a mesma coisa que ela (no Quebrador
