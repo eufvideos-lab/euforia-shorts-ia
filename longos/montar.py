@@ -349,8 +349,14 @@ def legendas_na(arq):
         fim = bl[-1][1] + 0.25
         if k + 1 < len(blocos):
             fim = min(fim, blocos[k + 1][0][0])
-        if any(c0 - 0.1 < fim and bl[0][0] < c1 + 0.1 for c0, c1 in cheio):
-            continue
+        bate = [(c0, c1) for c0, c1 in cheio if c0 - 0.1 < fim and bl[0][0] < c1 + 0.1]
+        if bate:
+            # frase que começa mais de 1 s antes do cartão fica na tela até o cartão entrar (20/11/2026, NA: "Não há
+            # dúvidas, não há questionamentos." sumia antes de "Seja bom, seja humano"); colada no cartão, some
+            c0 = min(c for c, _ in bate)
+            if c0 - bl[0][0] <= 1.0:
+                continue
+            fim = min(fim, c0)
         linhas.append(f"Dialogue: 0,{ts(bl[0][0])},{ts(fim)},NA,,0,0,0,,{' '.join(p for _, _, p in bl)}")
     open(arq, 'w').write('\n'.join([
         '[Script Info]', 'ScriptType: v4.00+', 'PlayResX: 1920', 'PlayResY: 1080', 'WrapStyle: 2', '', '[V4+ Styles]',

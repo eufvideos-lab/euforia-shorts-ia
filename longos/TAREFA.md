@@ -159,5 +159,9 @@ apt-get install -y -q libegl1 libgles2 >/dev/null 2>&1 || (apt-get update -q >/d
     mude a `busca` dele (ou apague o `"clipe"` dele). Não mexa nos outros.
   - Ruído/chiado: `"reduzir_ruido": true` (ou `"forte"`) no plano. Música alta/baixa: `"volume_trilha_db"`.
     Olhar fora da câmera: `"olhar_limite"`. Tudo fica gravado no plano e vale nas próximas voltas.
+  - Pessoa fora do centro num pedaço ("centralizar de 15:42 a 15:55"): `"reenquadrar": [{"de": s, "ate": s,
+    "centro": [x, y], "zoom": 1.5}]` no plano, com `de`/`ate` em segundos do BRUTO (converta o minuto do vídeo pelo
+    `segmentos.json`). O cortar.py divide a imagem num silêncio e o áudio passa direto. Nunca faça o reenquadramento
+    à mão no código: some no próximo Ajustar e já comeu palavra ("conteudismo", 20/11/2026).
   - Palavra cortada/frase repetida/frame solto: a conferência do passo 6a acha; corrija o plano e rode de novo.
   - Anote no log, para cada item pedido, o minuto e o que foi feito. Volte para "Pronto para revisão".
