@@ -1391,8 +1391,6 @@ onChange();
 @keyframes vvdot{to{left:100%}}
 
 /* modo leve e movimento reduzido: tudo aparece pronto, sem laco */
-.pl-lite .vv-ph.cur *,.pl-lite #sistema .vv-card:after{animation-duration:.01s!important;animation-delay:0s!important;animation-iteration-count:1!important}
-.pl-lite .slide.on .vv-q-bar b.go{animation:none}
 @media (prefers-reduced-motion:reduce){.vv-ph.cur *,#sistema .vv-card:after{animation-duration:.01s!important;animation-delay:0s!important;animation-iteration-count:1!important}}
 
 /* ===== v8: depoimento em video com a frase grande ===== */
@@ -1477,8 +1475,6 @@ onChange();
 .vv-yt em{font:800 50px/1 Archivo,Arial,sans-serif;font-style:normal;color:#FF6518}
 
 /* v8 estatico (tecla L / reduzir movimento) */
-.pl-lite .vv-cap *,.pl-lite .vv-mini *,.pl-lite .vv-mini,.pl-lite .vv-yt *{animation-duration:.01s!important;animation-delay:0s!important;animation-iteration-count:1!important}
-.pl-lite .vv-zl,.pl-lite .vv-ring,.pl-lite .vv-ring2,.pl-lite .vv-lupa,.pl-lite .vv-yt{transition:none!important}
 @media (prefers-reduced-motion:reduce){.vv-cap *,.vv-mini *,.vv-yt *{animation-duration:.01s!important;animation-delay:0s!important;animation-iteration-count:1!important}.vv-zl,.vv-ring,.vv-ring2,.vv-lupa,.vv-yt{transition:none!important}}
 </style><script id="vivo-js">/* Camada Viva (v8): motor do ecossistema nas 3 frentes, holofote nos 10 principios e falas reais de clientes nos slides de preco e garantia.
    Nao muda texto, ordem nem navegacao. So roda no slide aberto. Teclas no slide das 3 frentes: 1, 2, 3 (ou clique no card). */
@@ -1486,7 +1482,7 @@ onChange();
 'use strict';
 var stage=document.getElementById('stage');if(!stage)return;
 var $$=function(s,r){return [].slice.call((r||document).querySelectorAll(s));};
-var lite=function(){return document.documentElement.classList.contains('pl-lite')||matchMedia('(prefers-reduced-motion: reduce)').matches;};
+var lite=function(){return matchMedia('(prefers-reduced-motion: reduce)').matches;}; // v8.1: o modo leve da camada Play (liga sozinho em PC com 4 GB ou 4 núcleos) não congela mais a camada viva, que já roda a 60 fps com CPU 6x
 function h(tag,cls,html){var e=document.createElement(tag);if(cls)e.className=cls;if(html!=null)e.innerHTML=html;return e;}
 function byId(id){return document.getElementById(id);}
 var SYM='<svg viewBox="0 0 150 122" aria-hidden="true"><use href="#gesym"/></svg>';
