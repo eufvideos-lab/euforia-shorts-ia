@@ -2163,7 +2163,7 @@ function abrirDD(id){
 const GDIAS = ['1 Seg', '2 Ter', '3 Qua', '4 Qui', '5 Sex', '6 Sáb', '7 Dom'];
 const GPLAT = ['YouTube', 'TikTok', 'Instagram', 'Blog'];
 const GFORM = ['Vídeo padrão', 'Shorts', 'Corte horizontal', 'Podcast', 'Carrossel', 'Reels', 'Blog', 'Outro'];
-const GMOTIVO = { aprovacao:'Esse cliente aprova antes de ir ao ar. Mande o vídeo para ele aprovar e marque "Cliente aprovou" primeiro.', bloqueio:'Esse cliente não está com você.',permissao:'Só o Ismael e o Rômulo mudam a grade.', campos:'Escolha plataforma, formato e dia.', horario:'Esse horário mudou. A grade foi atualizada.', cliente:'Escolha um cliente ativo.', acesso: MOTIVO.acesso};
+const GMOTIVO = { link_youtube:'Cole o link do vídeo no YouTube (youtu.be/... ou youtube.com/watch?v=...).', nao_no_ar:'Esse vídeo ainda não está no ar no YouTube. Se está agendado, marque Programado; Postado só depois que ele estiver público.', aprovacao:'Esse cliente aprova antes de ir ao ar. Mande o vídeo para ele aprovar e marque "Cliente aprovou" primeiro.', bloqueio:'Esse cliente não está com você.',permissao:'Só o Ismael e o Rômulo mudam a grade.', campos:'Escolha plataforma, formato e dia.', horario:'Esse horário mudou. A grade foi atualizada.', cliente:'Escolha um cliente ativo.', acesso: MOTIVO.acesso};
 async function carregarGrade(){
   if (carregarGrade.indo) return; carregarGrade.indo = true;
   try { const r = await api('euforia-painel-grade', { acao: 'listar' }); if (r && r.ok) { G = r; if (['grade', 'geral', 'fila'].includes(view) && !ocupado && !$('#layer').innerHTML) render(); } else if (r && r.motivo === 'acesso') { PIN = ''; carregar(); } }
