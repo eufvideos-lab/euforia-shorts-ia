@@ -419,11 +419,11 @@ td .sub{font-size:13px}
 .cv-m .h{display:block;text-align:right;font-size:11px;color:var(--muted);margin-top:2px}
 .cv-m.oc{font-style:italic;color:var(--muted)}
 .cv-m img{display:block;max-width:100%;max-height:320px;border-radius:8px;margin:4px 0}
-.cv-caixa{display:flex;gap:8px;padding:10px;border-top:1px solid var(--line);background:var(--surface);align-items:flex-end}
-.cv-caixa textarea{flex:1;resize:none;min-height:44px;max-height:160px}
-.cv-sug{display:flex;gap:8px;flex-wrap:wrap;padding:10px 10px 0;border-top:1px solid var(--line);background:var(--surface)}
+.cv-caixa{flex-shrink:0;display:flex;gap:8px;padding:10px;border-top:1px solid var(--line);background:var(--surface);align-items:flex-end}
+.cv-caixa textarea{flex:1;resize:vertical;min-height:44px;max-height:none;overflow-y:auto;line-height:1.45;white-space:pre-wrap;overflow-wrap:anywhere}
+.cv-sug{flex-shrink:0;display:gap:8px;flex-wrap:wrap;padding:10px 10px 0;border-top:1px solid var(--line);background:var(--surface)}
 .cv-sug .btn{font-size:13px;padding:6px 10px}
-.cv-sug-info{max-height:22vh;overflow-y:auto;padding:8px 12px 0;background:var(--surface);font-size:13px;color:var(--muted);display:grid;gap:4px}
+.cv-sug-info{flex-shrink:0;max-height:18vh;overflow-y:auto;padding:8px 12px 0;background:var(--surface);font-size:13px;color:var(--muted);display:grid;gap:4px}
 .cv-sug-info b{color:var(--text)}
 .cv-aviso{padding:10px 14px;border-top:1px solid var(--line);background:var(--warn-soft);color:var(--warn);font-size:14px}
 .cv-vazio{margin:auto;color:var(--muted);text-align:center;padding:24px}
@@ -3247,11 +3247,29 @@ function cvStatusHtml(x, semResolver){
 // Rolagem (19/11, Henrique: "rolar para cima fica travando"): a tela se redesenha a cada 15-30 s. Antes ela sempre pulava para o fim;
 // agora guarda onde a pessoa está lendo e só desce sozinha se ela já estava no fim (ou ao abrir a conversa / enviar).
 let CVFIM = true, CVTOP = 0, CVCHAT = '';
+// Caixa de resposta (24/11/2026, Henrique: "o Rômulo usa a sugestão e não consegue ler o texto todo, fica dando uns bugs").
+// Antes: a caixa voltava a 2 linhas a cada atualização automática (15-30 s) e voltava ao topo. Agora ela cresce até caber o texto
+// (até ~metade da conversa; passou disso, rola dentro) e guarda onde a pessoa estava lendo/digitando.
+const CVTPOS = {};
+function cvGuardaPos(t){ if (t && t.id === 'cvt') CVTPOS[CVA] = { a: t.selectionStart, b: t.selectionEnd, top: t.scrollTop, foco: document.activeElement === t }; }
+document.addEventListener('scroll', e => { if (e.target && e.target.id === 'cvt') cvGuardaPos(e.target); }, true);
+document.addEventListener('selectionchange', () => { const t = document.activeElement; if (t && t.id === 'cvt') cvGuardaPos(t); });
+document.addEventListener('focusout', e => { if (e.target && e.target.id === 'cvt') { const p = CVTPOS[CVA]; if (p) p.foco = false; } }, true);
+function cvCaixa(restaurar){
+  const t = $('#cvt'); if (!t) return;
+  // Espaço que sobra na coluna da conversa, deixando as mensagens com pelo menos ~130 px.
+  const ch = t.closest('.cv-chat'), cx = t.closest('.cv-caixa');
+  let livre = window.innerHeight * 0.5;
+  if (ch && cx) { livre = ch.clientHeight - 130 - 22; for (const el of ch.children) if (el !== cx && el.id !== 'cvmsgs') livre -= el.offsetHeight; }
+  const max = Math.max(120, Math.round(livre));
+  t.style.height = 'auto'; t.style.height = Math.min(max, t.scrollHeight + 2) + 'px';
+  if (restaurar) { const p = CVTPOS[CVA]; if (p) { t.scrollTop = p.top; if (p.foco) { t.focus({ preventScroll: true }); try { t.setSelectionRange(p.a, p.b); } catch (x) {} t.scrollTop = p.top; } } }
+}
 document.addEventListener('scroll', e => { const el = e.target; if (el && el.id === 'cvmsgs') { CVFIM = el.scrollHeight - el.scrollTop - el.clientHeight < 80; CVTOP = el.scrollTop; } }, true);
 // Altura da aba (19/11): ocupa até o fim da tela que a pessoa tem, em vez de um valor fixo que cortava as mensagens em tela menor.
 function cvAltura(){ const el = document.querySelector('.cv'); if (!el) return; const cel = window.innerWidth <= 760; const alto = cel ? window.innerHeight - 8 : window.innerHeight - el.getBoundingClientRect().top - 12; el.style.height = Math.max(cel ? 360 : 420, alto) + 'px'; }
 window.addEventListener('resize', () => { if (view === 'conversas') { cvAltura(); cvRolar(); } });
-function cvRolar(forcar){ cvAltura(); if (forcar && window.innerWidth <= 760 && CVA) { const cv = document.querySelector('.cv'); if (cv) cv.scrollIntoView({ block: 'start' }); } const el = $('#cvmsgs'); if (!el) return; if (forcar || CVCHAT !== CVA) { CVFIM = true; CVCHAT = CVA; } el.scrollTop = CVFIM ? el.scrollHeight : CVTOP; }
+function cvRolar(forcar){ cvAltura(); cvCaixa(true); if (forcar && window.innerWidth <= 760 && CVA) { const cv = document.querySelector('.cv'); if (cv) cv.scrollIntoView({ block: 'start' }); } const el = $('#cvmsgs'); if (!el) return; if (forcar || CVCHAT !== CVA) { CVFIM = true; CVCHAT = CVA; } el.scrollTop = CVFIM ? el.scrollHeight : CVTOP; }
 document.addEventListener('load', e => { if (e.target.tagName === 'IMG' && e.target.closest('#cvmsgs') && CVFIM) cvRolar(); }, true);
 async function carregarConversas(silencioso){
   if (carregarConversas.indo) return; carregarConversas.indo = true;
@@ -3261,13 +3279,17 @@ async function carregarConversas(silencioso){
   if (view === 'conversas' && !ocupado && !(silencioso && document.activeElement && ['cvq', 'cvt'].includes(document.activeElement.id))) { render(); }
 }
 async function abrirConversa(chat, silencioso){
+  const antes = CVM;
     try { const r = await api('euforia-painel-conversas', { acao: 'abrir', chat }); CVM = r && r.ok ? r : { chat, erro: (r && r.motivo) || 'erro' }; }
   catch (e) { CVM = { chat, erro: 'erro' }; }
+  // Atualização automática: só redesenha se chegou mensagem nova (antes redesenhava a cada 15 s e mexia na caixa de resposta).
+  const ass = m => m && !m.erro ? (m.mensagens || []).length + '|' + ((m.mensagens || []).slice(-1)[0] || {}).id + '|' + m.bloqueio + '|' + m.noite : 'erro';
+  if (silencioso && antes && antes.chat === chat && ass(antes) === ass(CVM)) return;
   if (view === 'conversas' && CVA === chat && !ocupado && !(silencioso && document.activeElement && document.activeElement.id === 'cvt')) { render(); cvRolar(!silencioso); }
 }
 document.addEventListener('input', e => {
   if (e.target.id === 'cvq') { CVQ = e.target.value; const pos = e.target.selectionStart; render(); const q = $('#cvq'); if (q) { q.focus(); q.setSelectionRange(pos, pos); } }
-  if (e.target.id === 'cvt') CVRASC[CVA] = e.target.value;
+  if (e.target.id === 'cvt') { CVRASC[CVA] = e.target.value; cvCaixa(); cvGuardaPos(e.target); }
 });
 document.addEventListener('keydown', e => { if (e.target.id === 'cvt' && e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); const b = $('#cvenviar'); if (b && !b.disabled) b.click(); } });
 document.addEventListener('click', async e => {
@@ -3284,7 +3306,7 @@ document.addEventListener('click', async e => {
       const lp = limparProibidas(r.texto); if (lp.tirou.length) { r.texto = lp.texto; r.conferir = ('Tirei da sugestão frase proibida (' + lp.tirou.join(', ') + '). Releia antes de enviar. ' + (r.conferir || '')).trim(); }
       CVSUG[chat] = r; CVRASC[chat] = r.texto; }
     catch (er) { CVSUG[chat] = { erro: er.message }; }
-    if (view === 'conversas' && CVA === chat) { render(); const t = $('#cvt'); if (t) { t.style.height = Math.min(160, t.scrollHeight) + 'px'; t.focus(); } } return; }
+    if (view === 'conversas' && CVA === chat) { CVTPOS[chat] = { a: 0, b: 0, top: 0, foco: true }; render(); cvCaixa(true); } return; }
   if (e.target.closest('#main [data-cvger]')) { const chat = CVA, g = CVSUG[chat] || {};
     const pedido = prompt('O que a Gerente deve resolver para esse cliente?', g.o_que_produzir || g.entender || '');
     if (pedido === null) return; CVSUG[chat] = Object.assign({}, g, { indo: 'gerente' }); render();
@@ -3308,7 +3330,7 @@ document.addEventListener('click', async e => {
     const pr = diretor() ? [] : proibidos(t); if (pr.length) { toast('Não pode ir para o cliente: ' + pr.join(', ') + '. Reescreva sem isso.'); return; }
     ocupado = true; env.disabled = true; env.textContent = 'Enviando…';
     try { const r = await api('euforia-painel-conversas', { acao: 'mandar', chat, texto: t }); if (!r || !r.ok) throw new Error((r && r.motivo) || 'erro');
-      delete CVRASC[chat]; ocupado = false;
+      delete CVRASC[chat]; delete CVTPOS[chat]; ocupado = false;
       // Henrique avalia no Discord toda resposta que saiu a partir da sugestão (#sugestoes-enviadas).
       const sg = CVSUG[chat]; if (sg && sg.texto) { delete CVSUG[chat]; api('euforia-painel-sugerir', { acao: 'enviado', chat, sugestao: sg.texto, enviado: t, dica: sg.o_que_produzir || '' }).catch(() => {}); }
       if (CVM && CVM.chat === chat) CVM.mensagens.push({ id: 'local' + Date.now(), eu: true, autor: D.nome.split(' ')[0] + ' (você)', tipo: '', foto: false, oculto: false, texto: t, hora: new Date().toTimeString().slice(0, 5), dia: (CVM.mensagens.length ? CVM.mensagens[CVM.mensagens.length - 1].dia : 'Hoje') });
