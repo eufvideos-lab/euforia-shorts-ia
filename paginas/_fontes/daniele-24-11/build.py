@@ -26,6 +26,8 @@ js = js.replace("'<b>Gravado em pé, o vídeo serve só para o short.</b> No You
 css += r'''
 .fn .trilha{gap:8px}.fn .trilha button{padding:10px 20px}.fn .trilha h3{font-size:31px}.fn .trilha p{font-size:22px}.fn .trilha .nn{width:50px;height:50px;font-size:26px}
 h1{font-weight:900}h2{font-weight:900}
+.fyt .tit,.ytc .gr2 p,.plr .lst2 div,.pz2{text-transform:uppercase}
+.chips{display:flex;gap:14px;flex-wrap:wrap}.chips button{background:transparent;border:3px solid var(--escuro);color:var(--escuro);border-radius:999px;padding:12px 26px;font:800 28px var(--fh);cursor:pointer}.chips button.on{background:var(--escuro);color:#fff}
 .capa .ft{width:760px}
 /* ecossistema */
 .eco{display:flex;gap:70px;align-items:center;height:100%}
@@ -108,15 +110,15 @@ h1{font-weight:900}h2{font-weight:900}
 .sw i{width:56px;height:56px;border-radius:14px;border:3px solid rgba(255,255,255,.4)}
 /* canal yt */
 .ytc{width:1500px;background:#0f0f0f;border-radius:26px;overflow:hidden;box-shadow:0 30px 70px rgba(0,0,0,.5);align-self:center}
-.ytc .bn{height:250px;background-size:cover;background-position:center}
-.ytc .hd{display:flex;gap:30px;align-items:center;padding:28px 44px}
+.ytc .bn{height:220px;background-size:cover;background-position:center}
+.ytc .hd{display:flex;gap:30px;align-items:center;padding:20px 44px}
 .ytc .hd img{width:130px;height:130px;border-radius:50%}
 .ytc .hd b{font:900 46px var(--fh);color:#fff;display:block}
 .ytc .hd span{font-size:24px;color:#aaa}
 .ytc .hd .ins{margin-left:auto;background:#fff;color:#000;border-radius:999px;padding:14px 28px;font:700 24px var(--fb)}
 .ytc .gr2{display:grid;grid-template-columns:repeat(4,1fr);gap:22px;padding:0 44px 40px}
 .ytc .gr2 img{width:100%;border-radius:12px;display:block}
-.ytc .gr2 p{color:#fff;font:700 22px var(--fb);margin-top:10px;line-height:1.3}
+.ytc .gr2 p{color:#fff;font:800 21px var(--fb);margin-top:10px;line-height:1.25}
 .ytc .gr2 small{color:#aaa;font-size:18px}
 /* carrossel celular */
 .carw{display:flex;gap:90px;align-items:center;height:100%}
@@ -322,7 +324,7 @@ s('claro', '<div class="cab"><p class="k">Saindo daqui</p><h2>Para fechar <em>ho
   + ''.join('<div class="it"><span class="ok">%d</span><div><h3>%s</h3></div></div>' % (k + 1, t) for k, t in enumerate(['As cores do canal: IH! corporativa ou do Instagram?', 'A data da sua primeira gravação', 'Fotos do lugar onde vai gravar, no grupo', 'Depoimentos ou resultados de clientes, com permissão']))
   + '</div>')
 # 25 feedback
-s('cor centro', '<div class="aspas">“</div><h2 style="font-size:90px">De 0 a 10, como foi a reunião de hoje?</h2><div class="notas nofwd" data-notas>%s</div><p class="sub" style="opacity:1">E o que faria ser um 10?</p>' % ''.join('<button>%d</button>' % n for n in range(0, 11)))
+s('cor centro', '<p class="k">Sua opinião</p><h2 style="font-size:84px">O que você está achando do Grupo Euforia até agora?</h2><div class="chips nofwd" data-notas>%s</div><p class="t" style="opacity:1;font-size:32px">De 0 a 10, quanto você indicaria a gente?</p><div class="notas nofwd" data-notas>%s</div>' % (''.join('<button>%s</button>' % c for c in ['Estou animada', 'Ficou claro', 'Gostei das capas', 'Gostei da estratégia', 'Quero ajustar algo']), ''.join('<button>%d</button>' % n for n in range(0, 11))))
 # 26 obrigado
 s('capa', '<div class="tx"><img src="%s" style="width:130px"><p class="k">Inteligência Humana × Grupo Euforia</p><h1>Obrigado,<br><em>Daniele.</em></h1><div class="barra"></div><p class="data">Próximo passo: a sua primeira gravação.</p></div><div class="ft" style="background-image:url(%s);background-position:center 18%%"></div>' % (I['simbolo-claro'], I['f-vestido']), False)
 
@@ -420,7 +422,7 @@ document.querySelectorAll('[data-chk]').forEach(R=>{
  B.forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();b.classList.toggle('on');up()}));up();
 });
 document.querySelectorAll('[data-notas]').forEach(R=>{
- const B=[...R.querySelectorAll('button')];B.forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();B.forEach(x=>x.classList.toggle('on',x===b))}));
+ const B=[...R.querySelectorAll('button')],multi=R.classList.contains('chips');B.forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();if(multi)b.classList.toggle('on');else B.forEach(x=>x.classList.toggle('on',x===b))}));
 });
 '''.replace('%%','%').replace('__NOS__','[' + ','.join(repr(n[3]) for n in NOS) + ']')
 
