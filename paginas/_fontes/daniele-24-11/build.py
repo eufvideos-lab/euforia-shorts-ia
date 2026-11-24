@@ -18,7 +18,7 @@ js = re.sub(r"document\.querySelectorAll\('\[data-sh\]'\).*?\n\}\);\n", '', js, 
 js = re.sub(r"document\.querySelectorAll\('\[data-aud\]'\).*?\n\}\);\n?", '', js, flags=re.S)
 assert 'data-sh' not in js and 'data-aud' not in js
 # ajustar o formato (horizontal) ao quadro da Daniele
-js = js.replace("sh:{w:H*9/16,x:560,", "sh:{w:H*9/16,x:400,").replace("fd:{w:H*4/5,x:520,", "fd:{w:H*4/5,x:330,")
+js = js.replace("sh:{w:H*9/16,x:560,", "sh:{w:H*9/16,x:369,").replace("fd:{w:H*4/5,x:520,", "fd:{w:H*4/5,x:297,")
 js = js.replace("'<b>O vídeo completo no YouTube.</b> A tela inteira é aproveitada, do jeito que o podcast foi gravado.'", "'<b>O vídeo completo no YouTube.</b> A tela inteira é aproveitada: você, a mesa e o fundo.'")
 js = js.replace("A edição recorta em quem está falando. Arraste o quadro e veja.", "A edição recorta em você. Arraste o quadro e veja.")
 js = js.replace("'<b>Gravado em pé, o vídeo serve só para o short.</b> No YouTube ele aparece com tarjas pretas e ocupa só um terço da tela. Não dá para tirar dele o vídeo longo.'", "'<b>Gravado em pé, o vídeo serve só para o short.</b> No YouTube aparece com tarjas pretas e ocupa um terço da tela. Não dá para tirar dele o vídeo longo.'")
@@ -77,13 +77,13 @@ h1{font-weight:900}h2{font-weight:900}
 .tv2{position:relative;width:1120px;height:630px;border-radius:24px;overflow:hidden;background:#000 center/cover;box-shadow:0 30px 70px rgba(0,0,0,.5)}
 .tv2 .ly{position:absolute;opacity:0;transition:.5s;pointer-events:none}
 .tv2 .ly.on{opacity:1}
-.tv2 .leg2{left:0;right:0;bottom:80px;text-align:center;font:900 64px var(--fh);color:#fff;text-shadow:0 4px 18px rgba(0,0,0,.8);line-height:1.1}
+.tv2 .leg2{left:0;right:0;bottom:34px;text-align:center;font:900 50px var(--fh);text-transform:uppercase;color:#fff;text-shadow:0 4px 18px rgba(0,0,0,.8);line-height:1.1}
 .tv2 .leg2 em{color:#FF7700;font-style:normal}
-.tv2 .lt{left:50px;bottom:60px;background:#111945;border-left:12px solid #FF7700;padding:18px 30px;border-radius:10px}
+.tv2 .lt{left:50px;bottom:40px;background:#111945;border-left:12px solid #FF7700;padding:18px 30px;border-radius:10px}
 .tv2 .lt b{display:block;font:900 40px var(--fh);color:#fff}.tv2 .lt span{font:700 26px var(--fb);color:#E9EBF3}
-.tv2 .ex{right:50px;top:60px;width:470px;background:rgba(17,25,69,.92);border-radius:20px;padding:30px;display:flex;flex-direction:column;gap:14px}
+.tv2 .ex{right:40px;top:50px;width:360px;background:rgba(17,25,69,.92);border-radius:20px;padding:30px;display:flex;flex-direction:column;gap:14px}
 .tv2 .ex p{font:800 30px var(--fh);color:#fff}.tv2 .ex p span{color:#FF7700}
-.tv2 .cut{top:0;bottom:0;left:390px;width:354px;border:7px solid #FF7700;border-radius:12px;box-shadow:0 0 0 2000px rgba(8,12,36,.6)}
+.tv2 .cut{top:0;bottom:0;left:383px;width:354px;border:7px solid #FF7700;border-radius:12px;box-shadow:0 0 0 2000px rgba(8,12,36,.6)}
 .tv2 .cut span{position:absolute;top:16px;left:50%;transform:translateX(-50%);background:#FF7700;color:#fff;font:900 26px var(--fh);padding:6px 18px;border-radius:999px;white-space:nowrap}
 .tv2 .cta2{left:50%;bottom:70px;transform:translateX(-50%);background:#fff;color:#111945;border-radius:22px;padding:24px 36px;display:flex;gap:22px;align-items:center;box-shadow:0 20px 40px rgba(0,0,0,.4)}
 .tv2 .cta2 b{font:900 36px var(--fh)}.tv2 .cta2 span{background:#FF7700;color:#fff;border-radius:999px;padding:10px 22px;font:800 26px var(--fh)}
