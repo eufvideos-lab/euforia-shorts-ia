@@ -218,7 +218,8 @@ for (const it of $input.all()) {
   // Ajuste A (Henrique 12/11): a equipe ter escrito depois não basta; só não faz rascunho se a IA viu que a resposta resolveu o que o cliente pediu.
   const respondeu = x.equipe_ja_respondeu && x.respondido === true;
   // Material vai sempre para o card (ajuste E), mesmo com a equipe já tendo respondido; aí sai só o card, sem rascunho.
-  x.so_card = respondeu && x.classe === 'material';
+  // Pedido e ajuste também (Henrique 24/11): viram card sempre, mesmo com a equipe já tendo respondido no grupo.
+  x.so_card = respondeu && ['material', 'pedido', 'ajuste'].includes(x.classe);
   // Aprovação (Henrique 13/11, caso Regina): sempre vai ao card, mesmo com a equipe já tendo respondido.
   const rascunho = noTeste(x) && ACAO.includes(x.classe) && (!respondeu || x.so_card || x.classe === 'aprovacao');
   let msg = '';
@@ -302,7 +303,7 @@ return $('Cards abertos do cliente').all().map((it, i) => {
     return { id: p.id, codigo: txt(pr['Código']), titulo: txt(pr['Entrega']), tipo: txt(pr['Tipo']), status: st, status_cliente: STATUS_CLIENTE[st] || st, prazo: txt(pr['Prazo']).slice(0, 10), postar: txt(pr['Postar em']).slice(0, 10), url: p.url, obs: txt(pr['Obs']).slice(0, 1700) };
   });
   const lista = cards.length ? cards.map(c => '- ' + c.codigo + ' · ' + c.titulo + ' · ' + c.tipo + ' (' + c.status_cliente + ')' + (c.prazo ? ' · pronto até ' + ddmm(c.prazo) : '') + (c.postar ? ' · posta ' + ddmm(c.postar) : '')).join('\\n') : '(nenhum card aberto)';
-  const user = 'Hoje é ' + d.hoje + ' (' + DateTime.now().setZone('America/Recife').setLocale('pt-BR').toFormat('cccc') + '), agora são ' + DateTime.now().setZone('America/Recife').toFormat('HH:mm') + '. Próximos dias: ' + CAL + '.\\nCliente: ' + d.cliente + '\\nClasse já decidida: ' + d.classe + (d.tipo_peca && d.tipo_peca !== 'nenhum' ? ' (' + d.tipo_peca + ')' : '') + '\\nResumo: ' + (d.resumo || '') + (d.prazo_citado ? '\\nData citada pelo cliente: ' + d.prazo_citado : '') + '\\n\\nCards abertos do cliente:\\n' + lista + '\\n\\nConversa antes (contexto):\\n' + (d.contexto || '(sem mensagens anteriores)') + '\\n\\nMensagens novas do cliente:\\n' + d.textos + (d.resposta_equipe ? '\\n\\nO que a equipe já escreveu depois (não repita; complete só o que faltou):\\n' + d.resposta_equipe : '');
+  const user = 'Hoje é ' + d.hoje + ' (' + DateTime.now().setZone('America/Recife').setLocale('pt-BR').toFormat('cccc') + '), agora são ' + DateTime.now().setZone('America/Recife').toFormat('HH:mm') + '. Próximos dias: ' + CAL + '.\\nCliente: ' + d.cliente + '\\nClasse já decidida: ' + d.classe + (d.tipo_peca && d.tipo_peca !== 'nenhum' ? ' (' + d.tipo_peca + ')' : '') + '\\nResumo: ' + (d.resumo || '') + (d.prazo_citado ? '\\nData citada pelo cliente: ' + d.prazo_citado : '') + '\\n\\nCards abertos do cliente:\\n' + lista + '\\n\\nConversa antes (contexto):\\n' + (d.contexto || '(sem mensagens anteriores)') + '\\n\\nMensagens novas do cliente:\\n' + d.textos + (d.resposta_equipe ? '\\n\\nO que a equipe já escreveu depois (não repita; complete só o que faltou):\\n' + d.resposta_equipe : '') + (d.so_card && ['pedido', 'ajuste'].includes(d.classe) ? '\\n\\nA equipe já respondeu no grupo: a resposta não vai ser usada, só o card. criar_card true se o cliente pediu uma peça ou ajuste concreto. Se na lista de cards abertos já existe um card para ESTE MESMO pedido ou ajuste (não a peça original), criar_card false.' : '');
   return { pairedItem: { item: 0 }, json: { dados: d, cards, corpo: JSON.stringify({ model: 'claude-sonnet-4-5', max_tokens: 700, temperature: 0.3, system: SYSTEM, messages: [{ role: 'user', content: user }] }) } };
 });
 `
@@ -351,7 +352,15 @@ return $input.all().map((it, i) => {
     prazo = d.prazo_citado < agora.toISODate() ? agora.toISODate() : d.prazo_citado;
     if (prazo <= agora.plus({ hours: 12 }).toISODate() && urg !== 'hiperurgente') urg = prazo === agora.toISODate() ? 'hiperurgente' : 'urgente';
   }
+  // Pedido/ajuste que a equipe já respondeu (Henrique 24/11): vira card mesmo sem rascunho. Hiperurgente não passa pela aprovação
+  // aqui (não há rascunho), então não vira prazo de hoje: entra como Urgente (24h) e o aviso no #aprovações-gerente diz que o cliente pediu para hoje.
+  let pediuHoje = false;
+  if (d.so_card && urg === 'hiperurgente') { pediuHoje = true; urg = 'urgente'; const p24 = agora.plus({ hours: 24 }).toISODate(); if (prazo < p24) prazo = p24; }
   let precisaCard = r.criar_card === true && ['pedido', 'ajuste'].includes(d.classe);
+  // Não duplicar: se já há card aberto nascido desta mesma mensagem do grupo, não cria outro.
+  const quandoMsg = DateTime.fromJSDate(new Date(d.ultima)).setZone('America/Recife').toFormat('dd/MM HH:mm');
+  const jaTem = precisaCard ? (base.cards || []).find(x => String(x.obs || '').includes('Pedido no grupo em ' + quandoMsg)) : null;
+  if (jaTem) precisaCard = false;
   // Aprovação (Henrique 13/11, caso Regina): cliente aprovou no grupo. Se dá para saber qual card (um só esperando o cliente,
   // ou o código que o rascunho apontou), ele passa sozinho de "Aguardando cliente" para "Aprovado" e quem posta é avisado.
   // Se não dá para saber, nada muda: vai para aprovação no painel com a lista dos cards esperando.
@@ -431,7 +440,7 @@ return $input.all().map((it, i) => {
     && ((d.classe === 'material' && !d.so_card) || (d.classe === 'aprovacao' && aprov === 'atualizar'));
   if (auto) resposta = d.classe === 'material' ? 'Recebemos o material, muito obrigada! 🙌\\n\\nJá está com a equipe.' : 'Perfeito, aprovação registrada! ✅\\n\\nA equipe já segue com a programação da postagem conforme a grade.';
   return { json: { dados: d, cards: base.cards, resposta, urgencia: urg, prazo, tipo: tipoFinal, titulo, ok: !!resposta, confirmar, confirmar_quem, resp_nome,
-    criar_agora: (material === 'atualizar' || aprov === 'atualizar' || (precisaCard && urg !== 'hiperurgente')) && !!card_corpo && (!!resposta || ['material', 'aprovacao'].includes(d.classe)), card_corpo, card_metodo, card_api,
+    criar_agora: (material === 'atualizar' || aprov === 'atualizar' || (precisaCard && urg !== 'hiperurgente')) && !!card_corpo && (!!resposta || d.so_card || ['material', 'aprovacao'].includes(d.classe)), card_corpo, card_metodo, card_api, pediuHoje, ja_tem: jaTem ? { codigo: jaTem.codigo, url: jaTem.url } : null,
     aprov, auto, sem_rascunho: d.so_card || (aprov === 'atualizar' && !auto), card_aprov: card_aprov ? { codigo: card_aprov.codigo, url: card_aprov.url, titulo: card_aprov.titulo, postar: card_aprov.postar } : null, candidatos: candidatos.slice(0, 6).map(x => ({ codigo: x.codigo, titulo: x.titulo, url: x.url })),
     material, card_material: card_material ? { codigo: card_material.codigo, url: card_material.url, status: card_material.status } : null, card_id: '', card_url: '', card_codigo: '' } };
 });
@@ -494,7 +503,9 @@ return $input.all().map(it => {
   if (x.card_url) linhaCard = '📋 Card criado: [' + (x.card_codigo || 'abrir') + '](<' + x.card_url + '>) · ' + x.tipo + ' · pronto até ' + ddmm(x.prazo) + ' · ' + URG[x.urgencia] + ' · com ' + (x.resp_nome || 'o Ismael');
   else if (x.card_corpo && x.urgencia === 'hiperurgente') linhaCard = '⚡ **Hiperurgente:** o card (' + x.tipo + ', pronto hoje) só nasce quando você enviar.';
   else if (x.card_corpo && x.card_erro) linhaCard = '⚠️ ' + x.card_erro + ' (crio de novo quando você enviar).';
-  else if (d.classe === 'pedido' || d.classe === 'ajuste') linhaCard = '📋 Sem card novo (não achei peça concreta no pedido).';
+  else if ((d.classe === 'pedido' || d.classe === 'ajuste') && x.ja_tem) linhaCard = '📋 Já existe card desta mensagem: [' + (x.ja_tem.codigo || 'abrir') + '](<' + x.ja_tem.url + '>). Não criei outro.';
+  else if (d.classe === 'pedido' || d.classe === 'ajuste') linhaCard = '📋 Sem card novo (não achei peça concreta no pedido ou já há card dele).';
+  if (x.pediuHoje && x.card_url) linhaCard += '\\n⚡ O cliente pediu para hoje. Pus prazo de 24h; se for mesmo para hoje, mude o prazo no card.';
   if (d.classe === 'material') {
     if (x.material === 'atualizar' && x.card_url) linhaCard = '📥 Material chegou: card [' + (x.card_codigo || 'abrir') + '](<' + x.card_url + '>) voltou de Aguardando cliente para A fazer.';
     else if (x.material === 'criar' && x.card_url) linhaCard = '📥 Material chegou e não havia card dessa peça: criei [' + (x.card_codigo || 'abrir') + '](<' + x.card_url + '>) · ' + x.tipo + ' · pronto até ' + ddmm(x.prazo) + ' · com ' + (x.resp_nome || 'o Ismael');
@@ -516,7 +527,7 @@ return $input.all().map(it => {
   const aviso_postar = (d.classe === 'aprovacao' && x.aprov === 'atualizar' && x.card_url) ? '✅ **' + d.cliente + '** aprovou no grupo: [' + (x.card_codigo || ap.codigo || 'abrir') + '](<' + x.card_url + '>) ' + (ap.titulo || '') + ' já está em **Aprovado**' + (ap.postar ? ' (postar em ' + ddmm(ap.postar) + ')' : '') + '. Pode programar a postagem.' : '';
   if (x.auto) return { json: { ...x, aviso_postar, discord: JSON.stringify({ content: ('🤖 **' + d.cliente + '**' + (selo ? ' (' + selo.trim() + ')' : '') + ' · ' + (NOMES[d.classe] || d.classe) + (d.resumo ? ' · ' + d.resumo : '') + '\\n' + (linhaCard ? linhaCard + '\\n' : '') + 'Resposta automática sai às ' + DateTime.now().setZone('America/Recife').plus({ minutes: 10 }).toFormat('HH:mm') + ' se ninguém cancelar no painel (Minha mesa › Aprovar).').slice(0, 1990), allowed_mentions: { parse: [] } }) } };
   if (d.classe === 'aprovacao' && x.sem_rascunho) return { json: { ...x, aviso_postar, discord: JSON.stringify({ content: ('✅ **' + d.cliente + '**' + (selo ? ' (' + selo.trim() + ')' : '') + ' · Aprovação de peça' + (d.resumo ? ' · ' + d.resumo : '') + '\\n' + linhaCard).slice(0, 1990), allowed_mentions: { parse: [] } }) } };
-  if (d.so_card) return { json: { ...x, discord: JSON.stringify({ content: ('📥 **' + d.cliente + '**' + (selo ? ' (' + selo.trim() + ')' : '') + ' · Envio de material' + (d.resumo ? ' · ' + d.resumo : '') + '\\n' + (linhaCard || '') + '\\n(A equipe já respondeu no grupo, então não fiz rascunho.)').slice(0, 1990), allowed_mentions: { parse: [] } }) } };
+  if (d.so_card) return { json: { ...x, discord: JSON.stringify({ content: ('📥 **' + d.cliente + '**' + (selo ? ' (' + selo.trim() + ')' : '') + ' · ' + (NOMES[d.classe] || d.classe) + (d.resumo ? ' · ' + d.resumo : '') + '\\n' + (linhaCard || '') + '\\n(A equipe já respondeu no grupo, então não fiz rascunho.)').slice(0, 1990), allowed_mentions: { parse: [] } }) } };
   const msg2 = '✍️ Resposta para aprovar: **' + d.cliente + '**' + (selo ? ' (' + selo.trim() + ')' : '') + ' · ' + (NOMES[d.classe] || d.classe) + (d.resumo ? ' · ' + d.resumo : '') + (x.ok ? '' : ' · ⚠️ sem rascunho') + '\\n' + (linhaCard ? linhaCard + '\\n' : '') + conf.replace(/^\\n/, '') + (conf ? '\\n' : '') + '👉 Aprove no painel: Minha mesa › Aprovar.';
   return { json: { ...x, discord: JSON.stringify({ content: msg2.slice(0, 1990), allowed_mentions: { parse: [] } }) } };
 });
