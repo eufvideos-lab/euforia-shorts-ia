@@ -1,5 +1,7 @@
 # Thumb e capas de short automáticas no Canva (desde 20/11/2026)
 
+> **Capricho obrigatório (Henrique, 25/11/2026):** toda thumb, capa de short/reels e story segue `prompts/capricho_thumb_capa.md` (foto de ensaio em alta, recortada, rosto grande e centralizado, folha de conferência antes de subir).
+
 Pedido do Henrique (20/11/2026): quando a máquina entrega um vídeo, a thumb **editável no Canva** já vem junto, na
 pasta do cliente, com o link no pedido, no card e na gaveta do horário da Grade. Ninguém precisa pedir no painel.
 Mesma coisa para as **capas dos shorts** (hoje feitas à mão, ex.: Betânia e Dr. Gustavo).

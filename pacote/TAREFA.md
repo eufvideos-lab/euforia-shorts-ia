@@ -1,5 +1,7 @@
 # Rotina: Maestro do pacote semanal (Grupo Euforia, 25/11/2026)
 
+> **Capricho obrigatório (Henrique, 25/11/2026):** toda thumb, capa de short/reels e story segue `prompts/capricho_thumb_capa.md` (foto de ensaio em alta, recortada, rosto grande e centralizado, folha de conferência antes de subir).
+
 Pedido do Henrique (25/11/2026, caso Jean Crapanzani): um pedido só, "entrega da semana do cliente X", e a semana
 inteira sai junta, completa e conferida: vídeo longo, thumb, SEO, 3 shorts com capa, carrossel, capa de story de
 divulgação e os textos do Instagram com o cronograma. "Meu maior erro foi deixar esse maestro sem estar criado."
