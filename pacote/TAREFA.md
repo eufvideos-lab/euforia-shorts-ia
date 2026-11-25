@@ -26,14 +26,18 @@ Tudo em português do Brasil. Sem commit nem push.
   do Canva) e salva na pasta do Drive.
 
 ## O pacote (o que tem que estar na pasta)
-Pasta `PACOTE SEMANAL - <DIA> <dd-mm>` dentro da pasta do cliente (campo "Drive" da ficha), com DUAS subpastas
-(pedido do Henrique, 25/11/2026: "na pasta do insta fica só realmente o que o cliente irá usar"):
+Pasta `PACOTE SEMANAL - <DIA> <dd-mm>` dentro da pasta do cliente (campo "Drive" da ficha). Dentro dela, a pasta
+`ENTREGA DA SEMANA - <DIA> <dd-mm>` com DUAS subpastas, YOUTUBE e INSTAGRAM (pedido do Henrique, 25/11/2026: "na pasta do
+insta fica só realmente o que o cliente irá usar"; e "vamos mandar para ele a pasta com a entrega da semana toda... é
+assim que iremos entregar... tudo passa pela diretoria antes"). O cliente recebe SÓ o link da ENTREGA, e só depois do OK
+da diretoria; o envio é feito pela diretoria, nunca pela equipe direto no grupo.
 
 ```
-PACOTE SEMANAL - SEX 27-11/
-  00 - CONFERÊNCIA.txt               ← fora das subpastas
-  visao-geral-01.jpg, comparacao-modelo.jpg   ← fora (visão geral do carrossel é só para a equipe)
-  YOUTUBE/
+PACOTE SEMANAL - SEX 27-11/                    ← interno (NUNCA mandar este link ao cliente)
+  00 - CONFERÊNCIA (interno).txt
+  visao-geral-01.jpg, comparacao-modelo.jpg   ← visão geral do carrossel é só para a equipe
+  ENTREGA DA SEMANA - SEX 27-11/               ← é ESTE link que vai para o cliente
+   YOUTUBE/
     01 - VÍDEO LONGO - <título>.mp4
     02 - THUMB - <texto>.png
     03 - TÍTULO E DESCRIÇÃO.txt

@@ -58,7 +58,7 @@ def conferir(arqs, shorts=3, carrosseis=1, com_longo=True, pendentes=()):
     if carrosseis:
         slides = achar(r'CARROSSEL|SLIDE', 'image/')
         item(f'Carrossel ({carrosseis})', slides, 5 * carrosseis, f'{len(slides)} slides')
-    insta = [f for n, f in N if n.startswith('INSTAGRAM /')]
+    insta = [f for n, f in N if ('INSTAGRAM /' in n)]
     if insta:
         sujos = [f for f in insta if re.search(r'VISAO-GERAL|VISAO GERAL|COMPARACAO|\.JSON$', norm(f['title']))]
         itens.append({'item': 'Pasta INSTAGRAM só com o que o cliente posta', 'ok': not sujos, 'tem': 0 if sujos else 1,
