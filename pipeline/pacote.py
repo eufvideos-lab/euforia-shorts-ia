@@ -9,7 +9,7 @@ Uso:
       [--pendente "Cronograma IG: reels sem dia na grade"] [--saida "00 - CONFERÊNCIA.txt"]
 
 listagem.json = lista de {"title": ..., "mimeType": ..., "id": ...} (o que o search_files devolve em "files";
-subpastas do carrossel podem vir com "filhos": [...] ou como arquivos "06 - CARROSSEL ... .png").
+subpastas (YOUTUBE, INSTAGRAM, carrossel) vêm com "filhos": [...], em qualquer nível ou como arquivos "06 - CARROSSEL ... .png").
 Saída (stdout): {"completo": bool, "itens": [{item, ok, detalhe}], "faltam": [...]} e o .txt para subir na pasta.
 """
 import argparse, json, re, sys, unicodedata
@@ -28,10 +28,13 @@ def eh(f, *tipos):
 
 def conferir(arqs, shorts=3, carrosseis=1, com_longo=True, pendentes=()):
     planos = []
-    for f in arqs:
-        planos.append(f)
-        for g in f.get('filhos') or []:
-            planos.append({**g, 'title': f['title'] + ' / ' + g['title']})
+
+    def achatar(lista, prefixo=''):
+        for f in lista:
+            g = {**f, 'title': prefixo + f['title']}
+            planos.append(g)
+            achatar(f.get('filhos') or [], g['title'] + ' / ')
+    achatar(arqs)
     N = [(norm(f['title']), f) for f in planos]
 
     def achar(padrao, *tipos):
@@ -55,6 +58,11 @@ def conferir(arqs, shorts=3, carrosseis=1, com_longo=True, pendentes=()):
     if carrosseis:
         slides = achar(r'CARROSSEL|SLIDE', 'image/')
         item(f'Carrossel ({carrosseis})', slides, 5 * carrosseis, f'{len(slides)} slides')
+    insta = [f for n, f in N if n.startswith('INSTAGRAM /')]
+    if insta:
+        sujos = [f for f in insta if re.search(r'VISAO-GERAL|VISAO GERAL|COMPARACAO|\.JSON$', norm(f['title']))]
+        itens.append({'item': 'Pasta INSTAGRAM só com o que o cliente posta', 'ok': not sujos, 'tem': 0 if sujos else 1,
+                      'precisa': 1, 'detalhe': ', '.join(f['title'] for f in sujos[:4])})
     item('Textos do Instagram e cronograma', achar(r'TEXTOS INSTAGRAM|CRONOGRAMA', 'text/', 'application/vnd.google-apps.document'))
     for p in pendentes:
         itens.append({'item': p, 'ok': False, 'tem': 0, 'precisa': 1, 'detalhe': 'pendente'})

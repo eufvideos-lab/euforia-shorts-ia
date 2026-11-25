@@ -5,7 +5,7 @@ inteira sai junta, completa e conferida: vídeo longo, thumb, SEO, 3 shorts com 
 divulgação e os textos do Instagram com o cronograma. "Meu maior erro foi deixar esse maestro sem estar criado."
 
 O maestro NÃO edita nada que outra máquina já faz. Ele abre a pasta da semana, pede às máquinas o que falta (com a
-pasta do pacote como "Pasta de entrega"), faz só as peças novas (story e textos), junta, confere item por item e só
+pasta do pacote, ou a subpasta INSTAGRAM, como "Pasta de entrega"), faz só as peças novas (story e textos), junta, confere item por item e só
 libera o aviso ao cliente quando a pasta está completa, 48h antes do vídeo no YouTube.
 Tudo em português do Brasil. Sem commit nem push.
 
@@ -26,19 +26,40 @@ Tudo em português do Brasil. Sem commit nem push.
   do Canva) e salva na pasta do Drive.
 
 ## O pacote (o que tem que estar na pasta)
-Pasta `PACOTE SEMANAL - <DIA> <dd-mm>` dentro da pasta do cliente (campo "Drive" da ficha), com estes nomes:
+Pasta `PACOTE SEMANAL - <DIA> <dd-mm>` dentro da pasta do cliente (campo "Drive" da ficha), com DUAS subpastas
+(pedido do Henrique, 25/11/2026: "na pasta do insta fica só realmente o que o cliente irá usar"):
+
+```
+PACOTE SEMANAL - SEX 27-11/
+  00 - CONFERÊNCIA.txt               ← fora das subpastas
+  visao-geral-01.jpg, comparacao-modelo.jpg   ← fora (visão geral do carrossel é só para a equipe)
+  YOUTUBE/
+    01 - VÍDEO LONGO - <título>.mp4
+    02 - THUMB - <texto>.png
+    03 - TÍTULO E DESCRIÇÃO.txt
+  INSTAGRAM/
+    04 - SHORT N - <título>.mp4 (3) e os textos de cada short
+    05 - CAPA SHORT N.png (3)
+    06 - CARROSSEL - <título>/  (slide-NN.png + legenda.txt, pronto para postar)
+    07 - STORY DE DIVULGAÇÃO.png
+    08 - TEXTOS INSTAGRAM E CRONOGRAMA.txt
+```
 
 | Arquivo | De onde vem |
 |---|---|
-| `01 - VÍDEO LONGO - <título>.mp4` | card do longo da semana (Link do arquivo) ou pedido de longos ("Vídeo pronto"). Cópia (copy_file). |
-| `02 - THUMB - <texto>.png` | thumb automática no Canva ("🎨 Thumb no Canva" do pedido de longo), exportada em PNG. Sem Canva: PNG/JPG de thumb na pasta do vídeo. |
-| `03 - TÍTULO E DESCRIÇÃO.txt` | `título e descrição.txt` ao lado do vídeo (máquina de SEO). |
-| `04 - SHORT N - <título>.mp4` (3) | pedido de shorts com "Pasta de entrega" = a pasta do pacote (a máquina já entrega lá). |
-| `05 - CAPA SHORT N.png` (3) | capas automáticas no Canva ("🎨 Capas no Canva" do pedido de shorts), exportadas em PNG. |
-| `06 - CARROSSEL - <título>/` | pedido de carrosséis com "Pasta de entrega" = a pasta do pacote. |
-| `07 - STORY DE DIVULGAÇÃO.png` | este maestro (`pipeline/story.py`). |
-| `08 - TEXTOS INSTAGRAM E CRONOGRAMA.txt` | este maestro (`prompts/textos_instagram.md`). |
-| `00 - CONFERÊNCIA.txt` | este maestro (`pipeline/pacote.py`). |
+| `YOUTUBE/01 - VÍDEO LONGO - <título>.mp4` | card do longo da semana (Link do arquivo) ou pedido de longos ("Vídeo pronto"). Cópia (copy_file com parentId = YOUTUBE). |
+| `YOUTUBE/02 - THUMB - <texto>.png` | thumb automática no Canva ("🎨 Thumb no Canva" do pedido de longo), exportada em PNG. Sem Canva: PNG/JPG de thumb na pasta do vídeo. |
+| `YOUTUBE/03 - TÍTULO E DESCRIÇÃO.txt` | `título e descrição.txt` ao lado do vídeo (máquina de SEO). |
+| `INSTAGRAM/04 - SHORT N - <título>.mp4` (3) | pedido de shorts com "Pasta de entrega" = a subpasta INSTAGRAM (a máquina já entrega lá). |
+| `INSTAGRAM/05 - CAPA SHORT N.png` (3) | capas automáticas no Canva ("🎨 Capas no Canva" do pedido de shorts), exportadas em PNG. |
+| `INSTAGRAM/06 - CARROSSEL - <título>/` | pedido de carrosséis com "Pasta de entrega" = a pasta do PACOTE (raiz) e nas Observações `Pasta Instagram: <link da INSTAGRAM>`: a máquina põe a subpasta do carrossel dentro da INSTAGRAM e a visão geral na raiz. Se a subpasta cair na raiz, mova para INSTAGRAM (update_file parentId) e renomeie para `06 - CARROSSEL - <título>`. |
+| `INSTAGRAM/07 - STORY DE DIVULGAÇÃO.png` | este maestro (`pipeline/story.py`), subido direto na INSTAGRAM. |
+| `INSTAGRAM/08 - TEXTOS INSTAGRAM E CRONOGRAMA.txt` | este maestro (`prompts/textos_instagram.md`). |
+| `00 - CONFERÊNCIA.txt` | este maestro (`pipeline/pacote.py`), na raiz. |
+
+Arquivo subido pela ponte (`ponte.subir`) **não pode ser movido nem apagado** depois pelo conector do Drive: suba
+sempre direto na subpasta certa. Na INSTAGRAM não entra nada que o cliente não vá postar (nada de visão geral,
+comparação, JSON, rascunho).
 
 Quantidades vêm da ficha: "Longos por semana", "Shorts por semana" (padrão 3); carrossel = 1 por semana se
 "📄 Contratado carrosséis" > 0. Cliente sem longo na semana (ex.: só shorts): passe `--sem-longo` na conferência.
@@ -51,7 +72,8 @@ Até 4 pacotes por rodada.
 ## 2. Para cada pacote
 1. Abra o card, a ficha do cliente (Drive, identidade, quantidades, "Direção criativa", "Padrões de edição", Instagram,
    YouTube) e o card do longo da semana (mesmo cliente, Tipo "Vídeo longo"/"Podcast", mesmo "Postar em", não Cancelado).
-2. **Pasta:** procure `PACOTE SEMANAL - <DIA> <dd-mm>` na pasta do cliente; se não existir, crie. Grave o link no
+2. **Pasta:** procure `PACOTE SEMANAL - <DIA> <dd-mm>` na pasta do cliente; se não existir, crie, com as
+   subpastas `YOUTUBE` e `INSTAGRAM` (crie as que faltarem). Grave o link no
    card (Link do arquivo) e uma linha no Obs `[Maestro dd/MM HH:mm] Pasta do pacote: <link>`.
 3. **Longo:** só entra na pasta **aprovado na revisão** (card do longo em Aprovado/Agendado/Postado, ou pedido de
    longos aprovado). Aprovado? Copie para a pasta com o nome do padrão. Pronto mas ainda em revisão: copie e passe
@@ -62,12 +84,13 @@ Até 4 pacotes por rodada.
    do mesmo vídeo). Sem pedido e com o longo pronto (ou o bruto): crie em 🎬 Pedidos de Shorts IA: Pedido
    `<CLIENTE> | SHORTS · PACOTE <DIA dd/MM>`, Cliente, Quantidade "3 shorts", Estilo do último pedido do cliente
    (padrão "Institucional"), "Vídeo bruto" (sem bruto inteiro, deixe vazio e ponha o editado), "Vídeo editado",
-   "Pasta de entrega (opcional)" = pasta do pacote, Observações `Pacote: <link do card do pacote>` + "Padrões de
+   "Pasta de entrega (opcional)" = subpasta INSTAGRAM do pacote, Observações `Pacote: <link do card do pacote>` + "Padrões de
    edição" do cliente, Status "Editar". A máquina de shorts entrega na pasta e cria o card das capas sozinha.
 5. **Carrossel:** igual, em 🖼️ Pedidos de Carrosséis IA: Pedido `<CLIENTE> | CARROSSEL · PACOTE <DIA dd/MM>`, Pacote
    "1 carrossel", Roteiros = o roteiro do vídeo da semana se houver no 🎬 Pautas e Roteiros (senão vazio e nas
    Observações: "tema = o vídeo da semana: <título>; use a transcrição/título e descrição da pasta"), Pasta de
-   entrega = pasta do pacote, Observações `Pacote: <link do card>`, Status "Criar".
+   entrega = pasta do pacote (raiz), Observações `Pacote: <link do card>` + `Pasta Instagram: <link da
+   subpasta INSTAGRAM>`, Status "Criar".
 6. **Thumb e capas (PNG):** quando o pedido de longo tiver "🎨 Thumb no Canva" (e o de shorts "🎨 Capas no Canva"),
    exporte em PNG pelo conector do Canva (`export-design`, formato png) e salve na pasta com o fluxo Je0BxnMdTeM5P0al
    (`execute_workflow` modo manual) com os nomes do padrão. Ainda sem link do Canva: siga; a próxima rodada pega.
