@@ -38,15 +38,15 @@ PACOTE SEMANAL - SEX 27-11/                    ← interno (NUNCA mandar este li
   visao-geral-01.jpg, comparacao-modelo.jpg   ← visão geral do carrossel é só para a equipe
   ENTREGA DA SEMANA - SEX 27-11/               ← é ESTE link que vai para o cliente
    YOUTUBE/
-    01 - VÍDEO LONGO - <título>.mp4
-    02 - THUMB - <texto>.png
-    03 - TÍTULO E DESCRIÇÃO.txt
-  INSTAGRAM/
-    04 - SHORT N - <título>.mp4 (3) e os textos de cada short
-    05 - CAPA SHORT N.png (3)
-    06 - CARROSSEL - <título>/  (slide-NN.png + legenda.txt, pronto para postar)
-    07 - STORY DE DIVULGAÇÃO.png
-    08 - TEXTOS INSTAGRAM E CRONOGRAMA.txt
+     01 - VÍDEO LONGO - <título>.mp4
+     02 - THUMB - <texto>.png
+     03 - TÍTULO E DESCRIÇÃO.txt
+   INSTAGRAM/
+     04 - SHORT N - <título>.mp4 (3) e os textos de cada short
+     05 - CAPA SHORT N.png (3)
+     06 - CARROSSEL - <título>/  (slide-NN.png + legenda.txt, pronto para postar)
+     07 - STORY DE DIVULGAÇÃO.png
+     08 - TEXTOS INSTAGRAM E CRONOGRAMA.txt
 ```
 
 | Arquivo | De onde vem |
