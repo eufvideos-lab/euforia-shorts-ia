@@ -56,6 +56,8 @@ este arquivo, mas **cada uma só pega os cards do seu tipo**. O prompt da rotina
 
 ## 1. Ver a fila
 Leia a visão da fila (modo view, paginando). Ignore **sempre** cards com "🏢 Escritório IA" = À mão (Flau).
+Ignore **sempre** também os cards `<CLIENTE> | PACOTE SEMANAL · <DIA dd/MM>`: são do maestro do pacote semanal
+(pacote/TAREFA.md), mesmo editados depois.
 Ignore também Feito pela IA, Precisa da Direção, Falta do cliente ou Foi para outra máquina, **a não ser** que o
 card tenha sido editado depois da última anotação da máquina (a equipe respondeu algo no Obs/corpo): aí trate de novo.
 Cards para atender: os com "🏢 Escritório IA" **vazio**, **Na fila** ou **Fazendo (IA)**, mais os ignorados acima que
