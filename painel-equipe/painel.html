@@ -3190,7 +3190,7 @@ function cvSugHtml(){
   if (g.caso) info.push(`<span>🪄 Caso criado para a Gerente. Ela faz e traz pronto para aprovação.${g.card ? ` <a href="${esc(g.card)}" target="_blank" rel="noopener">Ver card</a>` : ''}</span>`);
   return `<div class="cv-sug"><button class="btn" data-cvsug ${g.indo ? 'disabled' : ''}>${g.indo === 'sugerir' ? 'Pensando…' : '✨ Sugerir resposta'}</button><button class="btn" data-cvger ${g.indo || g.caso ? 'disabled' : ''}>${g.indo === 'gerente' ? 'Criando…' : '🪄 Passar para a Gerente'}</button></div>${info.length ? `<div class="cv-sug-info">${info.join('')}</div>` : ''}`;
 }
-const CV_MOTIVO = { grupo: 'Esse grupo não é de cliente do suporte.', noite: 'Fora do horário (22h às 7h). O texto fica guardado aqui; mande de manhã.', direcao: 'O cliente falou de assunto da diretoria (dinheiro, contrato ou jurídico). A diretoria responde; não responda por aqui.', texto: 'Escreva a resposta.', whatsapp: 'O WhatsApp não mandou. Tente de novo em 1 minuto.', acesso: 'Seu acesso caiu. Abra o painel de novo.', foto: 'Não consegui abrir essa foto agora.', proibido: 'Não pode ir para o cliente: concordar com reclamação, admitir falha ou atraso, "agência" ou IA. Reescreva sem isso.' };
+const CV_MOTIVO = { aprovacao: 'Sua resposta foi para a diretoria aprovar antes de sair. Não precisa mandar de novo.', sodiretoria: 'Respostas aos grupos agora passam pela diretoria.', grupo: 'Esse grupo não é de cliente do suporte.', noite: 'Fora do horário (22h às 7h). O texto fica guardado aqui; mande de manhã.', direcao: 'O cliente falou de assunto da diretoria (dinheiro, contrato ou jurídico). A diretoria responde; não responda por aqui.', texto: 'Escreva a resposta.', whatsapp: 'O WhatsApp não mandou. Tente de novo em 1 minuto.', acesso: 'Seu acesso caiu. Abra o painel de novo.', foto: 'Não consegui abrir essa foto agora.', proibido: 'Não pode ir para o cliente: concordar com reclamação, admitir falha ou atraso, "agência" ou IA. Reescreva sem isso.' };
 function conversasHtml(){
   const topo = `<div class="head"><div><p class="eyebrow">WhatsApp do suporte${CV && CV.agora ? ' · atualizado às ' + esc(CV.agora) : ''}</p><h1>Conversas</h1></div></div>`;
   if (!CV) { carregarConversas(); return topo + '<p class="sub">Carregando…</p>'; }
@@ -3336,7 +3336,7 @@ document.addEventListener('click', async e => {
       if (CVM && CVM.chat === chat) CVM.mensagens.push({ id: 'local' + Date.now(), eu: true, autor: D.nome.split(' ')[0] + ' (você)', tipo: '', foto: false, oculto: false, texto: t, hora: new Date().toTimeString().slice(0, 5), dia: (CVM.mensagens.length ? CVM.mensagens[CVM.mensagens.length - 1].dia : 'Hoje') });
       const c = CV.conversas.find(x => x.chat === chat); if (c) { c.espera = false; c.naoLidas = 0; c.status = 'cliente'; c.rotulo = 'Esperando cliente'; c.card = ''; }
       render(); cvRolar(true); toast('Resposta enviada no grupo.'); setTimeout(() => abrirConversa(chat, true), 6000); }
-    catch (er) { ocupado = false; env.disabled = false; env.textContent = 'Enviar'; toast(CV_MOTIVO[er.message] || 'Deu erro, a diretoria está resolvendo.'); if (er.message === 'direcao') abrirConversa(chat, true); }
+    catch (er) { ocupado = false; env.disabled = false; env.textContent = 'Enviar'; if (er.message === 'aprovacao') { delete CVRASC[chat]; delete CVTPOS[chat]; render(); } toast(CV_MOTIVO[er.message] || 'Deu erro, a diretoria está resolvendo.'); if (er.message === 'direcao') abrirConversa(chat, true); }
   }
 });
 // Atualiza a lista a cada 30 s e a conversa aberta a cada 15 s, só com a aba aberta.
