@@ -41,6 +41,7 @@ ap.add_argument('--cliente', required=True); ap.add_argument('--pasta-drive', re
 ap.add_argument('--cor', default=None); ap.add_argument('--cor-fundo', default='#FDFBF7'); ap.add_argument('--cor-texto', default='#186C64')
 ap.add_argument('--logo', default=None); ap.add_argument('--musica', default='auto')
 ap.add_argument('--so-render', action='store_true', help='não sobe no Drive (teste)')
+ap.add_argument('--forcar', action='store_true', help='aceita short fora da faixa de duração (ex.: anúncio de 15 a 30 s)')
 ap.add_argument('--cortar-baixo', type=float, default=0, help='vídeo com legenda/marca embutida embaixo: tira esta fração de baixo (ex.: 0.22) com zoom, rosto continua no centro')
 ap.add_argument('--shorts', default=None, help='refazer só estes shorts, ex.: 2 ou 1,3')
 ap.add_argument('--so-brolls', action='store_true', help='só baixa os B-rolls do banco e monta brolls_banco.png para conferir (não renderiza)')
@@ -278,7 +279,7 @@ for n, sh in enumerate(plano['shorts']):
     props = os.path.join(pasta, f'props_{n}.json')
     cmd = [sys.executable, os.path.join(AQUI, 'montar_short.py'), os.path.join(pasta, 'transcricao.json'),
            os.path.join(pasta, 'plano_montagem.json'), str(n), props, '--modelo', a.modelo, '--video', f'{pid}/{os.path.basename(vertical)}',
-           '--video-arquivo', fonte, '--brolls', os.path.join(pasta, 'brolls_map.json'), '--cor', cor]
+           '--video-arquivo', fonte, '--brolls', os.path.join(pasta, 'brolls_map.json'), '--cor', cor] + (['--forcar'] if a.forcar else [])
     if a.modelo != 'viral':
         cmd += ['--cor-fundo', a.cor_fundo, '--cor-texto', a.cor_texto]
     r = subprocess.run(cmd, capture_output=True, text=True)
