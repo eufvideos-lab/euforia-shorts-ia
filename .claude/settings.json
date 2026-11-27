@@ -1,0 +1,40 @@
+{
+  "permissions": {
+    "allow": [
+      "Artifact",
+      "mcp__Notion__notion-fetch",
+      "mcp__Notion__notion-search",
+      "mcp__Notion__notion-query-data-sources",
+      "mcp__Notion__notion-update-page",
+      "mcp__Notion__notion-create-pages",
+      "mcp__Notion__notion-create-comment",
+      "mcp__Notion__notion-get-comments",
+      "mcp__Notion__notion-create-file-upload",
+      "mcp__Notion__notion-create-attachment",
+      "mcp__n8n__search_workflows",
+      "mcp__n8n__get_workflow_details",
+      "mcp__n8n__execute_workflow",
+      "mcp__n8n__test_workflow",
+      "mcp__n8n__get_execution",
+      "mcp__n8n__search_executions",
+      "mcp__n8n__prepare_test_pin_data",
+      "mcp__Isabela_Euforia__buscar_conversas",
+      "mcp__Isabela_Euforia__conversas_recentes",
+      "mcp__Isabela_Euforia__ler_mensagens",
+      "mcp__Isabela_Euforia__ler_anexo",
+      "mcp__Isabela_Euforia__canais_discord",
+      "mcp__Isabela_Euforia__ler_discord",
+      "mcp__Isabela_Euforia__enviar_discord",
+      "mcp__Google_Drive__search_files",
+      "mcp__Google_Drive__get_file_metadata",
+      "mcp__Google_Drive__read_file_content",
+      "mcp__Google_Drive__download_file_content",
+      "mcp__Google_Drive__list_recent_files",
+      "mcp__Google_Drive__create_file",
+      "mcp__Google_Calendar__list_calendars",
+      "mcp__Google_Calendar__list_events",
+      "mcp__Google_Calendar__get_event",
+      "mcp__Google_Calendar__search_events"
+    ]
+  }
+}
