@@ -128,5 +128,18 @@ bash instalar.sh   # instala Remotion e OpenCV (~15 s)
   2. No #ia-status mande o detalhe técnico completo + link do pedido.
   3. No #shorts-ia mande só o aviso curto (sem causa técnica), marcando o Ismael.
   4. Siga para o próximo pedido.
+- **Falta de material não é erro técnico** (27/11/2026). Vale quando o pedido não pode ser editado por causa do material e
+  não da máquina: "Vídeo bruto" vazio, link que não é do Drive (YouTube, Dropbox etc.), pasta sem vídeo, bruto já usado
+  ou vídeo que já está no canal do cliente, material de terceiros sem autorização clara. Nesses casos:
+  1. Status "Erro". No "Log da máquina" escreva em português simples o que falta e o que fazer, por exemplo: "Falta o
+     vídeo bruto no Drive. Suba o arquivo na pasta do cliente, cole o link em Vídeo bruto e volte o Status para Editar."
+  2. Crie no banco Entregas o card `<CLIENTE> | FALTA MATERIAL: <O QUE FALTA EM POUCAS PALAVRAS>`, Cliente ligado,
+     Responsável "Rômulo", Tipo igual ao da peça, Prioridade "Urgente", Status "A fazer", Prazo = hoje (se já passou das
+     15h de Brasília, o próximo dia útil). No Obs: `Pedido: <link do pedido>`, uma linha dizendo o que a máquina
+     encontrou, e o passo a passo numerado para resolver (onde subir, que campo preencher, que Status voltar). Antes de
+     criar, procure no Entregas um card "FALTA MATERIAL" aberto desse mesmo pedido: se existir, não crie outro.
+  3. No canal da equipe mande o aviso dizendo o que falta e que o card está no painel do Rômulo (sem detalhe técnico).
+  4. No #ia-status mande só uma linha com o link do pedido e do card (a diretoria não precisa resolver).
+  5. Siga para o próximo pedido.
 - Não apague arquivos do Drive. Não mexa em pedidos com outro Status.
 - Pedido com Status "Ajustar": leia o comentário/observações, refaça só o que foi pedido e volte para "Pronto para revisão".

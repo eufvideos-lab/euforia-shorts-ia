@@ -151,6 +151,23 @@ apt-get install -y -q libegl1 libgles2 >/dev/null 2>&1 || (apt-get update -q >/d
 - Nunca mande nada para cliente. A entrega é interna (Drive + Notion + Discord).
 - Erro: Status "Erro"; no log só "Erro na edição. A diretoria está resolvendo."; detalhe técnico no #ia-status com o
   link do pedido; aviso curto no #longos-automáticos.
+- **Falta de material não é erro técnico** (27/11/2026). Vale quando o pedido não pode ser editado por causa do material e
+  não da máquina: "Vídeo bruto" vazio, link que não é do Drive (YouTube, Dropbox etc.), pasta sem vídeo, bruto já usado
+  ou vídeo que já está no canal do cliente, material de terceiros sem autorização clara. Nesses casos:
+  1. Status "Erro". No "Log da máquina" escreva em português simples o que falta e o que fazer, por exemplo: "Falta o
+     vídeo bruto no Drive. Suba o arquivo na pasta do cliente, cole o link em Vídeo bruto e volte o Status para Editar."
+  2. Crie no banco Entregas o card `<CLIENTE> | FALTA MATERIAL: <O QUE FALTA EM POUCAS PALAVRAS>`, Cliente ligado,
+     Responsável "Rômulo", Tipo igual ao da peça, Prioridade "Urgente", Status "A fazer", Prazo = hoje (se já passou das
+     15h de Brasília, o próximo dia útil). No Obs: `Pedido: <link do pedido>`, uma linha dizendo o que a máquina
+     encontrou, e o passo a passo numerado para resolver (onde subir, que campo preencher, que Status voltar). Antes de
+     criar, procure no Entregas um card "FALTA MATERIAL" aberto desse mesmo pedido: se existir, não crie outro.
+  3. No canal da equipe mande o aviso dizendo o que falta e que o card está no painel do Rômulo (sem detalhe técnico).
+  4. No #ia-status mande só uma linha com o link do pedido e do card (a diretoria não precisa resolver).
+  5. Siga para o próximo pedido.
+- **Antes de editar um longo** (27/11/2026): confira se esse bruto já virou vídeo. Procure no quadro de pedidos outro
+  pedido do mesmo cliente com a mesma pasta de bruto ou o mesmo número de vídeo já "Pronto para revisão" ou entregue,
+  e veja nos cards "Postado" do cliente dos últimos 30 dias se o mesmo tema já foi ao ar. Se já foi, é falta de
+  material (regra acima), com o passo "conseguir outro bruto para a próxima data da grade".
 - Não apague arquivos do Drive. Não crie páginas soltas no Notion. Não faça commit nem push.
 - "Ajustar" é CIRÚRGICO (19/11/2026): muda só o que a revisão pediu, o resto volta igual. Baixe o
   `plano-longo-<id-curto>.json` da pasta da máquina (busque pelo nome no Google Drive e use `ponte.baixar`), rode de
