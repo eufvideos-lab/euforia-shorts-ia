@@ -132,6 +132,8 @@ reais, igual ao modelo de Shorts da NA.
 - **Cortes:** pouquíssimos. Normalmente 1 a 3 trechos seguidos do bruto. Tire só respiros longos, tosse, pergunta
   da plateia que não se ouve, interrupções e desvios que fogem do tema. Nunca corte no meio de frase. `"gancho": 0`.
 - **Zoom alternado:** a máquina faz (mais leve, 1.15). Ajuste `centro_zoom` no rosto dela num quadro do bruto.
+  Se ela sai do centro só num pedaço (andou no palco), use `"reenquadrar": [{"de": s, "ate": s, "centro": [x, y],
+  "zoom": 1.5}]` (segundos do bruto); o resto do vídeo fica com o `centro_zoom` geral.
 - **Cartões (`cartoes`), 2 a 4 no corte:** tela branca no manual da NA, as palavras surgem acompanhando a fala.
   - **Citação com autor:** sempre que ela cita alguém (ex.: "Mircea Eliade dizia que o sagrado é a função de dar
     sentido"). `"autor": "Nome"` e, sempre que der, `"foto"` com uma foto real da pessoa (fluxo de fotos com

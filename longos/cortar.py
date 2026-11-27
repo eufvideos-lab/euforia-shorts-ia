@@ -132,6 +132,48 @@ sys.argv = [a for a in sys.argv if a != '--forcar-curto']
 for n, x in enumerate(segs):
     x['zoom'] = ZOOM if n % 2 and ZOOM > ABERTO else ABERTO
 
+
+# Reenquadrar um pedaço (Nova Acrópole, ajuste de 20/11/2026: "centralizar a Lúcia de 15:42 a 15:55"). No plano:
+# "reenquadrar": [{"de": s, "ate": s, "centro": [x, y], "zoom": 1.5}] com "de"/"ate" em segundos do BRUTO.
+# Antes era remendo à mão numa rodada e sumia no Ajustar seguinte; o remendo dividia a imagem no fim que a
+# transcrição dava para a palavra e comia o "-dismo" de "conteudismo". Aqui a divisão cai num silêncio achado pelo
+# som (fim()/ini()), o áudio segue contínuo (join) e o pedaço alterna zoom e zoom x 1,1 como o resto.
+def silencio_perto(t):
+    """Ponto de corte no silêncio entre as duas palavras mais perto de t (nunca dentro de uma palavra)."""
+    js = [j for j in range(len(W) - 1) if W[j + 1]['start'] > W[j]['end'] - 0.01]
+    if not js:
+        return t
+    j = min(js, key=lambda j: abs((W[j]['end'] + W[j + 1]['start']) / 2 - t))
+    a, b = fim(j), ini(j + 1)
+    return EM.ponto(audio, a, b, 'fim', SR) if b - a > 0.02 else (a + b) / 2
+
+
+def reenquadrar(segs, pedidos):
+    for R in pedidos:
+        de, ate = silencio_perto(float(R['de'])), silencio_perto(float(R['ate']))
+        z = float(R.get('zoom', max(ZOOM, 1.3)))
+        novos = []
+        for x in segs:
+            partes = [x]
+            for t in (de, ate):
+                y = partes[-1]
+                # divide só se sobra mais de 0,5 s dos dois lados (senão vira frame solto: usa a emenda que já existe)
+                if y['s'] + 0.5 < t < y['e'] - 0.5:
+                    partes[-1:] = [dict(y, e=round(t, 3)), dict(y, s=round(t, 3), join=True)]
+            novos += partes
+        segs = novos
+        dentro = [x for x in segs if de <= (x['s'] + x['e']) / 2 <= ate]
+        for n, x in enumerate(dentro):
+            x['zoom'] = round(z * 1.1 if n % 2 else z, 3)
+            x['centro'] = [float(c) for c in R.get('centro', [CX, CY])]
+        print(f"reenquadrado {de:.2f}-{ate:.2f}s do bruto ({len(dentro)} segmentos, centro {R.get('centro')}, "
+              f"zoom {z:.2f}x)", flush=True)
+    return segs
+
+
+if plano.get('reenquadrar'):
+    segs = reenquadrar(segs, plano['reenquadrar'])
+
 # Redução de ruído (ar-condicionado, rua) fica no plano (19/11/2026): antes era feita à mão numa rodada e sumia no
 # Ajustar seguinte. "reduzir_ruido": true (normal) ou "forte".
 _RR = plano.get('reduzir_ruido')
@@ -147,6 +189,8 @@ os.makedirs(os.path.join(pasta, 'segs'), exist_ok=True)
 # da mediana do vídeo todo; se a pessoa se mexeu (mudou de cadeira, câmera esbarrada), aquele trecho ficava torto.
 # Aqui cada trecho com zoom confere o rosto em 3 quadros e, se ele cai fora do miolo do recorte, recentra só esse trecho.
 def centro_do_trecho(x):
+    if 'centro' in x:  # pedaço do "reenquadrar" do plano: o centro é o pedido
+        return x['centro']
     if NA or plano.get('enquadramento') == 'manual':
         return CX, CY
     try:
