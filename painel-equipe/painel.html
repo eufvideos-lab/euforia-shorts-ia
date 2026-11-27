@@ -3237,6 +3237,12 @@ const proibidos = t => { const n = semAcento(t); const r = PROIB.filter(p => p[1
 const limparProibidas = t => { const tir = new Set();
   const pars = String(t || '').split(/\n\s*\n/).map(p => (p.match(/[^.!?\n]+[.!?]*\s*|\n/g) || []).filter(f => { const q = proibidos(f); q.forEach(x => tir.add(x)); return !q.length; }).join('').trim()).filter(Boolean);
   return { texto: pars.join('\n\n'), tirou: Array.from(tir) }; };
+// Porta de saída (27/11/2026, Henrique, caso "seguem agora" sem peça): não sai marcador entre colchetes nem "segue agora" sem o link da peça.
+const portaSaida = t => { const n = semAcento(t);
+  if (/\[[a-z][a-z0-9 ]{2,40}\]/.test(n)) return 'Tem um marcador entre colchetes no texto. Troque pela informação certa antes de enviar.';
+  const agora = /\b(seguem?|envio|enviamos|enviando|mando|mandamos|mandando)\s+(agora|ja|em\s+anexo|em\s+seguida|daqui\s+a\s+pouco)\b|\bja\s+(seguem?|estou\s+enviando|estamos\s+enviando)\b|\b(estou|estamos)\s+enviando\s+(agora|ja)\b|\bseguem?\s+(ainda\s+)?hoje\b/.test(n);
+  if (agora && !/https?:\/\//i.test(String(t || ''))) return 'Você escreveu que a peça segue agora, mas o texto não tem o link dela. Cole o link da peça pronta ou diga a data combinada.';
+  return ''; };
 function cvEspera(m){ m = Number(m) || 0; return 'há ' + (m < 60 ? m + ' min' : m < 1440 ? Math.floor(m / 60) + 'h' + (m % 60 ? String(m % 60).padStart(2, '0') : '') : Math.floor(m / 1440) + (Math.floor(m / 1440) === 1 ? ' dia' : ' dias')); }
 // "Resolvido por enquanto" (19/11/2026, Henrique): tira da fila quando não precisa responder. Nada vai ao cliente; se ele escrever de novo, volta.
 function cvStatusHtml(x, semResolver){
@@ -3328,6 +3334,7 @@ document.addEventListener('click', async e => {
     const chat = CVA, t = (CVRASC[chat] || '').trim();
     if (t.length < 2) { toast(CV_MOTIVO.texto); return; }
     const pr = diretor() ? [] : proibidos(t); if (pr.length) { toast('Não pode ir para o cliente: ' + pr.join(', ') + '. Reescreva sem isso.'); return; }
+    const ps = diretor() ? '' : portaSaida(t); if (ps) { toast(ps); return; }
     ocupado = true; env.disabled = true; env.textContent = 'Enviando…';
     try { const r = await api('euforia-painel-conversas', { acao: 'mandar', chat, texto: t }); if (!r || !r.ok) throw new Error((r && r.motivo) || 'erro');
       delete CVRASC[chat]; delete CVTPOS[chat]; ocupado = false;
