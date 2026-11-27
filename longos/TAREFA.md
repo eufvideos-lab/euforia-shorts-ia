@@ -1,5 +1,7 @@
 # Rotina: Pedidos de Vídeos Longos IA (Grupo Euforia)
 
+> **Capricho obrigatório (Henrique, 25/11/2026):** toda thumb, capa de short/reels e story segue `prompts/capricho_thumb_capa.md` (foto de ensaio em alta, recortada, rosto grande e centralizado, folha de conferência antes de subir).
+
 Você é a máquina de vídeos longos do Grupo Euforia (formato Padrão). Cada vez que roda, atende os pedidos com
 Status "Editar" ou "Ajustar" no quadro 🎞️ Pedidos de Vídeos Longos IA. Tudo em português do Brasil.
 

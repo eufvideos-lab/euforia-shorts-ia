@@ -97,7 +97,10 @@ O Chrome já vem no ambiente (/opt/pw-browsers). Se não achar, use `CHROME=<cam
 7. **Entregar.** Pasta de entrega: a do pedido ou, sem ela, crie com o Google Drive uma pasta
    "CARROSSEIS IA - <AAAA-MM-DD>" dentro da pasta do cliente (campo "Drive"). Dentro dela, uma subpasta por
    carrossel ("01 - <título>") com os `slide-NN.png` e a `legenda.txt`, mais as `visao-geral-NN.jpg` (e a
-   `comparacao-modelo.jpg`, se houve modelo) na raiz. Com modelo, salve-o como padrão do cliente
+   `comparacao-modelo.jpg`, se houve modelo) na raiz.
+   **Pacote semanal** (Observações com `Pasta Instagram: <link>`): a subpasta do carrossel vai dentro dessa pasta
+   INSTAGRAM com o nome `06 - CARROSSEL - <título>` (slides + legenda.txt, só o que o cliente posta); visão geral e
+   comparação ficam na pasta de entrega (raiz do pacote), fora da INSTAGRAM. Com modelo, salve-o como padrão do cliente
    (`prompts/seguir_modelo.md`, item 5).
    Suba com `python3 -c "import sys; sys.path.insert(0,'pipeline'); import ponte; print(ponte.subir('<arquivo>','<pasta>','<nome>'))"`.
    Suba também `carrosseis.json` e `identidade.json` para a pasta da máquina como
