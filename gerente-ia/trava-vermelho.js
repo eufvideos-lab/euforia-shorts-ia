@@ -34,8 +34,8 @@ const marcar = node({ type: 'n8n-nodes-base.postgres', version: 2.6, config: { n
 INSERT INTO trava_vermelho (card_id, desde) SELECT x->>'id', least(now(), coalesce((x->>'editado')::timestamptz, now())) FROM json_array_elements(CASE WHEN $1 = 'null' THEN '[]' ELSE $1 END::json) x ON CONFLICT (card_id) DO NOTHING;
 SELECT card_id, desde, avisado_em, vezes FROM trava_vermelho;` } } });
 
-const decidir = node({ type: 'n8n-nodes-base.code', version: 2, config: { name: 'Decidir alerta', position: [896, 0], parameters: { jsCode: `// TESTE = true: monta a mensagem mas não manda nem marca como avisado. Ligar só com o OK do Henrique.
-const TESTE = true;
+const decidir = node({ type: 'n8n-nodes-base.code', version: 2, config: { name: 'Decidir alerta', position: [896, 0], parameters: { jsCode: `// TESTE = true: monta a mensagem mas não manda nem marca como avisado. Ligada para todos os 🔴 com OK do Henrique (27/11).
+const TESTE = false;
 const HORAS = 24;            // parado mais que isso em A fazer = alerta
 const FOLGA_DIAS = 2;        // card planejado para longe (prazo depois de hoje + 2 dias) não é "parado": é fila futura
 const HORA_RESUMO = 8;       // card já avisado e ainda parado volta só no resumo das 8h15 (1 vez por dia); nas outras horas, só card novo
