@@ -44,6 +44,10 @@ bash instalar.sh   # instala Remotion e OpenCV (~15 s)
    e escreva no "Log da máquina": "feito do editado (sem link do bruto)".
    Se o link for de pasta, liste a pasta com o Google Drive e use o vídeo mais recente (.mp4/.mov).
    Se não achar vídeo: Status "Erro" e siga para o próximo (veja "Como tratar erro").
+2b. **Vídeo pronto do cliente** (17/11/2026, caso Mauro Longo): se o título ou as Observações do pedido dizem
+   "vídeo curto inteiro", "short inteiro", "não cortar" ou "vídeo pronto (feito) pelo cliente", NÃO siga os passos 3 a 9b:
+   vá para a seção "Modo vídeo pronto do cliente" no fim deste arquivo. Ali a legenda e as telas do cliente ficam,
+   e isso não é erro.
 3. Rode `python3 pipeline/preparar.py pedidos/<id-curto> <file_id>`.
 4. Legenda queimada: tire 3 quadros do fonte.mp4 (início, meio, fim) e olhe a faixa de baixo. Se o vídeo já tiver
    legenda embutida, NÃO produza: Status "Erro" e no log "O vídeo veio com legenda embutida. Mande a versão só com os
@@ -130,3 +134,26 @@ bash instalar.sh   # instala Remotion e OpenCV (~15 s)
   4. Siga para o próximo pedido.
 - Não apague arquivos do Drive. Não mexa em pedidos com outro Status.
 - Pedido com Status "Ajustar": leia o comentário/observações, refaça só o que foi pedido e volte para "Pronto para revisão".
+
+## Modo vídeo pronto do cliente (17/11/2026)
+Para o cliente que manda o vídeo já editado (avatar HeyGen, legenda e telas próprias) e não há bruto. A máquina não põe
+legenda, cartão, B-roll nem música: só deixa no formato de short, faz a capa e sobe. Script: `pipeline/short_pronto.py`.
+1. `python3 pipeline/short_pronto.py pedidos/<id-curto> <file_id> --so-preparar` (baixa, transcreve, escreve `palavras.txt`
+   e diz se o vídeo é vertical ou horizontal).
+2. Títulos: um título curto de capa por short (até ~50 caracteres), tirado da fala e das Observações do pedido.
+   - **Vertical (9:16)**: o short é o vídeo inteiro, até 3 min (limite do YouTube Shorts). Sem `--palavras`.
+     Pedido de "3 shorts" de um vertical: passe `--palavras I-F` para cada um.
+   - **Horizontal (16:9)**: só se as Observações disserem que o vídeo é pronto do cliente e não há bruto. Escolha os
+     trechos como no `prompts/escolher_trechos.md` (começo e fim de frase, 30 a 65 s, sugestões do pedido primeiro) e
+     passe `--palavras I-F` (índices do `palavras.txt`). Cada trecho entra inteiro, sem cortar a legenda nem os cartões
+     do cliente, no meio da tela vertical, sobre o fundo da marca, com o título em cima ("moldura").
+3. Rode (cores e fontes do campo "Identidade shorts (IA)" do cliente; fontes que existem em `pipeline/fontes`:
+   Playfair Display e Figtree; outra fonte cai na DejaVu e dá aviso):
+   `python3 pipeline/short_pronto.py pedidos/<id-curto> <file_id> --cliente "<nome>" --pasta-drive <id da pasta> --selo "<assinatura do cliente>" --titulo "<título 1>" [--palavras I-F] [--titulo "<título 2>" --palavras I-F ...] --cor-fundo #.. --cor-destaque #.. --cor-texto #..`
+   Sobe `<CLIENTE> - SHORT n - <título>.mp4` e `... - capa.jpg` (1080x1920, capa com zoom no rosto, degradê da marca e
+   título). Leva ~3 min por vídeo.
+4. Confira `saida/conferencia_N.png` (6 quadros) e `saida/capa_N.jpg`. Capa com rosto cortado ou olho fechado: rode de
+   novo com `--quadro-capa <segundo>`.
+5. Siga do passo 9a (publicacao.json, `pipeline/publicacao.py` com `--pasta-drive` e `--cliente-id`). Pule o 9b (Studio):
+   não há projeto de edição. Depois os passos 10 a 12 normalmente; no log escreva "Vídeo pronto do cliente: entregue
+   inteiro (ou cortes com moldura), sem legenda nossa".
